@@ -28,12 +28,16 @@ namespace atto {
         i32 width;
         i32 height;
         i32 channels;
-        u32 handle;
         bool generateMipMaps;
     };
-
-    struct ResourceRegistry {
-        FixedList<TextureResource, 1024> textures;
+    
+    struct AudioResource {
+        SmallString name;
+        i16 numChannels;
+        i32 sampleRate;
+        i32 byteRate;
+        i16 blockAlign;
+        i16 bitsPerSample;
     };
 
     class Camera {
@@ -94,6 +98,7 @@ namespace atto {
         void                                LogOutput(LogLevel level, const char* message, ...);
 
         virtual TextureResource*            ResourceGetAndLoadTexture(const char* name) = 0;
+        virtual AudioResource*              ResourceGetAndLoadAudio(const char* name) = 0;
 
         Camera                              RenderCreateCamera();
         void                                RenderSetCamera(Camera* camera);
@@ -135,7 +140,6 @@ namespace atto {
     protected:
         LoggingState        logger = {};
         RenderCommands      drawCommands = {};
-        ResourceRegistry    resources = {};
         FrameInput          input = {};
 
         i32                 mainSurfaceWidth;

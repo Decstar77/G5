@@ -226,7 +226,7 @@ namespace atto {
                     glBindVertexArray(0);
                 } break;
                 case DrawCommandType::SPRITE: {
-                    TextureResource* texture = cmd.sprite.textureRes;
+                    Win32TextureResource* texture = (Win32TextureResource*)cmd.sprite.textureRes;
 
                     /*
                         tl(0,1)  tr(1, 1)
@@ -272,7 +272,7 @@ namespace atto {
             }
         }
 
-        TextureResource textureResource = {};
+        Win32TextureResource textureResource = {};
         textureResource.name = name;
 
         LargeString filePath = StringFormat::Large("res/sprites/%s.png", name);
