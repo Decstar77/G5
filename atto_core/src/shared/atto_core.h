@@ -40,6 +40,11 @@ namespace atto {
         i16 bitsPerSample;
     };
 
+    struct AudioSpeaker {
+        u32         sourceHandle;
+        i32         index;
+    };
+
     class Camera {
     public:
         glm::vec2 pos;
@@ -108,6 +113,8 @@ namespace atto {
         void                                RenderDrawLine(glm::vec2 start, glm::vec2 end, f32 thicc, const glm::vec4& color = glm::vec4(1));
         void                                RenderDrawSprite(TextureResource* texture, glm::vec2 center, glm::vec2 size = glm::vec2(1), glm::vec4 colour = glm::vec4(1));
         virtual void                        RenderSubmit() = 0;
+
+        virtual AudioSpeaker                AudioPlay(AudioResource* audioResource, f32 volume = 1.0f) = 0;
 
         void*                               MemoryAllocatePermanent(u64 bytes);
         void*                               MemoryAllocateTransient(u64 bytes);

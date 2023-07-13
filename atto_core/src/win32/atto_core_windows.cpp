@@ -275,7 +275,7 @@ namespace atto {
         Win32TextureResource textureResource = {};
         textureResource.name = name;
 
-        LargeString filePath = StringFormat::Large("res/sprites/%s.png", name);
+        LargeString filePath = StringFormat::Large("res/sprites/%s", name);
         void* pixelData = stbi_load(filePath.GetCStr(), &textureResource.width, &textureResource.height, &textureResource.channels, 4);
 
         if (!pixelData) {

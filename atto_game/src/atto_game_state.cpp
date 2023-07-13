@@ -14,7 +14,7 @@ namespace atto {
 
         Camera camera = core->RenderCreateCamera();
 
-        TextureResource *res = core->ResourceGetAndLoadTexture("unit_basic_man");
+        TextureResource *res = core->ResourceGetAndLoadTexture("unit_basic_man.png");
         static glm::vec2 p = glm::vec2(0);
         p.x += 0.1f;
         //core->RenderDrawRect(glm::vec2(200), glm::vec2(100), 0.0f, glm::vec4(1, 0, 0, 1));

@@ -2,7 +2,8 @@
 
 #include "../shared/atto_core.h"
 
-#include <xaudio2.h>
+struct ALCdevice;
+struct ALCcontext;
 
 namespace atto {
     struct ShaderUniform {
@@ -57,7 +58,7 @@ namespace atto {
     };
 
     struct Win32AudioResource : public AudioResource {
-        XAUDIO2_BUFFER buffer;
+        u32 handle;
     };
 
     struct ResourceRegistry {
@@ -72,6 +73,8 @@ namespace atto {
         virtual TextureResource*    ResourceGetAndLoadTexture(const char* name) override;
         virtual AudioResource*      ResourceGetAndLoadAudio(const char* name) override;
 
+        virtual AudioSpeaker        AudioPlay(AudioResource* audioResource, f32 volume = 1.0f) override;
+
         void WindowClose() override;
         void WindowSetTitle(const char* title) override;
 
@@ -84,11 +87,14 @@ namespace atto {
         VertexBuffer    shapeVertexBuffer;
         ShaderProgram   spriteProgram;
         VertexBuffer    spriteVertexBuffer;
-
-        IXAudio2*               xaEngine;
-        IXAudio2MasteringVoice* xaMasterVoice;
         
-        void            XAStart();
+        ALCdevice*                  alDevice = nullptr;
+        ALCcontext*                 alContext = nullptr;
+        FixedList<AudioSpeaker, 32> alSpeakers;
+
+        bool            ALInitialize();
+        void            ALShudown();
+        void            ALCheckErrors();
 
         u64             OsGetFileLastWriteTime(const char* fileName) override;
         bool            OsLoadDLL(GameCodeAPI& gameCode) override;
