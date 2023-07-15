@@ -33,11 +33,10 @@ namespace atto {
     
     struct AudioResource {
         SmallString name;
-        i16 numChannels;
+        i32 channels;
         i32 sampleRate;
-        i32 byteRate;
-        i16 blockAlign;
-        i16 bitsPerSample;
+        i32 sizeBytes;
+        i32 bitDepth;
     };
 
     struct AudioSpeaker {
@@ -114,7 +113,7 @@ namespace atto {
         void                                RenderDrawSprite(TextureResource* texture, glm::vec2 center, glm::vec2 size = glm::vec2(1), glm::vec4 colour = glm::vec4(1));
         virtual void                        RenderSubmit() = 0;
 
-        virtual AudioSpeaker                AudioPlay(AudioResource* audioResource, f32 volume = 1.0f) = 0;
+        virtual AudioSpeaker                AudioPlay(AudioResource* audioResource, f32 volume = 1.0f, bool looping = false) = 0;
 
         void*                               MemoryAllocatePermanent(u64 bytes);
         void*                               MemoryAllocateTransient(u64 bytes);

@@ -73,7 +73,7 @@ namespace atto {
         virtual TextureResource*    ResourceGetAndLoadTexture(const char* name) override;
         virtual AudioResource*      ResourceGetAndLoadAudio(const char* name) override;
 
-        virtual AudioSpeaker        AudioPlay(AudioResource* audioResource, f32 volume = 1.0f) override;
+        virtual AudioSpeaker        AudioPlay(AudioResource* audioResource, f32 volume = 1.0f, bool looping = false) override;
 
         void WindowClose() override;
         void WindowSetTitle(const char* title) override;
@@ -92,14 +92,18 @@ namespace atto {
         ALCcontext*                 alContext = nullptr;
         FixedList<AudioSpeaker, 32> alSpeakers;
 
-        bool            ALInitialize();
-        void            ALShudown();
-        void            ALCheckErrors();
-
         u64             OsGetFileLastWriteTime(const char* fileName) override;
         bool            OsLoadDLL(GameCodeAPI& gameCode) override;
         void            OsLogMessage(const char* message, u8 colour) override;
         void            OsErrorBox(const char* msg) override;
+
+        bool            ALInitialize();
+        void            ALShudown();
+        void            ALCheckErrors();
+        u32             ALGetFormat(u32 numChannels, u32 bitDepth);
+        u32             ALCreateAudioBuffer(i32 sizeBytes, byte* data, i32 channels, i32 bitDepth, i32 sampleRate);
+        bool            ALLoadOGG(const char* file, Win32AudioResource& audioBuffer);
+        bool            ALLoadWAV(const char* file, Win32AudioResource& audioBuffer);
 
         void            GLShaderProgramBind(ShaderProgram& program);
         i32             GLShaderProgramGetUniformLocation(ShaderProgram& program, const char* name);

@@ -105,6 +105,8 @@ namespace atto {
         InitializeShapeRendering();
         InitializeSpriteRendering();
 
+        ALInitialize();
+
         u64 currentGameSize = 0;
         GameCodeAPI gameCode = {};
         bool gameCodeLoaded = OsLoadDLL(gameCode);
