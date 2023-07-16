@@ -3,8 +3,8 @@
 
 using namespace atto;
 
-int main() {
-    Core* core = new WindowsCore();
-    core->Run();
+int main(int argc, char** argv) {
+    WindowsCore* core = new WindowsCore();
+    core->Run(argc, argv);
     return 0;
 }

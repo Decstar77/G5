@@ -1,8 +1,8 @@
 
 #include "atto_core.h"
+#include "atto_client.h"
 
 namespace atto {
-
     Camera Core::RenderCreateCamera() {
         Camera cam = {};
         cam.zoom = 1.0f;
@@ -125,6 +125,48 @@ namespace atto {
         cmd.rect.tl += center;
 
         drawCommands.drawList.Add(cmd);
+    }
+
+    void Core::RenderDrawText(FontResource* font, glm::vec2 bl, const char* text, glm::vec4 colour /*= glm::vec4(1)*/) {
+        DrawCommand cmd = {};
+        cmd.type = DrawCommandType::TEXT;
+        cmd.color = colour;
+        cmd.text.bl = bl;
+        cmd.text.text = text;
+        cmd.text.proj = camera != nullptr ? camera->p * camera->v : screenProjection;
+        cmd.text.fontRes = font;
+        drawCommands.drawList.Add(cmd);
+    }
+
+    void Core::NetConnect() {
+        if (client != nullptr) {
+            client->Connect();
+        }
+    }
+
+    bool Core::NetIsConnected() {
+        if (client != nullptr) {
+            return client->IsConnected();
+        }
+        return false;
+    }
+
+    void Core::NetDisconnect() {
+        if (client != nullptr) {
+            client->Disconnect();
+        }
+    }
+
+    SmallString Core::NetStatusText() {
+        if (client != nullptr) {
+            return client->StatusText();
+        }
+
+        return {};
+    }
+
+    u32 Core::NetGetPing() {
+        return client->GetPing();
     }
 
     void* Core::MemoryAllocatePermanent(u64 bytes) {

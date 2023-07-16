@@ -1,3 +1,6 @@
+#include "../shared/atto_client.h"
+#include "../gen/atto_reflection_gen.h"
+
 #include "atto_core_windows.h"
 
 #include <glad/glad.h>
@@ -5,6 +8,10 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image/std_image.h>
+
+#include "freetype/freetype.h"
+
+#include <fstream>
 
 namespace atto {
     
@@ -50,7 +57,9 @@ namespace atto {
         //DrawSurfaceResized(*os.rs, w, h);
     }
 
-    void WindowsCore::Run() {
+    void WindowsCore::Run(int argc, char** argv) {
+        OsParseStartArgs(argc, argv);
+
         MemoryMakePermanent(Megabytes(128));
         MemoryMakeTransient(Megabytes(128));
 
@@ -79,10 +88,13 @@ namespace atto {
             //ATTOINFO("Using monitor name %s", os.monitorName.GetCStr());
         }
 
+        windowWidth = theGameSettings.windowWidth;
+        windowHeight = theGameSettings.windowHeight;
+
         window = glfwCreateWindow(windowWidth, windowHeight, windowTitle.GetCStr(), windowFullscreen ? monitor : nullptr, 0);
 
         if (window == nullptr) {
-            //ATTOFATAL("Could not create window, your windows is f*cked");
+            LogOutput(LogLevel::FATAL, "Could not create window, your windows is f*cked");
             return;
         }
 
@@ -98,14 +110,21 @@ namespace atto {
         glfwSetScrollCallback(window, ScrollCallback);
         glfwSetFramebufferSizeCallback(window, FramebufferCallback);
 
+        if (theGameSettings.windowStartPosX != -1) {
+            glfwSetWindowPos(window, theGameSettings.windowStartPosX, theGameSettings.windowStartPosY);
+        }
+
         gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
         LogOutput(LogLevel::INFO, "OpenGL %s, GLSL %s", glGetString(GL_VERSION), glGetString(GL_SHADING_LANGUAGE_VERSION));
 
         GLResetSurface();
-        InitializeShapeRendering();
-        InitializeSpriteRendering();
+        GLInitializeShapeRendering();
+        GLInitializeSpriteRendering();
+        GLInitializeTextRendering();
 
         ALInitialize();
+
+        client = new NetClient(this);
 
         u64 currentGameSize = 0;
         GameCodeAPI gameCode = {};
@@ -118,6 +137,20 @@ namespace atto {
         u64 gameCodeFileTime = OsGetFileLastWriteTime("x86_64/atto_game.dll");
         u64 gameCodeCounter = 0;
         
+        struct SimTick {
+            void* buffer;
+            i64 size;
+            i64 checksum;
+            i64 simTick;
+            FixedList<i32, 2> inputs;
+            bool validated;
+        };
+
+        f32 simTime = 0;
+        bool simStarted = true;
+        i64 simTick = 1;
+        FixedList<SimTick, 8> simTicks = {};
+
         f32 deltaTime = 0;
         f64 startTime = glfwGetTime();
         while (!glfwWindowShouldClose(window)) {
@@ -129,8 +162,84 @@ namespace atto {
 
             glfwPollEvents();
 
+            if (NetIsConnected()) {
+                NetworkMessage msg = {};
+                while (client->Recieve(msg)) {
+                    switch (msg.type)
+                    {
+                        case NetworkMessageType::NONE: {
+                            INVALID_CODE_PATH;
+                        } break;
+                        case NetworkMessageType::GAME_START: {
+                            localPlayerNumber = msg.playerNumber;
+                            gameCode.gameSimStart(this);
+                        } break;
+                        case NetworkMessageType::GAME_UPDATE: {
+                            if (msg.playerNumber == 1) {
+                                p1Pos = msg.p;
+                            }
+                            else if (msg.playerNumber == 2) {
+                                p2Pos = msg.p;
+                            }
+                        } break;
+                        default: {
+
+                        } break;
+                    }
+                }
+            }
+
             if (gameCodeLoaded) {
                 gameCode.gameUpdateAndRender(this);
+            }
+
+            if (gameCodeLoaded && simStarted) {
+                if (NetIsConnected()) {
+                    simTime += deltaTime;
+                    if (simTime >= 1.0f / 30.0f) {
+                        simTime = 0;
+
+                        NetworkMessage msg = {};
+                        msg.isUDP = true;
+                        msg.type = NetworkMessageType::GAME_UPDATE;
+                        msg.playerNumber = localPlayerNumber;
+                        if (localPlayerNumber == 1) {
+                            msg.p = p1Pos;
+                        }
+                        else if (localPlayerNumber == 2) {
+                            msg.p = p2Pos;
+                        }
+
+                        client->Send(msg);
+
+                        //FixedList<i32, 2> inputs = {};
+                        //inputs.Add(simMove); simMove = 0;
+                        //inputs.Add(0);
+                        //
+                        //gameCode.gameSimStep(this, inputs);
+                        //
+                        //SimTick tick = {};
+                        //tick.inputs = inputs;
+                        //tick.simTick = simTick;
+                        //gameCode.gameSimSave(this, &tick.buffer, tick.size, tick.checksum);
+                        //
+                        //if (simTicks.AddIfPossible(tick) == false) {
+                        //    LogOutput(LogLevel::ERR, "We are behind in the ticks que ?");
+                        //}
+
+                        simTick += 1;
+                    }
+                }
+                else {
+                    //simTime += deltaTime;
+                    //if (simTime >= 1.0f / 30.0f) {
+                    //    simTime = 0;
+                    //    FixedList<i32, 2> inputs = {};
+                    //    inputs.Add(simMove); simMove = 0;
+                    //    inputs.Add(0);
+                    //    gameCode.gameSimStep(this, inputs);
+                    //}
+                }
             }
 
             glfwSwapBuffers(window);
@@ -165,6 +274,8 @@ namespace atto {
         if (gameCodeLoaded) {
             gameCode.gameShutdown(this);
         }
+
+        delete client;
     }
 
     void WindowsCore::RenderSubmit() {
@@ -229,7 +340,7 @@ namespace atto {
                 } break;
                 case DrawCommandType::SPRITE: {
                     Win32TextureResource* texture = (Win32TextureResource*)cmd.sprite.textureRes;
-
+                    Assert(texture != nullptr, "Texture resource is null");
                     /*
                         tl(0,1)  tr(1, 1)
                         bl(0,0)  br(1, 0)
@@ -255,6 +366,50 @@ namespace atto {
                     glDrawArrays(GL_TRIANGLES, 0, 6);
                     glBindVertexArray(0);
 
+                } break;
+                case DrawCommandType::TEXT:{
+                    FontResource* font = cmd.text.fontRes;
+
+                    Assert(font != NULL, "Font is nulls");
+
+                    glDisable(GL_CULL_FACE);
+                    
+                    GLEnableAlphaBlending();
+                    GLShaderProgramBind(textProgram);
+                    GLShaderProgramSetSampler("texture0", 0);
+                    GLShaderProgramSetMat4("p", cmd.text.proj);
+                    GLShaderProgramSetVec4("textColor", cmd.color);
+
+                    f32 x = cmd.text.bl.x;
+                    f32 y = cmd.text.bl.y;
+
+                    const i32 charCount = cmd.text.text.GetLength();
+                    for (i32 charIndex = 0; charIndex < charCount; charIndex++) {
+                        const i32 index = (i32)cmd.text.text[charIndex];
+                        const FontChar ch = cmd.text.fontRes->chars[index];
+
+                        f32 xpos = x + ch.bearing.x;
+                        f32 ypos = y + (ch.size.y - ch.bearing.y);
+                        f32 w = ch.size.x;
+                        f32 h = ch.size.y;
+
+                        f32 vertices[6][4] = {
+                            { xpos, ypos - h, 0.0, 0.0 },
+                            {xpos, ypos, 0.0, 1.0 },
+                            {xpos + w, ypos, 1.0, 1.0},
+                            {xpos, ypos - h, 0.0, 0.0},
+                            {xpos + w, ypos, 1.0, 1.0},
+                            {xpos + w, ypos - h, 1.0, 0.0},
+                        };
+
+                        glBindTextureUnit(0, ch.textureId);
+                        glBindVertexArray(textVertexBuffer.vao);
+                        GLVertexBufferUpdate(textVertexBuffer, 0, sizeof(vertices), vertices);
+                        glDrawArrays(GL_TRIANGLES, 0, 6);
+                        glBindVertexArray(0);
+
+                        x += (ch.advance >> 6);
+                    }
                 } break;
                 default: {
                     //ATTOASSERT(false, "Invalid draw command type");
@@ -306,6 +461,81 @@ namespace atto {
         return resources.textures.Add(textureResource);
     }
 
+    FontResource* WindowsCore::ResourceGetAndLoadFont(const char* name, i32 fontSize) {
+        const i32 fontCount = resources.fonts.GetCount();
+        for (i32 i = 0; i < fontCount; i++) {
+            FontResource& fontResource = resources.fonts[i];
+            if (fontResource.name == name && fontResource.fontSize == fontSize) {
+                return &fontResource;
+            }
+        }
+
+        FontResource fontResource = {};
+        fontResource.name = name;
+        fontResource.fontSize = fontSize;
+
+        FT_Library ft = {};
+        if (FT_Init_FreeType(&ft)) {
+            LogOutput(LogLevel::ERR, "ERROR::FREETYPE: Could not init FreeType Library");
+            return nullptr;
+        }
+
+        LargeString filePath = StringFormat::Large("res/fonts/%s", name);
+        FT_Face face = {};
+        if (FT_New_Face(ft, filePath.GetCStr(), 0, &face)) {
+            LogOutput(LogLevel::ERR, "ERROR::FREETYPE: Failed to load font");
+            return nullptr;
+        }
+        else {
+            FT_Set_Pixel_Sizes(face, 0, fontSize);
+
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+            for (unsigned char c = 0; c < 128; c++)
+            {
+                if (FT_Load_Char(face, c, FT_LOAD_RENDER)) {
+                    LogOutput(LogLevel::ERR, "ERROR::FREETYTPE: Failed to load Glyph");
+                    continue;
+                }
+
+                unsigned int texture = {};
+                glGenTextures(1, &texture);
+                glBindTexture(GL_TEXTURE_2D, texture);
+                glTexImage2D(
+                    GL_TEXTURE_2D,
+                    0,
+                    GL_RED,
+                    face->glyph->bitmap.width,
+                    face->glyph->bitmap.rows,
+                    0,
+                    GL_RED,
+                    GL_UNSIGNED_BYTE,
+                    face->glyph->bitmap.buffer
+                );
+
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+                FontChar ch = {};
+                ch.textureId = texture;
+                ch.size = glm::ivec2(face->glyph->bitmap.width, face->glyph->bitmap.rows);
+                ch.bearing = glm::ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top);
+                ch.advance = static_cast<unsigned int>(face->glyph->advance.x);
+
+                fontResource.chars.Add(ch);
+            }
+
+            glBindTexture(GL_TEXTURE_2D, 0);
+        }
+
+        FT_Done_Face(face);
+        FT_Done_FreeType(ft);
+
+        return resources.fonts.Add(fontResource);
+    }
+
     void WindowsCore::WindowClose() {
         glfwSetWindowShouldClose(window, true);
     }
@@ -314,7 +544,7 @@ namespace atto {
         glfwSetWindowTitle(window, title);
     }
 
-    void WindowsCore::InitializeShapeRendering() {
+    void WindowsCore::GLInitializeShapeRendering() {
         const char* vertexShaderSource = R"(
             #version 330 core
 
@@ -376,7 +606,7 @@ namespace atto {
         shapeVertexBuffer = GLCreateVertexBuffer(&shape, 6, nullptr, true);
     }
 
-    void WindowsCore::InitializeSpriteRendering() {
+    void WindowsCore::GLInitializeSpriteRendering() {
         const char* vertexShaderSource = R"(
             #version 330 core
 
@@ -479,6 +709,74 @@ namespace atto {
         VertexLayoutSprite sprite = {};
         spriteProgram = GLCreateShaderProgram(vertexShaderSource, fragmentShaderSource);
         spriteVertexBuffer = GLCreateVertexBuffer(&sprite, 6, nullptr, true);
+    }
+
+    void WindowsCore::GLInitializeTextRendering() {
+        const char* vertexShaderSource = R"(
+            #version 330 core
+
+            layout (location = 0) in vec2 position;
+            layout (location = 1) in vec2 texCoord;
+
+            out vec2 vertexTexCoord;
+
+            uniform mat4 p;
+
+            void main() {
+                vertexTexCoord = texCoord;
+                gl_Position = p * vec4(position.x, position.y, 0.0, 1.0);
+            }
+        )";
+
+        const char* fragmentShaderSource = R"(
+            #version 330 core
+            out vec4 FragColor;
+
+            in vec2 vertexTexCoord;
+
+            uniform sampler2D texture0;
+            uniform vec4 textColor;
+
+            void main() {
+                float a = texture(texture0, vertexTexCoord).r;
+                FragColor = textColor * a;
+            }
+        )";
+
+        VertexLayoutText text = {};
+        textProgram = GLCreateShaderProgram(vertexShaderSource, fragmentShaderSource);
+        textVertexBuffer = GLCreateVertexBuffer(&text, 6, nullptr, true);
+    }
+
+    void WindowsCore::OsParseStartArgs(int argc, char** argv) {
+        if (argc > 1) {
+            std::ifstream configFile(argv[1]);
+            if (configFile.is_open()) {
+                LogOutput(LogLevel::INFO, "Using config file %s", argv[1]);
+                nlohmann::json data = nlohmann::json::parse(configFile);
+
+                theGameSettings = JSON_Read<GameSettings>(data);
+
+                configFile.close();
+            }
+            else {
+                LogOutput(LogLevel::FATAL, "Could not read config file");
+            }
+        }
+        else {
+            GameSettings settings = {};
+            settings.basePath = "assets/";
+            settings.windowStartPosX = -1;
+            settings.windowStartPosY = -1;
+            settings.windowWidth = 16 * 115;
+            settings.windowHeight = 9 * 115;
+            settings.fullscreen = false;
+            settings.vsync = true;
+            settings.showDebug = true;
+            settings.noAudio = false;
+
+            theGameSettings = settings;
+        }
     }
 
     void WindowsCore::GLShaderProgramBind(ShaderProgram& program) {
@@ -718,6 +1016,22 @@ namespace atto {
 
     i32 VertexLayoutSprite::StrideBytes() {
         return (i32)sizeof(SpriteVertex);
+    }
+
+    void VertexLayoutText::Layout() {
+        i32 stride = StrideBytes();
+        glEnableVertexAttribArray(0);
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(0, 2, GL_FLOAT, false, stride, 0);
+        glVertexAttribPointer(1, 2, GL_FLOAT, false, stride, (void*)(2 * sizeof(f32)));
+    }
+
+    i32 VertexLayoutText::SizeBytes() {
+        return (i32)sizeof(TextVertex);
+    }
+
+    i32 VertexLayoutText::StrideBytes() {
+        return (i32)sizeof(TextVertex);
     }
 
 }

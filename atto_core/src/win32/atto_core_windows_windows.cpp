@@ -30,8 +30,12 @@ namespace atto {
 
         gameCode.gameSize = (GameCodeAPI::GameSize)GetProcAddress(hDll, "GameSize");
         gameCode.gameStart = (GameCodeAPI::GameStart)GetProcAddress(hDll, "GameStart");
-        gameCode.gameUpdateAndRender = reinterpret_cast<GameCodeAPI::GameUpdateAndRender>(GetProcAddress(hDll, "GameUpdateAndRender"));
-        gameCode.gameShutdown = reinterpret_cast<GameCodeAPI::GameShutdown>(GetProcAddress(hDll, "GameShutdown"));
+        gameCode.gameUpdateAndRender = (GameCodeAPI::GameUpdateAndRender)GetProcAddress(hDll, "GameUpdateAndRender");
+        gameCode.gameShutdown = (GameCodeAPI::GameShutdown)GetProcAddress(hDll, "GameShutdown");
+        gameCode.gameSimStart = (GameCodeAPI::GameSimStart)GetProcAddress(hDll, "GameSimStart");
+        gameCode.gameSimStep = (GameCodeAPI::GameSimStep)GetProcAddress(hDll, "GameSimStep");
+        gameCode.gameSimSave = (GameCodeAPI::GameSimSave)GetProcAddress(hDll, "GameSimSave");
+        gameCode.gameSimLoad = (GameCodeAPI::GameSimLoad)GetProcAddress(hDll, "GameSimLoad");
 
         return gameCode.gameStart != NULL && gameCode.gameUpdateAndRender != NULL && gameCode.gameShutdown != NULL;
     }

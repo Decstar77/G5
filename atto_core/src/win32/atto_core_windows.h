@@ -53,6 +53,18 @@ namespace atto {
         i32 StrideBytes() override;
     };
 
+    class VertexLayoutText : public VertexLayout {
+    public:
+        struct TextVertex {
+            glm::vec2 position;
+            glm::vec2 uv;
+        };
+
+        void Layout() override;
+        i32 SizeBytes() override;
+        i32 StrideBytes() override;
+    };
+
     struct Win32TextureResource : public TextureResource {
         u32 handle;
     };
@@ -64,14 +76,16 @@ namespace atto {
     struct ResourceRegistry {
         FixedList<Win32TextureResource, 1024>    textures;
         FixedList<Win32AudioResource, 1024>      audios;
+        FixedList<FontResource, 64>              fonts;
     };
 
     class WindowsCore : public Core {
     public:
-        void Run() override;
+        void Run(int argc, char** argv) override;
         void RenderSubmit() override;
         virtual TextureResource*    ResourceGetAndLoadTexture(const char* name) override;
         virtual AudioResource*      ResourceGetAndLoadAudio(const char* name) override;
+        virtual FontResource*       ResourceGetAndLoadFont(const char* name, i32 fontSize) override;
 
         virtual AudioSpeaker        AudioPlay(AudioResource* audioResource, f32 volume = 1.0f, bool looping = false) override;
 
@@ -83,10 +97,12 @@ namespace atto {
 
         ShaderProgram * boundProgram;
 
-        ShaderProgram   shapeProgram;
-        VertexBuffer    shapeVertexBuffer;
-        ShaderProgram   spriteProgram;
-        VertexBuffer    spriteVertexBuffer;
+        ShaderProgram               shapeProgram;
+        VertexBuffer                shapeVertexBuffer;
+        ShaderProgram               spriteProgram;
+        VertexBuffer                spriteVertexBuffer;
+        ShaderProgram               textProgram;
+        VertexBuffer                textVertexBuffer;
         
         ALCdevice*                  alDevice = nullptr;
         ALCcontext*                 alContext = nullptr;
@@ -96,6 +112,7 @@ namespace atto {
         bool            OsLoadDLL(GameCodeAPI& gameCode) override;
         void            OsLogMessage(const char* message, u8 colour) override;
         void            OsErrorBox(const char* msg) override;
+        void            OsParseStartArgs(int argc, char** argv);
 
         bool            ALInitialize();
         void            ALShudown();
@@ -127,8 +144,9 @@ namespace atto {
         void            GLVertexBufferUpdate(VertexBuffer vertexBuffer, i32 offset, i32 size, const void* data);
 
         void            GLResetSurface();
-        void            InitializeShapeRendering();
-        void            InitializeSpriteRendering();
+        void            GLInitializeShapeRendering();
+        void            GLInitializeSpriteRendering();
+        void            GLInitializeTextRendering();
 
     };
 }

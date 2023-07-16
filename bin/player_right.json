@@ -1,0 +1,11 @@
+{
+  "basePath": "assets/",
+  "fullscreen": false,
+  "showDebug": true,
+  "vsync": true,
+  "windowWidth": 800,
+  "windowHeight": 450,
+  "windowStartPosX": 1000,
+  "windowStartPosY": 250,
+  "noAudio": true
+}

@@ -12,7 +12,7 @@ namespace SirReflector
 
     public class Program
     {
-        public static string BASE_PATH = "C://Projects/Atto - G4/atto/";
+        public static string BASE_PATH = "C://Projects/Atto - G5/atto_core/";
 
         public static string[] ReadAllHeaderFiles(string path) {
             string[] fileNames = Directory.GetFiles(path, "*.h", SearchOption.AllDirectories);
@@ -234,10 +234,7 @@ namespace SirReflector
         
         public static void WriteCppGenFile(List<StructDef> structDefs, List<EnumDef> enumDefs) {
             StringBuilder builder = new StringBuilder();
-            builder.AppendLine("#include \"AttoReflection.h\"");
-            builder.AppendLine("#include \"AttoOperatingSystem.h\"");
-            builder.AppendLine("#include \"AttoLogging.h\"");
-            builder.AppendLine("#include \"AttoGame.h\"");
+            builder.AppendLine("#include \"atto_reflection_gen.h\"");
             
             builder.AppendLine("namespace atto {");
 
@@ -270,12 +267,13 @@ namespace SirReflector
             string genSource = builder.ToString();
             //Console.WriteLine(genSource);
 
-            File.WriteAllText(BASE_PATH + "src/AttoReflection_Gen.cpp", genSource);
+            File.WriteAllText(BASE_PATH + "src/gen/atto_reflection_gen.cpp", genSource);
         }
         public static void WriteHeaderGenFile(List<StructDef> structDefs) {
             StringBuilder builder = new StringBuilder();
             builder.AppendLine("#pragma once");
-            builder.AppendLine("#include \"AttoReflection.h\"");
+            builder.AppendLine("#include \"../shared/atto_reflection.h\"");
+            builder.AppendLine("#include \"../shared/atto_core.h\"");
             builder.AppendLine("namespace atto {");
 
             foreach (StructDef def in structDefs) {
@@ -302,7 +300,7 @@ namespace SirReflector
             string genSource = builder.ToString();
             //Console.WriteLine(genSource);
 
-            File.WriteAllText(BASE_PATH + "src/AttoReflection_Gen.h", genSource);
+            File.WriteAllText(BASE_PATH + "src/gen/atto_reflection_gen.h", genSource);
         }
 
         public static void Main(string[] args) {

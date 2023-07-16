@@ -1,39 +1,24 @@
 #include <enet.h>
 
 #include "atto_client.h"
-#include "atto_containers_thread_safe.h"
-
+#include "atto_core.h"
 
 namespace atto {
-    static std::atomic_bool     isRunning = false;
-    static std::atomic_bool     isConnected = false;
-    static std::atomic_bool     shouldConnect = false;
-    static std::atomic_bool     shouldDisconnect = false;
-
-    static std::atomic<SmallString> statusText = {};
-
-    static ENetAddress          address = {};
-    static ENetPeer*            peer = nullptr;
-    static ENetHost*            client = nullptr;
-    
-    static FixedQueueThreadSafe<NetworkMessage, 1024> * incommingMessages;
-    static FixedQueueThreadSafe<NetworkMessage, 1024> * outgoingMessages;
-
-    static void SetStatusStringInfo(const char* text) {
-        //ATTOINFO(text);
+    void NetClient::SetStatusStringInfo(const char* text) {
+        core->LogOutput(LogLevel::INFO, text);
         statusText = SmallString::FromLiteral(text);
     }
 
-    static void SetStatusStringErr(const char* text) {
-        //ATTOERROR(text);
+    void NetClient::SetStatusStringErr(const char* text) {
+        core->LogOutput(LogLevel::ERR, text);
         statusText = SmallString::FromLiteral(text);
     }
     
-    static void NetworkLoop() {
-        //sATTOINFO("Network thread starting");
+    void NetClient::NetworkLoop() {
+        core->LogOutput(LogLevel::INFO, "Network thread starting");
 
         if (enet_initialize() != 0) {
-            //ATTOFATAL("An error occurred while initializing ENet.");
+            core->LogOutput(LogLevel::FATAL, "An error occurred while initializing ENet");
             return;
         }
 
@@ -49,7 +34,6 @@ namespace atto {
 
                     peer = enet_host_connect(client, &address, 2, 0);
                     if (peer != nullptr) {
-
                         ENetEvent event = {};
                         if (enet_host_service(client, &event, 5000) > 0 && event.type == ENET_EVENT_TYPE_CONNECT) {
                             SetStatusStringInfo("Connection succeeded.");
@@ -123,11 +107,13 @@ namespace atto {
                     else if (event.type == ENET_EVENT_TYPE_RECEIVE) {
                         //SetStatusStringInfo("Received packet");
 
-                        NetworkMessage msg = {};
+                        Assert(event.packet->dataLength == sizeof(NetworkMessage), "Rec packet size mismatch");
+                        NetworkMessage *msg = (NetworkMessage*)event.packet->data;
+
                         //NetworkMessageBuffer msgBuf = {};
                         //msgBuf.CreateFromByte((u8*)event.packet->data, (u32)event.packet->dataLength);
                         //DecompileNetworkMessage(msg, msgBuf);
-                        incommingMessages->Enqueue(msg);
+                        incommingMessages->Enqueue(*msg);
 
                         enet_packet_destroy(event.packet);
                     }
@@ -168,45 +154,46 @@ namespace atto {
         //ATTOINFO("Network thread finished");
     }
 
-    void CreateNetworkState() {
+    NetClient::NetClient(class Core* inCore) {
         incommingMessages = new FixedQueueThreadSafe<NetworkMessage, 1024>();
         outgoingMessages = new FixedQueueThreadSafe<NetworkMessage, 1024>();
-        std::thread(NetworkLoop).detach();
+        core = inCore;
+        std::thread(&NetClient::NetworkLoop, this).detach();
     }
 
-    void DestroyNetworkState() {
-        NetworkDisconnect();
+    NetClient::~NetClient() {
+        Disconnect();
         isRunning = false;
     }
 
-    void NetworkConnect() {
+    void NetClient::Connect() {
         if (!isConnected) {
             shouldConnect = true;
         }
     }
 
-    bool NetworkIsConnected() {
+    bool NetClient::IsConnected() {
         return isConnected.load();
     }
 
-    void NetworkDisconnect() {
+    void NetClient::Disconnect() {
         if (isConnected) {
             shouldDisconnect = true;
         }
     }
 
-    SmallString NetworkStatusText() {
+    SmallString NetClient::StatusText() {
         SmallString copy = statusText.load();
         return copy;
     }
 
-    void NetworkSend(const NetworkMessage &msg) {
+    void NetClient::Send(const NetworkMessage& msg) {
         if (isConnected) {
             outgoingMessages->Enqueue(msg);
         }
     }
 
-    bool NetworkRecieve(NetworkMessage& msg) {
+    bool NetClient::Recieve(NetworkMessage& msg) {
         if (incommingMessages->IsEmpty()) {
             return false;
         }
@@ -215,5 +202,15 @@ namespace atto {
 
         return true;
     }
+
+    u32 NetClient::GetPing() {
+        if (isConnected) {
+            return peer->roundTripTime;
+        }
+        else {
+            return 0;
+        }
+    }
+
 }
 

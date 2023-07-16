@@ -6,6 +6,7 @@
 #include "atto_logging.h"
 #include "atto_input.h"
 
+#include "atto_reflection.h"
 #include <memory>
 #include <mutex>
 
@@ -17,10 +18,31 @@ namespace atto {
         typedef void (*GameStart)(Core* core);
         typedef void (*GameUpdateAndRender)(Core* core);
         typedef void (*GameShutdown)(Core* core);
+        typedef void (*GameSimStart)(Core* core);
+        typedef void (*GameSimStep)(Core* core, const FixedList<i32, 2>& inputs);
+        typedef void (*GameSimSave)(Core* core, void** buffer, i64& size, i64 &checkSum);
+        typedef void (*GameSimLoad)(Core* core, void* buffer, i64 size);
         GameSize            gameSize;
         GameStart           gameStart;
         GameUpdateAndRender gameUpdateAndRender;
         GameShutdown        gameShutdown;
+        GameSimStart        gameSimStart;
+        GameSimStep         gameSimStep;
+        GameSimSave         gameSimSave;
+        GameSimLoad         gameSimLoad;
+    };
+
+    ATTO_REFLECT_STRUCT(GameSettings)
+    struct GameSettings {
+        i32             windowWidth;
+        i32             windowHeight;
+        i32             windowStartPosX;
+        i32             windowStartPosY;
+        bool            noAudio;
+        bool            fullscreen;
+        bool            vsync;
+        bool            showDebug;
+        SmallString     basePath;
     };
 
     struct TextureResource {
@@ -37,6 +59,19 @@ namespace atto {
         i32 sampleRate;
         i32 sizeBytes;
         i32 bitDepth;
+    };
+
+    struct FontChar {
+        u32 textureId; //@TODO: BAD!!!
+        glm::vec2 size;
+        glm::vec2 bearing;
+        u32 advance;
+    };
+
+    struct FontResource {
+        SmallString name;
+        i32 fontSize;
+        FixedList<FontChar, 128> chars;
     };
 
     struct AudioSpeaker {
@@ -64,6 +99,7 @@ namespace atto {
         CIRCLE,
         RECT,
         SPRITE,
+        TEXT,
     };
 
     struct DrawCommand {
@@ -89,6 +125,12 @@ namespace atto {
                     glm::mat4 proj;
                     TextureResource* textureRes;
                 } sprite;
+                struct {
+                    glm::vec2 bl;
+                    glm::mat4 proj;
+                    SmallString text;
+                    FontResource* fontRes;
+                } text;
             };
         };
     };
@@ -99,10 +141,12 @@ namespace atto {
 
     class Core {
     public:
+        
         void                                LogOutput(LogLevel level, const char* message, ...);
 
         virtual TextureResource*            ResourceGetAndLoadTexture(const char* name) = 0;
         virtual AudioResource*              ResourceGetAndLoadAudio(const char* name) = 0;
+        virtual FontResource*               ResourceGetAndLoadFont(const char* name, i32 fontSize) = 0;
 
         Camera                              RenderCreateCamera();
         void                                RenderSetCamera(Camera* camera);
@@ -111,9 +155,16 @@ namespace atto {
         void                                RenderDrawRect(glm::vec2 center, glm::vec2 dim, f32 rot, const glm::vec4& color = glm::vec4(1));
         void                                RenderDrawLine(glm::vec2 start, glm::vec2 end, f32 thicc, const glm::vec4& color = glm::vec4(1));
         void                                RenderDrawSprite(TextureResource* texture, glm::vec2 center, glm::vec2 size = glm::vec2(1), glm::vec4 colour = glm::vec4(1));
+        void                                RenderDrawText(FontResource* font, glm::vec2 bl, const char* text, glm::vec4 colour = glm::vec4(1));
         virtual void                        RenderSubmit() = 0;
 
         virtual AudioSpeaker                AudioPlay(AudioResource* audioResource, f32 volume = 1.0f, bool looping = false) = 0;
+
+        void                                NetConnect();
+        bool                                NetIsConnected();
+        void                                NetDisconnect();
+        SmallString                         NetStatusText();
+        u32                                 NetGetPing();
 
         void*                               MemoryAllocatePermanent(u64 bytes);
         void*                               MemoryAllocateTransient(u64 bytes);
@@ -138,12 +189,17 @@ namespace atto {
         //virtual void                        WindowSetCursorVisible(bool visible) = 0;
         //virtual void                        WindowSetCursorLocked(bool locked) = 0;
 
-        virtual void Run() = 0;
+        virtual void                        Run(int argc, char** argv) = 0;
+
+        i32 localPlayerNumber;
+        glm::vec2 p1Pos;
+        glm::vec2 p2Pos;
 
     public:
         void* UserData = nullptr; // for the game to store whatever it wants
 
     protected:
+        GameSettings        theGameSettings = {};
         LoggingState        logger = {};
         RenderCommands      drawCommands = {};
         FrameInput          input = {};
@@ -163,6 +219,8 @@ namespace atto {
         u64 theTransientMemorySize = 0;
         u64 theTransientMemoryCurrent = 0;
         std::mutex theTransientMemoryMutex;
+
+        class NetClient* client = nullptr;
 
         void    MemoryMakePermanent(u64 bytes);
         void    MemoryClearPermanent();
