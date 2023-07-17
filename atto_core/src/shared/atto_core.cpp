@@ -3,6 +3,11 @@
 #include "atto_client.h"
 
 namespace atto {
+
+    f32 Core::GetDeltaTime() const {
+        return deltaTime;
+    }
+
     Camera Core::RenderCreateCamera() {
         Camera cam = {};
         cam.zoom = 1.0f;

@@ -1,5 +1,7 @@
 #include "../shared/atto_client.h"
 #include "../gen/atto_reflection_gen.h"
+#include "../game/atto_game_logic.h"
+#include "../sim/atto_sim_logic.h"
 
 #include "atto_core_windows.h"
 
@@ -126,32 +128,25 @@ namespace atto {
 
         client = new NetClient(this);
 
-        u64 currentGameSize = 0;
-        GameCodeAPI gameCode = {};
-        bool gameCodeLoaded = OsLoadDLL(gameCode);
-        if (gameCodeLoaded) {
-            currentGameSize = gameCode.gameSize();
-            gameCode.gameStart(this);
-        }
+        gameLogic = new GameLogicAndState();
+        gameLogic->Start(this);
 
-        u64 gameCodeFileTime = OsGetFileLastWriteTime("x86_64/atto_game.dll");
-        u64 gameCodeCounter = 0;
-        
+        simLogic = new SimLogicAndState();
+
         struct SimTick {
-            void* buffer;
-            i64 size;
-            i64 checksum;
-            i64 simTick;
-            FixedList<i32, 2> inputs;
-            bool validated;
+            glm::vec2 p1Pos;
+            glm::vec2 p2Pos;
+            i64 tickNumber;
+            i32 i1;
+            i32 i2;
         };
 
         f32 simTime = 0;
-        bool simStarted = true;
+        bool simStarted = false;
         i64 simTick = 1;
-        FixedList<SimTick, 8> simTicks = {};
+        FixedList<SimTick, 10> simTicks = {};
 
-        f32 deltaTime = 0;
+        this->deltaTime = 0;
         f64 startTime = glfwGetTime();
         while (!glfwWindowShouldClose(window)) {
 
@@ -172,15 +167,38 @@ namespace atto {
                         } break;
                         case NetworkMessageType::GAME_START: {
                             localPlayerNumber = msg.playerNumber;
-                            gameCode.gameSimStart(this);
+                            simStarted = true;
                         } break;
                         case NetworkMessageType::GAME_UPDATE: {
-                            if (msg.playerNumber == 1) {
-                                p1Pos = msg.p;
+                            i32 tickCount = simTicks.GetCount();
+                            for (i32 i = 0; i < tickCount; i++) {
+                                if (simTicks[i].tickNumber == msg.tickNumber) {
+                                    if (localPlayerNumber == 1) {
+                                        if (simTicks[i].i2 != msg.input) {
+                                            simLogic->p1Pos = simTicks[i].p1Pos;
+                                            simLogic->p2Pos = simTicks[i].p2Pos;
+                                            simLogic->Step(this, simTicks[i].i1, msg.input);
+                                        }
+                                    }
+                                    else {
+                                        if (simTicks[i].i1 != msg.input) {
+                                            simLogic->p1Pos = simTicks[i].p1Pos;
+                                            simLogic->p2Pos = simTicks[i].p2Pos;
+                                            simLogic->Step(this, msg.input, simTicks[i].i2);
+                                        }
+                                    }
+
+                                    simTicks.RemoveIndex(i);
+                                    
+                                    break;
+                                }
                             }
-                            else if (msg.playerNumber == 2) {
-                                p2Pos = msg.p;
+
+                            tickCount = simTicks.GetCount();
+                            for (i32 i = 0; i < tickCount; i++) {
+                                simLogic->Step(this, simTicks[i].i1, simTicks[i].i2);
                             }
+
                         } break;
                         default: {
 
@@ -189,56 +207,62 @@ namespace atto {
                 }
             }
 
-            if (gameCodeLoaded) {
-                gameCode.gameUpdateAndRender(this);
-            }
+            gameLogic->UpdateAndRender(this, simLogic);
 
-            if (gameCodeLoaded && simStarted) {
+            if (simStarted) {
                 if (NetIsConnected()) {
                     simTime += deltaTime;
                     if (simTime >= 1.0f / 30.0f) {
                         simTime = 0;
 
-                        NetworkMessage msg = {};
-                        msg.isUDP = true;
-                        msg.type = NetworkMessageType::GAME_UPDATE;
-                        msg.playerNumber = localPlayerNumber;
-                        if (localPlayerNumber == 1) {
-                            msg.p = p1Pos;
+                        if (simTicks.GetCount() < simTicks.GetCapcity()) {
+
+                            i32 i1 = 0;
+                            i32 i2 = 0;
+                            if (localPlayerNumber == 1) {
+                                i1 = simLogic->inputForNextSim;
+                                i2 = 0;
+                            }
+                            else {
+                                i1 = 0;
+                                i2 = simLogic->inputForNextSim;
+                            }
+                            simLogic->inputForNextSim = 0;
+                            simLogic->Step(this, i1, i2);
+
+                            SimTick tick = {};
+                            tick.tickNumber = simTick;
+                            tick.i1 = i1;
+                            tick.i2 = i2;
+                            tick.p1Pos = simLogic->p1Pos;
+                            tick.p2Pos = simLogic->p2Pos;
+
+                            simTicks.Add(tick);
+
+                            NetworkMessage msg = {};
+                            msg.type = NetworkMessageType::GAME_UPDATE;
+                            msg.input = localPlayerNumber == 1 ? i1 : i2;
+                            msg.tickNumber = simTick;
+
+                            client->Send(msg);
+
+                            simTick += 1;
                         }
-                        else if (localPlayerNumber == 2) {
-                            msg.p = p2Pos;
+                        else {
+                            LogOutput(LogLevel::WARN, "Overflow");
                         }
 
-                        client->Send(msg);
-
-                        //FixedList<i32, 2> inputs = {};
-                        //inputs.Add(simMove); simMove = 0;
-                        //inputs.Add(0);
-                        //
-                        //gameCode.gameSimStep(this, inputs);
-                        //
-                        //SimTick tick = {};
-                        //tick.inputs = inputs;
-                        //tick.simTick = simTick;
-                        //gameCode.gameSimSave(this, &tick.buffer, tick.size, tick.checksum);
-                        //
-                        //if (simTicks.AddIfPossible(tick) == false) {
-                        //    LogOutput(LogLevel::ERR, "We are behind in the ticks que ?");
-                        //}
-
-                        simTick += 1;
                     }
                 }
                 else {
-                    //simTime += deltaTime;
-                    //if (simTime >= 1.0f / 30.0f) {
-                    //    simTime = 0;
-                    //    FixedList<i32, 2> inputs = {};
-                    //    inputs.Add(simMove); simMove = 0;
-                    //    inputs.Add(0);
-                    //    gameCode.gameSimStep(this, inputs);
-                    //}
+                    simTime += deltaTime;
+                    if (simTime >= 1.0f / 30.0f) {
+                        simTime = 0;
+                        i32 i1 = simLogic->inputForNextSim;
+                        i32 i2 = 0;
+                        simLogic->inputForNextSim = 0;
+                        simLogic->Step(this, i1, i2);
+                    }
                 }
             }
 
@@ -246,35 +270,16 @@ namespace atto {
 
             MemoryClearTransient();
 
-            gameCodeCounter++;
-            if (gameCodeCounter == 40) {
-                gameCodeCounter = 0;
-                u64 newFileTime = OsGetFileLastWriteTime("x86_64/atto_game.dll");
-                if (newFileTime > gameCodeFileTime) {
-                    gameCode = {};
-                    gameCodeLoaded = OsLoadDLL(gameCode);
-                    gameCodeFileTime = newFileTime;
-                    if (gameCodeLoaded) {
-                        u64 newGameSize = gameCode.gameSize();
-                        if (newGameSize != currentGameSize) {
-                            LogOutput(LogLevel::WARN, "Game size changed, restarting");
-                            MemoryClearPermanent();
-                            gameCode.gameStart(this);
-                            currentGameSize = newGameSize;
-                        }
-                    }
-                }
-            }
 
            f64 endTime = glfwGetTime();
-           deltaTime = (f32)(endTime - startTime);
+           this->deltaTime = (f32)(endTime - startTime);
            startTime = endTime;
         }
 
-        if (gameCodeLoaded) {
-            gameCode.gameShutdown(this);
-        }
+        gameLogic->Shutdown(this);
 
+        delete simLogic;
+        delete gameLogic;
         delete client;
     }
 

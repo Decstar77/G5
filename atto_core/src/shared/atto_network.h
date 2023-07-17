@@ -16,16 +16,9 @@ namespace atto {
         bool isUDP;
         i32 playerNumber;
         glm::vec2 p;
-    };
-
-    struct SS {
-        i64 tick;
-        glm::vec2 playerPos;
-        glm::vec2 playerVel;
         
-        u16 gen;
-        u16 idx;
-        glm::vec2 pos;
+        i64 tickNumber;
+        i32 input;
     };
 }
 

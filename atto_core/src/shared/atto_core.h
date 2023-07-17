@@ -11,25 +11,23 @@
 #include <mutex>
 
 namespace atto {
-
     class Core;
-    struct GameCodeAPI {
-        typedef u64  (*GameSize)();
-        typedef void (*GameStart)(Core* core);
-        typedef void (*GameUpdateAndRender)(Core* core);
-        typedef void (*GameShutdown)(Core* core);
-        typedef void (*GameSimStart)(Core* core);
-        typedef void (*GameSimStep)(Core* core, const FixedList<i32, 2>& inputs);
-        typedef void (*GameSimSave)(Core* core, void** buffer, i64& size, i64 &checkSum);
-        typedef void (*GameSimLoad)(Core* core, void* buffer, i64 size);
-        GameSize            gameSize;
-        GameStart           gameStart;
-        GameUpdateAndRender gameUpdateAndRender;
-        GameShutdown        gameShutdown;
-        GameSimStart        gameSimStart;
-        GameSimStep         gameSimStep;
-        GameSimSave         gameSimSave;
-        GameSimLoad         gameSimLoad;
+    class ISimLogicAndState {
+    public:
+        virtual void Start(Core* core) = 0;
+        virtual void Step(Core* core, i32 i1, i32 i2) = 0;
+        //virtual void ApplyAction(Core *core, SimAction action);
+
+        glm::vec2 p1Pos;
+        glm::vec2 p2Pos;
+        i32 inputForNextSim = 0;
+    };
+
+    class IGameLogicAndState {
+    public:
+        virtual void Start(Core* core) = 0;
+        virtual void UpdateAndRender(Core* core, ISimLogicAndState* sim) = 0;
+        virtual void Shutdown(Core* core) = 0;
     };
 
     ATTO_REFLECT_STRUCT(GameSettings)
@@ -144,6 +142,8 @@ namespace atto {
         
         void                                LogOutput(LogLevel level, const char* message, ...);
 
+        f32                                 GetDeltaTime() const;
+
         virtual TextureResource*            ResourceGetAndLoadTexture(const char* name) = 0;
         virtual AudioResource*              ResourceGetAndLoadAudio(const char* name) = 0;
         virtual FontResource*               ResourceGetAndLoadFont(const char* name, i32 fontSize) = 0;
@@ -190,10 +190,7 @@ namespace atto {
         //virtual void                        WindowSetCursorLocked(bool locked) = 0;
 
         virtual void                        Run(int argc, char** argv) = 0;
-
         i32 localPlayerNumber;
-        glm::vec2 p1Pos;
-        glm::vec2 p2Pos;
 
     public:
         void* UserData = nullptr; // for the game to store whatever it wants
@@ -203,6 +200,11 @@ namespace atto {
         LoggingState        logger = {};
         RenderCommands      drawCommands = {};
         FrameInput          input = {};
+
+        IGameLogicAndState*  gameLogic;
+        ISimLogicAndState*   simLogic;
+
+        f32 deltaTime = 0.0f;
 
         i32                 mainSurfaceWidth;
         i32                 mainSurfaceHeight;
@@ -228,7 +230,6 @@ namespace atto {
         void    MemoryClearTransient();
 
         virtual u64  OsGetFileLastWriteTime(const char* fileName) = 0;
-        virtual bool OsLoadDLL(GameCodeAPI & gameCode) = 0;
         virtual void OsLogMessage(const char* message, u8 colour) = 0;
         virtual void OsErrorBox(const char* msg) = 0;
     };

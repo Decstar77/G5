@@ -109,7 +109,6 @@ namespace atto {
         FixedList<AudioSpeaker, 32> alSpeakers;
 
         u64             OsGetFileLastWriteTime(const char* fileName) override;
-        bool            OsLoadDLL(GameCodeAPI& gameCode) override;
         void            OsLogMessage(const char* message, u8 colour) override;
         void            OsErrorBox(const char* msg) override;
         void            OsParseStartArgs(int argc, char** argv);

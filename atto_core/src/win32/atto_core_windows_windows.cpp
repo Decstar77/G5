@@ -16,30 +16,6 @@ namespace atto {
         return strTo;
     }
 
-    static HMODULE hDll = NULL;
-    bool WindowsCore::OsLoadDLL(GameCodeAPI& gameCode) {
-        if (hDll != NULL) {
-            FreeLibrary(hDll);
-        }
-
-        CopyFileA("x86_64/atto_game.dll", "x86_64/atto_game_temp.dll", FALSE);
-        hDll = LoadLibraryA("atto_game_temp.dll");
-        if (hDll == NULL) {
-            return false;
-        }
-
-        gameCode.gameSize = (GameCodeAPI::GameSize)GetProcAddress(hDll, "GameSize");
-        gameCode.gameStart = (GameCodeAPI::GameStart)GetProcAddress(hDll, "GameStart");
-        gameCode.gameUpdateAndRender = (GameCodeAPI::GameUpdateAndRender)GetProcAddress(hDll, "GameUpdateAndRender");
-        gameCode.gameShutdown = (GameCodeAPI::GameShutdown)GetProcAddress(hDll, "GameShutdown");
-        gameCode.gameSimStart = (GameCodeAPI::GameSimStart)GetProcAddress(hDll, "GameSimStart");
-        gameCode.gameSimStep = (GameCodeAPI::GameSimStep)GetProcAddress(hDll, "GameSimStep");
-        gameCode.gameSimSave = (GameCodeAPI::GameSimSave)GetProcAddress(hDll, "GameSimSave");
-        gameCode.gameSimLoad = (GameCodeAPI::GameSimLoad)GetProcAddress(hDll, "GameSimLoad");
-
-        return gameCode.gameStart != NULL && gameCode.gameUpdateAndRender != NULL && gameCode.gameShutdown != NULL;
-    }
-
     void WindowsCore::OsLogMessage(const char* message, u8 colour) {
         HANDLE console_handle = GetStdHandle(STD_OUTPUT_HANDLE);
         // @NOTE: FATAL, ERROR, WARN, INFO, DEBUG, TRACE
