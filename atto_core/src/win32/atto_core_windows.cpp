@@ -184,6 +184,7 @@ namespace atto {
                                         if (simTicks[i].i1 != msg.input) {
                                             simLogic->p1Pos = simTicks[i].p1Pos;
                                             
+                                            
                                             simLogic->p2Pos = simTicks[i].p2Pos;
                                             simLogic->Step(this, msg.input, simTicks[i].i2);
                                         }
