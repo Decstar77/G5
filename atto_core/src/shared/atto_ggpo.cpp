@@ -84,7 +84,7 @@ namespace atto {
         return true;
     }
 
-    void Core::GGPOInitializeInstance() {
+    void Core::GGPOStartSession() {
         theCore = this;
 
         GGPOSessionCallbacks cb = { 0 };
@@ -97,6 +97,8 @@ namespace atto {
         cb.log_game_state = LogGameState;
         cb.network_send_to = NetworkSendTo;
         cb.network_poll = NetworkPoll;
+
+        
     }
 }
 

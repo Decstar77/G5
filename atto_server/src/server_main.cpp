@@ -1,45 +1,82 @@
 
-//#include "../../atto_core/src/shared/atto_server.h"
+#include "../../atto_core/src/shared/atto_network.h"
+
+#include "atto_server_logger.h"
+
 #define ENET_IMPLEMENTATION
 #include <enet.h>
 
 #include <iostream>
 
+using namespace atto;
+
 int main( int argc, char * argv[] ) {
 
-    ENetPeer * peer = nullptr;
-    ENetHost * client = nullptr;
+    Logger logger;
 
     if( enet_initialize() != 0 ) {
-        return 0;
-    }
-
-    client = enet_host_create( NULL, 1, 2, 0, 0 );
-    if( client == nullptr ) {
+        logger.Error( "An error occurred while initializing ENet.\n" );
         return 0;
     }
 
     ENetAddress address = {};
-    enet_address_set_host( &address, "127.0.0.1" );
+    address.host = ENET_HOST_ANY;
     address.port = 27164;
 
-    peer = enet_host_connect( client, &address, 2, 0 );
-    if( peer == nullptr ) {
+    ENetHost *  server = enet_host_create( &address, 32, 2, 0, 0 );
+    if( server == nullptr ) {
+        logger.Error( "Failed to create ENet server host." );
         return 0;
     }
 
-    ENetEvent event = {};
-    bool con = false;
-    if( enet_host_service( client, &event, 5000 ) > 0 && event.type == ENET_EVENT_TYPE_CONNECT ) {
-        con = true;
-    }
+    logger.Info( "Server started..." );
 
-    if( con ) {
-        std::cout << "We connected " << std::endl;
-        while( enet_host_service( client, &event, 30 ) >= 0 ) {
-            
+    ENetEvent event = {};
+    while( enet_host_service( server, &event, 30 ) >= 0 ) {
+        switch( event.type ) {
+            case ENET_EVENT_TYPE_CONNECT:
+            {
+                logger.Info( "A new client connected from %x:%u.\n", event.peer->address.host, event.peer->address.port );
+
+                /*PeerData * peerData = new PeerData();
+                peerData->serverIndex = peers.GetCount();
+                event.peer->data = peerData;
+                peers.Add( event.peer );
+
+                if( peers.GetCount() == 2 ) {
+                    logger.Info( "Started game!!" );
+                    Session * session = sessions.Add( Session( peers[ 0 ], peers[ 1 ], &logger ) );
+                    ( (PeerData *)peers[ 0 ]->data )->session = session;
+                    ( (PeerData *)peers[ 1 ]->data )->session = session;
+
+                    session->StartGame();
+                }*/
+
+            } break;
+            case ENET_EVENT_TYPE_RECEIVE:
+            {
+                //Session * session = ( (PeerData *)( event.peer->data ) )->session;
+                //if( session != nullptr ) {
+                //    session->Recieve( event.peer, event.packet );
+                //}
+
+                //enet_packet_destroy( event.packet );
+            } break;
+            case ENET_EVENT_TYPE_DISCONNECT:
+            {
+                logger.Info( "Disconnected.\n" );
+            } break;
+            case ENET_EVENT_TYPE_DISCONNECT_TIMEOUT:
+            {
+                logger.Info( "Disconnected due to timeout.\n" );
+                //event.peer->data = NULL;
+            } break;
+            case ENET_EVENT_TYPE_NONE:
+            {
+            } break;
         }
     }
+
 
     return 0;
 

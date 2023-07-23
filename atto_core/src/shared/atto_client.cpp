@@ -1,3 +1,4 @@
+#define ENET_IMPLEMENTATION
 #include <enet.h>
 
 #include "atto_client.h"
@@ -137,7 +138,9 @@ namespace atto {
                     enet_peer_send(peer, 0, packet);
 #else
                     NetworkMessage msg = outgoingMessages->Dequeue();
-                    ENetPacket* packet = enet_packet_create(&msg, sizeof(msg), msg.isUDP ? ENET_PACKET_FLAG_UNSEQUENCED : ENET_PACKET_FLAG_RELIABLE);
+                    i32 len = GetTotalNetworkMessageSize( msg );
+                    i32 flags = msg.isUDP ? ENET_PACKET_FLAG_UNSEQUENCED : ENET_PACKET_FLAG_RELIABLE;
+                    ENetPacket* packet = enet_packet_create(&msg, len, flags);
                     enet_peer_send(peer, 0, packet);
 #endif
       

@@ -123,8 +123,13 @@ namespace atto {
         GLInitializeTextRendering();
 
         ALInitialize();
+
         client = new NetClient(this);
 
+        simLogic = new SimLogic();
+        gameLogic = new GameLogic();
+
+        gameLogic->Start( this );
 
         this->deltaTime = 0;
         f64 startTime = glfwGetTime();
@@ -135,26 +140,46 @@ namespace atto {
             fi.lastMouseButtons = fi.mouseButtons;
             fi.mouseWheelDelta = glm::vec2(0.0f, 0.0f);
 
-            currentTime = glfwGetTime();
-
             glfwPollEvents();
 
-            //gameLogic->UpdateAndRender(this, simLogic);
+            if( client->IsConnected() ) {
+                NetworkMessage msg = {};
+                while( client->Recieve( msg ) ) {
+                    switch( msg.type ) {
+                        case NetworkMessageType::NONE:
+                            INVALID_CODE_PATH;
+                            break;
+                        case NetworkMessageType::GAME_START:
+                        {
+                            
+                        } break;
+                        case NetworkMessageType::GGPO_MESSAGE:
+                        {
+                            
+                        } break;
+                        default:
+                            INVALID_CODE_PATH;
+                            break;
+                    }
+                }
+            }
+
+            gameLogic->UpdateAndRender(this, simLogic);
 
             glfwSwapBuffers(window);
 
             MemoryClearTransient();
 
-
-           f64 endTime = glfwGetTime();
+            currentTime = glfwGetTime();
+           f64 endTime = currentTime;
            this->deltaTime = (f32)(endTime - startTime);
            startTime = endTime;
         }
 
-        //gameLogic->Shutdown(this);
+        gameLogic->Shutdown(this);
 
         delete simLogic;
-        //delete gameLogic;
+        delete gameLogic;
         delete client;
     }
 

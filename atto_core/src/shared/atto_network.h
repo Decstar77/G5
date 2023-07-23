@@ -8,17 +8,21 @@ namespace atto {
     enum class NetworkMessageType {
         NONE,
         GAME_START,
-        GAME_UPDATE,
+        GGPO_MESSAGE,
     };
 
+#define NETWORK_MESSAGE_MAX_BYTES 512
     struct NetworkMessage {
         NetworkMessageType type;
         bool isUDP;
-        i32 playerNumber;
-        glm::vec2 p;
-        
-        i64 tickNumber;
-        i32 input;
+        i32 dataLen;
+        char data[ NETWORK_MESSAGE_MAX_BYTES ]; // Make sure this is last !!!
     };
+
+    inline i32 GetTotalNetworkMessageSize( const NetworkMessage &msg ) {
+        i32 of = offsetof( NetworkMessage, data );
+        int size = of + msg.dataLen;
+        return size;
+    }
 }
 
