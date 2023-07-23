@@ -1,7 +1,5 @@
 #include "../shared/atto_client.h"
 #include "../gen/atto_reflection_gen.h"
-#include "../game/atto_game_logic.h"
-#include "../sim/atto_sim_logic.h"
 
 #include "atto_core_windows.h"
 
@@ -125,26 +123,8 @@ namespace atto {
         GLInitializeTextRendering();
 
         ALInitialize();
-
         client = new NetClient(this);
 
-        gameLogic = new GameLogicAndState();
-        gameLogic->Start(this);
-
-        simLogic = new SimLogicAndState();
-
-        struct SimTick {
-            glm::vec2 p1Pos;
-            glm::vec2 p2Pos;
-            i64 tickNumber;
-            i32 i1;
-            i32 i2;
-        };
-
-        f32 simTime = 0;
-        bool simStarted = false;
-        i64 simTick = 1;
-        FixedList<SimTick, 10> simTicks = {};
 
         this->deltaTime = 0;
         f64 startTime = glfwGetTime();
@@ -155,118 +135,11 @@ namespace atto {
             fi.lastMouseButtons = fi.mouseButtons;
             fi.mouseWheelDelta = glm::vec2(0.0f, 0.0f);
 
+            currentTime = glfwGetTime();
+
             glfwPollEvents();
 
-            if (NetIsConnected()) {
-                NetworkMessage msg = {};
-                while (client->Recieve(msg)) {
-                    switch (msg.type)
-                    {
-                        case NetworkMessageType::NONE: {
-                            INVALID_CODE_PATH;
-                        } break;
-                        case NetworkMessageType::GAME_START: {
-                            localPlayerNumber = msg.playerNumber;
-                            simStarted = true;
-                        } break;
-                        case NetworkMessageType::GAME_UPDATE: {
-                            i32 tickCount = simTicks.GetCount();
-                            for (i32 i = 0; i < tickCount; i++) {
-                                if (simTicks[i].tickNumber == msg.tickNumber) {
-                                    if (localPlayerNumber == 1) {
-                                        if (simTicks[i].i2 != msg.input) {
-                                            simLogic->p1Pos = simTicks[i].p1Pos;
-                                            simLogic->p2Pos = simTicks[i].p2Pos;
-                                            simLogic->Step(this, simTicks[i].i1, msg.input);
-                                        }
-                                    }
-                                    else {
-                                        if (simTicks[i].i1 != msg.input) {
-                                            simLogic->p1Pos = simTicks[i].p1Pos;
-                                            
-                                            
-                                            simLogic->p2Pos = simTicks[i].p2Pos;
-                                            simLogic->Step(this, msg.input, simTicks[i].i2);
-                                        }
-                                    }
-
-                                    simTicks.RemoveIndex(i);
-                                    
-                                    break;
-                                }
-                            }
-
-                            tickCount = simTicks.GetCount();
-                            for (i32 i = 0; i < tickCount; i++) {
-                                simLogic->Step(this, simTicks[i].i1, simTicks[i].i2);
-                            }
-
-                        } break;
-                        default: {
-
-                        } break;
-                    }
-                }
-            }
-
-            gameLogic->UpdateAndRender(this, simLogic);
-
-            if (simStarted) {
-                if (NetIsConnected()) {
-                    simTime += deltaTime;
-                    if (simTime >= 1.0f / 30.0f) {
-                        simTime = 0;
-
-                        if (simTicks.GetCount() < simTicks.GetCapcity()) {
-
-                            i32 i1 = 0;
-                            i32 i2 = 0;
-                            if (localPlayerNumber == 1) {
-                                i1 = simLogic->inputForNextSim;
-                                i2 = 0;
-                            }
-                            else {
-                                i1 = 0;
-                                i2 = simLogic->inputForNextSim;
-                            }
-                            simLogic->inputForNextSim = 0;
-                            simLogic->Step(this, i1, i2);
-
-                            SimTick tick = {};
-                            tick.tickNumber = simTick;
-                            tick.i1 = i1;
-                            tick.i2 = i2;
-                            tick.p1Pos = simLogic->p1Pos;
-                            tick.p2Pos = simLogic->p2Pos;
-
-                            simTicks.Add(tick);
-
-                            NetworkMessage msg = {};
-                            msg.type = NetworkMessageType::GAME_UPDATE;
-                            msg.input = localPlayerNumber == 1 ? i1 : i2;
-                            msg.tickNumber = simTick;
-
-                            client->Send(msg);
-
-                            simTick += 1;
-                        }
-                        else {
-                            LogOutput(LogLevel::WARN, "Overflow");
-                        }
-
-                    }
-                }
-                else {
-                    simTime += deltaTime;
-                    if (simTime >= 1.0f / 30.0f) {
-                        simTime = 0;
-                        i32 i1 = simLogic->inputForNextSim;
-                        i32 i2 = 0;
-                        simLogic->inputForNextSim = 0;
-                        simLogic->Step(this, i1, i2);
-                    }
-                }
-            }
+            //gameLogic->UpdateAndRender(this, simLogic);
 
             glfwSwapBuffers(window);
 
@@ -278,10 +151,10 @@ namespace atto {
            startTime = endTime;
         }
 
-        gameLogic->Shutdown(this);
+        //gameLogic->Shutdown(this);
 
         delete simLogic;
-        delete gameLogic;
+        //delete gameLogic;
         delete client;
     }
 

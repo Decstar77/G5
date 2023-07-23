@@ -8,6 +8,10 @@ namespace atto {
         return deltaTime;
     }
 
+    f64 Core::GetLastTime() const {
+        return currentTime;
+    }
+
     Camera Core::RenderCreateCamera() {
         Camera cam = {};
         cam.zoom = 1.0f;
@@ -227,7 +231,15 @@ namespace atto {
         return input;
     }
 
-    void* Core::MemoryAllocateTransient(u64 bytes) {
+    NetClient * Core::GetNetClient() {
+        return client;
+    }
+
+    SimLogic * Core::GetSimLogic() {
+        return simLogic;
+    }
+
+    void * Core::MemoryAllocateTransient( u64 bytes ) {
         theTransientMemoryMutex.lock();
 
         Assert(theTransientMemoryCurrent + bytes < theTransientMemorySize, "Transient memory overflow");
@@ -278,7 +290,7 @@ namespace atto {
         theTransientMemoryMutex.unlock();
     }
 
-    glm::vec2 Camera::ScreenPointToWorld(glm::vec2 screen) {
+    glm::vec2 Camera::ScreenPointToWorld( glm::vec2 screen ) {
         glm::vec4 viewport = glm::vec4(0, 0, mainSurfaceWidth, mainSurfaceHeight);
         glm::vec3 win(screen.x, screen.y, 0);
         glm::vec3 world = glm::unProject(win, v, p, viewport);

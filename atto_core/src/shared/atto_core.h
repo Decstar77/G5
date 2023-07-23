@@ -7,27 +7,41 @@
 #include "atto_input.h"
 
 #include "atto_reflection.h"
+
 #include <memory>
 #include <mutex>
 
 namespace atto {
     class Core;
-    class ISimLogicAndState {
+    class NetClient;
+
+    typedef int PlayerHandle; // For GGPO
+
+    enum PlayerConnectState {
+        PLAYER_CONNECTION_STATE_CONNECTING = 0,
+        PLAYER_CONNECTION_STATE_SYNCHRONIZING,
+        PLAYER_CONNECTION_STATE_RUNNING,
+        PLAYER_CONNECTION_STATE_DISCONNECTED,
+        PLAYER_CONNECTION_STATE_DISCONNECTING,
+    };
+
+    class SimLogic {
     public:
-        virtual void Start(Core* core) = 0;
-        virtual void Step(Core* core, i32 i1, i32 i2) = 0;
+        void Advance();
+        void LoadState( u8 * buffer, i32 len );
+        void SaveState( u8 ** buffer, i32 * len, i32 * checksum, i32 frame );
+        void FreeState( void * buffer );
+        void LogState( char * filename, u8 * buffer, i32 len );
+
+        void SetConnectionState( PlayerConnectState state, i32 arg1, i32 arg2 );
+        void SetConnectionState( PlayerHandle player, PlayerConnectState state, i32 arg1, i32 arg2 );
+        void SkipNextUpdates( int count );
+
         //virtual void ApplyAction(Core *core, SimAction action);
 
         glm::vec2 p1Pos;
         glm::vec2 p2Pos;
         i32 inputForNextSim = 0;
-    };
-
-    class IGameLogicAndState {
-    public:
-        virtual void Start(Core* core) = 0;
-        virtual void UpdateAndRender(Core* core, ISimLogicAndState* sim) = 0;
-        virtual void Shutdown(Core* core) = 0;
     };
 
     ATTO_REFLECT_STRUCT(GameSettings)
@@ -143,6 +157,7 @@ namespace atto {
         void                                LogOutput(LogLevel level, const char* message, ...);
 
         f32                                 GetDeltaTime() const;
+        f64                                 GetLastTime() const;
 
         virtual TextureResource*            ResourceGetAndLoadTexture(const char* name) = 0;
         virtual AudioResource*              ResourceGetAndLoadAudio(const char* name) = 0;
@@ -189,11 +204,11 @@ namespace atto {
         //virtual void                        WindowSetCursorVisible(bool visible) = 0;
         //virtual void                        WindowSetCursorLocked(bool locked) = 0;
 
-        virtual void                        Run(int argc, char** argv) = 0;
-        i32 localPlayerNumber;
+        NetClient *                         GetNetClient();
+        SimLogic *                          GetSimLogic();
 
-    public:
-        void* UserData = nullptr; // for the game to store whatever it wants
+        virtual void                        Run(int argc, char** argv) = 0;
+
 
     protected:
         GameSettings        theGameSettings = {};
@@ -201,10 +216,11 @@ namespace atto {
         RenderCommands      drawCommands = {};
         FrameInput          input = {};
 
-        IGameLogicAndState*  gameLogic;
-        ISimLogicAndState*   simLogic;
+        NetClient *         client = nullptr;
+        SimLogic *          simLogic = nullptr;
 
-        f32 deltaTime = 0.0f;
+        f64                 currentTime = 0.0f;
+        f32                 deltaTime = 0.0f;
 
         i32                 mainSurfaceWidth;
         i32                 mainSurfaceHeight;
@@ -222,12 +238,13 @@ namespace atto {
         u64 theTransientMemoryCurrent = 0;
         std::mutex theTransientMemoryMutex;
 
-        class NetClient* client = nullptr;
 
         void    MemoryMakePermanent(u64 bytes);
         void    MemoryClearPermanent();
         void    MemoryMakeTransient(u64 bytes);
         void    MemoryClearTransient();
+
+        void    GGPOInitializeInstance();
 
         virtual u64  OsGetFileLastWriteTime(const char* fileName) = 0;
         virtual void OsLogMessage(const char* message, u8 colour) = 0;

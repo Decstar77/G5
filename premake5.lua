@@ -7,6 +7,7 @@ local FREE_TYPE_DIR = "vendor/freetype"
 local STB_DIR = "vendor/stb"
 local JSON_DIR = "vendor/json"
 local ENET_DIR  = "vendor/enet"
+local GGPO_DIR = "vendor/ggpo_lite"
 local ABSOLUTE_SOL_PATH = path.getabsolute(".")
 
 solution "Atto"
@@ -62,6 +63,7 @@ project "atto_core"
         path.join(OPENAL_DIR, "include"),
         path.join(FREE_TYPE_DIR, "include"),
         path.join(ENET_DIR, "include"),
+        path.join(GGPO_DIR),
         JSON_DIR,
         STB_DIR,
         GLM_DIR,
@@ -82,12 +84,12 @@ project "atto_core"
         path.join(STB_DIR, "stb_vorbis/stb_vorbis.c")
     }
 
-    links { "opengl32", "glfw", "glad", "OpenAL32", "freetype" }
+    links { "opengl32", "glfw", "glad", "OpenAL32", "freetype", "ggpo_lite" }
 
     filter "system:windows"
-        links { "kernel32", "user32", "ws2_32", "winmm" }
+        links { "kernel32", "user32"  }
 
-    dependson { "AttoTypeGen", "atto_game"}
+    dependson { "AttoTypeGen", "atto_game", "ggpo_lite"}
 
     prebuildcommands
     {
@@ -110,6 +112,7 @@ project "atto_server"
     {
         JSON_DIR,
         GLM_DIR,
+        ---path.join(GGPO_DIR),
         path.join(ENET_DIR, "include")
     }
 
@@ -121,8 +124,8 @@ project "atto_server"
         "%{prj.name}/src/**.c",
         "%{prj.name}/src/**.cpp",
         "%{prj.name}/src/**.hpp",
-        "atto_core/src/shared/**.h",
-        "atto_core/src/shared/**.cpp",
+        ---"atto_core/src/shared/**.h",
+        ---"atto_core/src/shared/**.cpp",
     }
 
     disablewarnings { 
@@ -206,6 +209,43 @@ project "glfw"
 
     filter "action:vs*"
         defines "_CRT_SECURE_NO_WARNINGS"
+        
+project "ggpo_lite"
+    location(GGPO_DIR)
+    kind "StaticLib"
+    language "C++"
+    cppdialect "C++17"
+    exceptionhandling "Off"
+    rtti "Off"
+    warnings "Default"
+    flags { "FatalWarnings", "MultiProcessorCompile" }	
+    debugdir "bin"
+    
+    targetdir("bin/%{cfg.architecture}")
+    objdir("tmp/%{cfg.architecture}")
+
+    disablewarnings { 
+        "4057", -- Slightly different base types. Converting from type with volatile to without.
+        "4100", -- Unused formal parameter. I think unusued parameters are good for documentation.
+        "4152", -- Conversion from function pointer to void *. Should be ok.
+        "4200", -- Zero-sized array. Valid C99.
+        "4201", -- Nameless struct/union. Valid C11.
+        "4204", -- Non-constant aggregate initializer. Valid C99.
+        "4206", -- Translation unit is empty. Might be #ifdefed out.
+        "4214", -- Bool bit-fields. Valid C99.
+        "4221", -- Pointers to locals in initializers. Valid C99.
+        "4702", -- Unreachable code. We sometimes want return after exit() because otherwise we get an error about no return value.
+    }
+
+    files {
+          path.join(GGPO_DIR, "src/**.h"),
+          path.join(GGPO_DIR, "src/**.c"),
+          path.join(GGPO_DIR, "src/**.cpp"),
+          path.join(GGPO_DIR, "src/**.hpp"),
+    }
+
+    filter "system:windows"
+        links { "kernel32" }
 
 project "freetype"
     location(FREE_TYPE_DIR)
