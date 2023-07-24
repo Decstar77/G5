@@ -138,7 +138,7 @@ namespace atto {
                     enet_peer_send(peer, 0, packet);
 #else
                     NetworkMessage msg = outgoingMessages->Dequeue();
-                    i32 len = GetTotalNetworkMessageSize( msg );
+                    i32 len = NetworkMessageGetTotalSize( msg );
                     i32 flags = msg.isUDP ? ENET_PACKET_FLAG_UNSEQUENCED : ENET_PACKET_FLAG_RELIABLE;
                     ENetPacket* packet = enet_packet_create(&msg, len, flags);
                     enet_peer_send(peer, 0, packet);

@@ -7,8 +7,46 @@
 #include <enet.h>
 
 #include <iostream>
+#include <unordered_map>
 
 using namespace atto;
+
+static std::unordered_map<u64, ENetPeer *> peers;
+
+
+static u64 peerIdCounter = 0;
+static u64 sessionIdCounter = 0;
+
+struct PeerData {
+    u64 peerId;
+    u64 sessionId;
+};
+
+struct Session {
+    u64 peer1;
+    u64 peer2;
+};
+
+static void StartGameForPeers( Session & session ) {
+    {
+        NetworkMessage msg = {};
+        msg.type = NetworkMessageType::GAME_START;
+        NetworkMessagePush( msg, 1 );
+        NetworkMessagePush( msg, 2 );
+        ENetPacket * packet = enet_packet_create( &msg, NetworkMessageGetTotalSize( msg ), ENET_PACKET_FLAG_RELIABLE );
+        enet_peer_send( peers[ session.peer1 ], 0, packet );
+    }
+    {
+        NetworkMessage msg = {};
+        msg.type = NetworkMessageType::GAME_START;
+        NetworkMessagePush( msg, 2 );
+        NetworkMessagePush( msg, 1 );
+        ENetPacket * packet = enet_packet_create( &msg, NetworkMessageGetTotalSize( msg ), ENET_PACKET_FLAG_RELIABLE );
+        enet_peer_send( peers[ session.peer2 ], 0, packet );
+    }
+}
+
+static std::unordered_map<u64, Session>    sessions;
 
 int main( int argc, char * argv[] ) {
 
@@ -38,23 +76,41 @@ int main( int argc, char * argv[] ) {
             {
                 logger.Info( "A new client connected from %x:%u.\n", event.peer->address.host, event.peer->address.port );
 
-                /*PeerData * peerData = new PeerData();
-                peerData->serverIndex = peers.GetCount();
+                PeerData * peerData = new PeerData();
                 event.peer->data = peerData;
-                peers.Add( event.peer );
 
-                if( peers.GetCount() == 2 ) {
+                peers[ peerIdCounter ] = event.peer;
+                peerData->peerId = peerIdCounter;
+
+                peerIdCounter++;
+
+                if( peerIdCounter == 2 ) {
                     logger.Info( "Started game!!" );
-                    Session * session = sessions.Add( Session( peers[ 0 ], peers[ 1 ], &logger ) );
-                    ( (PeerData *)peers[ 0 ]->data )->session = session;
-                    ( (PeerData *)peers[ 1 ]->data )->session = session;
 
-                    session->StartGame();
-                }*/
+                    Session session = {};
+                    session.peer1 = 0;
+                    session.peer2 = 1;
+
+                    ( (PeerData *)( peers[ 0 ]->data ) )->sessionId = sessionIdCounter;
+                    ( (PeerData *)( peers[ 1 ]->data ) )->sessionId = sessionIdCounter;
+
+                    sessions[ sessionIdCounter ] = session;
+                    sessionIdCounter++;
+                }
 
             } break;
             case ENET_EVENT_TYPE_RECEIVE:
             {
+                u64 sid =( (PeerData *)( event.peer->data ) )->sessionId;
+                Session & session = sessions[ sid ];
+
+                if( session.peer1 == ( (PeerData *)( event.peer->data ) )->peerId ) {
+                    enet_peer_send( peers[ session.peer2 ], 0, event.packet );
+                }
+                else {
+                    enet_peer_send( peers[ session.peer1 ], 0, event.packet );
+                }
+
                 //Session * session = ( (PeerData *)( event.peer->data ) )->session;
                 //if( session != nullptr ) {
                 //    session->Recieve( event.peer, event.packet );
