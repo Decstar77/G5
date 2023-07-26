@@ -27,7 +27,7 @@ struct Session {
     u64 peer2;
 };
 
-static void StartGameForPeers( Session & session ) {
+static void StartGameForPeers( const Session & session ) {
     {
         NetworkMessage msg = {};
         msg.type = NetworkMessageType::GAME_START;
@@ -93,6 +93,8 @@ int main( int argc, char * argv[] ) {
 
                     ( (PeerData *)( peers[ 0 ]->data ) )->sessionId = sessionIdCounter;
                     ( (PeerData *)( peers[ 1 ]->data ) )->sessionId = sessionIdCounter;
+
+                    StartGameForPeers( session );
 
                     sessions[ sessionIdCounter ] = session;
                     sessionIdCounter++;

@@ -151,11 +151,12 @@ namespace atto {
                             break;
                         case NetworkMessageType::GAME_START:
                         {
-                            
+                            LogOutput( LogLevel::INFO, "Start game" );
+
                         } break;
                         case NetworkMessageType::GGPO_MESSAGE:
                         {
-                            
+                            ggpoMessages.Enqueue( msg );
                         } break;
                         default:
                             INVALID_CODE_PATH;

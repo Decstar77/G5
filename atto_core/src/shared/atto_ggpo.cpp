@@ -1,6 +1,7 @@
 #include "atto_ggpo.h"
 #include "atto_core.h"
-
+#include "atto_network.h"
+#include "atto_client.h"
 
 namespace atto {
 
@@ -76,15 +77,38 @@ namespace atto {
     }
 
     static void NetworkSendTo( GGPOPeerHandle local, GGPOPeerHandle peer, void * buffer, int len ) {
-        //theCore->GetNetClient()->Send()
+        NetworkMessage msg = {};
+        msg.isUDP = true;
+        msg.type = NetworkMessageType::GGPO_MESSAGE;
+        NetworkMessagePush( msg, local );
+        NetworkMessagePush( msg, peer );
+        NetworkMessagePush( msg, buffer, len );
+
+        theCore->GetNetClient()->Send( msg );
     }
 
     static bool NetworkPoll( GPPONetworkCallbacks * msg ) {
-        //theCore->GetNetClient()->Recieve();
+        FixedQueue<NetworkMessage, 1024> & messages = theCore->GetGGPOMessages();
+        
+        while( messages.IsEmpty() == false ) {
+            NetworkMessage m = messages.Dequeue();
+            Assert( m.type == NetworkMessageType::GGPO_MESSAGE , "Msg is not for GGPO?");
+
+            i32 offset = 0;
+            GGPOPeerHandle sender = NetworkMessagePop<GGPOPeerHandle>( m, offset );
+            GGPOPeerHandle recipient = NetworkMessagePop<GGPOPeerHandle>( m, offset );
+
+            i32 len = 0;
+            void * buffer = nullptr;
+            NetworkMessageReadTillEnd( m, offset, &buffer, len );
+
+            msg->OnMsg( sender, buffer, len );
+        }
+
         return true;
     }
 
-    void Core::GGPOStartSession() {
+    void Core::GGPOStartSession( PlayerHandle local, PlayerHandle peer ) {
         theCore = this;
 
         GGPOSessionCallbacks cb = { 0 };

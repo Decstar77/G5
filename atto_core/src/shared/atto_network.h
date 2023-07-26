@@ -35,5 +35,21 @@ namespace atto {
     inline void NetworkMessagePush( NetworkMessage & msg, const _type_ & data ) {
         NetworkMessagePush( msg, (void *)&data, sizeof( _type_ ) );
     }
+
+    template<typename _type_>
+    inline _type_ NetworkMessagePop( NetworkMessage & msg, i32 & offset ) {
+        Assert( offset + sizeof( _type_ ) < msg.dataLen, "Network stuffies to big" );
+        _type_ * data = (_type_ *)( msg.data + offset );
+        offset += sizeof( _type_ );
+        return *data;
+    }
+
+    inline void NetworkMessageReadTillEnd( NetworkMessage & msg, i32 & offset, void ** buffer, i32 & len ) {
+        Assert( offset < msg.dataLen, "Network stuffies to big" );
+        *buffer = (void *)( msg.data + offset );
+        len = msg.dataLen - offset;
+        offset = msg.dataLen;
+    }
+
 }
 

@@ -239,6 +239,10 @@ namespace atto {
         return simLogic;
     }
 
+    FixedQueue<NetworkMessage, 1024> & Core::GetGGPOMessages() {
+        return ggpoMessages;
+    }
+
     void * Core::MemoryAllocateTransient( u64 bytes ) {
         theTransientMemoryMutex.lock();
 
