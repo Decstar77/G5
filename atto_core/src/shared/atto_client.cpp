@@ -107,13 +107,7 @@ namespace atto {
                     }
                     else if (event.type == ENET_EVENT_TYPE_RECEIVE) {
                         //SetStatusStringInfo("Received packet");
-
-                        Assert(event.packet->dataLength == sizeof(NetworkMessage), "Rec packet size mismatch");
                         NetworkMessage *msg = (NetworkMessage*)event.packet->data;
-
-                        //NetworkMessageBuffer msgBuf = {};
-                        //msgBuf.CreateFromByte((u8*)event.packet->data, (u32)event.packet->dataLength);
-                        //DecompileNetworkMessage(msg, msgBuf);
                         incommingMessages->Enqueue(*msg);
 
                         enet_packet_destroy(event.packet);

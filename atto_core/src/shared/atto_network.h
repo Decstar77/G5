@@ -38,7 +38,7 @@ namespace atto {
 
     template<typename _type_>
     inline _type_ NetworkMessagePop( NetworkMessage & msg, i32 & offset ) {
-        Assert( offset + sizeof( _type_ ) < msg.dataLen, "Network stuffies to big" );
+        Assert( offset + sizeof( _type_ ) <= msg.dataLen, "Network stuffies to big" );
         _type_ * data = (_type_ *)( msg.data + offset );
         offset += sizeof( _type_ );
         return *data;

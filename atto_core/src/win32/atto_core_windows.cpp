@@ -11,6 +11,8 @@
 
 #include "freetype/freetype.h"
 
+#include <src/ggponet.h>
+
 #include <fstream>
 
 namespace atto {
@@ -127,10 +129,15 @@ namespace atto {
         client = new NetClient(this);
 
         simLogic = new SimLogic();
+        simLogic->core = this;
+
         gameLogic = new GameLogic();
 
         gameLogic->Start( this );
 
+        f32 simTickRate = 1.0f / 30.0f;
+        f32 simTickCurrent = 0.0f;
+        
         this->deltaTime = 0;
         f64 startTime = glfwGetTime();
         while (!glfwWindowShouldClose(window)) {
@@ -151,19 +158,87 @@ namespace atto {
                             break;
                         case NetworkMessageType::GAME_START:
                         {
-                            LogOutput( LogLevel::INFO, "Start game" );
+                            i32 offset = 0;
+                            i32 localId = NetworkMessagePop<i32>( msg, offset );
+                            i32 peerId = NetworkMessagePop<i32>( msg, offset );
+
+                            LogOutput( LogLevel::INFO, "Start game me=%d, other=%d", localId, peerId );
+
+                            GGPOStartSession( localId, peerId );
 
                         } break;
                         case NetworkMessageType::GGPO_MESSAGE:
                         {
-                            ggpoMessages.Enqueue( msg );
+                            mpState.messages.Enqueue( msg );
                         } break;
                         default:
                             INVALID_CODE_PATH;
                             break;
                     }
                 }
+
+                if( mpState.session != nullptr ) {
+                    GGPOPoll();
+
+                    i32 dir = 0;
+                    if( InputKeyDown( KEY_CODE_A ) ) {
+                        dir = 1;
+                    }
+                    if( InputKeyDown( KEY_CODE_D ) ) {
+                        dir = 2;
+                    }
+                    if( InputKeyDown( KEY_CODE_W ) ) {
+                        dir = 3;
+                    }
+                    if( InputKeyDown( KEY_CODE_S ) ) {
+                        dir = 4;
+                    }
+                    
+                    GGPOErrorCode result = GGPO_OK;
+                    int disconnect_flags = 0;
+                    int inputs[ MP_MAX_INPUTS ] = { 0 };
+
+                    if( mpState.local.playerHandle != GGPO_INVALID_HANDLE ) {
+                        ggpo_add_local_input( mpState.session, mpState.local.playerHandle, &input, sizeof( input ) );
+                    }
+
+                    if( GGPO_SUCCEEDED( result ) ) {
+                        result = ggpo_synchronize_input( mpState.session,
+                            (void *)inputs,
+                            sizeof( int ) * MP_MAX_INPUTS,
+                            &disconnect_flags
+                        );
+
+                        if( GGPO_SUCCEEDED( result ) ) {
+                            // inputs[0] and inputs[1] contain the inputs for p1 and p2.  Advance
+                            // the game by 1 frame using those inputs.
+                            simLogic->Advance( inputs[ 0 ], inputs[ 1 ], disconnect_flags );
+                            
+                            ggpo_advance_frame( mpState.session );
+                        }
+                    }
+                }
             }
+
+            //i32 dir = 0;
+            //if( InputKeyDown( KEY_CODE_A ) ) {
+            //    dir = 1;
+            //}
+            //if( InputKeyDown( KEY_CODE_D ) ) {
+            //    dir = 2;
+            //}
+            //if( InputKeyDown( KEY_CODE_W ) ) {
+            //    dir = 3;
+            //}
+            //if( InputKeyDown( KEY_CODE_S ) ) {
+            //    dir = 4;
+            //}
+
+            //simTickCurrent += deltaTime;
+            //if( simTickCurrent > simTickRate ) {
+            //    simTickCurrent -= simTickRate;
+            //    simLogic->Advance( dir, 0, 0 );
+            //}
 
             gameLogic->UpdateAndRender(this, simLogic);
 

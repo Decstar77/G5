@@ -239,8 +239,12 @@ namespace atto {
         return simLogic;
     }
 
+    MultiplayerState * Core::GetMPState() {
+        return &mpState;
+    }
+
     FixedQueue<NetworkMessage, 1024> & Core::GetGGPOMessages() {
-        return ggpoMessages;
+        return mpState.messages;
     }
 
     void * Core::MemoryAllocateTransient( u64 bytes ) {
@@ -309,6 +313,8 @@ namespace atto {
 
         return glm::vec2(win.x, win.y);
     }
+
+
 }
 
 

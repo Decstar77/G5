@@ -31,16 +31,16 @@ static void StartGameForPeers( const Session & session ) {
     {
         NetworkMessage msg = {};
         msg.type = NetworkMessageType::GAME_START;
-        NetworkMessagePush( msg, 1 );
-        NetworkMessagePush( msg, 2 );
+        NetworkMessagePush<i32>( msg, 1 );
+        NetworkMessagePush<i32>( msg, 2 );
         ENetPacket * packet = enet_packet_create( &msg, NetworkMessageGetTotalSize( msg ), ENET_PACKET_FLAG_RELIABLE );
         enet_peer_send( peers[ session.peer1 ], 0, packet );
     }
     {
         NetworkMessage msg = {};
         msg.type = NetworkMessageType::GAME_START;
-        NetworkMessagePush( msg, 2 );
-        NetworkMessagePush( msg, 1 );
+        NetworkMessagePush<i32>( msg, 2 );
+        NetworkMessagePush<i32>( msg, 1 );
         ENetPacket * packet = enet_packet_create( &msg, NetworkMessageGetTotalSize( msg ), ENET_PACKET_FLAG_RELIABLE );
         enet_peer_send( peers[ session.peer2 ], 0, packet );
     }

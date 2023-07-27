@@ -12,6 +12,8 @@
 #include <memory>
 #include <mutex>
 
+struct GGPOSession;
+
 namespace atto {
     class Core;
     class NetClient;
@@ -123,8 +125,6 @@ namespace atto {
         FixedList<DrawCommand, 1024> drawList;
     };
 
-    typedef int PlayerHandle; // For GGPO
-
     enum PlayerConnectState {
         PLAYER_CONNECTION_STATE_CONNECTING = 0,
         PLAYER_CONNECTION_STATE_SYNCHRONIZING,
@@ -133,23 +133,43 @@ namespace atto {
         PLAYER_CONNECTION_STATE_DISCONNECTING,
     };
 
+    inline SmallString PlayerConnectStateToString( PlayerConnectState state ) {
+        switch( state ) {
+            case PLAYER_CONNECTION_STATE_CONNECTING: return SmallString::FromLiteral("Connecting");
+            case PLAYER_CONNECTION_STATE_SYNCHRONIZING: return SmallString::FromLiteral("Synchronizing");
+            case PLAYER_CONNECTION_STATE_RUNNING: return SmallString::FromLiteral("Running");
+            case PLAYER_CONNECTION_STATE_DISCONNECTED: return SmallString::FromLiteral("Disconnected");
+            case PLAYER_CONNECTION_STATE_DISCONNECTING: return SmallString::FromLiteral("Disconnecting");
+            default: return SmallString::FromLiteral("Unknown");
+        }
+    }
+
+    struct PlayerConnectionInfo {
+        PlayerConnectState  state;
+        int                 playerHandle;
+        int                 playerNumber;
+        int                 connectProgress;
+        int                 disconnectTimeout;
+        int                 disconnectStart;
+    };
+
+    struct SimState {
+        glm::vec2 p1Pos;
+        glm::vec2 p2Pos;
+    };
+
     class SimLogic {
     public:
-        void Advance();
+        void Advance( i32 playerOneInput, i32 playerTwoInput, i32 dcFlags);
         void LoadState( u8 * buffer, i32 len );
         void SaveState( u8 ** buffer, i32 * len, i32 * checksum, i32 frame );
         void FreeState( void * buffer );
         void LogState( char * filename, u8 * buffer, i32 len );
 
-        void SetConnectionState( PlayerConnectState state, i32 arg1, i32 arg2 );
-        void SetConnectionState( PlayerHandle player, PlayerConnectState state, i32 arg1, i32 arg2 );
         void SkipNextUpdates( int count );
 
-        //virtual void ApplyAction(Core *core, SimAction action);
-
-        glm::vec2 p1Pos;
-        glm::vec2 p2Pos;
-        i32 inputForNextSim = 0;
+        SimState state = {};
+        Core * core = nullptr;
     };
 
     class GameLogic {
@@ -163,6 +183,26 @@ namespace atto {
 
         glm::vec2 p1VisPos;
         glm::vec2 p2VisPos;
+    };
+
+#define MP_FRAME_DELAY 2
+#define MP_MAX_INPUTS 2
+#define MP_PLAYER_COUNT 2
+    struct MultiplayerState {
+        GGPOSession *           session;
+        union {
+            PlayerConnectionInfo players[ MP_PLAYER_COUNT ];
+            struct {
+                PlayerConnectionInfo    local;
+                PlayerConnectionInfo    peer;
+            };
+        };
+        
+        FixedQueue<NetworkMessage, 1024> messages;
+
+        void SetConnectionState( PlayerConnectState state, i32 arg1, i32 arg2 );
+        void SetConnectionState( int playerNumber, PlayerConnectState state, i32 arg1, i32 arg2 );
+
     };
 
     class Core {
@@ -220,6 +260,7 @@ namespace atto {
 
         NetClient *                         GetNetClient();
         SimLogic *                          GetSimLogic();
+        MultiplayerState *                  GetMPState();
 
         FixedQueue<NetworkMessage, 1024> &  GetGGPOMessages();
 
@@ -230,6 +271,7 @@ namespace atto {
         LoggingState        logger = {};
         RenderCommands      drawCommands = {};
         FrameInput          input = {};
+        MultiplayerState    mpState = {};
 
         NetClient * client = nullptr;
         SimLogic * simLogic = nullptr;
@@ -254,14 +296,13 @@ namespace atto {
         u64 theTransientMemoryCurrent = 0;
         std::mutex theTransientMemoryMutex;
 
-        FixedQueue<NetworkMessage, 1024> ggpoMessages = {};
-
         void    MemoryMakePermanent( u64 bytes );
         void    MemoryClearPermanent();
         void    MemoryMakeTransient( u64 bytes );
         void    MemoryClearTransient();
 
-        void    GGPOStartSession( PlayerHandle local, PlayerHandle peer );
+        void    GGPOStartSession( i32 local, i32 peer );
+        void    GGPOPoll();
 
         virtual u64  OsGetFileLastWriteTime( const char * fileName ) = 0;
         virtual void OsLogMessage( const char * message, u8 colour ) = 0;

@@ -21,35 +21,31 @@ namespace atto {
             core->WindowClose();
         }
 
-        if( core->InputKeyDown( KEY_CODE_A ) ) {
-            sim->inputForNextSim = 1;
-        }
-        if( core->InputKeyDown( KEY_CODE_D ) ) {
-            sim->inputForNextSim = 2;
-        }
-        if( core->InputKeyDown( KEY_CODE_W ) ) {
-            sim->inputForNextSim = 3;
-        }
-        if( core->InputKeyDown( KEY_CODE_S ) ) {
-            sim->inputForNextSim = 4;
-        }
+        MultiplayerState * mp = core->GetMPState();
 
-        core->RenderDrawText( arialFont, glm::vec2( 100, 100 ), debugText.GetCStr() );
+        core->RenderDrawText( arialFont, glm::vec2( 100, 100 ), 
+            StringFormat::Small( "Player number %d, player handle %d", mp->local.playerNumber, mp->local.playerHandle ).GetCStr() );
 
-        core->RenderDrawText( arialFont, glm::vec2( 100, 140 ),
+        core->RenderDrawText( arialFont, glm::vec2( 100, 130 ),
+            StringFormat::Small( "Local state %s", PlayerConnectStateToString(mp->local.state).GetCStr() ).GetCStr() );
+
+        core->RenderDrawText( arialFont, glm::vec2( 400, 130 ),
+            StringFormat::Small( "Peer state %s", PlayerConnectStateToString( mp->peer.state ).GetCStr() ).GetCStr() );
+
+        core->RenderDrawText( arialFont, glm::vec2( 100, 190 ),
             StringFormat::Small( "Ping = %d", core->NetGetPing() ).GetCStr() );
 
 
         TextureResource * res = core->ResourceGetAndLoadTexture( "unit_basic_man.png" );
         //core->RenderDrawRect(glm::vec2(200), glm::vec2(100), 0.0f, glm::vec4(1, 0, 0, 1));
 
-        p1VisPos = glm::mix( p1VisPos, sim->p1Pos, 0.1f );
-        p2VisPos = glm::mix( p2VisPos, sim->p2Pos, 0.1f );
+        p1VisPos = glm::mix( p1VisPos, sim->state.p1Pos, 0.1f );
+        p2VisPos = glm::mix( p2VisPos, sim->state.p2Pos, 0.1f );
 
         Camera camera = core->RenderCreateCamera();
         core->RenderSetCamera( &camera );
-        core->RenderDrawSprite( res, p1VisPos, glm::vec2( 1 ) );
-        core->RenderDrawSprite( res, p2VisPos, glm::vec2( 1 ) );
+        core->RenderDrawCircle( p1VisPos, 10.0f, glm::vec4( 1, 0, 0, 1 ) );
+        core->RenderDrawCircle( p2VisPos, 10.0f, glm::vec4( 0, 1, 0, 1 ) );
         core->RenderSetCamera( nullptr );
         core->RenderSubmit();
     }
