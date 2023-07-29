@@ -166,8 +166,9 @@ namespace atto {
         void FreeState( void * buffer );
         void LogState( char * filename, u8 * buffer, i32 len );
 
-        void SkipNextUpdates( int count );
+        void SkipNextUpdates( i32 count );
 
+        i32 skipNextSteps = 0;
         SimState state = {};
         Core * core = nullptr;
     };

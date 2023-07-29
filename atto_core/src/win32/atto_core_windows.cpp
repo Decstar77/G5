@@ -195,24 +195,24 @@ namespace atto {
                     }
                     
                     GGPOErrorCode result = GGPO_OK;
-                    int disconnect_flags = 0;
-                    int inputs[ MP_MAX_INPUTS ] = { 0 };
-
                     if( mpState.local.playerHandle != GGPO_INVALID_HANDLE ) {
-                        ggpo_add_local_input( mpState.session, mpState.local.playerHandle, &input, sizeof( input ) );
+                        result = ggpo_add_local_input( mpState.session, mpState.local.playerHandle, &dir, sizeof( i32 ) );
                     }
 
                     if( GGPO_SUCCEEDED( result ) ) {
+                        int dcFlags = 0;
+                        int gameInputs[ MP_MAX_INPUTS ] = { 0 };
+
                         result = ggpo_synchronize_input( mpState.session,
-                            (void *)inputs,
+                            (void *)gameInputs,
                             sizeof( int ) * MP_MAX_INPUTS,
-                            &disconnect_flags
+                            &dcFlags
                         );
 
                         if( GGPO_SUCCEEDED( result ) ) {
                             // inputs[0] and inputs[1] contain the inputs for p1 and p2.  Advance
                             // the game by 1 frame using those inputs.
-                            simLogic->Advance( inputs[ 0 ], inputs[ 1 ], disconnect_flags );
+                            simLogic->Advance( gameInputs[ 0 ], gameInputs[ 1 ], dcFlags );
                             
                             ggpo_advance_frame( mpState.session );
                         }

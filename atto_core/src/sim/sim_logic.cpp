@@ -4,6 +4,11 @@
 namespace atto {
 
     void SimLogic::Advance( i32 playerOneInput, i32 playerTwoInput, i32 dcFlags ) {
+        if( skipNextSteps > 0 ) {
+            skipNextSteps--;
+            return;
+        }
+        
         if( playerOneInput == 1 ) {
             state.p1Pos.x -= 1.0f;
         }
@@ -32,16 +37,19 @@ namespace atto {
     }
 
     void SimLogic::LoadState( u8 * buffer, i32 len ) {
-        Assert( len == sizeof( SimState ), "SimState size mismatch" );
         core->LogOutput( LogLevel::INFO, "LOAD STATE" );
+        Assert( len == sizeof( SimState ), "SimState size mismatch" );
         memcpy( &state, buffer, len );
     }
 
     void SimLogic::SaveState( u8 ** buffer, i32 * len, i32 * checksum, i32 frame ) {
-        core->LogOutput( LogLevel::INFO, "SAVE STATE" );
+        //core->LogOutput( LogLevel::INFO, "SAVE STATE" );
         *len = sizeof( SimState );
         *buffer = (u8 *)malloc( sizeof( SimState ) );
         memcpy( *buffer, &state, sizeof( SimState ) );
+        
+        f32 p = state.p1Pos.x + state.p2Pos.x;
+        //*checksum = *(i32 *)(&p);
         *checksum = 1;
     }
 
@@ -53,8 +61,8 @@ namespace atto {
 
     }
 
-    void SimLogic::SkipNextUpdates( int count ) {
-        core->LogOutput( LogLevel::INFO, "Skip %d", count );
+    void SimLogic::SkipNextUpdates( i32 count ) {
+        skipNextSteps = count;
     }
 
 
