@@ -16,13 +16,13 @@ namespace atto {
         GGPOErrorCode result = {};
         result = ggpo_synchronize_input( theCore->GetMPState()->session, (void *)inputs, sizeof( i32 ) * MP_MAX_INPUTS, &dcFlags );
 
-        Assert( result == GGPO_OK, "ggpo_synchronize_input failed in advance frame" );
+        AssertMsg( result == GGPO_OK, "ggpo_synchronize_input failed in advance frame" );
 
         theCore->GetSimLogic()->Advance( inputs[ 0 ], inputs[ 1 ], dcFlags );
 
         result = ggpo_advance_frame( theCore->GetMPState()->session );
 
-        Assert( result == GGPO_OK, "ggpo_advance_frame failed in advance frame" );
+        AssertMsg( result == GGPO_OK, "ggpo_advance_frame failed in advance frame" );
 
         return true;
     }
@@ -110,7 +110,7 @@ namespace atto {
 
         while( messages.IsEmpty() == false ) {
             NetworkMessage m = messages.Dequeue();
-            Assert( m.type == NetworkMessageType::GGPO_MESSAGE, "Msg is not for GGPO?" );
+            AssertMsg( m.type == NetworkMessageType::GGPO_MESSAGE, "Msg is not for GGPO?" );
 
             i32 offset = 0;
             GGPOPeerHandle sender = NetworkMessagePop<GGPOPeerHandle>( m, offset );
@@ -133,8 +133,8 @@ namespace atto {
     void Core::GGPOStartSession( i32 local, i32 peer ) {
         theCore = this;
 
-        Assert( theCore != nullptr, "The core is null ?" );
-        Assert( theCore->mpState.session == nullptr, "Session already started ? " );
+        AssertMsg( theCore != nullptr, "The core is null ?" );
+        AssertMsg( theCore->mpState.session == nullptr, "Session already started ? " );
 
         LogOutput( LogLevel::INFO, "Starting GGPO Session" );
 
@@ -152,7 +152,7 @@ namespace atto {
 
         i32 suc = ggpo_start_session( &mpState.session, &cb, "Big chongus", 2, sizeof( int ), local );
 
-        Assert( suc == 0, "GGPO start session failed " );
+        AssertMsg( suc == 0, "GGPO start session failed " );
         if( suc == 0 ) {
             LogOutput( LogLevel::INFO, "GGPO Session started " );
         }
@@ -174,7 +174,7 @@ namespace atto {
 
             GGPOPlayerHandle localHandle = {};
             suc = ggpo_add_player( mpState.session, &localPlayer, &localHandle );
-            Assert( suc == GGPO_OK, "Could not add local player" );
+            AssertMsg( suc == GGPO_OK, "Could not add local player" );
 
             theCore->mpState.local = {};
             theCore->mpState.local.playerHandle = localHandle;
@@ -195,7 +195,7 @@ namespace atto {
 
             GGPOPlayerHandle peerHandle = {};
             suc = ggpo_add_player( mpState.session, &peerPlayer, &peerHandle );
-            Assert( suc == GGPO_OK, "Could not add peer player" );
+            AssertMsg( suc == GGPO_OK, "Could not add peer player" );
 
             theCore->mpState.peer = {};
             theCore->mpState.peer.connectProgress = 0;
@@ -206,9 +206,9 @@ namespace atto {
     }
 
     void Core::GGPOPoll() {
-        Assert( mpState.session != nullptr, "Session not started que ?" );
+        AssertMsg( mpState.session != nullptr, "Session not started que ?" );
         GGPOErrorCode result = ggpo_idle( mpState.session );
-        Assert( result == GGPO_OK, "GGPO idle failed" );
+        AssertMsg( result == GGPO_OK, "GGPO idle failed" );
     }
 
     void MultiplayerState::SetConnectionState( PlayerConnectState state, i32 arg1, i32 arg2 ) {

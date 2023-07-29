@@ -321,7 +321,7 @@ namespace atto {
                 } break;
                 case DrawCommandType::SPRITE: {
                     Win32TextureResource* texture = (Win32TextureResource*)cmd.sprite.textureRes;
-                    Assert(texture != nullptr, "Texture resource is null");
+                    AssertMsg(texture != nullptr, "Texture resource is null");
                     /*
                         tl(0,1)  tr(1, 1)
                         bl(0,0)  br(1, 0)
@@ -351,7 +351,7 @@ namespace atto {
                 case DrawCommandType::TEXT:{
                     FontResource* font = cmd.text.fontRes;
 
-                    Assert(font != NULL, "Font is nulls");
+                    AssertMsg(font != NULL, "Font is nulls");
 
                     glDisable(GL_CULL_FACE);
                     
@@ -761,7 +761,7 @@ namespace atto {
     }
 
     void WindowsCore::GLShaderProgramBind(ShaderProgram& program) {
-        Assert(program.programHandle != 0, "Shader program not created");
+        AssertMsg(program.programHandle != 0, "Shader program not created");
         glUseProgram(program.programHandle);
         boundProgram = &program;
     }
@@ -796,7 +796,7 @@ namespace atto {
     }
 
     void WindowsCore::GLShaderProgramSetInt(const char* name, i32 value) {
-        Assert(boundProgram != nullptr, "No shader program bound");
+        AssertMsg(boundProgram != nullptr, "No shader program bound");
         i32 location = GLShaderProgramGetUniformLocation(*boundProgram, name);
         if (location >= 0) {
             glUniform1i(location, value);
@@ -804,7 +804,7 @@ namespace atto {
     }
 
     void WindowsCore::GLShaderProgramSetSampler(const char* name, i32 value) {
-        Assert(boundProgram != nullptr, "No shader program bound");
+        AssertMsg(boundProgram != nullptr, "No shader program bound");
         i32 location = GLShaderProgramGetUniformLocation(*boundProgram, name);
         if (location >= 0) {
             glUniform1i(location, value);
@@ -812,12 +812,12 @@ namespace atto {
     }
 
     void WindowsCore::GLShaderProgramSetTexture(i32 location, u32 textureHandle) {
-        Assert(boundProgram != nullptr, "No shader program bound");
+        AssertMsg(boundProgram != nullptr, "No shader program bound");
         glBindTextureUnit(0, textureHandle);
     }
 
     void WindowsCore::GLShaderProgramSetFloat(const char* name, f32 value) {
-        Assert(boundProgram != nullptr, "No shader program bound");
+        AssertMsg(boundProgram != nullptr, "No shader program bound");
         i32 location = GLShaderProgramGetUniformLocation(*boundProgram, name);
         if (location >= 0) {
             glUniform1f(location, value);
@@ -825,7 +825,7 @@ namespace atto {
     }
 
     void WindowsCore::GLShaderProgramSetVec2(const char* name, glm::vec2 value) {
-        Assert(boundProgram != nullptr, "No shader program bound");
+        AssertMsg(boundProgram != nullptr, "No shader program bound");
         i32 location = GLShaderProgramGetUniformLocation(*boundProgram, name);
         if (location >= 0) {
             glUniform2fv(location, 1, glm::value_ptr(value));
@@ -833,7 +833,7 @@ namespace atto {
     }
 
     void WindowsCore::GLShaderProgramSetVec3(const char* name, glm::vec3 value) {
-        Assert(boundProgram != nullptr, "No shader program bound");
+        AssertMsg(boundProgram != nullptr, "No shader program bound");
         i32 location = GLShaderProgramGetUniformLocation(*boundProgram, name);
         if (location >= 0) {
             glUniform3fv(location, 1, glm::value_ptr(value));
@@ -841,7 +841,7 @@ namespace atto {
     }
 
     void WindowsCore::GLShaderProgramSetVec4(const char* name, glm::vec4 value) {
-        Assert(boundProgram != nullptr, "No shader program bound");
+        AssertMsg(boundProgram != nullptr, "No shader program bound");
         i32 location = GLShaderProgramGetUniformLocation(*boundProgram, name);
         if (location >= 0) {
             glUniform4fv(location, 1, glm::value_ptr(value));
@@ -849,7 +849,7 @@ namespace atto {
     }
 
     void WindowsCore::GLShaderProgramSetMat3(const char* name, glm::mat3 value) {
-        Assert(boundProgram != nullptr, "No shader program bound");
+        AssertMsg(boundProgram != nullptr, "No shader program bound");
         i32 location = GLShaderProgramGetUniformLocation(*boundProgram, name);
         if (location >= 0) {
             glUniformMatrix3fv(location, 1, GL_FALSE, glm::value_ptr(value));
@@ -857,7 +857,7 @@ namespace atto {
     }
 
     void WindowsCore::GLShaderProgramSetMat4(const char* name, glm::mat4 value) {
-        Assert(boundProgram != nullptr, "No shader program bound");
+        AssertMsg(boundProgram != nullptr, "No shader program bound");
         i32 location = GLShaderProgramGetUniformLocation(*boundProgram, name);
         if (location >= 0) {
             glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(value));
@@ -956,7 +956,7 @@ namespace atto {
     }
 
     void WindowsCore::GLVertexBufferUpdate(VertexBuffer vertexBuffer, i32 offset, i32 size, const void* data) {
-        Assert(vertexBuffer.size >= offset + size, "Vertex buffer update out of bounds");
+        AssertMsg(vertexBuffer.size >= offset + size, "Vertex buffer update out of bounds");
         glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer.vbo);
         glBufferSubData(GL_ARRAY_BUFFER, offset, size, data);
         glBindBuffer(GL_ARRAY_BUFFER, 0);

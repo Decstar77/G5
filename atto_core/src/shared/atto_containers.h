@@ -64,14 +64,14 @@ namespace atto
 
     template<typename T, i32 capcity>
     const T* FixedList<T, capcity>::Get(const i32& index) const {
-        Assert(index >= 0 && index < capcity, "Array, invalid index");
+        AssertMsg(index >= 0 && index < capcity, "Array, invalid index");
         return &data[index];
     }
 
 
     template<typename T, i32 capcity>
     T* FixedList<T, capcity>::Get(const i32& index) {
-        Assert(index >= 0 && index < capcity, "Array, invalid index");
+        AssertMsg(index >= 0 && index < capcity, "Array, invalid index");
 
         return &data[index];
     }
@@ -86,7 +86,7 @@ namespace atto
 
     template<typename T, i32 capcity>
     T& FixedList<T, capcity>::Last() {
-        Assert(count >= 1, "Array, invalid index");
+        AssertMsg(count >= 1, "Array, invalid index");
         return data[count - 1];
     }
 
@@ -133,7 +133,7 @@ namespace atto
     template<typename T, i32 capcity>
     T* FixedList<T, capcity>::Add(const T& value) {
         i32 index = count; count++;
-        Assert(index >= 0 && index < capcity, "Array, add to many items");
+        AssertMsg(index >= 0 && index < capcity, "Array, add to many items");
 
         data[index] = value;
 
@@ -143,7 +143,7 @@ namespace atto
     template<typename T, i32 capcity>
     T& FixedList<T, capcity>::AddEmpty() {
         i32 index = count; count++;
-        Assert(index >= 0 && index < capcity, "Array, add to many items");
+        AssertMsg(index >= 0 && index < capcity, "Array, add to many items");
 
         ZeroStruct(data[index]);
 
@@ -177,7 +177,7 @@ namespace atto
 
     template<typename T, i32 capcity>
     void FixedList<T, capcity>::RemoveIndex(const i32& index) {
-        Assert(index >= 0 && index < count, "Array invalid remove index ");
+        AssertMsg(index >= 0 && index < count, "Array invalid remove index ");
         for (i32 i = index; i < count - 1; i++) {
             data[i] = data[i + 1];
         }
@@ -217,7 +217,7 @@ namespace atto
 
     template<typename T, i32 capcity>
     void FixedList<T, capcity>::Append(const T* t, i32 count) {
-        Assert(this->count + count <= capcity, "Array, append to many items");
+        AssertMsg(this->count + count <= capcity, "Array, append to many items");
 
         if (this->count + count <= capcity) {
             for (i32 i = this->count; i < this->count + count; i++) {
@@ -229,14 +229,14 @@ namespace atto
 
     template<typename T, i32 capcity>
     T FixedList<T, capcity>::operator[](const i32& index) const {
-        Assert(index >= 0 && index < capcity, "Array, invalid index");
+        AssertMsg(index >= 0 && index < capcity, "Array, invalid index");
 
         return data[index];
     }
 
     template<typename T, i32 capcity>
     T& FixedList<T, capcity>::operator[](const i32& index) {
-        Assert(index >= 0 && index < capcity, "Array, invalid index");
+        AssertMsg(index >= 0 && index < capcity, "Array, invalid index");
 
         return data[index];
     }
@@ -275,7 +275,7 @@ namespace atto
     _type_& FixedFreeList<_type_, capcity>::Add(i32& index) {
         InitializedIfNeedBe();
         const i32 freeIndex = FindFreeIndex();
-        Assert(freeIndex != -1, "FixedFreeList, no free index");
+        AssertMsg(freeIndex != -1, "FixedFreeList, no free index");
         list.SetCount(list.GetCount() + 1);
         index = freeIndex;
         return list[freeIndex];
@@ -283,9 +283,9 @@ namespace atto
     
     template<typename _type_, i32 capcity>
     void FixedFreeList<_type_, capcity>::Remove(_type_* ptr) {
-        Assert(ptr >= list.GetData() && ptr < list.GetData() + list.GetCount(), "FixedFreeList, invalid remove ptr");
+        AssertMsg(ptr >= list.GetData() && ptr < list.GetData() + list.GetCount(), "FixedFreeList, invalid remove ptr");
         const i32 index = (i32)(ptr - list.GetData());
-        Assert(index >= 0 && index < list.GetCount(), "FixedFreeList, invalid remove index");
+        AssertMsg(index >= 0 && index < list.GetCount(), "FixedFreeList, invalid remove index");
         freeList.Add(index);
     }
     
@@ -497,7 +497,7 @@ namespace atto
         i32 index = length;
         index++;
 
-        Assert(index < CAPCITY, "FixedStringBase, to many characters");
+        AssertMsg(index < CAPCITY, "FixedStringBase, to many characters");
 
         if (index < CAPCITY) {
             length = index;
@@ -510,10 +510,10 @@ namespace atto
     template<u64 SizeBytes>
     FixedStringBase<SizeBytes>& FixedStringBase<SizeBytes>::Add(const char* c) {
         i32 index = length;
-        Assert(index + 1 < CAPCITY, "FixedStringBase, to many characters");
+        AssertMsg(index + 1 < CAPCITY, "FixedStringBase, to many characters");
 
         for (i32 i = 0; index < CAPCITY && c[i] != '\0'; i++, index++) {
-            Assert(index < CAPCITY, "FixedStringBase, to many characters");
+            AssertMsg(index < CAPCITY, "FixedStringBase, to many characters");
 
             if (index < CAPCITY) {
                 data[index] = c[i];
@@ -568,7 +568,7 @@ namespace atto
     template<u64 SizeBytes>
     FixedStringBase<SizeBytes> FixedStringBase<SizeBytes>::SubStr(i32 fromIndex) const {
         const i32 l = length;
-        Assert(fromIndex >= 0 && fromIndex < l, "SubStr range invalid");
+        AssertMsg(fromIndex >= 0 && fromIndex < l, "SubStr range invalid");
 
         FixedStringBase<SizeBytes> result = "";
         for (i32 i = fromIndex; i < l; i++) {
@@ -581,9 +581,9 @@ namespace atto
     template<u64 SizeBytes>
     FixedStringBase<SizeBytes> FixedStringBase<SizeBytes>::SubStr(i32 startIndex, i32 endIndex) const {
         const i32 l = length;
-        Assert(startIndex >= 0 && startIndex < l, "SubStr range invalid");
-        Assert(endIndex >= 0 && endIndex < l, "SubStr range invalid");
-        Assert(startIndex < endIndex, "SubStr range invalid");
+        AssertMsg(startIndex >= 0 && startIndex < l, "SubStr range invalid");
+        AssertMsg(endIndex >= 0 && endIndex < l, "SubStr range invalid");
+        AssertMsg(startIndex < endIndex, "SubStr range invalid");
 
         FixedStringBase<SizeBytes> result = "";
         for (i32 i = startIndex; i < endIndex; i++) {
@@ -607,7 +607,7 @@ namespace atto
     template<u64 SizeBytes>
     void FixedStringBase<SizeBytes>::RemoveCharacter(const i32& removeIndex) {
         const i32 l = length;
-        Assert(removeIndex >= 0 && removeIndex < l, "FixedStringBase, invalid index");
+        AssertMsg(removeIndex >= 0 && removeIndex < l, "FixedStringBase, invalid index");
 
         for (i32 i = removeIndex; i < l; i++) {
             data[i] = data[i + 1];
@@ -632,7 +632,7 @@ namespace atto
         const i32 l = length;
         const i32 prefixLength = static_cast<i32>(StringHash::ConstStrLen(prefix));
 
-        Assert(prefixLength <= l, "FixedStringBase, invalid prefix");
+        AssertMsg(prefixLength <= l, "FixedStringBase, invalid prefix");
 
         for (i32 i = 0; i < prefixLength; i++) {
             if (data[i] != prefix[i]) {
@@ -740,8 +740,8 @@ namespace atto
 
     template<u64 SizeBytes>
     void FixedStringBase<SizeBytes>::CopyFrom(const FixedStringBase& src, const i32& start, const i32& end) {
-        Assert(start >= 0 && start < src.length, "FixedStringBase, invalid index");
-        Assert(end >= 0 && end < src.length, "FixedStringBase, invalid index");
+        AssertMsg(start >= 0 && start < src.length, "FixedStringBase, invalid index");
+        AssertMsg(end >= 0 && end < src.length, "FixedStringBase, invalid index");
 
         i32 writePtr = 0;
         for (i32 i = start; i <= end; i++, writePtr++) {
@@ -873,14 +873,14 @@ namespace atto
 
     template<u64 SizeBytes>
     char& FixedStringBase<SizeBytes>::operator[](const i32& index) {
-        Assert(index >= 0 && index < length, "FixedString, invalid index");
+        AssertMsg(index >= 0 && index < length, "FixedString, invalid index");
 
         return data[index];
     }
 
     template<u64 SizeBytes>
     char FixedStringBase<SizeBytes>::operator[](const i32& index) const {
-        Assert(index >= 0 && index < length, "FixedString, invalid index");
+        AssertMsg(index >= 0 && index < length, "FixedString, invalid index");
         return data[index];
     }
 
@@ -934,7 +934,7 @@ namespace atto
 
     template<typename T, i32 capcity>
     T* FixedQueue<T, capcity>::Enqueue(const T& value) {
-        Assert(count < capcity, "FixedQueue, queue is full");
+        AssertMsg(count < capcity, "FixedQueue, queue is full");
 
         if (count == capcity) {
             return nullptr;
@@ -949,7 +949,7 @@ namespace atto
 
     template<typename T, i32 capcity>
     T FixedQueue<T, capcity>::Dequeue() {
-        Assert(count > 0, "FixedQueue, queue is empty");
+        AssertMsg(count > 0, "FixedQueue, queue is empty");
         if (count == 0) {
             return {};
         }
@@ -978,19 +978,19 @@ namespace atto
     public:
 
         void CreateFromByte(u8* bytes, u32 size) {
-            Assert(size < capacity, "Not enough space");
+            AssertMsg(size < capacity, "Not enough space");
             memcpy(data, bytes, size);
         }
 
         template<typename _type_>
         void Push(const _type_& value) {
-            Assert(head + sizeof(_type_) <= capacity, "Not enough space in buffer to push a value");
+            AssertMsg(head + sizeof(_type_) <= capacity, "Not enough space in buffer to push a value");
             memcpy(&data[head], &value, sizeof(_type_));
             head += sizeof(_type_);
         }
 
         void Push(const void* data, i32 size) {
-            Assert(head + size <= capacity, "Not enough space in buffer to push data");
+            AssertMsg(head + size <= capacity, "Not enough space in buffer to push data");
             memcpy(&this->data[head], data, size);
             head += size;
         }
@@ -1019,13 +1019,13 @@ namespace atto
 
         template<typename _type_>
         void Yoink(_type_& value) {
-            Assert(head + sizeof(_type_) <= capacity, "Not enough space in buffer to yoink a value");
+            AssertMsg(head + sizeof(_type_) <= capacity, "Not enough space in buffer to yoink a value");
             std::memcpy(&value, &data[head], sizeof(_type_));
             head += sizeof(_type_);
         }
 
         void Yoink(void* data, i32 size) {
-            Assert(head + size <= capacity, "Not enough space in buffer to yoink data");
+            AssertMsg(head + size <= capacity, "Not enough space in buffer to yoink data");
             std::memcpy(data, &this->data[head], size);
             head += size;
         }

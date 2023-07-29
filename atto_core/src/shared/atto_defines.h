@@ -4,13 +4,24 @@
 #define ATTO_DEBUG_RENDERING 1
 
 
-#define Assert(expr, msg)                                            \
-    {                                                                \
-        if (expr) {                                                  \
-        } else {                                                     \
-            __debugbreak();                                          \
-        }                                                            \
+#define Assert(expr)                                                            \
+    {                                                                           \
+        if (expr) {                                                             \
+        } else {                                                                \
+            PlatformAssertionFailed(#expr, __FILE__, __func__, __LINE__);       \
+        }                                                                       \
 }
+
+#define AssertMsg(expr, msg)                                                    \
+    {                                                                           \
+        if (expr) {                                                             \
+        } else {                                                                \
+            PlatformAssertionFailed(msg, __FILE__, __func__, __LINE__);         \
+        }                                                                       \
+}
+
+
+
 #if ATTO_DEBUG
 
 #else 
@@ -18,7 +29,7 @@
 
 #endif
 
-#define INVALID_CODE_PATH Assert(false, "Invalid code path")
+#define INVALID_CODE_PATH AssertMsg(false, "Invalid code path")
 
 #define REAL_MAX FLT_MAX
 #define REAL_MIN -FLT_MAX
@@ -77,32 +88,29 @@ namespace atto
     static_assert(sizeof(f64) == 8, "Expected real64 to be 8 bytes.");
 
     template <typename T>
-    inline T AlignUpWithMask(T value, u64 mask)
-    {
+    inline T AlignUpWithMask(T value, u64 mask) {
         return (T)(((u64)value + mask) & ~mask);
     }
 
     template <typename T>
-    inline T AlignDownWithMask(T value, u64 mask)
-    {
+    inline T AlignDownWithMask(T value, u64 mask) {
         return (T)((u64)value & ~mask);
     }
 
     template <typename T>
-    inline T AlignUp(T value, u64 alignment)
-    {
+    inline T AlignUp(T value, u64 alignment) {
         return AlignUpWithMask(value, alignment - 1);
     }
 
     template <typename T>
-    inline T AlignDown(T value, u64 alignment)
-    {
+    inline T AlignDown(T value, u64 alignment) {
         return AlignDownWithMask(value, alignment - 1);
     }
 
     template <typename T>
-    inline bool IsAligned(T value, u64 alignment)
-    {
+    inline bool IsAligned(T value, u64 alignment) {
         return 0 == ((u64)value & (alignment - 1));
     }
+
+    void PlatformAssertionFailed( const char * msg, const char * file, const char *func, int line );
 }

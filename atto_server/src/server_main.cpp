@@ -9,10 +9,15 @@
 #include <iostream>
 #include <unordered_map>
 
+namespace atto {
+    void PlatformAssertionFailed( const char * msg, const char * file, const char * func, int line ) {
+        
+    }
+}
+
 using namespace atto;
 
 static std::unordered_map<u64, ENetPeer *> peers;
-
 
 static u64 peerIdCounter = 0;
 static u64 sessionIdCounter = 0;

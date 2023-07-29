@@ -181,7 +181,7 @@ namespace atto {
     void* Core::MemoryAllocatePermanent(u64 bytes) {
         thePermanentMemoryMutex.lock();
 
-        Assert(thePermanentMemoryCurrent + bytes < thePermanentMemorySize, "Permanent memory overflow");
+        AssertMsg(thePermanentMemoryCurrent + bytes < thePermanentMemorySize, "Permanent memory overflow");
         if (thePermanentMemoryCurrent + bytes < thePermanentMemorySize) {
             void* result = thePermanentMemory + thePermanentMemoryCurrent;
             thePermanentMemoryCurrent += bytes;
@@ -250,7 +250,7 @@ namespace atto {
     void * Core::MemoryAllocateTransient( u64 bytes ) {
         theTransientMemoryMutex.lock();
 
-        Assert(theTransientMemoryCurrent + bytes < theTransientMemorySize, "Transient memory overflow");
+        AssertMsg(theTransientMemoryCurrent + bytes < theTransientMemorySize, "Transient memory overflow");
         if (theTransientMemoryCurrent + bytes < theTransientMemorySize) {
             void* result = theTransientMemory + theTransientMemoryCurrent;
             theTransientMemoryCurrent += bytes;

@@ -38,7 +38,7 @@ namespace atto {
 
     void SimLogic::LoadState( u8 * buffer, i32 len ) {
         core->LogOutput( LogLevel::INFO, "LOAD STATE" );
-        Assert( len == sizeof( SimState ), "SimState size mismatch" );
+        AssertMsg( len == sizeof( SimState ), "SimState size mismatch" );
         memcpy( &state, buffer, len );
     }
 

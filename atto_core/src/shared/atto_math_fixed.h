@@ -8,7 +8,7 @@ namespace atto {
     };
 
     constexpr inline FixedPoint IntToFixed(i32 i) {
-        Assert(i < I16_MAX, "Int to big for fixed point number");
+        AssertMsg(i < I16_MAX, "Int to big for fixed point number");
 
         FixedPoint fp = {};
         fp.value = i << 16;

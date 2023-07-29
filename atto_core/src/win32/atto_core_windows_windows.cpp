@@ -9,6 +9,14 @@ extern "C" {
 }
 
 namespace atto {
+    void PlatformAssertionFailed( const char * msg, const char * file, const char * func, int line ) {
+        char buffer[ 1024 ];
+        sprintf_s( buffer, 1024, "Assertion failed: %s\nFile: %s\nFunction: %s\nLine: %d\n", msg, file, func, line );
+        OutputDebugStringA( buffer );
+        MessageBoxA( NULL, buffer, "Assertion failed", MB_ICONERROR );
+        DebugBreak();
+    }
+
     inline static std::string WcharToAnsi(WCHAR const* str, size_t len) {
         int const size_needed = WideCharToMultiByte(CP_UTF8, 0, str, (int)len, NULL, 0, NULL, NULL);
         std::string strTo(size_needed, 0);

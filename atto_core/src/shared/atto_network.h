@@ -26,7 +26,7 @@ namespace atto {
     }
 
     inline void NetworkMessagePush( NetworkMessage & msg, void *data, i32 len ) {
-        Assert( msg.dataLen + len < NETWORK_MESSAGE_MAX_BYTES, "Network stuffies to big" );
+        AssertMsg( msg.dataLen + len < NETWORK_MESSAGE_MAX_BYTES, "Network stuffies to big" );
         memcpy( msg.data + msg.dataLen, data, len );
         msg.dataLen += len;
     }
@@ -38,14 +38,14 @@ namespace atto {
 
     template<typename _type_>
     inline _type_ NetworkMessagePop( NetworkMessage & msg, i32 & offset ) {
-        Assert( offset + sizeof( _type_ ) <= msg.dataLen, "Network stuffies to big" );
+        AssertMsg( offset + sizeof( _type_ ) <= msg.dataLen, "Network stuffies to big" );
         _type_ * data = (_type_ *)( msg.data + offset );
         offset += sizeof( _type_ );
         return *data;
     }
 
     inline void NetworkMessageReadTillEnd( NetworkMessage & msg, i32 & offset, void ** buffer, i32 & len ) {
-        Assert( offset < msg.dataLen, "Network stuffies to big" );
+        AssertMsg( offset < msg.dataLen, "Network stuffies to big" );
         *buffer = (void *)( msg.data + offset );
         len = msg.dataLen - offset;
         offset = msg.dataLen;
