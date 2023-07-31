@@ -112,5 +112,13 @@ namespace atto
         return 0 == ((u64)value & (alignment - 1));
     }
 
+    inline bool IsEnumFlagSet( i32 value, i32 mask ) {
+        return ( value & mask ) != 0 ? true : false;
+    }
+
+    inline void SetEnumFlag( i32 & value, i32 mask ) {
+        value |= mask;
+    }
+
     void PlatformAssertionFailed( const char * msg, const char * file, const char *func, int line );
 }

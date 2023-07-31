@@ -12,31 +12,91 @@ namespace atto {
         return currentTime;
     }
 
-    Camera Core::RenderCreateCamera() {
-        Camera cam = {};
-        cam.zoom = 1.0f;
-        cam.width = 320;
-        cam.height = 180;
-        return cam;
+    f32 Core::FontGetWidth( FontResource * font, const char * text ) {
+        f32 width = 0;
+
+        for( i32 i = 0; text[ i ] != '\0'; i++ ) {
+            width += (f32)( font->chars[ text[ i ] ].advance >> 6 );
+        }
+
+        return width;
     }
 
-    void Core::RenderSetCamera(Camera* camera) {
-        this->camera = camera;
-        if (camera != nullptr) {
-            f32 hw = camera->width / 2.0f;
-            f32 hh = camera->height / 2.0f;
-            camera->mainSurfaceWidth = mainSurfaceWidth;
-            camera->mainSurfaceHeight = mainSurfaceHeight;
-            camera->p = glm::ortho(-hw, hw, -hh, hh, -1.0f, 1.0f);
-            camera->v = glm::translate(glm::mat4(1), glm::vec3(-camera->pos, 0));
+    f32 Core::FontGetHeight( FontResource * font ) {
+        return (f32)font->fontSize;
+    }
+
+    void Core::UIBegin() {
+        uiState.buttons.Clear();
+    }
+
+    bool Core::UIPushButton( const char * text, glm::vec2 center, glm::vec4 color /*= glm::vec4( 1 ) */ ) {
+        glm::vec2 screenScale = glm::vec2( viewport.z, viewport.w );
+        f32 width = FontGetWidth( arialFont, text );
+        f32 height = FontGetHeight( arialFont );
+        glm::vec2 pad = glm::vec2( 8.0f, 8.0f );
+
+        UIButton btn = {};
+        btn.text = text;
+        btn.center = center * screenScale;
+        btn.size = glm::vec2( width, height ) + pad;
+        btn.textPos = btn.center - glm::vec2( width / 2.0f, -height / 2.0f );
+        btn.color = color;
+
+        BoxBounds bb = {};
+        bb.CreateFromCenterSize( btn.center, btn.size );
+        if( bb.Contains( input.mousePosPixels ) ) {
+            btn.color = color * 1.3f;
+            if( InputMouseButtonDown( MOUSE_BUTTON_1 ) ) {
+                btn.color = color * 1.6f;
+            }
+            if( InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) ) {
+                return true;
+            }
+        }
+
+        uiState.buttons.Add( btn );
+
+        return false;
+    }
+
+    void Core::UIEndAndRender() {
+        const i32 buttonCount = uiState.buttons.GetCount();
+        for( i32 i = 0; i < buttonCount; ++i ) {
+            UIButton & btn = uiState.buttons[ i ];
+            RenderDrawRect( btn.center, btn.size, 0.0f, btn.color );
+            RenderDrawText( arialFont, btn.textPos, btn.text.GetCStr() );
         }
     }
 
-    void Core::RenderDrawCircle(glm::vec2 pos, f32 radius, glm::vec4 colour /*= glm::vec4(1)*/) {
-        if (camera != nullptr) {
-            pos = camera->WorldPointToScreen(pos);
-        }
+    glm::vec2 Core::WorldPosToScreenPos( glm::vec2 world ) {
+        glm::vec3 win = glm::project( glm::vec3( world.x, world.y, 0 ), glm::mat4(1), screenProjection, viewport);
+        return glm::vec2( win.x, win.y );
+    }
 
+    glm::vec2 Core::ScreenPosToWorldPos( glm::vec2 screenPos ) {
+        glm::vec4 cameraPoint = glm::vec4( screenPos.x, screenPos.y, 0, 1 );
+        glm::vec4 screenPoint = screenProjection * cameraPoint;
+
+        glm::mat4 invCam = glm::inverse( cameraProjection );
+        glm::vec4 worldPoint = invCam * screenPoint;
+        return glm::vec2( worldPoint.x, worldPoint.y );
+        glm::vec2 ndc = {};
+        ndc.x = ( screenPoint.x + 1.0f ) * 0.5f;
+        ndc.y = ( screenPoint.y + 1.0f ) * 0.5f;
+
+        screenPoint.x = ndc.x * viewport.z;
+        screenPoint.y = ( screenPoint.y + 1.0f ) * 0.5f * viewport.w + viewport.y;
+
+        screenPoint.y = 0;
+
+        return screenPoint;
+
+        //glm::vec3 win = glm::unProject( glm::vec3( screenPos.x, screenPos.y, 0 ), glm::mat4( 1 ), screenProjection, viewport );
+        //return glm::vec2( win.x, win.y );
+    }
+
+    void Core::RenderDrawCircle( glm::vec2 pos, f32 radius, glm::vec4 colour /*= glm::vec4(1)*/ ) {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::CIRCLE;
         cmd.color = colour;
@@ -46,11 +106,6 @@ namespace atto {
     }
 
     void Core::RenderDrawRect(glm::vec2 bl, glm::vec2 tr, glm::vec4 colour /*= glm::vec4(1)*/) {
-        if (camera != nullptr) {
-            bl = camera->WorldPointToScreen(bl);
-            tr = camera->WorldPointToScreen(tr);
-        }
-
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::RECT;
         cmd.color = colour;
@@ -59,14 +114,9 @@ namespace atto {
         cmd.rect.tr = tr;
         cmd.rect.tl = glm::vec2(bl.x, tr.y);
         drawCommands.drawList.Add(cmd);
-
     }
 
     void Core::RenderDrawRect(glm::vec2 center, glm::vec2 dim, f32 rot, const glm::vec4& color /*= glm::vec4(1)*/) {
-        if (camera != nullptr) {
-            center = camera->WorldPointToScreen(center);
-        }
-
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::RECT;
         cmd.color = color;
@@ -91,35 +141,34 @@ namespace atto {
     }
 
     void Core::RenderDrawLine(glm::vec2 start, glm::vec2 end, f32 thicc, const glm::vec4& color /*= glm::vec4(1)*/) {
-        //glm::vec2 direction = glm::normalize(end - start);
-        //glm::vec2 perpendicular(direction.y, -direction.x);
+        //glm::vec2 direction = glm::normalize( end - start );
+        //glm::vec2 perpendicular( direction.y, -direction.x );
 
         //glm::vec2 points[] = {
-        //    start + perpendicular * (thicc / 2.0f),
-        //    start - perpendicular * (thicc / 2.0f),
-        //    end + perpendicular * (thicc / 2.0f),
-        //    end - perpendicular * (thicc / 2.0f)
+        //    start + perpendicular * ( thicc / 2.0f ),
+        //    start - perpendicular * ( thicc / 2.0f ),
+        //    end + perpendicular * ( thicc / 2.0f ),
+        //    end - perpendicular * ( thicc / 2.0f )
         //};
 
-        //Geometry::SortPointsIntoClockWiseOrder(points, 4);
+        //Geometry::SortPointsIntoClockWiseOrder( points, 4 );
 
         //DrawCommand cmd = {};
-        //cmd.type = DRAW_SHAPE_TYPE_LINE;
+        //cmd.type = DrawCommandType::LINE;
         //cmd.color = color;
-        //cmd.p1 = points[0];
-        //cmd.p2 = points[1];
-        //cmd.p3 = points[2];
-        //cmd.p4 = points[3];
+        //cmd.p1 = points[ 0 ];
+        //cmd.p2 = points[ 1 ];
+        //cmd.p3 = points[ 2 ];
+        //cmd.p4 = points[ 3 ];
 
 
-        //drawCommands.drawList.Add(cmd);
+        //drawCommands.drawList.Add( cmd );
     }
 
-    void Core::RenderDrawSprite(TextureResource* texture, glm::vec2 center, glm::vec2 size, glm::vec4 colour) {
+    void Core::RenderDrawSprite(TextureResource* texture, glm::vec2 center, f32 rot, glm::vec2 size, glm::vec4 colour) {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::SPRITE;
         cmd.color = colour;
-        cmd.sprite.proj = camera != nullptr ? camera->p * camera->v : screenProjection;
         cmd.sprite.textureRes = texture;
         
         glm::vec2 dim = glm::vec2(texture->width, texture->height) * size;
@@ -127,6 +176,12 @@ namespace atto {
         cmd.rect.tr = dim / 2.0f;
         cmd.rect.br = glm::vec2(cmd.rect.tr.x, cmd.rect.bl.y);
         cmd.rect.tl = glm::vec2(cmd.rect.bl.x, cmd.rect.tr.y);
+
+        glm::mat2 rotationMatrix = glm::mat2( cos( rot ), -sin( rot ), sin( rot ), cos( rot ) );
+        cmd.rect.bl = rotationMatrix * cmd.rect.bl;
+        cmd.rect.tr = rotationMatrix * cmd.rect.tr;
+        cmd.rect.br = rotationMatrix * cmd.rect.br;
+        cmd.rect.tl = rotationMatrix * cmd.rect.tl;
 
         cmd.rect.bl += center;
         cmd.rect.tr += center;
@@ -136,13 +191,18 @@ namespace atto {
         drawCommands.drawList.Add(cmd);
     }
 
-    void Core::RenderDrawText(FontResource* font, glm::vec2 bl, const char* text, glm::vec4 colour /*= glm::vec4(1)*/) {
+    void Core::RenderDrawSpriteBL( TextureResource * texture, glm::vec2 bl, glm::vec2 size /*= glm::vec2( 1 )*/, glm::vec4 colour /*= glm::vec4( 1 ) */ ) {
+        glm::vec2 dim = glm::vec2( texture->width, texture->height );
+        RenderDrawSprite( texture, bl + dim / 2.0f * size, 0.0f, size, colour );
+    }
+
+    void Core::RenderDrawText( FontResource * font, glm::vec2 bl, const char * text, glm::vec4 colour /*= glm::vec4(1)*/ ) {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::TEXT;
         cmd.color = colour;
         cmd.text.bl = bl;
         cmd.text.text = text;
-        cmd.text.proj = camera != nullptr ? camera->p * camera->v : screenProjection;
+        cmd.text.proj = screenProjection;
         cmd.text.fontRes = font;
         drawCommands.drawList.Add(cmd);
     }
@@ -192,6 +252,8 @@ namespace atto {
             return result;
         }
 
+        thePermanentMemoryMutex.unlock();
+
         return nullptr;
     }
 
@@ -227,7 +289,11 @@ namespace atto {
         return !input.mouseButtons[button] && input.lastMouseButtons[button];
     }
 
-    FrameInput& Core::InputGetFrameInput() {
+    glm::vec2 Core::InputMousePosPixels() {
+        return input.mousePosPixels;
+    }
+
+    FrameInput & Core::InputGetFrameInput() {
         return input;
     }
 
@@ -245,6 +311,10 @@ namespace atto {
 
     FixedQueue<NetworkMessage, 1024> & Core::GetGGPOMessages() {
         return mpState.messages;
+    }
+
+    FontResource * Core::GetDebugFont() {
+        return arialFont;
     }
 
     void * Core::MemoryAllocateTransient( u64 bytes ) {
@@ -298,21 +368,29 @@ namespace atto {
         theTransientMemoryMutex.unlock();
     }
 
-    glm::vec2 Camera::ScreenPointToWorld( glm::vec2 screen ) {
-        glm::vec4 viewport = glm::vec4(0, 0, mainSurfaceWidth, mainSurfaceHeight);
-        glm::vec3 win(screen.x, screen.y, 0);
-        glm::vec3 world = glm::unProject(win, v, p, viewport);
+    //glm::vec2 Camera::ScreenPointToWorld( glm::vec2 screen ) {
+    //    glm::vec3 win(screen.x, screen.y, 0);
+    //    glm::vec3 world = glm::unProject(win, v, p, viewport);
+    //
+    //    return glm::vec2(world.x, world.y);
+    //}
+    //
+    //glm::vec2 Camera::WorldPointToScreen(glm::vec2 world){
+    //    glm::vec3 win = glm::project(glm::vec3(world.x, world.y, 0), v, p, viewport);
+    //
+    //    //glm::mat4 t = p * v;
+    //    //glm::vec4 win = t * glm::vec4( world.x, world.y, 0, 1 );
+    //    //glm::vec4 ww = win / win.w;
+    //    //// Map to range 0 - 1
+    //    //glm::vec4 win2 = ( ww + glm::vec4( 1.0f ) ) / glm::vec4( 2.0f );
+    //    //win2.y = 1.0f - win2.y;
+    //
+    //    //win.x = win2.x * mainSurfaceWidth;
+    //    //win.y = win2.y * mainSurfaceHeight;
+    //
+    //    return glm::vec2(win.x, win.y);
+    //}
 
-        return glm::vec2(world.x, world.y);
-
-    }
-
-    glm::vec2 Camera::WorldPointToScreen(glm::vec2 world){
-        glm::vec4 viewport = glm::vec4(0, 0, mainSurfaceWidth, mainSurfaceHeight);
-        glm::vec3 win = glm::project(glm::vec3(world.x, world.y, 0), v, p, viewport);
-
-        return glm::vec2(win.x, win.y);
-    }
 
 
 }

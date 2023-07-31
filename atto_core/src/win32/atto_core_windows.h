@@ -82,15 +82,20 @@ namespace atto {
     class WindowsCore : public Core {
     public:
         void Run(int argc, char** argv) override;
-        void RenderSubmit() override;
+        
         virtual TextureResource*    ResourceGetAndLoadTexture(const char* name) override;
         virtual AudioResource*      ResourceGetAndLoadAudio(const char* name) override;
         virtual FontResource*       ResourceGetAndLoadFont(const char* name, i32 fontSize) override;
 
         virtual AudioSpeaker        AudioPlay(AudioResource* audioResource, f32 volume = 1.0f, bool looping = false) override;
 
+        void                        RenderSetCamera( f32 width, f32 height ) override;
+        void                        RenderSubmit() override;
+
         void WindowClose() override;
         void WindowSetTitle(const char* title) override;
+
+        void                        GLResetSurface(f32 w, f32 h);
 
     protected:
         ResourceRegistry    resources = {};
@@ -142,7 +147,6 @@ namespace atto {
         VertexBuffer    GLCreateVertexBuffer( VertexLayout * layout, i32 vertexCount, const void* srcData, bool dyanmic);
         void            GLVertexBufferUpdate(VertexBuffer vertexBuffer, i32 offset, i32 size, const void* data);
 
-        void            GLResetSurface();
         void            GLInitializeShapeRendering();
         void            GLInitializeSpriteRendering();
         void            GLInitializeTextRendering();

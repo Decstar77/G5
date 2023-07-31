@@ -65,27 +65,13 @@ namespace atto {
         i32         index;
     };
 
-    class Camera {
-    public:
-        glm::vec2 pos;
-        f32 zoom;
-        i32 width;
-        i32 height;
-        i32 mainSurfaceWidth;
-        i32 mainSurfaceHeight;
-        glm::mat4 p;
-        glm::mat4 v;
-
-        glm::vec2 ScreenPointToWorld( glm::vec2 screen );
-        glm::vec2 WorldPointToScreen( glm::vec2 world );
-    };
-
     enum class DrawCommandType {
         NONE = 0,
         CIRCLE,
         RECT,
         SPRITE,
         TEXT,
+        LINE,
     };
 
     struct DrawCommand {
@@ -108,7 +94,6 @@ namespace atto {
                     glm::vec2 br;
                     glm::vec2 bl;
                     glm::vec2 tl;
-                    glm::mat4 proj;
                     TextureResource * textureRes;
                 } sprite;
                 struct {
@@ -146,20 +131,61 @@ namespace atto {
 
     struct PlayerConnectionInfo {
         PlayerConnectState  state;
-        int                 playerHandle;
-        int                 playerNumber;
-        int                 connectProgress;
-        int                 disconnectTimeout;
-        int                 disconnectStart;
+        i32                 playerHandle;
+        i32                 playerNumber;
+        i32                 connectProgress;
+        i32                 disconnectTimeout;
+        i32                 disconnectStart;
+        i32                 pingToPeer;
+        i32                 kbsSent;
+    };
+    
+    enum MapTileType {
+        MAP_TILE_TYPE_NONE = 0,
+        MAP_TILE_TYPE_METAL_WALL,
+    };
+
+    struct MapElement {
+        MapTileType type;
+        i32 index;
+        fpv2 pos;
+        fp rot;
+    };
+
+    enum SimInput {
+        SIM_INPUT_NONE                      = 0,
+        SIM_INPUT_TANK_LEFT                 = SetABit( 1 ),
+        SIM_INPUT_TANK_RIGHT                = SetABit( 2 ),
+        SIM_INPUT_TANK_UP                   = SetABit( 3 ),
+        SIM_INPUT_TANK_DOWN                 = SetABit( 4 ),
+        SIM_INPUT_TANK_TURRET_LEFT          = SetABit( 5 ),
+        SIM_INPUT_TANK_TURRET_RIGHT         = SetABit( 6 ),
+    };
+
+    struct SimTank {
+        fpv2    pos;
+        fp      rot;
+        fp      turretRot;
+        i32     health;
     };
 
     struct SimState {
-        glm::vec2 p1Pos;
-        glm::vec2 p2Pos;
+        FixedList<MapElement, 2048> elements;
+        FixedList<SimTank, 2>       playerTanks;
+    };
+
+    enum SimGameType {
+        SIM_GAME_TYPE_NONE = 0,
+        SIM_GAME_TYPE_SINGLE_PLAYER,
+        SIM_GAME_TYPE_MULTI_PLAYER,
     };
 
     class SimLogic {
     public:
+        void StartSinglePlayerGame();
+        void StartMultiplayerGame();
+
+        void Start();
         void Advance( i32 playerOneInput, i32 playerTwoInput, i32 dcFlags);
         void LoadState( u8 * buffer, i32 len );
         void SaveState( u8 ** buffer, i32 * len, i32 * checksum, i32 frame );
@@ -167,10 +193,23 @@ namespace atto {
         void LogState( char * filename, u8 * buffer, i32 len );
 
         void SkipNextUpdates( i32 count );
+        i32 GetNextInputs( i32 localPLayerNumber );
+
+        i32 mapWidth = 1280;
+        i32 mapHeight = 720;
 
         i32 skipNextSteps = 0;
         SimState state = {};
         Core * core = nullptr;
+        SimGameType gameType = SimGameType::SIM_GAME_TYPE_NONE;
+        bool isRunning = false;
+    };
+
+    enum class GameLocationState {
+        NONE = 0,
+        MAIN_MENU,
+        IN_GAME,
+        OPTIONS,
     };
 
     class GameLogic {
@@ -179,11 +218,15 @@ namespace atto {
         void UpdateAndRender( Core * core, SimLogic * sim );
         void Shutdown( Core * core );
 
-        SmallString     debugText;
-        FontResource * arialFont;
+        void MainMenuUpdateAndRender( Core * core, SimLogic * sim );
+        void InGameUpdateAndRender( Core * core, SimLogic * sim );
+        void OptionsUpdateAndRender( Core * core, SimLogic * sim );
 
-        glm::vec2 p1VisPos;
-        glm::vec2 p2VisPos;
+        FontResource *      arialFont;
+        GameLocationState   currentState = GameLocationState::NONE;
+        glm::vec2           p1VisPos;
+        f32                 p1VisTurretRot;
+        glm::vec2           p2VisPos;
     };
 
 #define MP_FRAME_DELAY 2
@@ -203,7 +246,19 @@ namespace atto {
 
         void SetConnectionState( PlayerConnectState state, i32 arg1, i32 arg2 );
         void SetConnectionState( int playerNumber, PlayerConnectState state, i32 arg1, i32 arg2 );
+        void GatherNetworkStats();
+    };
 
+    struct UIButton {
+        glm::vec2 textPos;
+        glm::vec2 center;
+        glm::vec2 size;
+        glm::vec4 color;
+        SmallString text;
+    };
+
+    struct UIState {
+        FixedList<UIButton, 64> buttons;
     };
 
     class Core {
@@ -218,14 +273,24 @@ namespace atto {
         virtual AudioResource *             ResourceGetAndLoadAudio( const char * name ) = 0;
         virtual FontResource *              ResourceGetAndLoadFont( const char * name, i32 fontSize ) = 0;
 
-        Camera                              RenderCreateCamera();
-        void                                RenderSetCamera( Camera * camera );
+        f32                                 FontGetWidth( FontResource * font, const char * text );
+        f32                                 FontGetHeight( FontResource * font );
+
+        void                                UIBegin();
+        bool                                UIPushButton( const char * text, glm::vec2 center, glm::vec4 color = glm::vec4( 1 ) );
+        void                                UIEndAndRender();
+
+        glm::vec2                           WorldPosToScreenPos( glm::vec2 worldPos );
+        glm::vec2                           ScreenPosToWorldPos( glm::vec2 screenPos );
+
         void                                RenderDrawCircle( glm::vec2 pos, f32 radius, glm::vec4 colour = glm::vec4( 1 ) );
         void                                RenderDrawRect( glm::vec2 bl, glm::vec2 tr, glm::vec4 colour = glm::vec4( 1 ) );
         void                                RenderDrawRect( glm::vec2 center, glm::vec2 dim, f32 rot, const glm::vec4 & color = glm::vec4( 1 ) );
         void                                RenderDrawLine( glm::vec2 start, glm::vec2 end, f32 thicc, const glm::vec4 & color = glm::vec4( 1 ) );
-        void                                RenderDrawSprite( TextureResource * texture, glm::vec2 center, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
+        void                                RenderDrawSprite( TextureResource * texture, glm::vec2 center, f32 rot = 0.0f, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
+        void                                RenderDrawSpriteBL( TextureResource * texture, glm::vec2 bl, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
         void                                RenderDrawText( FontResource * font, glm::vec2 bl, const char * text, glm::vec4 colour = glm::vec4( 1 ) );
+        virtual void                        RenderSetCamera( f32 width, f32 height ) = 0;
         virtual void                        RenderSubmit() = 0;
 
         virtual AudioSpeaker                AudioPlay( AudioResource * audioResource, f32 volume = 1.0f, bool looping = false ) = 0;
@@ -251,7 +316,8 @@ namespace atto {
         bool                                InputMouseButtonUp( MouseButton button );
         bool                                InputMouseButtonJustPressed( MouseButton button );
         bool                                InputMouseButtonJustReleased( MouseButton button );
-        FrameInput & InputGetFrameInput();
+        glm::vec2                           InputMousePosPixels();
+        FrameInput &                        InputGetFrameInput();
 
         virtual void                        WindowClose() = 0;
         virtual void                        WindowSetTitle( const char * title ) = 0;
@@ -265,6 +331,8 @@ namespace atto {
 
         FixedQueue<NetworkMessage, 1024> &  GetGGPOMessages();
 
+        FontResource *                      GetDebugFont();
+
         virtual void                        Run( int argc, char ** argv ) = 0;
 
     protected:
@@ -273,19 +341,23 @@ namespace atto {
         RenderCommands      drawCommands = {};
         FrameInput          input = {};
         MultiplayerState    mpState = {};
+        UIState             uiState = {};
+        
 
         NetClient * client = nullptr;
         SimLogic * simLogic = nullptr;
         GameLogic * gameLogic = nullptr;
 
+        FontResource *      arialFont = NULL;
+
         f64                 currentTime = 0.0f;
         f32                 deltaTime = 0.0f;
 
-        i32                 mainSurfaceWidth;
-        i32                 mainSurfaceHeight;
+        f32                 cameraWidth;
+        f32                 cameraHeight;
+        glm::vec4           viewport;
         glm::mat4           screenProjection;
-
-        Camera * camera = {};
+        glm::mat4           cameraProjection;
 
         u8 * thePermanentMemory = nullptr;
         u64 thePermanentMemorySize = 0;

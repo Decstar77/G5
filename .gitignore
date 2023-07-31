@@ -16,6 +16,7 @@ x86_64
 *.pyxel
 assets
 logs
+res
 *.sln
 *.vcxproj
 *.vcxproj.filters

@@ -7,6 +7,7 @@ namespace atto {
 
     static Core * theCore = nullptr;
     static bool BeginGame( const char * game ) {
+        theCore->GetSimLogic()->Start();
         return true;
     }
 
@@ -50,6 +51,7 @@ namespace atto {
             case GGPO_EVENTCODE_SYNCHRONIZING_WITH_PEER:
             {
                 int p = 100 * info->u.synchronizing.count / info->u.synchronizing.total;
+                theCore->LogOutput( LogLevel::INFO, "Synchronizing with peer %d", p );
                 theCore->GetMPState()->SetConnectionState( info->u.synchronizing.player, PLAYER_CONNECTION_STATE_SYNCHRONIZING, p, 0 );
             }break;
             case GGPO_EVENTCODE_SYNCHRONIZED_WITH_PEER:
@@ -64,7 +66,7 @@ namespace atto {
             } break;
             case GGPO_EVENTCODE_CONNECTION_INTERRUPTED:
             {
-                theCore->LogOutput( LogLevel::INFO, "Interupted" );
+                theCore->LogOutput( LogLevel::INFO, "Interrupted" );
                 int n = (int)theCore->GetLastTime();
                 int d = info->u.connection_interrupted.disconnect_timeout;
                 theCore->GetMPState()->SetConnectionState( info->u.connection_interrupted.player, PLAYER_CONNECTION_STATE_DISCONNECTING, n, d );
@@ -230,6 +232,17 @@ namespace atto {
                 }
             }
         }
+    }
+    
+    void MultiplayerState::GatherNetworkStats() {
+        for( i32 i = 0; i < MP_PLAYER_COUNT; i++ ) {
+            GGPONetworkStats stats = {};
+            GGPOErrorCode result = ggpo_get_network_stats( session, players[ i ].playerHandle, &stats );
+            Assert( result == GGPO_OK );
+            players[ i ].pingToPeer = Max( stats.network.ping - 60, 0 );
+            players[ i ].kbsSent = stats.network.kbps_sent;
+        }
+        
     }
 
 }

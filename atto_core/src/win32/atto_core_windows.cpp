@@ -17,16 +17,16 @@
 
 namespace atto {
     
-    GLFWmonitor*                monitor = nullptr;
-    LargeString                 monitorName = LargeString::FromLiteral("");
-    f64                         monitorRefreshRate = 0;
-    GLFWwindow*                 window = nullptr;
-    i32                         windowWidth = 16 * 115;
-    i32                         windowHeight = 9 * 115;
-    f32                         windowAspect = (f32)windowWidth / (f32)windowHeight;
-    SmallString                 windowTitle = SmallString::FromLiteral("Game");
-    bool                        windowFullscreen = false;
-    bool                        shouldClose = false;
+    static GLFWmonitor*                monitor = nullptr;
+    static LargeString                 monitorName = LargeString::FromLiteral("");
+    static f64                         monitorRefreshRate = 0;
+    static GLFWwindow*                 window = nullptr;
+    static i32                         windowWidth = 0;
+    static i32                         windowHeight = 0;
+    static f32                         windowAspect = 0;
+    static SmallString                 windowTitle = SmallString::FromLiteral("Game");
+    static bool                        windowFullscreen = false;
+    static bool                        shouldClose = false;
 
     static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
         Core * core = (Core * )glfwGetWindowUserPointer(window);
@@ -53,10 +53,31 @@ namespace atto {
     }
 
     static void FramebufferCallback(GLFWwindow* window, i32 w, i32 h) {
+        WindowsCore * core = (WindowsCore *)glfwGetWindowUserPointer( window );
         windowWidth = w;
         windowHeight = h;
         windowAspect = (f32)w / (f32)h;
-        //DrawSurfaceResized(*os.rs, w, h);
+
+        core->GLResetSurface((f32)w, (f32)h);
+#if 0
+        // Maintain aspect ratio with black bars
+        mainSurfaceWidth = (i32)( 1280.0 * 1.6f );
+        mainSurfaceHeight = (i32)( 720.0 * 1.6f );
+        //mainSurfaceWidth = 480;
+        //mainSurfaceHeight = 360;
+
+        f32 ratioX = (f32)w / (f32)mainSurfaceWidth;
+        f32 ratioY = (f32)h / (f32)mainSurfaceHeight;
+        f32 ratio = ratioX < ratioY ? ratioX : ratioY;
+
+        i32 viewWidth = (i32)( mainSurfaceWidth * ratio );
+        i32 viewHeight = (i32)( mainSurfaceHeight * ratio );
+
+        i32 viewX = (i32)( ( w - mainSurfaceWidth * ratio ) / 2 );
+        i32 viewY = (i32)( ( h - mainSurfaceHeight * ratio ) / 2 );
+
+        glViewport( viewX, viewY, viewWidth, viewHeight );
+#endif
     }
 
     void WindowsCore::Run(int argc, char** argv) {
@@ -78,7 +99,7 @@ namespace atto {
 #endif
 
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-        glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+        glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
         glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_FALSE);
         //glfwWindowHint(GLFW_SAMPLES, 4);
 
@@ -100,7 +121,6 @@ namespace atto {
             return;
         }
 
-        glfwGetFramebufferSize(window, &mainSurfaceWidth, &mainSurfaceHeight);
         glfwMakeContextCurrent(window);
         glfwSwapInterval(1);
 
@@ -119,12 +139,20 @@ namespace atto {
         gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
         LogOutput(LogLevel::INFO, "OpenGL %s, GLSL %s", glGetString(GL_VERSION), glGetString(GL_SHADING_LANGUAGE_VERSION));
 
-        GLResetSurface();
+        i32 w = 0;
+        i32 h = 0;
+        glfwGetFramebufferSize( window, &w, &h );
+
+        RenderSetCamera( 1280, 720 );
+        GLResetSurface((f32)w, (f32)h);
+
         GLInitializeShapeRendering();
         GLInitializeSpriteRendering();
         GLInitializeTextRendering();
 
         ALInitialize();
+
+        arialFont = ResourceGetAndLoadFont( "arial.ttf", 24 );
 
         client = new NetClient(this);
 
@@ -163,7 +191,7 @@ namespace atto {
                             i32 peerId = NetworkMessagePop<i32>( msg, offset );
 
                             LogOutput( LogLevel::INFO, "Start game me=%d, other=%d", localId, peerId );
-
+                            gameLogic->currentState = GameLocationState::IN_GAME;
                             GGPOStartSession( localId, peerId );
 
                         } break;
@@ -180,65 +208,55 @@ namespace atto {
                 if( mpState.session != nullptr ) {
                     GGPOPoll();
 
-                    i32 dir = 0;
-                    if( InputKeyDown( KEY_CODE_A ) ) {
-                        dir = 1;
-                    }
-                    if( InputKeyDown( KEY_CODE_D ) ) {
-                        dir = 2;
-                    }
-                    if( InputKeyDown( KEY_CODE_W ) ) {
-                        dir = 3;
-                    }
-                    if( InputKeyDown( KEY_CODE_S ) ) {
-                        dir = 4;
-                    }
-                    
-                    GGPOErrorCode result = GGPO_OK;
-                    if( mpState.local.playerHandle != GGPO_INVALID_HANDLE ) {
-                        result = ggpo_add_local_input( mpState.session, mpState.local.playerHandle, &dir, sizeof( i32 ) );
-                    }
+                    simTickCurrent += deltaTime;
+                    if( simTickCurrent > simTickRate ) {
+                        simTickCurrent -= simTickRate;
 
-                    if( GGPO_SUCCEEDED( result ) ) {
-                        int dcFlags = 0;
-                        int gameInputs[ MP_MAX_INPUTS ] = { 0 };
+                        if( simLogic->skipNextSteps > 0 ) {
+                            simLogic->skipNextSteps--;
+                        }
+                        else {
+                            i32 dir = simLogic->GetNextInputs( mpState.local.playerNumber );
 
-                        result = ggpo_synchronize_input( mpState.session,
-                            (void *)gameInputs,
-                            sizeof( int ) * MP_MAX_INPUTS,
-                            &dcFlags
-                        );
+                            GGPOErrorCode result = GGPO_OK;
+                            if( mpState.local.playerHandle != GGPO_INVALID_HANDLE ) {
+                                result = ggpo_add_local_input( mpState.session, mpState.local.playerHandle, &dir, sizeof( i32 ) );
+                            }
 
-                        if( GGPO_SUCCEEDED( result ) ) {
-                            // inputs[0] and inputs[1] contain the inputs for p1 and p2.  Advance
-                            // the game by 1 frame using those inputs.
-                            simLogic->Advance( gameInputs[ 0 ], gameInputs[ 1 ], dcFlags );
-                            
-                            ggpo_advance_frame( mpState.session );
+                            if( GGPO_SUCCEEDED( result ) ) {
+                                int dcFlags = 0;
+                                int gameInputs[ MP_MAX_INPUTS ] = { 0 };
+
+                                result = ggpo_synchronize_input( mpState.session,
+                                    (void *)gameInputs,
+                                    sizeof( int ) * MP_MAX_INPUTS,
+                                    &dcFlags
+                                );
+
+                                if( GGPO_SUCCEEDED( result ) ) {
+                                    // inputs[0] and inputs[1] contain the inputs for p1 and p2.  Advance
+                                    // the game by 1 frame using those inputs.
+                                    simLogic->Advance( gameInputs[ 0 ], gameInputs[ 1 ], dcFlags );
+
+                                    result = ggpo_advance_frame( mpState.session );
+                                    Assert( result == GGPO_OK );
+
+                                    mpState.GatherNetworkStats();
+                                }
+                            }
                         }
                     }
                 }
             }
 
-            //i32 dir = 0;
-            //if( InputKeyDown( KEY_CODE_A ) ) {
-            //    dir = 1;
-            //}
-            //if( InputKeyDown( KEY_CODE_D ) ) {
-            //    dir = 2;
-            //}
-            //if( InputKeyDown( KEY_CODE_W ) ) {
-            //    dir = 3;
-            //}
-            //if( InputKeyDown( KEY_CODE_S ) ) {
-            //    dir = 4;
-            //}
-
-            //simTickCurrent += deltaTime;
-            //if( simTickCurrent > simTickRate ) {
-            //    simTickCurrent -= simTickRate;
-            //    simLogic->Advance( dir, 0, 0 );
-            //}
+            if( simLogic->gameType == SIM_GAME_TYPE_SINGLE_PLAYER && simLogic->isRunning == true ) {
+                i32 inputForTick = simLogic->GetNextInputs( 0 );
+                simTickCurrent += deltaTime;
+                if( simTickCurrent > simTickRate ) {
+                    simTickCurrent -= simTickRate;
+                    simLogic->Advance( inputForTick, 0, 0 );
+                }
+            }
 
             gameLogic->UpdateAndRender(this, simLogic);
 
@@ -259,8 +277,15 @@ namespace atto {
         delete client;
     }
 
+    void WindowsCore::RenderSetCamera( f32 width, f32 height ) {
+        cameraWidth = width;
+        cameraHeight = height;
+        GLResetSurface( viewport.z, viewport.w );
+    }
+
     void WindowsCore::RenderSubmit() {
-        glClearColor(0.5f, 0.2f, 0.2f, 1.0f);
+        //glClearColor(0.5f, 0.2f, 0.2f, 1.0f);
+        glClearColor( 0.1f, 0.1f, 0.2f, 1.0f );
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         const i32 drawCount = drawCommands.drawList.GetCount();
@@ -284,11 +309,11 @@ namespace atto {
 
                     GLEnableAlphaBlending();
                     GLShaderProgramBind(shapeProgram);
-                    GLShaderProgramSetMat4("p", screenProjection);
+                    GLShaderProgramSetMat4("p", cameraProjection );
                     GLShaderProgramSetInt("mode", 1);
                     GLShaderProgramSetVec4("color", cmd.color);
                     GLShaderProgramSetVec4("shapePosAndSize", 
-                        glm::vec4(cmd.circle.c.x, (f32)mainSurfaceHeight - cmd.circle.c.y, cmd.circle.r, cmd.circle.r));
+                        glm::vec4(cmd.circle.c.x, (f32)viewport.w - cmd.circle.c.y, cmd.circle.r, cmd.circle.r));
                     GLShaderProgramSetVec4("shapeRadius", 
                         glm::vec4(cmd.circle.r - 2, 0, 0, 0)); // The 4 here is to stop the circle from being cut of from the edges
 
@@ -310,7 +335,7 @@ namespace atto {
 
                     GLEnableAlphaBlending();
                     GLShaderProgramBind(shapeProgram);
-                    GLShaderProgramSetMat4("p", screenProjection);
+                    GLShaderProgramSetMat4("p", cameraProjection);
                     GLShaderProgramSetInt("mode", 0);
                     GLShaderProgramSetVec4("color", cmd.color);
 
@@ -336,11 +361,12 @@ namespace atto {
                         { cmd.sprite.tr.x, cmd.sprite.tr.y, 1.0f, 0.0f }
                     };
 
-                    GLEnablePreMultipliedAlphaBlending();
+                    //GLEnablePreMultipliedAlphaBlending();
+                    GLEnableAlphaBlending();
                     GLShaderProgramBind(spriteProgram);
                     GLShaderProgramSetSampler("texture0", 0);
                     GLShaderProgramSetTexture(0, texture->handle);
-                    GLShaderProgramSetMat4("p", cmd.sprite.proj);
+                    GLShaderProgramSetMat4("p", cameraProjection );
 
                     glBindVertexArray(spriteVertexBuffer.vao);
                     GLVertexBufferUpdate(spriteVertexBuffer, 0, sizeof(vertices), vertices);
@@ -567,7 +593,7 @@ namespace atto {
                 vec2 p = gl_FragCoord.xy;
 
                 if (mode == 0) {
-                    FragColor = vec4(1,1,1,1);
+                    FragColor = color;
                 } else if (mode == 1) {
                     float d = CircleSDF(r, p, shapeRadius.x);
                     d = clamp(d, 0.0, 1.0);
@@ -604,6 +630,7 @@ namespace atto {
             }
         )";
 
+#if 0
         const char* fragmentShaderSource = R"(
             #version 330 core
             out vec4 FragColor;
@@ -686,6 +713,20 @@ namespace atto {
                 FragColor = sampled;
             }
         )";
+#else 
+        const char * fragmentShaderSource = R"(
+            #version 330 core
+            out vec4 FragColor;
+
+            in vec2 vertexTexCoord;
+            uniform sampler2D texture0;
+
+            void main() {
+                vec4 sampled = texture(texture0, vertexTexCoord);
+                FragColor = sampled;
+            }
+        )";
+#endif
 
         VertexLayoutSprite sprite = {};
         spriteProgram = GLCreateShaderProgram(vertexShaderSource, fragmentShaderSource);
@@ -749,8 +790,12 @@ namespace atto {
             settings.basePath = "assets/";
             settings.windowStartPosX = -1;
             settings.windowStartPosY = -1;
-            settings.windowWidth = 16 * 115;
-            settings.windowHeight = 9 * 115;
+            //settings.windowWidth = 16 * 115;
+            //settings.windowHeight = 9 * 115;
+            settings.windowWidth = 1280;
+            settings.windowHeight = 720;
+            //settings.windowWidth = 1920;
+            //settings.windowHeight = 1050;
             settings.fullscreen = false;
             settings.vsync = true;
             settings.showDebug = true;
@@ -962,10 +1007,25 @@ namespace atto {
         glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
 
-    void WindowsCore::GLResetSurface() {
-        glfwGetFramebufferSize(window, &mainSurfaceWidth, &mainSurfaceHeight);
-        glViewport(0, 0, mainSurfaceWidth, mainSurfaceHeight);
-        screenProjection = glm::ortho(0.0f, (f32)mainSurfaceWidth, (f32)mainSurfaceHeight, 0.0f, -1.0f, 1.0f);
+    void WindowsCore::GLResetSurface( f32 w, f32 h ) {
+        // Maintain aspect ratio with black bars
+        f32 ratioX = (f32)w / (f32)cameraWidth;
+        f32 ratioY = (f32)h / (f32)cameraHeight;
+        f32 ratio = ratioX < ratioY ? ratioX : ratioY;
+
+        i32 viewWidth = (i32)( cameraWidth * ratio );
+        i32 viewHeight = (i32)( cameraHeight * ratio );
+
+        i32 viewX = (i32)( ( w - cameraWidth * ratio ) / 2 );
+        i32 viewY = (i32)( ( h - cameraHeight * ratio ) / 2 );
+
+        glViewport( viewX, viewY, viewWidth, viewHeight );
+
+        viewport = glm::vec4( viewX, viewY, viewWidth, viewHeight );
+        cameraProjection = glm::ortho(0.0f, (f32)cameraWidth, 0.0f, (f32)cameraHeight, -1.0f, 1.0f);
+        //cameraProjection = glm::ortho( 0.0f, (f32)cameraWidth, (f32)cameraHeight, 0.0f, -1.0f, 1.0f );
+        screenProjection = glm::ortho( 0.0f, (f32)w, (f32)h, 0.0f, -1.0f, 1.0f );
+        //screenProjection = glm::ortho( (f32)viewX, (f32)viewWidth, (f32)viewY, (f32)viewHeight, -1.0f, 1.0f);
     }
 
     void VertexLayoutShape::Layout() {
