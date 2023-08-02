@@ -1021,11 +1021,11 @@ namespace atto {
 
         glViewport( viewX, viewY, viewWidth, viewHeight );
 
+        mainSurfaceWidth = w;
+        mainSurfaceHeight = h;
         viewport = glm::vec4( viewX, viewY, viewWidth, viewHeight );
         cameraProjection = glm::ortho(0.0f, (f32)cameraWidth, 0.0f, (f32)cameraHeight, -1.0f, 1.0f);
-        //cameraProjection = glm::ortho( 0.0f, (f32)cameraWidth, (f32)cameraHeight, 0.0f, -1.0f, 1.0f );
         screenProjection = glm::ortho( 0.0f, (f32)w, (f32)h, 0.0f, -1.0f, 1.0f );
-        //screenProjection = glm::ortho( (f32)viewX, (f32)viewWidth, (f32)viewY, (f32)viewHeight, -1.0f, 1.0f);
     }
 
     void VertexLayoutShape::Layout() {

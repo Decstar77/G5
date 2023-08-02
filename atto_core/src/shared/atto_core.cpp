@@ -75,25 +75,24 @@ namespace atto {
     }
 
     glm::vec2 Core::ScreenPosToWorldPos( glm::vec2 screenPos ) {
-        glm::vec4 cameraPoint = glm::vec4( screenPos.x, screenPos.y, 0, 1 );
-        glm::vec4 screenPoint = screenProjection * cameraPoint;
+        screenPos.y = mainSurfaceHeight - screenPos.y;
 
-        glm::mat4 invCam = glm::inverse( cameraProjection );
-        glm::vec4 worldPoint = invCam * screenPoint;
-        return glm::vec2( worldPoint.x, worldPoint.y );
-        glm::vec2 ndc = {};
-        ndc.x = ( screenPoint.x + 1.0f ) * 0.5f;
-        ndc.y = ( screenPoint.y + 1.0f ) * 0.5f;
+        // @NOTE: Convert to [ 0, 1] not NDC[-1, 1] because 
+        // @NOTE: we're doing a small optimization here by not doing the inverse of the camera matrix
+        // @NOTE: but instead just using the camera width and height
 
-        screenPoint.x = ndc.x * viewport.z;
-        screenPoint.y = ( screenPoint.y + 1.0f ) * 0.5f * viewport.w + viewport.y;
+        f32 l = viewport.x;
+        f32 r = viewport.x + viewport.z;
+        f32 nx = ( screenPos.x - l ) / ( r - l );
 
-        screenPoint.y = 0;
+        f32 b = viewport.y;
+        f32 t = viewport.y + viewport.w;
+        f32 ny = ( screenPos.y - b ) / ( t - b );
 
-        return screenPoint;
+        f32 wx = nx * cameraWidth;
+        f32 wy = ny * cameraHeight;
 
-        //glm::vec3 win = glm::unProject( glm::vec3( screenPos.x, screenPos.y, 0 ), glm::mat4( 1 ), screenProjection, viewport );
-        //return glm::vec2( win.x, win.y );
+        return glm::vec2( wx, wy );
     }
 
     void Core::RenderDrawCircle( glm::vec2 pos, f32 radius, glm::vec4 colour /*= glm::vec4(1)*/ ) {

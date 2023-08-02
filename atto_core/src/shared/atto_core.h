@@ -355,6 +355,8 @@ namespace atto {
 
         f32                 cameraWidth;
         f32                 cameraHeight;
+        f32                 mainSurfaceWidth;
+        f32                 mainSurfaceHeight;
         glm::vec4           viewport;
         glm::mat4           screenProjection;
         glm::mat4           cameraProjection;
