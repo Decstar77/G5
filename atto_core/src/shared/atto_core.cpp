@@ -70,8 +70,23 @@ namespace atto {
     }
 
     glm::vec2 Core::WorldPosToScreenPos( glm::vec2 world ) {
-        glm::vec3 win = glm::project( glm::vec3( world.x, world.y, 0 ), glm::mat4(1), screenProjection, viewport);
-        return glm::vec2( win.x, win.y );
+        // @NOTE: Convert to [ 0, 1] not NDC[-1, 1] because 
+        // @NOTE: we're doing a small optimization here by not doing the inverse of the camera matrix
+        // @NOTE: but instead just using the camera width and height
+
+        f32 l = viewport.x;
+        f32 r = viewport.x + viewport.z;
+        f32 nx = world.x / cameraWidth;
+        f32 sx = l + nx * ( r - l );
+
+        f32 b = viewport.y;
+        f32 t = viewport.y + viewport.w;
+        f32 ny = world.y / cameraHeight;
+        f32 sy = b + ny * ( t - b );
+
+        sy = mainSurfaceHeight - sy;
+
+        return glm::vec2( sx, sy );
     }
 
     glm::vec2 Core::ScreenPosToWorldPos( glm::vec2 screenPos ) {
