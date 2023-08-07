@@ -2,6 +2,10 @@
 
 namespace atto {
 
+    void SimLogic::LoadResources() {
+        tankFireSound = core->ResourceGetAndLoadAudio( "gun_pistol_shot_01.wav" );
+    }
+
     void SimLogic::Start() {
         ZeroStruct( state );
 
@@ -15,30 +19,51 @@ namespace atto {
                 MapElement el = {};
                 el.type = MAP_TILE_TYPE_METAL_WALL;
                 el.index = 0;
-                el.pos = CreateFPVec2( x * halfTileWidth + 12, y * halfTileHeight + 12);
+                el.pos = CreateFPVec2( x * halfTileWidth + 12, y * halfTileHeight + 12 );
 
-                if( x == 0 || y == 0 || x == tileHCount - 1|| y == tileVCount - 1) {
+                if( x == 0 || y == 0 || x == tileHCount - 1 || y == tileVCount - 1 ) {
                     state.elements.Add( el );
                 }
             }
         }
 
-        state.playerTanks[ 0 ].pos = CreateFPVec2( mapWidth / 2.0f - 100, mapHeight/ 2.0f );
-        state.playerTanks[ 0 ].rot = CreateFP(0);
+        state.playerTanks[ 0 ].pos = CreateFPVec2( mapWidth / 2.0f - 100, mapHeight / 2.0f );
+        state.playerTanks[ 0 ].rot = CreateFP( 0 );
         state.playerTanks[ 0 ].turretRot = CreateFP( 0 );
         state.playerTanks[ 0 ].health = 3;
-        
+
         state.playerTanks[ 1 ].pos = CreateFPVec2( mapWidth / 2.0f + 100, mapHeight / 2.0f );
         state.playerTanks[ 1 ].rot = CreateFP( 0 );
         state.playerTanks[ 1 ].turretRot = CreateFP( 0 );
         state.playerTanks[ 1 ].health = 3;
     }
 
-    void SimLogic::Advance( i32 playerOneInput, i32 playerTwoInput, i32 dcFlags ) {
+    void SimLogic::TankFireBullet( SimTank & tank, bool isRollback ) {
+        if( tank.fireCooldown == CreateFP( 0 ) ) {
+            tank.fireCooldown = CreateFP( 30 );
+
+            SimProjectile proj = {};
+            proj.pos = tank.pos;
+            proj.dir.x = FPSin( tank.turretRot );
+            proj.dir.y = FPCos( tank.turretRot );
+            proj.speed = CreateFP( 5.0f );
+            proj.damage = 1;
+
+            state.projectiles.Add( proj );
+
+            if( isRollback == false ) {
+                core->AudioPlay( tankFireSound );
+            }
+
+            core->LogOutput( LogLevel::DEBUG, "Fire!" );
+        }
+    }
+
+    void SimLogic::Advance( i32 playerOneInput, i32 playerTwoInput, i32 dcFlags, bool isRollback ) {
         fp tankSpeed = CreateFP( 1.0f );
 
-        if( IsEnumFlagSet(playerOneInput, SIM_INPUT_TANK_LEFT ) ) {
-            state.playerTanks[0].pos.x -= tankSpeed;
+        if( IsEnumFlagSet( playerOneInput, SIM_INPUT_TANK_LEFT ) ) {
+            state.playerTanks[ 0 ].pos.x -= tankSpeed;
         }
         else if( IsEnumFlagSet( playerOneInput, SIM_INPUT_TANK_RIGHT ) ) {
             state.playerTanks[ 0 ].pos.x += tankSpeed;
@@ -54,6 +79,9 @@ namespace atto {
         }
         else if( IsEnumFlagSet( playerOneInput, SIM_INPUT_TANK_TURRET_RIGHT ) ) {
             state.playerTanks[ 0 ].turretRot += CreateFP( 0.1f );
+        }
+        if( IsEnumFlagSet( playerOneInput, SIM_INPUT_TANK_TURRET_FIRE ) ) {
+            TankFireBullet( state.playerTanks[ 0 ], isRollback );
         }
 
         if( IsEnumFlagSet( playerTwoInput, SIM_INPUT_TANK_LEFT ) ) {
@@ -73,6 +101,23 @@ namespace atto {
         }
         else if( IsEnumFlagSet( playerTwoInput, SIM_INPUT_TANK_TURRET_RIGHT ) ) {
             state.playerTanks[ 1 ].turretRot += CreateFP( 0.1f );
+        }
+        if( IsEnumFlagSet( playerTwoInput, SIM_INPUT_TANK_TURRET_FIRE ) ) {
+            TankFireBullet( state.playerTanks[ 1 ], isRollback );
+        }
+
+        for( i32 i = 0; i < 2; i++ ) {
+            state.playerTanks[ i ].fireCooldown -= CreateFP( 1 );
+            if( state.playerTanks[ i ].fireCooldown < CreateFP( 0 ) ) {
+                state.playerTanks[ i ].fireCooldown = CreateFP( 0 );
+            }
+        }
+
+        fp projSpeed = CreateFP( 10 );
+        const i32 projCount = state.projectiles.GetCount();
+        for( i32 i = 0; i < projCount; i++ ) {
+            SimProjectile & p =  state.projectiles[ i ];
+            p.pos += p.dir * projSpeed;
         }
     }
 
@@ -116,7 +161,7 @@ namespace atto {
         fpv2 check = {};
         check.x = state.playerTanks[ 0 ].pos.x;
         check.y = state.playerTanks[ 1 ].pos.y;
-        *checksum = Fletcher32Checksum((short*)(&check), sizeof(fpv2));
+        *checksum = Fletcher32Checksum( (short *)( &check ), sizeof( fpv2 ) );
     }
 
     void SimLogic::FreeState( void * buffer ) {
@@ -147,6 +192,7 @@ namespace atto {
             SetEnumFlag( input, SIM_INPUT_TANK_DOWN );
         }
 
+        const f32 deadZone = glm::radians( 15.0f ); // Convert 15 degrees to radians
         const glm::vec2 mousePixels = core->InputMousePosPixels();
         const glm::vec2 mouseWorld = core->ScreenPosToWorldPos( mousePixels );
 
@@ -157,11 +203,21 @@ namespace atto {
         glm::vec2 tankToMouse = glm::normalize( mouseWorld - tankPos );
 
         f32 angle = glm::orientedAngle( tankDir, tankToMouse );
-        if( angle < 0 ) {
-            SetEnumFlag( input, SIM_INPUT_TANK_TURRET_LEFT );
-        }
-        else if( angle > 0 ) {
+
+        if( angle < -deadZone ) {
             SetEnumFlag( input, SIM_INPUT_TANK_TURRET_RIGHT );
+            core->LogOutput( LogLevel::INFO, "R" );
+        }
+        else if( angle > deadZone ) {
+            SetEnumFlag( input, SIM_INPUT_TANK_TURRET_LEFT );
+            core->LogOutput( LogLevel::INFO, "L" );
+        }
+        else {
+            core->LogOutput( LogLevel::INFO, "In dead zone" );
+        }
+
+        if( core->InputMouseButtonDown( MOUSE_BUTTON_1 ) ) {
+            SetEnumFlag( input, SIM_INPUT_TANK_TURRET_FIRE );
         }
 
         return input;

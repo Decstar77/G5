@@ -19,7 +19,7 @@ namespace atto {
 
         AssertMsg( result == GGPO_OK, "ggpo_synchronize_input failed in advance frame" );
 
-        theCore->GetSimLogic()->Advance( inputs[ 0 ], inputs[ 1 ], dcFlags );
+        theCore->GetSimLogic()->Advance( inputs[ 0 ], inputs[ 1 ], dcFlags, true );
 
         result = ggpo_advance_frame( theCore->GetMPState()->session );
 

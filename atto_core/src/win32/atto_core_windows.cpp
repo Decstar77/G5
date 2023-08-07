@@ -158,6 +158,7 @@ namespace atto {
 
         simLogic = new SimLogic();
         simLogic->core = this;
+        simLogic->LoadResources();
 
         gameLogic = new GameLogic();
 
@@ -236,7 +237,7 @@ namespace atto {
                                 if( GGPO_SUCCEEDED( result ) ) {
                                     // inputs[0] and inputs[1] contain the inputs for p1 and p2.  Advance
                                     // the game by 1 frame using those inputs.
-                                    simLogic->Advance( gameInputs[ 0 ], gameInputs[ 1 ], dcFlags );
+                                    simLogic->Advance( gameInputs[ 0 ], gameInputs[ 1 ], dcFlags, false );
 
                                     result = ggpo_advance_frame( mpState.session );
                                     Assert( result == GGPO_OK );
@@ -254,7 +255,7 @@ namespace atto {
                 simTickCurrent += deltaTime;
                 if( simTickCurrent > simTickRate ) {
                     simTickCurrent -= simTickRate;
-                    simLogic->Advance( inputForTick, 0, 0 );
+                    simLogic->Advance( inputForTick, 0, 0, false );
                 }
             }
 

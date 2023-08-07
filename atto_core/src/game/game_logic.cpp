@@ -45,6 +45,7 @@ namespace atto {
 
         TextureResource * blueTank = core->ResourceGetAndLoadTexture( "tank_set/tankBody_blue.png" );
         TextureResource * blueTankTurret = core->ResourceGetAndLoadTexture( "tank_set/tankBlue_barrel1.png" );
+        TextureResource * blueTankBullet = core->ResourceGetAndLoadTexture( "tank_set/bulletBlue1.png" );
         TextureResource * redTank = core->ResourceGetAndLoadTexture( "tank_set/tankBody_red.png" );
         TextureResource * metalWall = core->ResourceGetAndLoadTexture( "metal_elements/elementMetal011.png" );
         
@@ -63,7 +64,7 @@ namespace atto {
         glm::vec2 mousePosPix = core->InputMousePosPixels();
         //core->LogOutput( LogLevel::DEBUG, "Mouse pos pix %f %f", mousePosPix.x, mousePosPix.y );
         glm::vec2 mousePosWorld = core->ScreenPosToWorldPos( mousePosPix );
-        core->LogOutput( LogLevel::DEBUG, "Mouse pos world %f %f", mousePosWorld.x, mousePosWorld.y );
+        //core->LogOutput( LogLevel::DEBUG, "Mouse pos world %f %f", mousePosWorld.x, mousePosWorld.y );
 
         core->RenderDrawRect( mousePosWorld, mousePosWorld + glm::vec2( 25 ) );
 
@@ -77,6 +78,13 @@ namespace atto {
             const MapElement & element = sim->state.elements[ i ];
             glm::vec2 pos = FpVec2ToVec2(element.pos);
             core->RenderDrawSpriteBL( metalWall, pos, glm::vec2( 0.5f ) );
+        }
+
+        const i32 projCount = sim->state.projectiles.GetCount();
+        for( i32 i = 0; i < projCount; i++ ) {
+            const SimProjectile & proj = sim->state.projectiles[ i ];
+            glm::vec2 pos = FpVec2ToVec2( proj.pos );
+            core->RenderDrawSpriteBL( blueTankBullet, pos, glm::vec2(2.0f) );
         }
 
         core->RenderDrawText( arialFont, glm::vec2( 50, 100 ),

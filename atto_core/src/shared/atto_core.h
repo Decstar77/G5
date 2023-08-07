@@ -160,18 +160,29 @@ namespace atto {
         SIM_INPUT_TANK_DOWN                 = SetABit( 4 ),
         SIM_INPUT_TANK_TURRET_LEFT          = SetABit( 5 ),
         SIM_INPUT_TANK_TURRET_RIGHT         = SetABit( 6 ),
+        SIM_INPUT_TANK_TURRET_FIRE          = SetABit( 7)
     };
 
     struct SimTank {
         fpv2    pos;
         fp      rot;
         fp      turretRot;
+        fp      fireCooldown;
         i32     health;
     };
 
+    struct SimProjectile {
+        fpv2    pos;
+        fpv2    dir;
+        fp      speed;
+        i32     owner;
+        i32     damage;
+    };
+
     struct SimState {
-        FixedList<MapElement, 2048> elements;
-        FixedList<SimTank, 2>       playerTanks;
+        FixedList<MapElement, 2048>     elements;
+        FixedList<SimTank, 2>           playerTanks;
+        FixedList<SimProjectile, 128>   projectiles;
     };
 
     enum SimGameType {
@@ -185,8 +196,10 @@ namespace atto {
         void StartSinglePlayerGame();
         void StartMultiplayerGame();
 
+        void LoadResources();
+
         void Start();
-        void Advance( i32 playerOneInput, i32 playerTwoInput, i32 dcFlags);
+        void Advance( i32 playerOneInput, i32 playerTwoInput, i32 dcFlags, bool isRollback);
         void LoadState( u8 * buffer, i32 len );
         void SaveState( u8 ** buffer, i32 * len, i32 * checksum, i32 frame );
         void FreeState( void * buffer );
@@ -195,14 +208,18 @@ namespace atto {
         void SkipNextUpdates( i32 count );
         i32 GetNextInputs( i32 localPLayerNumber );
 
+        void TankFireBullet( SimTank & tank, bool isRollback );
+
         i32 mapWidth = 1280;
         i32 mapHeight = 720;
-
         i32 skipNextSteps = 0;
         SimState state = {};
         Core * core = nullptr;
         SimGameType gameType = SimGameType::SIM_GAME_TYPE_NONE;
         bool isRunning = false;
+
+        // Not sure if this is the best place for this, but it's a start
+        AudioResource * tankFireSound;
     };
 
     enum class GameLocationState {
