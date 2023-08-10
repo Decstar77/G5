@@ -118,6 +118,7 @@ int main( int argc, char * argv[] ) {
                     enet_peer_send( peers[ session.peer1 ], 0, event.packet );
                 }
 
+                
                 //Session * session = ( (PeerData *)( event.peer->data ) )->session;
                 //if( session != nullptr ) {
                 //    session->Recieve( event.peer, event.packet );
