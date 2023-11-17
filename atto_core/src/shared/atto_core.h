@@ -16,6 +16,7 @@ struct GGPOSession;
 
 namespace atto {
     class Core;
+    class Game;
     class NetClient;
 
     ATTO_REFLECT_STRUCT( GameSettings )
@@ -129,143 +130,6 @@ namespace atto {
         }
     }
 
-    struct PlayerConnectionInfo {
-        PlayerConnectState  state;
-        i32                 playerHandle;
-        i32                 playerNumber;
-        i32                 connectProgress;
-        i32                 disconnectTimeout;
-        i32                 disconnectStart;
-        i32                 pingToPeer;
-        i32                 kbsSent;
-    };
-    
-    enum MapTileType {
-        MAP_TILE_TYPE_NONE = 0,
-        MAP_TILE_TYPE_METAL_WALL,
-    };
-
-    struct MapElement {
-        MapTileType type;
-        i32 index;
-        fpv2 pos;
-        fp rot;
-    };
-
-    enum SimInput {
-        SIM_INPUT_NONE                      = 0,
-        SIM_INPUT_TANK_LEFT                 = SetABit( 1 ),
-        SIM_INPUT_TANK_RIGHT                = SetABit( 2 ),
-        SIM_INPUT_TANK_UP                   = SetABit( 3 ),
-        SIM_INPUT_TANK_DOWN                 = SetABit( 4 ),
-        SIM_INPUT_TANK_TURRET_LEFT          = SetABit( 5 ),
-        SIM_INPUT_TANK_TURRET_RIGHT         = SetABit( 6 ),
-        SIM_INPUT_TANK_TURRET_FIRE          = SetABit( 7)
-    };
-
-    struct SimTank {
-        fpv2    pos;
-        fp      rot;
-        fp      turretRot;
-        fp      fireCooldown;
-        i32     health;
-    };
-
-    struct SimProjectile {
-        fpv2    pos;
-        fpv2    dir;
-        fp      speed;
-        i32     owner;
-        i32     damage;
-    };
-
-    struct SimState {
-        FixedList<MapElement, 2048>     elements;
-        FixedList<SimTank, 2>           playerTanks;
-        FixedList<SimProjectile, 128>   projectiles;
-    };
-
-    enum SimGameType {
-        SIM_GAME_TYPE_NONE = 0,
-        SIM_GAME_TYPE_SINGLE_PLAYER,
-        SIM_GAME_TYPE_MULTI_PLAYER,
-    };
-
-    class SimLogic {
-    public:
-        void StartSinglePlayerGame();
-        void StartMultiplayerGame();
-
-        void LoadResources();
-
-        void Start();
-        void Advance( i32 playerOneInput, i32 playerTwoInput, i32 dcFlags, bool isRollback);
-        void LoadState( u8 * buffer, i32 len );
-        void SaveState( u8 ** buffer, i32 * len, i32 * checksum, i32 frame );
-        void FreeState( void * buffer );
-        void LogState( char * filename, u8 * buffer, i32 len );
-
-        void SkipNextUpdates( i32 count );
-        i32 GetNextInputs( i32 localPLayerNumber );
-
-        void TankFireBullet( SimTank & tank, bool isRollback );
-
-        i32 mapWidth = 1280;
-        i32 mapHeight = 720;
-        i32 skipNextSteps = 0;
-        SimState state = {};
-        Core * core = nullptr;
-        SimGameType gameType = SimGameType::SIM_GAME_TYPE_NONE;
-        bool isRunning = false;
-
-        // Not sure if this is the best place for this, but it's a start
-        AudioResource * tankFireSound;
-    };
-
-    enum class GameLocationState {
-        NONE = 0,
-        MAIN_MENU,
-        IN_GAME,
-        OPTIONS,
-    };
-
-    class GameLogic {
-    public:
-        void Start( Core * core );
-        void UpdateAndRender( Core * core, SimLogic * sim );
-        void Shutdown( Core * core );
-
-        void MainMenuUpdateAndRender( Core * core, SimLogic * sim );
-        void InGameUpdateAndRender( Core * core, SimLogic * sim );
-        void OptionsUpdateAndRender( Core * core, SimLogic * sim );
-
-        FontResource *      arialFont;
-        GameLocationState   currentState = GameLocationState::NONE;
-        glm::vec2           p1VisPos;
-        f32                 p1VisTurretRot;
-        glm::vec2           p2VisPos;
-    };
-
-#define MP_FRAME_DELAY 2
-#define MP_MAX_INPUTS 2
-#define MP_PLAYER_COUNT 2
-    struct MultiplayerState {
-        GGPOSession *           session;
-        union {
-            PlayerConnectionInfo players[ MP_PLAYER_COUNT ];
-            struct {
-                PlayerConnectionInfo    local;
-                PlayerConnectionInfo    peer;
-            };
-        };
-        
-        FixedQueue<NetworkMessage, 1024> messages;
-
-        void SetConnectionState( PlayerConnectState state, i32 arg1, i32 arg2 );
-        void SetConnectionState( int playerNumber, PlayerConnectState state, i32 arg1, i32 arg2 );
-        void GatherNetworkStats();
-    };
-
     struct UIButton {
         glm::vec2 textPos;
         glm::vec2 center;
@@ -297,8 +161,11 @@ namespace atto {
         bool                                UIPushButton( const char * text, glm::vec2 center, glm::vec4 color = glm::vec4( 1 ) );
         void                                UIEndAndRender();
 
-        glm::vec2                           WorldPosToScreenPos( glm::vec2 worldPos );
+        glm::vec2                           ViewPosToScreenPos( glm::vec2 worldPos );
+        glm::vec2                           ScreenPosToViewPos( glm::vec2 screenPos );
+
         glm::vec2                           ScreenPosToWorldPos( glm::vec2 screenPos );
+        glm::vec2                           WorldPosToScreenPos( glm::vec2 worldPos );
 
         void                                RenderDrawCircle( glm::vec2 pos, f32 radius, glm::vec4 colour = glm::vec4( 1 ) );
         void                                RenderDrawRect( glm::vec2 bl, glm::vec2 tr, glm::vec4 colour = glm::vec4( 1 ) );
@@ -343,11 +210,6 @@ namespace atto {
         //virtual void                        WindowSetCursorLocked(bool locked) = 0;
 
         NetClient *                         GetNetClient();
-        SimLogic *                          GetSimLogic();
-        MultiplayerState *                  GetMPState();
-
-        FixedQueue<NetworkMessage, 1024> &  GetGGPOMessages();
-
         FontResource *                      GetDebugFont();
 
         virtual void                        Run( int argc, char ** argv ) = 0;
@@ -357,13 +219,11 @@ namespace atto {
         LoggingState        logger = {};
         RenderCommands      drawCommands = {};
         FrameInput          input = {};
-        MultiplayerState    mpState = {};
         UIState             uiState = {};
-        
+
+        Game *              game = nullptr;
 
         NetClient * client = nullptr;
-        SimLogic * simLogic = nullptr;
-        GameLogic * gameLogic = nullptr;
 
         FontResource *      arialFont = NULL;
 
@@ -372,6 +232,7 @@ namespace atto {
 
         f32                 cameraWidth;
         f32                 cameraHeight;
+        glm::vec2           cameraPos;
         f32                 mainSurfaceWidth;
         f32                 mainSurfaceHeight;
         glm::vec4           viewport;

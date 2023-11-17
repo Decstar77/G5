@@ -2,7 +2,6 @@
 
 #include "atto_containers.h"
 #include "atto_math.h"
-#include "atto_math_fixed.h"
 
 #ifndef ATTO_SERVER
 
@@ -31,7 +30,6 @@ namespace atto {
     nlohmann::json JSON_Write(u64 v);
     nlohmann::json JSON_Write(f32 v);
     nlohmann::json JSON_Write(f64 v);
-    nlohmann::json JSON_Write(fp v);
 
     nlohmann::json JSON_Write(const SmallString& v);
     nlohmann::json JSON_Write(const LargeString& v);
@@ -42,7 +40,6 @@ namespace atto {
     nlohmann::json JSON_Write(glm::mat2 v);
     nlohmann::json JSON_Write(glm::mat3 v);
     nlohmann::json JSON_Write(glm::mat4 v);
-    nlohmann::json JSON_Write(fpv2 v);
 
     template<typename _type_, i32 c>
     nlohmann::json JSON_Write(const FixedList<_type_, c>& list) {
@@ -97,13 +94,6 @@ namespace atto {
     }
 
     template<>
-    inline fp JSON_Read<fp>(const nlohmann::json& j) {
-        fp f = {};
-        f.value = j.get<i32>();
-        return f;
-    }
-
-    template<>
     inline SmallString JSON_Read<SmallString>(const nlohmann::json& j) {
         return SmallString::FromLiteral(j.get<std::string>().c_str());
     }
@@ -141,14 +131,6 @@ namespace atto {
     template<>
     inline glm::mat4 JSON_Read<glm::mat4>(const nlohmann::json& j) {
         return glm::mat4(JSON_Read<glm::vec4>(j.at("col1")), JSON_Read<glm::vec4>(j.at("col2")), JSON_Read<glm::vec4>(j.at("col3")), JSON_Read<glm::vec4>(j.at("col4")));
-    }
-
-    template<>
-    inline fpv2 JSON_Read<fpv2>(const nlohmann::json& j) {
-        fpv2 v = {};
-        v.x.value = j.at("x").get<i32>();
-        v.y.value = j.at("y").get<i32>();
-        return v;
     }
 
     template<typename _type_, i32 c>

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "atto_defines.h"
-#include "atto_math_fixed.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -15,10 +14,6 @@ namespace atto {
         return a < b ? b : a;
     }
     
-    inline glm::vec2 FpVec2ToVec2( const fpv2& v ) {
-        return glm::vec2( FixedToFloat( v.x ), FixedToFloat( v.y ) );
-    }
-
     inline i16 NormalizedF64ToI16(f64 v) {
         return static_cast<i16>(v * 32767.0);
     }

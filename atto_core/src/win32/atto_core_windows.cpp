@@ -1,5 +1,7 @@
 #include "../shared/atto_client.h"
 #include "../gen/atto_reflection_gen.h"
+#include "../game/atto_game.h"
+#include "../shared/atto_colors.h"
 
 #include "atto_core_windows.h"
 
@@ -16,49 +18,49 @@
 #include <fstream>
 
 namespace atto {
-    
-    static GLFWmonitor*                monitor = nullptr;
-    static LargeString                 monitorName = LargeString::FromLiteral("");
+
+    static GLFWmonitor * monitor = nullptr;
+    static LargeString                 monitorName = LargeString::FromLiteral( "" );
     static f64                         monitorRefreshRate = 0;
-    static GLFWwindow*                 window = nullptr;
+    static GLFWwindow * window = nullptr;
     static i32                         windowWidth = 0;
     static i32                         windowHeight = 0;
     static f32                         windowAspect = 0;
-    static SmallString                 windowTitle = SmallString::FromLiteral("Game");
+    static SmallString                 windowTitle = SmallString::FromLiteral( "Game" );
     static bool                        windowFullscreen = false;
     static bool                        shouldClose = false;
 
-    static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-        Core * core = (Core * )glfwGetWindowUserPointer(window);
-        FrameInput& fi = core->InputGetFrameInput();
-        fi.keys[key] = action != GLFW_RELEASE;
+    static void KeyCallback( GLFWwindow * window, int key, int scancode, int action, int mods ) {
+        Core * core = (Core *)glfwGetWindowUserPointer( window );
+        FrameInput & fi = core->InputGetFrameInput();
+        fi.keys[ key ] = action != GLFW_RELEASE;
     }
 
-    static void MousePositionCallback(GLFWwindow* window, double xpos, double ypos) {
-        Core* core = (Core*)glfwGetWindowUserPointer(window);
-        FrameInput& fi = core->InputGetFrameInput();
-        fi.mousePosPixels = glm::vec2((f32)xpos, (f32)ypos);
+    static void MousePositionCallback( GLFWwindow * window, double xpos, double ypos ) {
+        Core * core = (Core *)glfwGetWindowUserPointer( window );
+        FrameInput & fi = core->InputGetFrameInput();
+        fi.mousePosPixels = glm::vec2( (f32)xpos, (f32)ypos );
     }
 
-    static void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
-        Core* core = (Core*)glfwGetWindowUserPointer(window);
-        FrameInput& fi = core->InputGetFrameInput();
-        fi.mouseButtons[button] = action != GLFW_RELEASE;
+    static void MouseButtonCallback( GLFWwindow * window, int button, int action, int mods ) {
+        Core * core = (Core *)glfwGetWindowUserPointer( window );
+        FrameInput & fi = core->InputGetFrameInput();
+        fi.mouseButtons[ button ] = action != GLFW_RELEASE;
     }
 
-    static void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
-        Core* core = (Core*)glfwGetWindowUserPointer(window);
-        FrameInput& fi = core->InputGetFrameInput();
-        fi.mouseWheelDelta = glm::vec2((f32)xoffset, (f32)yoffset);
+    static void ScrollCallback( GLFWwindow * window, double xoffset, double yoffset ) {
+        Core * core = (Core *)glfwGetWindowUserPointer( window );
+        FrameInput & fi = core->InputGetFrameInput();
+        fi.mouseWheelDelta = glm::vec2( (f32)xoffset, (f32)yoffset );
     }
 
-    static void FramebufferCallback(GLFWwindow* window, i32 w, i32 h) {
+    static void FramebufferCallback( GLFWwindow * window, i32 w, i32 h ) {
         WindowsCore * core = (WindowsCore *)glfwGetWindowUserPointer( window );
         windowWidth = w;
         windowHeight = h;
         windowAspect = (f32)w / (f32)h;
 
-        core->GLResetSurface((f32)w, (f32)h);
+        core->GLResetSurface( (f32)w, (f32)h );
 #if 0
         // Maintain aspect ratio with black bars
         mainSurfaceWidth = (i32)( 1280.0 * 1.6f );
@@ -80,71 +82,71 @@ namespace atto {
 #endif
     }
 
-    void WindowsCore::Run(int argc, char** argv) {
-        OsParseStartArgs(argc, argv);
+    void WindowsCore::Run( int argc, char ** argv ) {
+        OsParseStartArgs( argc, argv );
 
-        MemoryMakePermanent(Megabytes(128));
-        MemoryMakeTransient(Megabytes(128));
+        MemoryMakePermanent( Megabytes( 128 ) );
+        MemoryMakeTransient( Megabytes( 128 ) );
 
-        if (!glfwInit()) {
+        if( !glfwInit() ) {
             //ATTOFATAL("Could not init GLFW, your windows is f*cked");
             return;
         }
 
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+        glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 4 );
+        glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 6 );
 
 #if ATTO_DEBUG_RENDERING
-        glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+        glfwWindowHint( GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE );
 #endif
 
-        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-        glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
-        glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_FALSE);
+        glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );
+        glfwWindowHint( GLFW_RESIZABLE, GL_TRUE );
+        glfwWindowHint( GLFW_SCALE_TO_MONITOR, GLFW_FALSE );
         //glfwWindowHint(GLFW_SAMPLES, 4);
 
         monitor = glfwGetPrimaryMonitor();
-        if (monitor != nullptr) {
-            const GLFWvidmode* videoMode = glfwGetVideoMode(monitor);
+        if( monitor != nullptr ) {
+            const GLFWvidmode * videoMode = glfwGetVideoMode( monitor );
             monitorRefreshRate = videoMode->refreshRate;
-            monitorName = glfwGetMonitorName(monitor);
+            monitorName = glfwGetMonitorName( monitor );
             //ATTOINFO("Using monitor name %s", os.monitorName.GetCStr());
         }
 
         windowWidth = theGameSettings.windowWidth;
         windowHeight = theGameSettings.windowHeight;
 
-        window = glfwCreateWindow(windowWidth, windowHeight, windowTitle.GetCStr(), windowFullscreen ? monitor : nullptr, 0);
+        window = glfwCreateWindow( windowWidth, windowHeight, windowTitle.GetCStr(), windowFullscreen ? monitor : nullptr, 0 );
 
-        if (window == nullptr) {
-            LogOutput(LogLevel::FATAL, "Could not create window, your windows is f*cked");
+        if( window == nullptr ) {
+            LogOutput( LogLevel::FATAL, "Could not create window, your windows is f*cked" );
             return;
         }
 
-        glfwMakeContextCurrent(window);
-        glfwSwapInterval(1);
+        glfwMakeContextCurrent( window );
+        glfwSwapInterval( 1 );
 
-        glfwSetWindowUserPointer(window, this);
+        glfwSetWindowUserPointer( window, this );
 
-        glfwSetCursorPosCallback(window, MousePositionCallback);
-        glfwSetKeyCallback(window, KeyCallback);
-        glfwSetMouseButtonCallback(window, MouseButtonCallback);
-        glfwSetScrollCallback(window, ScrollCallback);
-        glfwSetFramebufferSizeCallback(window, FramebufferCallback);
+        glfwSetCursorPosCallback( window, MousePositionCallback );
+        glfwSetKeyCallback( window, KeyCallback );
+        glfwSetMouseButtonCallback( window, MouseButtonCallback );
+        glfwSetScrollCallback( window, ScrollCallback );
+        glfwSetFramebufferSizeCallback( window, FramebufferCallback );
 
-        if (theGameSettings.windowStartPosX != -1) {
-            glfwSetWindowPos(window, theGameSettings.windowStartPosX, theGameSettings.windowStartPosY);
+        if( theGameSettings.windowStartPosX != -1 ) {
+            glfwSetWindowPos( window, theGameSettings.windowStartPosX, theGameSettings.windowStartPosY );
         }
 
-        gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
-        LogOutput(LogLevel::INFO, "OpenGL %s, GLSL %s", glGetString(GL_VERSION), glGetString(GL_SHADING_LANGUAGE_VERSION));
+        gladLoadGLLoader( (GLADloadproc)glfwGetProcAddress );
+        LogOutput( LogLevel::INFO, "OpenGL %s, GLSL %s", glGetString( GL_VERSION ), glGetString( GL_SHADING_LANGUAGE_VERSION ) );
 
         i32 w = 0;
         i32 h = 0;
         glfwGetFramebufferSize( window, &w, &h );
 
-        RenderSetCamera( 1280, 720 );
-        GLResetSurface((f32)w, (f32)h);
+        RenderSetCamera( 1920, 1080 );
+        GLResetSurface( (f32)w, (f32)h );
 
         GLInitializeShapeRendering();
         GLInitializeSpriteRendering();
@@ -154,27 +156,21 @@ namespace atto {
 
         arialFont = ResourceGetAndLoadFont( "arial.ttf", 24 );
 
-        client = new NetClient(this);
+        client = new NetClient( this );
 
-        simLogic = new SimLogic();
-        simLogic->core = this;
-        simLogic->LoadResources();
+        game = new Game();
 
-        gameLogic = new GameLogic();
-
-        gameLogic->Start( this );
 
         f32 simTickRate = 1.0f / 30.0f;
         f32 simTickCurrent = 0.0f;
-        
+
         this->deltaTime = 0;
         f64 startTime = glfwGetTime();
-        while (!glfwWindowShouldClose(window)) {
-
-            FrameInput& fi = InputGetFrameInput();
+        while( !glfwWindowShouldClose( window ) ) {
+            FrameInput & fi = InputGetFrameInput();
             fi.lastKeys = fi.keys;
             fi.lastMouseButtons = fi.mouseButtons;
-            fi.mouseWheelDelta = glm::vec2(0.0f, 0.0f);
+            fi.mouseWheelDelta = glm::vec2( 0.0f, 0.0f );
 
             glfwPollEvents();
 
@@ -187,94 +183,31 @@ namespace atto {
                             break;
                         case NetworkMessageType::GAME_START:
                         {
-                            i32 offset = 0;
-                            i32 localId = NetworkMessagePop<i32>( msg, offset );
-                            i32 peerId = NetworkMessagePop<i32>( msg, offset );
-
-                            LogOutput( LogLevel::INFO, "Start game me=%d, other=%d", localId, peerId );
-                            gameLogic->currentState = GameLocationState::IN_GAME;
-                            GGPOStartSession( localId, peerId );
 
                         } break;
                         case NetworkMessageType::GGPO_MESSAGE:
                         {
-                            mpState.messages.Enqueue( msg );
                         } break;
                         default:
                             INVALID_CODE_PATH;
                             break;
                     }
                 }
-
-                if( mpState.session != nullptr ) {
-                    GGPOPoll();
-
-                    simTickCurrent += deltaTime;
-                    if( simTickCurrent > simTickRate ) {
-                        simTickCurrent -= simTickRate;
-
-                        if( simLogic->skipNextSteps > 0 ) {
-                            simLogic->skipNextSteps--;
-                        }
-                        else {
-                            i32 dir = simLogic->GetNextInputs( mpState.local.playerNumber );
-
-                            GGPOErrorCode result = GGPO_OK;
-                            if( mpState.local.playerHandle != GGPO_INVALID_HANDLE ) {
-                                result = ggpo_add_local_input( mpState.session, mpState.local.playerHandle, &dir, sizeof( i32 ) );
-                            }
-
-                            if( GGPO_SUCCEEDED( result ) ) {
-                                int dcFlags = 0;
-                                int gameInputs[ MP_MAX_INPUTS ] = { 0 };
-
-                                result = ggpo_synchronize_input( mpState.session,
-                                    (void *)gameInputs,
-                                    sizeof( int ) * MP_MAX_INPUTS,
-                                    &dcFlags
-                                );
-
-                                if( GGPO_SUCCEEDED( result ) ) {
-                                    // inputs[0] and inputs[1] contain the inputs for p1 and p2.  Advance
-                                    // the game by 1 frame using those inputs.
-                                    simLogic->Advance( gameInputs[ 0 ], gameInputs[ 1 ], dcFlags, false );
-
-                                    result = ggpo_advance_frame( mpState.session );
-                                    Assert( result == GGPO_OK );
-
-                                    mpState.GatherNetworkStats();
-                                }
-                            }
-                        }
-                    }
-                }
             }
 
-            if( simLogic->gameType == SIM_GAME_TYPE_SINGLE_PLAYER && simLogic->isRunning == true ) {
-                i32 inputForTick = simLogic->GetNextInputs( 0 );
-                simTickCurrent += deltaTime;
-                if( simTickCurrent > simTickRate ) {
-                    simTickCurrent -= simTickRate;
-                    simLogic->Advance( inputForTick, 0, 0, false );
-                }
-            }
+            game->Update( this, this->deltaTime );
+            game->Render( this, this->deltaTime );
 
-            gameLogic->UpdateAndRender(this, simLogic);
-
-            glfwSwapBuffers(window);
+            glfwSwapBuffers( window );
 
             MemoryClearTransient();
 
             currentTime = glfwGetTime();
-           f64 endTime = currentTime;
-           this->deltaTime = (f32)(endTime - startTime);
-           startTime = endTime;
+            f64 endTime = currentTime;
+            this->deltaTime = (f32)( endTime - startTime );
+            startTime = endTime;
         }
 
-        gameLogic->Shutdown(this);
-
-        delete simLogic;
-        delete gameLogic;
         delete client;
     }
 
@@ -286,20 +219,22 @@ namespace atto {
 
     void WindowsCore::RenderSubmit() {
         //glClearColor(0.5f, 0.2f, 0.2f, 1.0f);
-        glClearColor( 0.1f, 0.1f, 0.2f, 1.0f );
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        //glClearColor( 0.1f, 0.1f, 0.2f, 1.0f );
+        glClearColor( Colors::SILVER.x, Colors::SILVER.y, Colors::SILVER.z, 1.0f );
+        glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
         const i32 drawCount = drawCommands.drawList.GetCount();
-        for (i32 i = 0; i < drawCount; i++) {
-            DrawCommand& cmd = drawCommands.drawList[i];
-            switch (cmd.type) {
-                case DrawCommandType::CIRCLE: {
+        for( i32 i = 0; i < drawCount; i++ ) {
+            DrawCommand & cmd = drawCommands.drawList[ i ];
+            switch( cmd.type ) {
+                case DrawCommandType::CIRCLE:
+                {
                     f32 x1 = cmd.circle.c.x - cmd.circle.r;
                     f32 y1 = cmd.circle.c.y - cmd.circle.r;
                     f32 x2 = cmd.circle.c.x + cmd.circle.r;
                     f32 y2 = cmd.circle.c.y + cmd.circle.r;
 
-                    f32 vertices[6][2] = {
+                    f32 vertices[ 6 ][ 2 ] = {
                         { x1, y2 },
                         { x1, y1 },
                         { x2, y1 },
@@ -309,22 +244,23 @@ namespace atto {
                     };
 
                     GLEnableAlphaBlending();
-                    GLShaderProgramBind(shapeProgram);
-                    GLShaderProgramSetMat4("p", cameraProjection );
-                    GLShaderProgramSetInt("mode", 1);
-                    GLShaderProgramSetVec4("color", cmd.color);
-                    GLShaderProgramSetVec4("shapePosAndSize", 
-                        glm::vec4(cmd.circle.c.x, (f32)viewport.w - cmd.circle.c.y, cmd.circle.r, cmd.circle.r));
-                    GLShaderProgramSetVec4("shapeRadius", 
-                        glm::vec4(cmd.circle.r - 2, 0, 0, 0)); // The 4 here is to stop the circle from being cut of from the edges
+                    GLShaderProgramBind( shapeProgram );
+                    GLShaderProgramSetMat4( "p", cameraProjection );
+                    GLShaderProgramSetInt( "mode", 1 );
+                    GLShaderProgramSetVec4( "color", cmd.color );
+                    GLShaderProgramSetVec4( "shapePosAndSize",
+                        glm::vec4( cmd.circle.c.x, (f32)viewport.w - cmd.circle.c.y, cmd.circle.r, cmd.circle.r ) );
+                    GLShaderProgramSetVec4( "shapeRadius",
+                        glm::vec4( cmd.circle.r - 2, 0, 0, 0 ) ); // The 4 here is to stop the circle from being cut of from the edges
 
-                    glBindVertexArray(shapeVertexBuffer.vao);
-                    GLVertexBufferUpdate(shapeVertexBuffer, 0, sizeof(vertices), vertices);
-                    glDrawArrays(GL_TRIANGLES, 0, 6);
-                    glBindVertexArray(0);
+                    glBindVertexArray( shapeVertexBuffer.vao );
+                    GLVertexBufferUpdate( shapeVertexBuffer, 0, sizeof( vertices ), vertices );
+                    glDrawArrays( GL_TRIANGLES, 0, 6 );
+                    glBindVertexArray( 0 );
                 } break;
-                case DrawCommandType::RECT: {
-                    f32 vertices[6][2] = {
+                case DrawCommandType::RECT:
+                {
+                    f32 vertices[ 6 ][ 2 ] = {
                       { cmd.rect.tl.x, cmd.rect.tl.y, },
                       { cmd.rect.bl.x, cmd.rect.bl.y, },
                       { cmd.rect.br.x, cmd.rect.br.y, },
@@ -335,25 +271,26 @@ namespace atto {
                     };
 
                     GLEnableAlphaBlending();
-                    GLShaderProgramBind(shapeProgram);
-                    GLShaderProgramSetMat4("p", cameraProjection);
-                    GLShaderProgramSetInt("mode", 0);
-                    GLShaderProgramSetVec4("color", cmd.color);
+                    GLShaderProgramBind( shapeProgram );
+                    GLShaderProgramSetMat4( "p", cameraProjection );
+                    GLShaderProgramSetInt( "mode", 0 );
+                    GLShaderProgramSetVec4( "color", cmd.color );
 
-                    glBindVertexArray(shapeVertexBuffer.vao);
-                    GLVertexBufferUpdate(shapeVertexBuffer, 0, sizeof(vertices), vertices);
-                    glDrawArrays(GL_TRIANGLES, 0, 6);
-                    glBindVertexArray(0);
+                    glBindVertexArray( shapeVertexBuffer.vao );
+                    GLVertexBufferUpdate( shapeVertexBuffer, 0, sizeof( vertices ), vertices );
+                    glDrawArrays( GL_TRIANGLES, 0, 6 );
+                    glBindVertexArray( 0 );
                 } break;
-                case DrawCommandType::SPRITE: {
-                    Win32TextureResource* texture = (Win32TextureResource*)cmd.sprite.textureRes;
-                    AssertMsg(texture != nullptr, "Texture resource is null");
+                case DrawCommandType::SPRITE:
+                {
+                    Win32TextureResource * texture = (Win32TextureResource *)cmd.sprite.textureRes;
+                    AssertMsg( texture != nullptr, "Texture resource is null" );
                     /*
                         tl(0,1)  tr(1, 1)
                         bl(0,0)  br(1, 0)
                     */
 
-                    f32 vertices[6][4] = {
+                    f32 vertices[ 6 ][ 4 ] = {
                         { cmd.sprite.tl.x, cmd.sprite.tl.y, 0.0f ,0.0f },
                         { cmd.sprite.bl.x, cmd.sprite.bl.y, 0.0f, 1.0f },
                         { cmd.sprite.br.x, cmd.sprite.br.y, 1.0f, 1.0f },
@@ -364,44 +301,46 @@ namespace atto {
 
                     //GLEnablePreMultipliedAlphaBlending();
                     GLEnableAlphaBlending();
-                    GLShaderProgramBind(spriteProgram);
-                    GLShaderProgramSetSampler("texture0", 0);
-                    GLShaderProgramSetTexture(0, texture->handle);
-                    GLShaderProgramSetMat4("p", cameraProjection );
+                    GLShaderProgramBind( spriteProgram );
+                    GLShaderProgramSetSampler( "texture0", 0 );
+                    GLShaderProgramSetVec4( "color", cmd.color );
+                    GLShaderProgramSetTexture( 0, texture->handle );
+                    GLShaderProgramSetMat4( "p", cameraProjection );
 
-                    glBindVertexArray(spriteVertexBuffer.vao);
-                    GLVertexBufferUpdate(spriteVertexBuffer, 0, sizeof(vertices), vertices);
-                    glDrawArrays(GL_TRIANGLES, 0, 6);
-                    glBindVertexArray(0);
+                    glBindVertexArray( spriteVertexBuffer.vao );
+                    GLVertexBufferUpdate( spriteVertexBuffer, 0, sizeof( vertices ), vertices );
+                    glDrawArrays( GL_TRIANGLES, 0, 6 );
+                    glBindVertexArray( 0 );
 
                 } break;
-                case DrawCommandType::TEXT:{
-                    FontResource* font = cmd.text.fontRes;
+                case DrawCommandType::TEXT:
+                {
+                    FontResource * font = cmd.text.fontRes;
 
-                    AssertMsg(font != NULL, "Font is nulls");
+                    AssertMsg( font != NULL, "Font is nulls" );
 
-                    glDisable(GL_CULL_FACE);
-                    
+                    glDisable( GL_CULL_FACE );
+
                     GLEnableAlphaBlending();
-                    GLShaderProgramBind(textProgram);
-                    GLShaderProgramSetSampler("texture0", 0);
-                    GLShaderProgramSetMat4("p", cmd.text.proj);
-                    GLShaderProgramSetVec4("textColor", cmd.color);
+                    GLShaderProgramBind( textProgram );
+                    GLShaderProgramSetSampler( "texture0", 0 );
+                    GLShaderProgramSetMat4( "p", cmd.text.proj );
+                    GLShaderProgramSetVec4( "textColor", cmd.color );
 
                     f32 x = cmd.text.bl.x;
                     f32 y = cmd.text.bl.y;
 
                     const i32 charCount = cmd.text.text.GetLength();
-                    for (i32 charIndex = 0; charIndex < charCount; charIndex++) {
-                        const i32 index = (i32)cmd.text.text[charIndex];
-                        const FontChar ch = cmd.text.fontRes->chars[index];
+                    for( i32 charIndex = 0; charIndex < charCount; charIndex++ ) {
+                        const i32 index = (i32)cmd.text.text[ charIndex ];
+                        const FontChar ch = cmd.text.fontRes->chars[ index ];
 
                         f32 xpos = x + ch.bearing.x;
-                        f32 ypos = y + (ch.size.y - ch.bearing.y);
+                        f32 ypos = y + ( ch.size.y - ch.bearing.y );
                         f32 w = ch.size.x;
                         f32 h = ch.size.y;
 
-                        f32 vertices[6][4] = {
+                        f32 vertices[ 6 ][ 4 ] = {
                             { xpos, ypos - h, 0.0, 0.0 },
                             {xpos, ypos, 0.0, 1.0 },
                             {xpos + w, ypos, 1.0, 1.0},
@@ -410,29 +349,30 @@ namespace atto {
                             {xpos + w, ypos - h, 1.0, 0.0},
                         };
 
-                        glBindTextureUnit(0, ch.textureId);
-                        glBindVertexArray(textVertexBuffer.vao);
-                        GLVertexBufferUpdate(textVertexBuffer, 0, sizeof(vertices), vertices);
-                        glDrawArrays(GL_TRIANGLES, 0, 6);
-                        glBindVertexArray(0);
+                        glBindTextureUnit( 0, ch.textureId );
+                        glBindVertexArray( textVertexBuffer.vao );
+                        GLVertexBufferUpdate( textVertexBuffer, 0, sizeof( vertices ), vertices );
+                        glDrawArrays( GL_TRIANGLES, 0, 6 );
+                        glBindVertexArray( 0 );
 
-                        x += (ch.advance >> 6);
+                        x += ( ch.advance >> 6 );
                     }
                 } break;
-                default: {
+                default:
+                {
                     //ATTOASSERT(false, "Invalid draw command type");
                 } break;
             }
         }
 
-        ZeroStruct(drawCommands);
+        ZeroStruct( drawCommands );
     }
 
-    TextureResource* WindowsCore::ResourceGetAndLoadTexture(const char* name) {
+    TextureResource * WindowsCore::ResourceGetAndLoadTexture( const char * name ) {
         const i32 textureResourceCount = resources.textures.GetCount();
-        for (i32 i = 0; i < textureResourceCount; i++) {
-            TextureResource& textureResource = resources.textures[i];
-            if (textureResource.name == name) {
+        for( i32 i = 0; i < textureResourceCount; i++ ) {
+            TextureResource & textureResource = resources.textures[ i ];
+            if( textureResource.name == name ) {
                 return &textureResource;
             }
         }
@@ -440,40 +380,40 @@ namespace atto {
         Win32TextureResource textureResource = {};
         textureResource.name = name;
 
-        LargeString filePath = StringFormat::Large("res/sprites/%s", name);
-        void* pixelData = stbi_load(filePath.GetCStr(), &textureResource.width, &textureResource.height, &textureResource.channels, 4);
+        LargeString filePath = StringFormat::Large( "res/sprites/%s", name );
+        void * pixelData = stbi_load( filePath.GetCStr(), &textureResource.width, &textureResource.height, &textureResource.channels, 4 );
 
-        if (!pixelData) {
-            LogOutput( LogLevel::ERR, "Failed to load texture asset %s", name);
+        if( !pixelData ) {
+            LogOutput( LogLevel::ERR, "Failed to load texture asset %s", name );
             return false;
         }
 
-        glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // @TODO: Remove this pack the textures
+        glPixelStorei( GL_UNPACK_ALIGNMENT, 1 ); // @TODO: Remove this pack the textures
 
-        glGenTextures(1, &textureResource.handle);
-        glBindTexture(GL_TEXTURE_2D, textureResource.handle);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, textureResource.width, textureResource.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixelData);
-        if (textureResource.generateMipMaps) {
-            glGenerateMipmap(GL_TEXTURE_2D);
+        glGenTextures( 1, &textureResource.handle );
+        glBindTexture( GL_TEXTURE_2D, textureResource.handle );
+        glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, textureResource.width, textureResource.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixelData );
+        if( textureResource.generateMipMaps ) {
+            glGenerateMipmap( GL_TEXTURE_2D );
         }
 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, textureResource.generateMipMaps ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, textureResource.generateMipMaps ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR );
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 
-        glBindTexture(GL_TEXTURE_2D, 0);
+        glBindTexture( GL_TEXTURE_2D, 0 );
 
-        stbi_image_free(pixelData);
+        stbi_image_free( pixelData );
 
-        return resources.textures.Add(textureResource);
+        return resources.textures.Add( textureResource );
     }
 
-    FontResource* WindowsCore::ResourceGetAndLoadFont(const char* name, i32 fontSize) {
+    FontResource * WindowsCore::ResourceGetAndLoadFont( const char * name, i32 fontSize ) {
         const i32 fontCount = resources.fonts.GetCount();
-        for (i32 i = 0; i < fontCount; i++) {
-            FontResource& fontResource = resources.fonts[i];
-            if (fontResource.name == name && fontResource.fontSize == fontSize) {
+        for( i32 i = 0; i < fontCount; i++ ) {
+            FontResource & fontResource = resources.fonts[ i ];
+            if( fontResource.name == name && fontResource.fontSize == fontSize ) {
                 return &fontResource;
             }
         }
@@ -483,32 +423,31 @@ namespace atto {
         fontResource.fontSize = fontSize;
 
         FT_Library ft = {};
-        if (FT_Init_FreeType(&ft)) {
-            LogOutput(LogLevel::ERR, "ERROR::FREETYPE: Could not init FreeType Library");
+        if( FT_Init_FreeType( &ft ) ) {
+            LogOutput( LogLevel::ERR, "ERROR::FREETYPE: Could not init FreeType Library" );
             return nullptr;
         }
 
-        LargeString filePath = StringFormat::Large("res/fonts/%s", name);
+        LargeString filePath = StringFormat::Large( "res/fonts/%s", name );
         FT_Face face = {};
-        if (FT_New_Face(ft, filePath.GetCStr(), 0, &face)) {
-            LogOutput(LogLevel::ERR, "ERROR::FREETYPE: Failed to load font");
+        if( FT_New_Face( ft, filePath.GetCStr(), 0, &face ) ) {
+            LogOutput( LogLevel::ERR, "ERROR::FREETYPE: Failed to load font" );
             return nullptr;
         }
         else {
-            FT_Set_Pixel_Sizes(face, 0, fontSize);
+            FT_Set_Pixel_Sizes( face, 0, fontSize );
 
-            glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+            glPixelStorei( GL_UNPACK_ALIGNMENT, 1 );
 
-            for (unsigned char c = 0; c < 128; c++)
-            {
-                if (FT_Load_Char(face, c, FT_LOAD_RENDER)) {
-                    LogOutput(LogLevel::ERR, "ERROR::FREETYTPE: Failed to load Glyph");
+            for( unsigned char c = 0; c < 128; c++ ) {
+                if( FT_Load_Char( face, c, FT_LOAD_RENDER ) ) {
+                    LogOutput( LogLevel::ERR, "ERROR::FREETYTPE: Failed to load Glyph" );
                     continue;
                 }
 
                 unsigned int texture = {};
-                glGenTextures(1, &texture);
-                glBindTexture(GL_TEXTURE_2D, texture);
+                glGenTextures( 1, &texture );
+                glBindTexture( GL_TEXTURE_2D, texture );
                 glTexImage2D(
                     GL_TEXTURE_2D,
                     0,
@@ -521,39 +460,39 @@ namespace atto {
                     face->glyph->bitmap.buffer
                 );
 
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+                glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+                glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+                glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 
                 FontChar ch = {};
                 ch.textureId = texture;
-                ch.size = glm::ivec2(face->glyph->bitmap.width, face->glyph->bitmap.rows);
-                ch.bearing = glm::ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top);
-                ch.advance = static_cast<unsigned int>(face->glyph->advance.x);
+                ch.size = glm::ivec2( face->glyph->bitmap.width, face->glyph->bitmap.rows );
+                ch.bearing = glm::ivec2( face->glyph->bitmap_left, face->glyph->bitmap_top );
+                ch.advance = static_cast<unsigned int>( face->glyph->advance.x );
 
-                fontResource.chars.Add(ch);
+                fontResource.chars.Add( ch );
             }
 
-            glBindTexture(GL_TEXTURE_2D, 0);
+            glBindTexture( GL_TEXTURE_2D, 0 );
         }
 
-        FT_Done_Face(face);
-        FT_Done_FreeType(ft);
+        FT_Done_Face( face );
+        FT_Done_FreeType( ft );
 
-        return resources.fonts.Add(fontResource);
+        return resources.fonts.Add( fontResource );
     }
 
     void WindowsCore::WindowClose() {
-        glfwSetWindowShouldClose(window, true);
+        glfwSetWindowShouldClose( window, true );
     }
 
-    void WindowsCore::WindowSetTitle(const char* title) {
-        glfwSetWindowTitle(window, title);
+    void WindowsCore::WindowSetTitle( const char * title ) {
+        glfwSetWindowTitle( window, title );
     }
 
     void WindowsCore::GLInitializeShapeRendering() {
-        const char* vertexShaderSource = R"(
+        const char * vertexShaderSource = R"(
             #version 330 core
 
             layout (location = 0) in vec2 position;
@@ -565,7 +504,7 @@ namespace atto {
             }
         )";
 
-        const char* fragmentShaderSource = R"(
+        const char * fragmentShaderSource = R"(
             #version 330 core
             out vec4 FragColor;
 
@@ -610,12 +549,12 @@ namespace atto {
         )";
 
         VertexLayoutShape shape = {};
-        shapeProgram = GLCreateShaderProgram(vertexShaderSource, fragmentShaderSource);
-        shapeVertexBuffer = GLCreateVertexBuffer(&shape, 6, nullptr, true);
+        shapeProgram = GLCreateShaderProgram( vertexShaderSource, fragmentShaderSource );
+        shapeVertexBuffer = GLCreateVertexBuffer( &shape, 6, nullptr, true );
     }
 
     void WindowsCore::GLInitializeSpriteRendering() {
-        const char* vertexShaderSource = R"(
+        const char * vertexShaderSource = R"(
             #version 330 core
 
             layout (location = 0) in vec2 position;
@@ -632,7 +571,7 @@ namespace atto {
         )";
 
 #if 0
-        const char* fragmentShaderSource = R"(
+        const char * fragmentShaderSource = R"(
             #version 330 core
             out vec4 FragColor;
 
@@ -721,21 +660,22 @@ namespace atto {
 
             in vec2 vertexTexCoord;
             uniform sampler2D texture0;
+            uniform vec4 color;
 
             void main() {
-                vec4 sampled = texture(texture0, vertexTexCoord);
+                vec4 sampled = texture(texture0, vertexTexCoord) * color;
                 FragColor = sampled;
             }
         )";
 #endif
 
         VertexLayoutSprite sprite = {};
-        spriteProgram = GLCreateShaderProgram(vertexShaderSource, fragmentShaderSource);
-        spriteVertexBuffer = GLCreateVertexBuffer(&sprite, 6, nullptr, true);
+        spriteProgram = GLCreateShaderProgram( vertexShaderSource, fragmentShaderSource );
+        spriteVertexBuffer = GLCreateVertexBuffer( &sprite, 6, nullptr, true );
     }
 
     void WindowsCore::GLInitializeTextRendering() {
-        const char* vertexShaderSource = R"(
+        const char * vertexShaderSource = R"(
             #version 330 core
 
             layout (location = 0) in vec2 position;
@@ -751,7 +691,7 @@ namespace atto {
             }
         )";
 
-        const char* fragmentShaderSource = R"(
+        const char * fragmentShaderSource = R"(
             #version 330 core
             out vec4 FragColor;
 
@@ -767,23 +707,23 @@ namespace atto {
         )";
 
         VertexLayoutText text = {};
-        textProgram = GLCreateShaderProgram(vertexShaderSource, fragmentShaderSource);
-        textVertexBuffer = GLCreateVertexBuffer(&text, 6, nullptr, true);
+        textProgram = GLCreateShaderProgram( vertexShaderSource, fragmentShaderSource );
+        textVertexBuffer = GLCreateVertexBuffer( &text, 6, nullptr, true );
     }
 
-    void WindowsCore::OsParseStartArgs(int argc, char** argv) {
-        if (argc > 1) {
-            std::ifstream configFile(argv[1]);
-            if (configFile.is_open()) {
-                LogOutput(LogLevel::INFO, "Using config file %s", argv[1]);
-                nlohmann::json data = nlohmann::json::parse(configFile);
+    void WindowsCore::OsParseStartArgs( int argc, char ** argv ) {
+        if( argc > 1 ) {
+            std::ifstream configFile( argv[ 1 ] );
+            if( configFile.is_open() ) {
+                LogOutput( LogLevel::INFO, "Using config file %s", argv[ 1 ] );
+                nlohmann::json data = nlohmann::json::parse( configFile );
 
-                theGameSettings = JSON_Read<GameSettings>(data);
+                theGameSettings = JSON_Read<GameSettings>( data );
 
                 configFile.close();
             }
             else {
-                LogOutput(LogLevel::FATAL, "Could not read config file");
+                LogOutput( LogLevel::FATAL, "Could not read config file" );
             }
         }
         else {
@@ -806,206 +746,206 @@ namespace atto {
         }
     }
 
-    void WindowsCore::GLShaderProgramBind(ShaderProgram& program) {
-        AssertMsg(program.programHandle != 0, "Shader program not created");
-        glUseProgram(program.programHandle);
+    void WindowsCore::GLShaderProgramBind( ShaderProgram & program ) {
+        AssertMsg( program.programHandle != 0, "Shader program not created" );
+        glUseProgram( program.programHandle );
         boundProgram = &program;
     }
 
-    i32 WindowsCore::GLShaderProgramGetUniformLocation(ShaderProgram& program, const char* name) {
-        if (program.programHandle == 0) {
-            LogOutput(LogLevel::ERR, "Shader program in not valid");
+    i32 WindowsCore::GLShaderProgramGetUniformLocation( ShaderProgram & program, const char * name ) {
+        if( program.programHandle == 0 ) {
+            LogOutput( LogLevel::ERR, "Shader program in not valid" );
             return -1;
         }
 
         const u32 uniformCount = program.uniforms.GetCount();
-        for (u32 uniformIndex = 0; uniformIndex < uniformCount; uniformIndex++) {
-            ShaderUniform& uniform = program.uniforms[uniformIndex];
-            if (uniform.name == name) {
+        for( u32 uniformIndex = 0; uniformIndex < uniformCount; uniformIndex++ ) {
+            ShaderUniform & uniform = program.uniforms[ uniformIndex ];
+            if( uniform.name == name ) {
                 return uniform.location;
             }
         }
 
-        i32 location = glGetUniformLocation(program.programHandle, name);
-        if (location >= 0) {
+        i32 location = glGetUniformLocation( program.programHandle, name );
+        if( location >= 0 ) {
             ShaderUniform newUniform = {};
             newUniform.location = location;
             newUniform.name = name;
 
-            program.uniforms.Add(newUniform);
+            program.uniforms.Add( newUniform );
         }
         else {
-            LogOutput(LogLevel::ERR, "Could not find uniform value %s", name);
+            LogOutput( LogLevel::ERR, "Could not find uniform value %s", name );
         }
 
         return location;
     }
 
-    void WindowsCore::GLShaderProgramSetInt(const char* name, i32 value) {
-        AssertMsg(boundProgram != nullptr, "No shader program bound");
-        i32 location = GLShaderProgramGetUniformLocation(*boundProgram, name);
-        if (location >= 0) {
-            glUniform1i(location, value);
+    void WindowsCore::GLShaderProgramSetInt( const char * name, i32 value ) {
+        AssertMsg( boundProgram != nullptr, "No shader program bound" );
+        i32 location = GLShaderProgramGetUniformLocation( *boundProgram, name );
+        if( location >= 0 ) {
+            glUniform1i( location, value );
         }
     }
 
-    void WindowsCore::GLShaderProgramSetSampler(const char* name, i32 value) {
-        AssertMsg(boundProgram != nullptr, "No shader program bound");
-        i32 location = GLShaderProgramGetUniformLocation(*boundProgram, name);
-        if (location >= 0) {
-            glUniform1i(location, value);
+    void WindowsCore::GLShaderProgramSetSampler( const char * name, i32 value ) {
+        AssertMsg( boundProgram != nullptr, "No shader program bound" );
+        i32 location = GLShaderProgramGetUniformLocation( *boundProgram, name );
+        if( location >= 0 ) {
+            glUniform1i( location, value );
         }
     }
 
-    void WindowsCore::GLShaderProgramSetTexture(i32 location, u32 textureHandle) {
-        AssertMsg(boundProgram != nullptr, "No shader program bound");
-        glBindTextureUnit(0, textureHandle);
+    void WindowsCore::GLShaderProgramSetTexture( i32 location, u32 textureHandle ) {
+        AssertMsg( boundProgram != nullptr, "No shader program bound" );
+        glBindTextureUnit( 0, textureHandle );
     }
 
-    void WindowsCore::GLShaderProgramSetFloat(const char* name, f32 value) {
-        AssertMsg(boundProgram != nullptr, "No shader program bound");
-        i32 location = GLShaderProgramGetUniformLocation(*boundProgram, name);
-        if (location >= 0) {
-            glUniform1f(location, value);
+    void WindowsCore::GLShaderProgramSetFloat( const char * name, f32 value ) {
+        AssertMsg( boundProgram != nullptr, "No shader program bound" );
+        i32 location = GLShaderProgramGetUniformLocation( *boundProgram, name );
+        if( location >= 0 ) {
+            glUniform1f( location, value );
         }
     }
 
-    void WindowsCore::GLShaderProgramSetVec2(const char* name, glm::vec2 value) {
-        AssertMsg(boundProgram != nullptr, "No shader program bound");
-        i32 location = GLShaderProgramGetUniformLocation(*boundProgram, name);
-        if (location >= 0) {
-            glUniform2fv(location, 1, glm::value_ptr(value));
+    void WindowsCore::GLShaderProgramSetVec2( const char * name, glm::vec2 value ) {
+        AssertMsg( boundProgram != nullptr, "No shader program bound" );
+        i32 location = GLShaderProgramGetUniformLocation( *boundProgram, name );
+        if( location >= 0 ) {
+            glUniform2fv( location, 1, glm::value_ptr( value ) );
         }
     }
 
-    void WindowsCore::GLShaderProgramSetVec3(const char* name, glm::vec3 value) {
-        AssertMsg(boundProgram != nullptr, "No shader program bound");
-        i32 location = GLShaderProgramGetUniformLocation(*boundProgram, name);
-        if (location >= 0) {
-            glUniform3fv(location, 1, glm::value_ptr(value));
+    void WindowsCore::GLShaderProgramSetVec3( const char * name, glm::vec3 value ) {
+        AssertMsg( boundProgram != nullptr, "No shader program bound" );
+        i32 location = GLShaderProgramGetUniformLocation( *boundProgram, name );
+        if( location >= 0 ) {
+            glUniform3fv( location, 1, glm::value_ptr( value ) );
         }
     }
 
-    void WindowsCore::GLShaderProgramSetVec4(const char* name, glm::vec4 value) {
-        AssertMsg(boundProgram != nullptr, "No shader program bound");
-        i32 location = GLShaderProgramGetUniformLocation(*boundProgram, name);
-        if (location >= 0) {
-            glUniform4fv(location, 1, glm::value_ptr(value));
+    void WindowsCore::GLShaderProgramSetVec4( const char * name, glm::vec4 value ) {
+        AssertMsg( boundProgram != nullptr, "No shader program bound" );
+        i32 location = GLShaderProgramGetUniformLocation( *boundProgram, name );
+        if( location >= 0 ) {
+            glUniform4fv( location, 1, glm::value_ptr( value ) );
         }
     }
 
-    void WindowsCore::GLShaderProgramSetMat3(const char* name, glm::mat3 value) {
-        AssertMsg(boundProgram != nullptr, "No shader program bound");
-        i32 location = GLShaderProgramGetUniformLocation(*boundProgram, name);
-        if (location >= 0) {
-            glUniformMatrix3fv(location, 1, GL_FALSE, glm::value_ptr(value));
+    void WindowsCore::GLShaderProgramSetMat3( const char * name, glm::mat3 value ) {
+        AssertMsg( boundProgram != nullptr, "No shader program bound" );
+        i32 location = GLShaderProgramGetUniformLocation( *boundProgram, name );
+        if( location >= 0 ) {
+            glUniformMatrix3fv( location, 1, GL_FALSE, glm::value_ptr( value ) );
         }
     }
 
-    void WindowsCore::GLShaderProgramSetMat4(const char* name, glm::mat4 value) {
-        AssertMsg(boundProgram != nullptr, "No shader program bound");
-        i32 location = GLShaderProgramGetUniformLocation(*boundProgram, name);
-        if (location >= 0) {
-            glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(value));
+    void WindowsCore::GLShaderProgramSetMat4( const char * name, glm::mat4 value ) {
+        AssertMsg( boundProgram != nullptr, "No shader program bound" );
+        i32 location = GLShaderProgramGetUniformLocation( *boundProgram, name );
+        if( location >= 0 ) {
+            glUniformMatrix4fv( location, 1, GL_FALSE, glm::value_ptr( value ) );
         }
     }
 
     void WindowsCore::GLEnableAlphaBlending() {
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glEnable( GL_BLEND );
+        glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
     }
 
     void WindowsCore::GLEnablePreMultipliedAlphaBlending() {
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+        glEnable( GL_BLEND );
+        glBlendFunc( GL_ONE, GL_ONE_MINUS_SRC_ALPHA );
     }
 
-    bool WindowsCore::GLCheckShaderCompilationErrors(u32 shader) {
+    bool WindowsCore::GLCheckShaderCompilationErrors( u32 shader ) {
         i32 success;
-        char infoLog[1024];
-        glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-        if (!success) {
-            glGetShaderInfoLog(shader, 1024, NULL, infoLog);
-            LogOutput(LogLevel::ERR, "ERROR::SHADER_COMPILATION_ERROR of type: ");
-            LogOutput(LogLevel::ERR, infoLog);
-            LogOutput(LogLevel::ERR, "-- --------------------------------------------------- -- ");
+        char infoLog[ 1024 ];
+        glGetShaderiv( shader, GL_COMPILE_STATUS, &success );
+        if( !success ) {
+            glGetShaderInfoLog( shader, 1024, NULL, infoLog );
+            LogOutput( LogLevel::ERR, "ERROR::SHADER_COMPILATION_ERROR of type: " );
+            LogOutput( LogLevel::ERR, infoLog );
+            LogOutput( LogLevel::ERR, "-- --------------------------------------------------- -- " );
         }
 
         return success;
     }
 
-    bool WindowsCore::GLCheckShaderLinkErrors(u32 program) {
+    bool WindowsCore::GLCheckShaderLinkErrors( u32 program ) {
         i32 success;
-        char infoLog[1024];
-        glGetProgramiv(program, GL_LINK_STATUS, &success);
-        if (!success) {
-            glGetProgramInfoLog(program, 1024, NULL, infoLog);
-            LogOutput(LogLevel::ERR, "ERROR::SHADER_LINKER_ERROR of type: ");
-            LogOutput(LogLevel::ERR, infoLog);
-            LogOutput(LogLevel::ERR, "-- --------------------------------------------------- -- ");
+        char infoLog[ 1024 ];
+        glGetProgramiv( program, GL_LINK_STATUS, &success );
+        if( !success ) {
+            glGetProgramInfoLog( program, 1024, NULL, infoLog );
+            LogOutput( LogLevel::ERR, "ERROR::SHADER_LINKER_ERROR of type: " );
+            LogOutput( LogLevel::ERR, infoLog );
+            LogOutput( LogLevel::ERR, "-- --------------------------------------------------- -- " );
         }
 
         return success;
     }
 
-    ShaderProgram WindowsCore::GLCreateShaderProgram(const char* vertexSource, const char* fragmentSource) {
+    ShaderProgram WindowsCore::GLCreateShaderProgram( const char * vertexSource, const char * fragmentSource ) {
         ShaderProgram program = {};
 
         u32 vertexShader;
-        vertexShader = glCreateShader(GL_VERTEX_SHADER);
-        glShaderSource(vertexShader, 1, &vertexSource, NULL);
-        glCompileShader(vertexShader);
-        if (!GLCheckShaderCompilationErrors(vertexShader)) {
+        vertexShader = glCreateShader( GL_VERTEX_SHADER );
+        glShaderSource( vertexShader, 1, &vertexSource, NULL );
+        glCompileShader( vertexShader );
+        if( !GLCheckShaderCompilationErrors( vertexShader ) ) {
             return {};
         }
 
         u32 fragmentShader;
-        fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-        glShaderSource(fragmentShader, 1, &fragmentSource, NULL);
-        glCompileShader(fragmentShader);
-        if (!GLCheckShaderCompilationErrors(fragmentShader)) {
+        fragmentShader = glCreateShader( GL_FRAGMENT_SHADER );
+        glShaderSource( fragmentShader, 1, &fragmentSource, NULL );
+        glCompileShader( fragmentShader );
+        if( !GLCheckShaderCompilationErrors( fragmentShader ) ) {
             return {};
         }
 
         program.programHandle = glCreateProgram();
-        glAttachShader(program.programHandle, vertexShader);
-        glAttachShader(program.programHandle, fragmentShader);
-        glLinkProgram(program.programHandle);
-        if (!GLCheckShaderLinkErrors(program.programHandle)) {
+        glAttachShader( program.programHandle, vertexShader );
+        glAttachShader( program.programHandle, fragmentShader );
+        glLinkProgram( program.programHandle );
+        if( !GLCheckShaderLinkErrors( program.programHandle ) ) {
             return {};
         }
 
-        glDeleteShader(vertexShader);
-        glDeleteShader(fragmentShader);
+        glDeleteShader( vertexShader );
+        glDeleteShader( fragmentShader );
 
         return program;
     }
 
-    VertexBuffer WindowsCore::GLCreateVertexBuffer(VertexLayout* layout, i32 vertexCount, const void* srcData, bool dyanmic) {
+    VertexBuffer WindowsCore::GLCreateVertexBuffer( VertexLayout * layout, i32 vertexCount, const void * srcData, bool dyanmic ) {
         VertexBuffer buffer = {};
         buffer.size = layout->SizeBytes() * vertexCount;
         buffer.stride = layout->StrideBytes();
 
-        glGenVertexArrays(1, &buffer.vao);
-        glGenBuffers(1, &buffer.vbo);
+        glGenVertexArrays( 1, &buffer.vao );
+        glGenBuffers( 1, &buffer.vbo );
 
-        glBindVertexArray(buffer.vao);
+        glBindVertexArray( buffer.vao );
 
-        glBindBuffer(GL_ARRAY_BUFFER, buffer.vbo);
-        glBufferData(GL_ARRAY_BUFFER, buffer.size, srcData, dyanmic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
+        glBindBuffer( GL_ARRAY_BUFFER, buffer.vbo );
+        glBufferData( GL_ARRAY_BUFFER, buffer.size, srcData, dyanmic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW );
 
         layout->Layout();
 
-        glBindVertexArray(0);
+        glBindVertexArray( 0 );
 
         return buffer;
     }
 
-    void WindowsCore::GLVertexBufferUpdate(VertexBuffer vertexBuffer, i32 offset, i32 size, const void* data) {
-        AssertMsg(vertexBuffer.size >= offset + size, "Vertex buffer update out of bounds");
-        glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer.vbo);
-        glBufferSubData(GL_ARRAY_BUFFER, offset, size, data);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
+    void WindowsCore::GLVertexBufferUpdate( VertexBuffer vertexBuffer, i32 offset, i32 size, const void * data ) {
+        AssertMsg( vertexBuffer.size >= offset + size, "Vertex buffer update out of bounds" );
+        glBindBuffer( GL_ARRAY_BUFFER, vertexBuffer.vbo );
+        glBufferSubData( GL_ARRAY_BUFFER, offset, size, data );
+        glBindBuffer( GL_ARRAY_BUFFER, 0 );
     }
 
     void WindowsCore::GLResetSurface( f32 w, f32 h ) {
@@ -1025,55 +965,55 @@ namespace atto {
         mainSurfaceWidth = w;
         mainSurfaceHeight = h;
         viewport = glm::vec4( viewX, viewY, viewWidth, viewHeight );
-        cameraProjection = glm::ortho(0.0f, (f32)cameraWidth, 0.0f, (f32)cameraHeight, -1.0f, 1.0f);
+        cameraProjection = glm::ortho( 0.0f, (f32)cameraWidth, 0.0f, (f32)cameraHeight, -1.0f, 1.0f );
         screenProjection = glm::ortho( 0.0f, (f32)w, (f32)h, 0.0f, -1.0f, 1.0f );
     }
 
     void VertexLayoutShape::Layout() {
         i32 stride = StrideBytes();
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 2, GL_FLOAT, false, stride, 0);
+        glEnableVertexAttribArray( 0 );
+        glVertexAttribPointer( 0, 2, GL_FLOAT, false, stride, 0 );
     }
 
     i32 VertexLayoutShape::SizeBytes() {
-        return (i32)sizeof(ShapeVertex);
+        return (i32)sizeof( ShapeVertex );
     }
 
     i32 VertexLayoutShape::StrideBytes() {
-        return (i32)sizeof(ShapeVertex);
+        return (i32)sizeof( ShapeVertex );
     }
 
     void VertexLayoutSprite::Layout() {
         i32 stride = StrideBytes();
-        glEnableVertexAttribArray(0);
-        glEnableVertexAttribArray(1);
-        glEnableVertexAttribArray(2);
-        glVertexAttribPointer(0, 2, GL_FLOAT, false, stride, 0);
-        glVertexAttribPointer(1, 2, GL_FLOAT, false, stride, (void*)(2 * sizeof(f32)));
+        glEnableVertexAttribArray( 0 );
+        glEnableVertexAttribArray( 1 );
+        glEnableVertexAttribArray( 2 );
+        glVertexAttribPointer( 0, 2, GL_FLOAT, false, stride, 0 );
+        glVertexAttribPointer( 1, 2, GL_FLOAT, false, stride, (void *)( 2 * sizeof( f32 ) ) );
     }
 
     i32 VertexLayoutSprite::SizeBytes() {
-        return (i32)sizeof(SpriteVertex);
+        return (i32)sizeof( SpriteVertex );
     }
 
     i32 VertexLayoutSprite::StrideBytes() {
-        return (i32)sizeof(SpriteVertex);
+        return (i32)sizeof( SpriteVertex );
     }
 
     void VertexLayoutText::Layout() {
         i32 stride = StrideBytes();
-        glEnableVertexAttribArray(0);
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(0, 2, GL_FLOAT, false, stride, 0);
-        glVertexAttribPointer(1, 2, GL_FLOAT, false, stride, (void*)(2 * sizeof(f32)));
+        glEnableVertexAttribArray( 0 );
+        glEnableVertexAttribArray( 1 );
+        glVertexAttribPointer( 0, 2, GL_FLOAT, false, stride, 0 );
+        glVertexAttribPointer( 1, 2, GL_FLOAT, false, stride, (void *)( 2 * sizeof( f32 ) ) );
     }
 
     i32 VertexLayoutText::SizeBytes() {
-        return (i32)sizeof(TextVertex);
+        return (i32)sizeof( TextVertex );
     }
 
     i32 VertexLayoutText::StrideBytes() {
-        return (i32)sizeof(TextVertex);
+        return (i32)sizeof( TextVertex );
     }
 
 }
