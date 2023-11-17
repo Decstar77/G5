@@ -20,13 +20,19 @@ namespace atto {
         }
     };
 
+    struct ShipDestination {
+        glm::vec2 pos;
+        bool valid;
+    };
+
     struct Entity {
         EntityId id;
         EntityType type;
         glm::vec2 pos;
-        glm::vec2 velocity;
+        glm::vec2 vel;
         f32 rotation;
         TextureResource * sprite;
+        ShipDestination dest;
         bool selected;
     };
 
@@ -43,7 +49,8 @@ namespace atto {
         Entity * SpawnEntity( EntityType type, glm::vec2 pos );
 
     public:
-        FixedList<Entity, 1024> entities;
+        constexpr static int MAX_ENTITIES = 1024;
+        FixedList<Entity, MAX_ENTITIES> entities;
         
     public: // Resources
         TextureResource * sprShipA = nullptr;
@@ -51,5 +58,6 @@ namespace atto {
         TextureResource * sprEnemyA = nullptr;
         TextureResource * sprEnemyB = nullptr;
         TextureResource * sprStationA = nullptr;
+        TextureResource * sprSelectionCircle = nullptr;
     };
 }

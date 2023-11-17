@@ -20,10 +20,83 @@ namespace atto {
         sprEnemyA = core->ResourceGetAndLoadTexture( "kenny_sprites_01/enemy_A.png" );
         sprEnemyB = core->ResourceGetAndLoadTexture( "kenny_sprites_01/enemy_B.png" );
         sprStationA = core->ResourceGetAndLoadTexture( "kenny_sprites_01/station_A.png" );
+        sprSelectionCircle = core->ResourceGetAndLoadTexture( "unit_selection_01.png" );
     }
 
     void GameModeGame::Update( Core * core, f32 dt ) {
+        glm::vec2 mousePosWorld = core->InputMousePosWorld();
 
+        FixedList<Entity *, MAX_ENTITIES> & selectedEntities = *core->MemoryAllocateTransient<FixedList<Entity *, MAX_ENTITIES>>();
+
+        const int entityCount = entities.GetCapcity();
+        for( int entityIndex = 0; entityIndex < entityCount; ++entityIndex ) {
+            Entity * ent = entities.Get( entityIndex );
+            if( ent->id.index != -1 ) {
+                switch( ent->type ) {
+                    case ENTITY_TYPE_INVALID: break;
+                    case ENTITY_TYPE_SHIP_BEGIN: break;
+                    case ENTITY_TYPE_SHIP_A:
+                    {
+                        if( core->InputMouseButtonJustPressed( MOUSE_BUTTON_1 ) ) {
+                            Circle c = {};
+                            c.pos = ent->pos;
+                            c.rad = 32.0f;
+
+                            if( c.Contains( mousePosWorld ) == true ) {
+                                ent->selected = true;
+                            }
+                            else {
+                                ent->selected = false;
+                            }
+                        }
+                        
+                        if( ent->selected ) {
+                            selectedEntities.Add( ent );
+                        }
+                        
+                        const f32 acc = 500;
+                        const f32 maxSpeed = 200;
+                        const f32 maxSpeed2 = maxSpeed * maxSpeed;
+                        const f32 drag = 0.98f;
+
+                        if( ent->dest.valid ) {
+                            glm::vec2 dir = ent->dest.pos - ent->pos;
+                            glm::vec2 ndir = glm::normalize( dir );
+
+                            ent->vel += ndir * acc * dt;
+                            if( glm::length2( ent->vel ) > maxSpeed2 ) {
+                                ent->vel = glm::normalize( ent->vel );
+                                ent->vel = ent->vel * maxSpeed;
+                            }
+
+                            if( glm::distance2( ent->pos, ent->dest.pos ) < 10.0f ) {
+                                ent->dest.valid = false;
+                            }
+                        }
+
+                        ent->vel *= drag;
+
+                        ent->pos += ent->vel * dt;
+
+                    } break;
+                    case ENTITY_TYPE_SHIP_END: break;
+                    case ENTITY_TYPE_ENEMY: break;
+                    default: break;
+                }
+            }
+        }
+
+        if( core->InputMouseButtonJustPressed( MOUSE_BUTTON_2 ) ) {
+            ShipDestination dest = {};
+            dest.pos = mousePosWorld;
+            dest.valid = true;
+            
+            const int selectedEntityCount = selectedEntities.GetCount();
+            for( int selectedEntityIndex = 0; selectedEntityIndex < selectedEntityCount; ++selectedEntityIndex ) {
+                Entity * ent = selectedEntities[selectedEntityIndex];
+                ent->dest = dest;
+            }
+        }
     }
 
     void GameModeGame::Render( Core * core, f32 dt ) {
@@ -34,9 +107,15 @@ namespace atto {
                 switch( ent->type ) {
                     case ENTITY_TYPE_INVALID: break;
                     case ENTITY_TYPE_SHIP_BEGIN: break;
-                    case ENTITY_TYPE_SHIP_A: {
-                        core->RenderDrawSprite( sprShipA, ent->pos, 0.0f, glm::vec2( 2 ) );
+                    case ENTITY_TYPE_SHIP_A:
+                    {
+                        if( ent->selected ) {
+                            core->RenderDrawSprite( sprSelectionCircle, ent->pos );
+                        }
+
+                        core->RenderDrawSprite( sprShipA, ent->pos, 0.0f, glm::vec2( 1 ) );
                         //core->RenderDrawRect( ent->pos, glm::vec2( 32 ), 0.0f );
+
                     } break;
                     case ENTITY_TYPE_SHIP_END: break;
                     case ENTITY_TYPE_ENEMY: break;
@@ -45,7 +124,8 @@ namespace atto {
             }
         }
 
-        
+
+
         core->RenderSubmit();
     }
 
@@ -70,7 +150,7 @@ namespace atto {
     }
 
     Entity * GameModeGame::SpawnEntity( EntityType type, glm::vec2 pos ) {
-        Entity *ent = SpawnEntity( type );
+        Entity * ent = SpawnEntity( type );
         if( ent != nullptr ) {
             ent->pos = pos;
         }

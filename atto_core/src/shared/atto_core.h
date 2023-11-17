@@ -121,12 +121,12 @@ namespace atto {
 
     inline SmallString PlayerConnectStateToString( PlayerConnectState state ) {
         switch( state ) {
-            case PLAYER_CONNECTION_STATE_CONNECTING: return SmallString::FromLiteral("Connecting");
-            case PLAYER_CONNECTION_STATE_SYNCHRONIZING: return SmallString::FromLiteral("Synchronizing");
-            case PLAYER_CONNECTION_STATE_RUNNING: return SmallString::FromLiteral("Running");
-            case PLAYER_CONNECTION_STATE_DISCONNECTED: return SmallString::FromLiteral("Disconnected");
-            case PLAYER_CONNECTION_STATE_DISCONNECTING: return SmallString::FromLiteral("Disconnecting");
-            default: return SmallString::FromLiteral("Unknown");
+            case PLAYER_CONNECTION_STATE_CONNECTING: return SmallString::FromLiteral( "Connecting" );
+            case PLAYER_CONNECTION_STATE_SYNCHRONIZING: return SmallString::FromLiteral( "Synchronizing" );
+            case PLAYER_CONNECTION_STATE_RUNNING: return SmallString::FromLiteral( "Running" );
+            case PLAYER_CONNECTION_STATE_DISCONNECTED: return SmallString::FromLiteral( "Disconnected" );
+            case PLAYER_CONNECTION_STATE_DISCONNECTING: return SmallString::FromLiteral( "Disconnecting" );
+            default: return SmallString::FromLiteral( "Unknown" );
         }
     }
 
@@ -150,9 +150,9 @@ namespace atto {
         f32                                 GetDeltaTime() const;
         f64                                 GetLastTime() const;
 
-        virtual TextureResource *           ResourceGetAndLoadTexture( const char * name ) = 0;
-        virtual AudioResource *             ResourceGetAndLoadAudio( const char * name ) = 0;
-        virtual FontResource *              ResourceGetAndLoadFont( const char * name, i32 fontSize ) = 0;
+        virtual TextureResource * ResourceGetAndLoadTexture( const char * name ) = 0;
+        virtual AudioResource * ResourceGetAndLoadAudio( const char * name ) = 0;
+        virtual FontResource * ResourceGetAndLoadFont( const char * name, i32 fontSize ) = 0;
 
         f32                                 FontGetWidth( FontResource * font, const char * text );
         f32                                 FontGetHeight( FontResource * font );
@@ -166,6 +166,9 @@ namespace atto {
 
         glm::vec2                           ScreenPosToWorldPos( glm::vec2 screenPos );
         glm::vec2                           WorldPosToScreenPos( glm::vec2 worldPos );
+
+        f32                                 ScreenLengthToWorldLength( f32 screenLength );
+        f32                                 WorldLengthToScreenLength( f32 worldLength );
 
         void                                RenderDrawCircle( glm::vec2 pos, f32 radius, glm::vec4 colour = glm::vec4( 1 ) );
         void                                RenderDrawRect( glm::vec2 bl, glm::vec2 tr, glm::vec4 colour = glm::vec4( 1 ) );
@@ -185,12 +188,12 @@ namespace atto {
         SmallString                         NetStatusText();
         u32                                 NetGetPing();
 
-        void *                              MemoryAllocatePermanent( u64 bytes );
-        void *                              MemoryAllocateTransient( u64 bytes );
-        template<typename _type_> _type_ *  MemoryAllocateTransient();
-        template<typename _type_> _type_ *  MemoryAllocateTransientCPP();
-        template<typename _type_> _type_ *  MemoryAllocatePermanent();
-        template<typename _type_> _type_ *  MemoryAllocatePermanentCPP();
+        void * MemoryAllocatePermanent( u64 bytes );
+        void * MemoryAllocateTransient( u64 bytes );
+        template<typename _type_> _type_ * MemoryAllocateTransient();
+        template<typename _type_> _type_ * MemoryAllocateTransientCPP();
+        template<typename _type_> _type_ * MemoryAllocatePermanent();
+        template<typename _type_> _type_ * MemoryAllocatePermanentCPP();
 
         bool                                InputKeyDown( KeyCode keyCode );
         bool                                InputKeyUp( KeyCode keyCode );
@@ -201,7 +204,8 @@ namespace atto {
         bool                                InputMouseButtonJustPressed( MouseButton button );
         bool                                InputMouseButtonJustReleased( MouseButton button );
         glm::vec2                           InputMousePosPixels();
-        FrameInput &                        InputGetFrameInput();
+        glm::vec2                           InputMousePosWorld();
+        FrameInput & InputGetFrameInput();
 
         virtual void                        WindowClose() = 0;
         virtual void                        WindowSetTitle( const char * title ) = 0;
@@ -209,8 +213,8 @@ namespace atto {
         //virtual void                        WindowSetCursorVisible(bool visible) = 0;
         //virtual void                        WindowSetCursorLocked(bool locked) = 0;
 
-        NetClient *                         GetNetClient();
-        FontResource *                      GetDebugFont();
+        NetClient * GetNetClient();
+        FontResource * GetDebugFont();
 
         virtual void                        Run( int argc, char ** argv ) = 0;
 
@@ -221,11 +225,11 @@ namespace atto {
         FrameInput          input = {};
         UIState             uiState = {};
 
-        Game *              game = nullptr;
+        Game * game = nullptr;
 
         NetClient * client = nullptr;
 
-        FontResource *      arialFont = NULL;
+        FontResource * arialFont = NULL;
 
         f64                 currentTime = 0.0f;
         f32                 deltaTime = 0.0f;
@@ -263,28 +267,23 @@ namespace atto {
     };
 
     template<typename _type_>
-    _type_ * atto::Core::MemoryAllocatePermanent()
-    {
+    _type_ * atto::Core::MemoryAllocatePermanent() {
         return (_type_ *)MemoryAllocatePermanent( sizeof( _type_ ) );
     }
 
     template<typename _type_>
-    _type_ * atto::Core::MemoryAllocatePermanentCPP()
-    {
+    _type_ * atto::Core::MemoryAllocatePermanentCPP() {
         void * mem = MemoryAllocatePermanent( sizeof( _type_ ) );
         return new ( mem ) _type_;
     }
 
     template<typename _type_>
-    _type_ * atto::Core::MemoryAllocateTransient()
-    {
+    _type_ * atto::Core::MemoryAllocateTransient() {
         return (_type_ *)MemoryAllocateTransient( sizeof( _type_ ) );
     }
 
-
     template<typename _type_>
-    _type_ * atto::Core::MemoryAllocateTransientCPP()
-    {
+    _type_ * atto::Core::MemoryAllocateTransientCPP() {
         void * mem = MemoryAllocateTransient( sizeof( _type_ ) );
         return new ( mem ) _type_;
     }

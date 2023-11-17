@@ -229,6 +229,9 @@ namespace atto {
             switch( cmd.type ) {
                 case DrawCommandType::CIRCLE:
                 {
+                    cmd.circle.c = WorldPosToScreenPos( cmd.circle.c );
+                    cmd.circle.r = WorldLengthToScreenLength( cmd.circle.r );
+
                     f32 x1 = cmd.circle.c.x - cmd.circle.r;
                     f32 y1 = cmd.circle.c.y - cmd.circle.r;
                     f32 x2 = cmd.circle.c.x + cmd.circle.r;
@@ -245,7 +248,7 @@ namespace atto {
 
                     GLEnableAlphaBlending();
                     GLShaderProgramBind( shapeProgram );
-                    GLShaderProgramSetMat4( "p", cameraProjection );
+                    GLShaderProgramSetMat4( "p", screenProjection );
                     GLShaderProgramSetInt( "mode", 1 );
                     GLShaderProgramSetVec4( "color", cmd.color );
                     GLShaderProgramSetVec4( "shapePosAndSize",

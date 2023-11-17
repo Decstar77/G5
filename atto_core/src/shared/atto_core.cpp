@@ -120,6 +120,14 @@ namespace atto {
         return ViewPosToScreenPos( viewPos );
     }
 
+    f32 Core::ScreenLengthToWorldLength( f32 screenLength ) {
+        return ( screenLength / viewport.z ) * cameraWidth;
+    }
+
+    f32 Core::WorldLengthToScreenLength( f32 worldLength ) {
+        return ( worldLength / cameraWidth ) * viewport.z;
+    }
+
     void Core::RenderDrawCircle( glm::vec2 pos, f32 radius, glm::vec4 colour /*= glm::vec4(1)*/ ) {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::CIRCLE;
@@ -315,6 +323,10 @@ namespace atto {
 
     glm::vec2 Core::InputMousePosPixels() {
         return input.mousePosPixels;
+    }
+
+    glm::vec2 Core::InputMousePosWorld() {
+        return ScreenPosToWorldPos( input.mousePosPixels );
     }
 
     FrameInput & Core::InputGetFrameInput() {
