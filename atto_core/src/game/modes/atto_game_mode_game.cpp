@@ -113,7 +113,7 @@ namespace atto {
                             core->RenderDrawSprite( sprSelectionCircle, ent->pos );
                         }
 
-                        core->RenderDrawSprite( sprShipA, ent->pos, 0.0f, glm::vec2( 1 ) );
+                        core->RenderDrawSprite( sprEnemyA, ent->pos, 0.0f, glm::vec2( 1 ) );
                         //core->RenderDrawRect( ent->pos, glm::vec2( 32 ), 0.0f );
 
                     } break;

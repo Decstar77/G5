@@ -120,5 +120,15 @@ namespace atto
         value |= mask;
     }
 
+    template<typename _type_>
+    inline _type_ Max( _type_ a, _type_ b ) {
+        return a < b ? b : a;
+    }
+
+    template<typename _type_>
+    inline _type_ Min( _type_ a, _type_ b ) {
+        return a < b ? a : b;
+    }
+
     void PlatformAssertionFailed( const char * msg, const char * file, const char *func, int line );
 }

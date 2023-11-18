@@ -2,6 +2,7 @@
 #include "../gen/atto_reflection_gen.h"
 #include "../game/atto_game.h"
 #include "../shared/atto_colors.h"
+#include "../shared/atto_content.h"
 
 #include "atto_core_windows.h"
 
@@ -390,6 +391,8 @@ namespace atto {
             LogOutput( LogLevel::ERR, "Failed to load texture asset %s", name );
             return false;
         }
+
+        ContentTextureProcesses::FixAplhaEdges( (byte *)pixelData, textureResource.width, textureResource.height );
 
         glPixelStorei( GL_UNPACK_ALIGNMENT, 1 ); // @TODO: Remove this pack the textures
 
