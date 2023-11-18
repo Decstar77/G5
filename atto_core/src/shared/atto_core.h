@@ -48,23 +48,12 @@ namespace atto {
         i32 bitDepth;
     };
 
-    struct FontChar {
-        u32 textureId; //@TODO: BAD!!!
-        glm::vec2 size;
-        glm::vec2 bearing;
-        u32 advance;
-    };
-
-    struct FontResource {
-        SmallString name;
-        i32 fontSize;
-        FixedList<FontChar, 128> chars;
-    };
-
     struct AudioSpeaker {
         u32         sourceHandle;
         i32         index;
     };
+    enum class RESOURCE_HANDLE_FONT {};
+    typedef ObjectHandle<RESOURCE_HANDLE_FONT> FontHandle;
 
     enum class DrawCommandType {
         NONE = 0,
@@ -101,7 +90,7 @@ namespace atto {
                     glm::vec2 bl;
                     glm::mat4 proj;
                     SmallString text;
-                    FontResource * fontRes;
+                    FontHandle font;
                 } text;
             };
         };
@@ -150,12 +139,9 @@ namespace atto {
         f32                                 GetDeltaTime() const;
         f64                                 GetLastTime() const;
 
-        virtual TextureResource * ResourceGetAndLoadTexture( const char * name ) = 0;
-        virtual AudioResource * ResourceGetAndLoadAudio( const char * name ) = 0;
-        virtual FontResource * ResourceGetAndLoadFont( const char * name, i32 fontSize ) = 0;
-
-        f32                                 FontGetWidth( FontResource * font, const char * text );
-        f32                                 FontGetHeight( FontResource * font );
+        virtual TextureResource *           ResourceGetAndLoadTexture( const char * name ) = 0;
+        virtual AudioResource *             ResourceGetAndLoadAudio( const char * name ) = 0;
+        virtual FontHandle                  ResourceGetFont( const char * name ) = 0;
 
         void                                UIBegin();
         bool                                UIPushButton( const char * text, glm::vec2 center, glm::vec4 color = glm::vec4( 1 ) );
@@ -176,7 +162,7 @@ namespace atto {
         void                                RenderDrawLine( glm::vec2 start, glm::vec2 end, f32 thicc, const glm::vec4 & color = glm::vec4( 1 ) );
         void                                RenderDrawSprite( TextureResource * texture, glm::vec2 center, f32 rot = 0.0f, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
         void                                RenderDrawSpriteBL( TextureResource * texture, glm::vec2 bl, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
-        void                                RenderDrawText( FontResource * font, glm::vec2 bl, const char * text, glm::vec4 colour = glm::vec4( 1 ) );
+        void                                RenderDrawText( FontHandle font, glm::vec2 tl, const char * text, glm::vec4 colour = glm::vec4( 1 ) );
         virtual void                        RenderSetCamera( f32 width, f32 height ) = 0;
         virtual void                        RenderSubmit() = 0;
 
@@ -214,7 +200,6 @@ namespace atto {
         //virtual void                        WindowSetCursorLocked(bool locked) = 0;
 
         NetClient * GetNetClient();
-        FontResource * GetDebugFont();
 
         virtual void                        Run( int argc, char ** argv ) = 0;
 
@@ -228,8 +213,6 @@ namespace atto {
         Game * game = nullptr;
 
         NetClient * client = nullptr;
-
-        FontResource * arialFont = NULL;
 
         f64                 currentTime = 0.0f;
         f32                 deltaTime = 0.0f;

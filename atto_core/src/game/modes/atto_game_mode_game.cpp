@@ -124,7 +124,8 @@ namespace atto {
             }
         }
 
-
+        FontHandle f = core->ResourceGetFont("default");
+        core->RenderDrawText( f, glm::vec2( 0, 0 ), "Hello World" );
 
         core->RenderSubmit();
     }

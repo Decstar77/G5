@@ -5,6 +5,9 @@
 struct ALCdevice;
 struct ALCcontext;
 
+struct FONScontext;
+typedef FONScontext * FontContext;
+
 namespace atto {
     struct ShaderUniform {
         SmallString name;
@@ -74,9 +77,9 @@ namespace atto {
     };
 
     struct ResourceRegistry {
-        FixedList<Win32TextureResource, 1024>    textures;
-        FixedList<Win32AudioResource, 1024>      audios;
-        FixedList<FontResource, 64>              fonts;
+        FixedList<Win32TextureResource, 1024>       textures;
+        FixedList<Win32AudioResource, 1024>         audios;
+        FontContext                                 fontContext;
     };
 
     class WindowsCore : public Core {
@@ -85,7 +88,7 @@ namespace atto {
         
         virtual TextureResource*    ResourceGetAndLoadTexture(const char* name) override;
         virtual AudioResource*      ResourceGetAndLoadAudio(const char* name) override;
-        virtual FontResource*       ResourceGetAndLoadFont(const char* name, i32 fontSize) override;
+        virtual FontHandle          ResourceGetFont( const char * name ) override;
 
         virtual AudioSpeaker        AudioPlay(AudioResource* audioResource, f32 volume = 1.0f, bool looping = false) override;
 
@@ -112,6 +115,9 @@ namespace atto {
         ALCdevice*                  alDevice = nullptr;
         ALCcontext*                 alContext = nullptr;
         FixedList<AudioSpeaker, 32> alSpeakers;
+
+        i32 arialFontHandle;
+        i32 kenFontHandle;
 
         u64             OsGetFileLastWriteTime(const char* fileName) override;
         void            OsLogMessage(const char* message, u8 colour) override;

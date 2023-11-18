@@ -2,16 +2,43 @@
 
 #include <vector> // @NOTE(DECLAN): Going to use std vector because none of this code should run in release
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image/std_image.h>
+
 namespace atto {
-    void ContentTextureProcesses::FixAplhaEdges( byte * data, int width, int height ) {
+
+    ContentTextureProcesor::ContentTextureProcesor() {
+
+    }
+
+    ContentTextureProcesor::~ContentTextureProcesor() {
+        if( pixelData != nullptr ) {
+            stbi_image_free( pixelData );
+        }
+    }
+
+    bool ContentTextureProcesor::LoadFromFile( const char * file ) {
+        LargeString filePath = StringFormat::Large( "res/sprites/%s", file );
+        pixelData = stbi_load( filePath.GetCStr(), &width, &height, &channels, 4 );
+
+        if( pixelData == nullptr ) {
+            //LogOutput( LogLevel::ERR, "Failed to load texture asset \t %s", name );
+            return false;
+        }
+        
+
+        return true;
+    }
+
+    void ContentTextureProcesor::FixAplhaEdges() {
         const int sizeBytes = width * height * 4;
 
         // copy data into vec
         std::vector<byte> dcopy( sizeBytes );
-        memcpy( dcopy.data(), data, sizeBytes );
+        memcpy( dcopy.data(), pixelData, sizeBytes );
 
         const byte * srcptr = dcopy.data();
-        byte * data_ptr = data;
+        byte * data_ptr = pixelData;
 
         const int max_radius = 4;
         const int alpha_threshold = 20;

@@ -12,63 +12,6 @@ namespace atto {
         return currentTime;
     }
 
-    f32 Core::FontGetWidth( FontResource * font, const char * text ) {
-        f32 width = 0;
-
-        for( i32 i = 0; text[ i ] != '\0'; i++ ) {
-            width += (f32)( font->chars[ text[ i ] ].advance >> 6 );
-        }
-
-        return width;
-    }
-
-    f32 Core::FontGetHeight( FontResource * font ) {
-        return (f32)font->fontSize;
-    }
-
-    void Core::UIBegin() {
-        uiState.buttons.Clear();
-    }
-
-    bool Core::UIPushButton( const char * text, glm::vec2 center, glm::vec4 color /*= glm::vec4( 1 ) */ ) {
-        glm::vec2 screenScale = glm::vec2( viewport.z, viewport.w );
-        f32 width = FontGetWidth( arialFont, text );
-        f32 height = FontGetHeight( arialFont );
-        glm::vec2 pad = glm::vec2( 8.0f, 8.0f );
-
-        UIButton btn = {};
-        btn.text = text;
-        btn.center = center * screenScale;
-        btn.size = glm::vec2( width, height ) + pad;
-        btn.textPos = btn.center - glm::vec2( width / 2.0f, -height / 2.0f );
-        btn.color = color;
-
-        BoxBounds bb = {};
-        bb.CreateFromCenterSize( btn.center, btn.size );
-        if( bb.Contains( input.mousePosPixels ) ) {
-            btn.color = color * 1.3f;
-            if( InputMouseButtonDown( MOUSE_BUTTON_1 ) ) {
-                btn.color = color * 1.6f;
-            }
-            if( InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) ) {
-                return true;
-            }
-        }
-
-        uiState.buttons.Add( btn );
-
-        return false;
-    }
-
-    void Core::UIEndAndRender() {
-        const i32 buttonCount = uiState.buttons.GetCount();
-        for( i32 i = 0; i < buttonCount; ++i ) {
-            UIButton & btn = uiState.buttons[ i ];
-            RenderDrawRect( btn.center, btn.size, 0.0f, btn.color );
-            RenderDrawText( arialFont, btn.textPos, btn.text.GetCStr() );
-        }
-    }
-
     glm::vec2 Core::ViewPosToScreenPos( glm::vec2 world ) {
         // @NOTE: Convert to [ 0, 1] not NDC[-1, 1] because 
         // @NOTE: we're doing a small optimization here by not doing the inverse of the camera matrix
@@ -228,14 +171,14 @@ namespace atto {
         RenderDrawSprite( texture, bl + dim / 2.0f * size, 0.0f, size, colour );
     }
 
-    void Core::RenderDrawText( FontResource * font, glm::vec2 bl, const char * text, glm::vec4 colour /*= glm::vec4(1)*/ ) {
+    void Core::RenderDrawText( FontHandle font, glm::vec2 bl, const char * text, glm::vec4 colour /*= glm::vec4( 1 ) */ ) {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::TEXT;
         cmd.color = colour;
-        cmd.text.bl = bl;
+        cmd.text.font = font;
         cmd.text.text = text;
-        cmd.text.proj = screenProjection;
-        cmd.text.fontRes = font;
+        cmd.text.bl = bl;
+
         drawCommands.drawList.Add( cmd );
     }
 
@@ -335,10 +278,6 @@ namespace atto {
 
     NetClient * Core::GetNetClient() {
         return client;
-    }
-
-    FontResource * Core::GetDebugFont() {
-        return arialFont;
     }
 
     void * Core::MemoryAllocateTransient( u64 bytes ) {

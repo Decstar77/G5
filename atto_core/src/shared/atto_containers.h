@@ -1044,5 +1044,29 @@ namespace atto
         u8  data[capacity];
     };
 
+    template<typename _type_>
+    struct ObjectHandle {
+        i32 idx;
+        i32 gen;
+
+        static ObjectHandle<_type_> INVALID;
+        inline static constexpr ObjectHandle<_type_> Create( i32 idx, i32 gen ) {
+            ObjectHandle<_type_> o;
+            o.idx = idx;
+            o.gen = gen;
+            return o;
+        }
+        
+        constexpr bool operator==( const ObjectHandle & other ) const {
+            return idx == other.idx && gen == other.gen;
+        }
+
+        constexpr bool operator!=( const ObjectHandle & other ) const {
+            return !( *this == other );
+        }
+    };
+
+    template<typename _type_>
+    ObjectHandle<_type_> ObjectHandle<_type_>::INVALID = ObjectHandle<_type_>::Create( -1, -1 );
 
 }

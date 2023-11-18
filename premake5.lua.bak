@@ -63,7 +63,6 @@ project "atto_core"
         path.join(ENET_DIR, "include"),
         JSON_DIR,
         STB_DIR,
-		path.join(FONTSTASH_DIR, "src"),
         GLM_DIR,
         AUDIO_FILE_DIR,
         "atto/src/"
