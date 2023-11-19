@@ -25,4 +25,15 @@ namespace atto {
         // Return a glm::vec4 with the extracted color components
         return glm::vec4( normRed, normGreen, normBlue, 1.0f );
     }
+
+    u32 Colors::VecToU32( const glm::vec4 & v ) {
+        // Convert the color components to integer values
+        byte r = (byte)glm::clamp<i32>( (i32)( v.r * 255.0f ), 0, 255 );
+        byte g = (byte)glm::clamp<i32>( (i32)( v.g * 255.0f ), 0, 255 );
+        byte b = (byte)glm::clamp<i32>( (i32)( v.b * 255.0f ), 0, 255 );
+        byte a = (byte)glm::clamp<i32>( (i32)( v.a * 255.0f ), 0, 255 );
+        u32 result = ( r ) | ( g << 8 ) | ( b << 16 ) | ( a << 24 );
+        return result;
+    }
+
 }

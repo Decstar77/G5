@@ -90,6 +90,7 @@ namespace atto {
                     glm::vec2 bl;
                     glm::mat4 proj;
                     SmallString text;
+                    f32 fontSize;
                     FontHandle font;
                 } text;
             };
@@ -162,7 +163,7 @@ namespace atto {
         void                                RenderDrawLine( glm::vec2 start, glm::vec2 end, f32 thicc, const glm::vec4 & color = glm::vec4( 1 ) );
         void                                RenderDrawSprite( TextureResource * texture, glm::vec2 center, f32 rot = 0.0f, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
         void                                RenderDrawSpriteBL( TextureResource * texture, glm::vec2 bl, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
-        void                                RenderDrawText( FontHandle font, glm::vec2 tl, const char * text, glm::vec4 colour = glm::vec4( 1 ) );
+        void                                RenderDrawText( FontHandle font, glm::vec2 tl, f32 fontSize, const char * text, glm::vec4 colour = glm::vec4( 1 ) );
         virtual void                        RenderSetCamera( f32 width, f32 height ) = 0;
         virtual void                        RenderSubmit() = 0;
 

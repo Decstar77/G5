@@ -1,4 +1,5 @@
 #include "atto_core_windows.h"
+#include "../shared/atto_colors.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
@@ -94,29 +95,18 @@ namespace atto {
         fontVertexBuffer = GLCreateVertexBuffer( &text, FONS_VERTEX_COUNT, nullptr, true );
     }
 
-    static unsigned int glfonsRGBA( unsigned char r, unsigned char g, unsigned char b, unsigned char a ) {
-        return ( r ) | ( g << 8 ) | ( b << 16 ) | ( a << 24 );
-    }
-
     void WindowsCore::RenderDrawCommandText( DrawCommand & cmd ) {
         FontContext fs = resources.fontContext;
-        float dx = 100, dy = 100;
-        unsigned int white = glfonsRGBA( 255, 255, 255, 255 );
-        unsigned int brown = glfonsRGBA( 192, 128, 0, 128 );
-
         GLEnableAlphaBlending();
         GLShaderProgramBind( fontProgram );
         GLShaderProgramSetSampler( "TextureSampler", 0 );
         GLShaderProgramSetMat4( "p", screenProjection );
 
-        fonsSetFont( fs, arialFontHandle );
-        fonsSetSize( fs, 124.0f );
-        fonsSetColor( fs, white );
-        fonsDrawText( fs, dx, dy, "The big ", NULL );
-
-        fonsSetSize( fs, 24.0f );
-        fonsSetColor( fs, brown );
-        fonsDrawText( fs, dx, dy, "brown fox", NULL );
+        u32 color = Colors::VecToU32( cmd.color );
+        fonsSetFont( fs, cmd.text.font.idx );
+        fonsSetSize( fs, cmd.text.fontSize );
+        fonsSetColor( fs, color );
+        fonsDrawText( fs, cmd.text.bl.x, cmd.text.bl.x, cmd.text.text.GetCStr(), NULL);
     }
 
     FontHandle WindowsCore::ResourceGetFont( const char * name ) {

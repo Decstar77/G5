@@ -171,13 +171,14 @@ namespace atto {
         RenderDrawSprite( texture, bl + dim / 2.0f * size, 0.0f, size, colour );
     }
 
-    void Core::RenderDrawText( FontHandle font, glm::vec2 bl, const char * text, glm::vec4 colour /*= glm::vec4( 1 ) */ ) {
+    void Core::RenderDrawText( FontHandle font, glm::vec2 bl, f32 fontSize, const char * text, glm::vec4 colour /*= glm::vec4( 1 ) */ ) {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::TEXT;
         cmd.color = colour;
         cmd.text.font = font;
         cmd.text.text = text;
         cmd.text.bl = bl;
+        cmd.text.fontSize = fontSize;
 
         drawCommands.drawList.Add( cmd );
     }
