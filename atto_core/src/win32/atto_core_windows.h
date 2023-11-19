@@ -56,11 +56,12 @@ namespace atto {
         i32 StrideBytes() override;
     };
 
-    class VertexLayoutText : public VertexLayout {
+    class VertexLayoutFont : public VertexLayout {
     public:
-        struct TextVertex {
-            glm::vec2 position;
-            glm::vec2 uv;
+        struct FontVertex {
+            glm::vec3   position;
+            u32         colour;
+            glm::vec2   uv;
         };
 
         void Layout() override;
@@ -100,7 +101,7 @@ namespace atto {
 
         void                        GLResetSurface(f32 w, f32 h);
 
-    protected:
+    public:
         ResourceRegistry    resources = {};
 
         ShaderProgram * boundProgram;
@@ -109,15 +110,20 @@ namespace atto {
         VertexBuffer                shapeVertexBuffer;
         ShaderProgram               spriteProgram;
         VertexBuffer                spriteVertexBuffer;
-        ShaderProgram               textProgram;
-        VertexBuffer                textVertexBuffer;
         
         ALCdevice*                  alDevice = nullptr;
         ALCcontext*                 alContext = nullptr;
         FixedList<AudioSpeaker, 32> alSpeakers;
 
-        i32 arialFontHandle;
-        i32 kenFontHandle;
+        ShaderProgram               fontProgram;
+        VertexBuffer                fontVertexBuffer;
+        i32                         fontTextureWidth;
+        i32                         fontTextureHeight;
+        u32                         fontTextureHandle = 0;
+        i32                         arialFontHandle;
+        i32                         kenFontHandle;
+
+        void            RenderDrawCommandText( DrawCommand & cmd );
 
         u64             OsGetFileLastWriteTime(const char* fileName) override;
         void            OsLogMessage(const char* message, u8 colour) override;
@@ -137,6 +143,7 @@ namespace atto {
         void            GLShaderProgramSetInt(const char* name, i32 value);
         void            GLShaderProgramSetSampler(const char* name, i32 value);
         void            GLShaderProgramSetTexture(i32 location, u32 textureHandle);
+        void            GLShaderProgramSetTexture( const char * name, u32 textureHandle, i32 slot );
         void            GLShaderProgramSetFloat(const char* name, f32 value);
         void            GLShaderProgramSetVec2(const char* name, glm::vec2 value);
         void            GLShaderProgramSetVec3(const char* name, glm::vec3 value);
@@ -156,6 +163,11 @@ namespace atto {
         void            GLInitializeShapeRendering();
         void            GLInitializeSpriteRendering();
         void            GLInitializeTextRendering();
+
+        void            GLFontsRenderCreate( i32 width, i32 height );
+        void            GLFontsRenderUpdate( i32 * rect, const byte * data );
+        void            GLFontsRenderDraw( const f32 * verts, const f32 * tcoords, const u32 * colors, i32 nverts );
+        void            GLFontsRenderDelete();
 
     };
 }

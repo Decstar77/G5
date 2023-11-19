@@ -9,14 +9,7 @@
 #include <glad/glad.h>
 #include "GLFW/glfw3.h"
 
-
 #include <fstream>
-
-#define FONTSTASH_IMPLEMENTATION	// Expands implementation
-#include <fontstash.h>
-
-#define GLFONTSTASH_IMPLEMENTATION	// Expands implementation
-#include <gl3corefontstash.h>
 
 namespace atto {
 
@@ -158,10 +151,6 @@ namespace atto {
         client = new NetClient( this );
 
         game = new Game();
-
-        resources.fontContext = glfonsCreate( 512, 512, FONS_ZERO_BOTTOMLEFT );
-        arialFontHandle = fonsAddFont( resources.fontContext, "default", "res/fonts/arial.ttf" );
-        kenFontHandle = fonsAddFont( resources.fontContext, "ken", "res/fonts/kenvector_future.ttf" );
 
         f32 simTickRate = 1.0f / 30.0f;
         f32 simTickCurrent = 0.0f;
@@ -320,24 +309,8 @@ namespace atto {
                 } break;
                 case DrawCommandType::TEXT:
                 {
-                    FontContext fs =  resources.fontContext;
-                    float dx =0, dy = 0;
-                    unsigned int white = glfonsRGBA( 255, 255, 255, 255 );
-                    unsigned int brown = glfonsRGBA( 192, 128, 0, 128 );
-
-                    GLEnableAlphaBlending();
-                    GLShaderProgramBind( textProgram );
-                    GLShaderProgramSetSampler( "texture0", 0 );
-                    GLShaderProgramSetMat4( "p", cameraProjection );
-
-                    fonsSetFont( fs, arialFontHandle );
-                    fonsSetSize( fs, 124.0f );
-                    fonsSetColor( fs, white );
-                    fonsDrawText( fs, dx, dy, "The big ", NULL );
-
-                    fonsSetSize( fs, 24.0f );
-                    fonsSetColor( fs, brown );
-                    fonsDrawText( fs, dx, dy, "brown fox", NULL );
+                    RenderDrawCommandText( cmd );
+                
                 } break;
                 default:
                 {
@@ -386,18 +359,6 @@ namespace atto {
         glBindTexture( GL_TEXTURE_2D, 0 );
 
         return resources.textures.Add( textureResource );
-    }
-
-    FontHandle WindowsCore::ResourceGetFont( const char * name ) {
-        i32 fh = fonsGetFontByName( resources.fontContext, name );
-        if( fh == FONS_INVALID ) {
-            return FontHandle::INVALID;
-        }
-
-        FontHandle fontHandle = {};
-        fontHandle.idx = fh;
-        fontHandle.gen = 0;
-        return fontHandle;
     }
 
     void WindowsCore::WindowClose() {
@@ -591,41 +552,6 @@ namespace atto {
         spriteVertexBuffer = GLCreateVertexBuffer( &sprite, 6, nullptr, true );
     }
 
-    void WindowsCore::GLInitializeTextRendering() {
-        const char * vertexShaderSource = R"(
-           #version 330 core
-
-            layout (location = 0) in vec2 position;
-            layout (location = 1) in vec2 texCoord;
-
-            out vec2 vertexTexCoord;
-
-            uniform mat4 p;
-
-            void main() {
-                vertexTexCoord = texCoord;
-                gl_Position = p * vec4(position.x, position.y, 0.0, 1.0);
-            }
-        )";
-
-        const char * fragmentShaderSource = R"(
-           #version 330 core
-            out vec4 FragColor;
-
-            in vec2 vertexTexCoord;
-            uniform sampler2D texture0;
-
-            void main() {
-                vec4 sampled = texture(texture0, vertexTexCoord);
-                FragColor = sampled;
-            }
-        )";
-
-        VertexLayoutText text = {};
-        textProgram = GLCreateShaderProgram( vertexShaderSource, fragmentShaderSource );
-        textVertexBuffer = GLCreateVertexBuffer( &text, 6, nullptr, true );
-    }
-
     void WindowsCore::OsParseStartArgs( int argc, char ** argv ) {
         if( argc > 1 ) {
             std::ifstream configFile( argv[ 1 ] );
@@ -715,6 +641,13 @@ namespace atto {
     void WindowsCore::GLShaderProgramSetTexture( i32 location, u32 textureHandle ) {
         AssertMsg( boundProgram != nullptr, "No shader program bound" );
         glBindTextureUnit( 0, textureHandle );
+    }
+
+    void WindowsCore::GLShaderProgramSetTexture( const char * name, u32 textureHandle, i32 slot ) {
+        i32 location = GLShaderProgramGetUniformLocation( *boundProgram, name );
+        glActiveTexture( GL_TEXTURE0 + slot );
+        glBindTexture( GL_TEXTURE_2D, textureHandle );
+        glUniform1i( location, slot );
     }
 
     void WindowsCore::GLShaderProgramSetFloat( const char * name, f32 value ) {
@@ -915,21 +848,6 @@ namespace atto {
         return (i32)sizeof( SpriteVertex );
     }
 
-    void VertexLayoutText::Layout() {
-        i32 stride = StrideBytes();
-        glEnableVertexAttribArray( 0 );
-        glEnableVertexAttribArray( 1 );
-        glVertexAttribPointer( 0, 2, GL_FLOAT, false, stride, 0 );
-        glVertexAttribPointer( 1, 2, GL_FLOAT, false, stride, (void *)( 2 * sizeof( f32 ) ) );
-    }
-
-    i32 VertexLayoutText::SizeBytes() {
-        return (i32)sizeof( TextVertex );
-    }
-
-    i32 VertexLayoutText::StrideBytes() {
-        return (i32)sizeof( TextVertex );
-    }
 
 }
 
