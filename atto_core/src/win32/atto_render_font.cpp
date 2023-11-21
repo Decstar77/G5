@@ -69,9 +69,9 @@ namespace atto {
 
             void main()
             {
-	            v_color = a_color;
-	            v_texCoords = a_texCoords0;
-	            gl_Position = p * vec4(a_position, 1.0);
+                v_color = a_color;
+                v_texCoords = a_texCoords0;
+                gl_Position = p * vec4(a_position, 1.0);
             }
         )";
 
@@ -86,7 +86,7 @@ namespace atto {
             void main()
             {
                 //FragColor = vec4(v_texCoords, 0.0, 1.0);
-	            FragColor = v_color * texture2D(TextureSampler, v_texCoords);
+                FragColor = v_color * texture2D(TextureSampler, v_texCoords);
             }
         )";
 

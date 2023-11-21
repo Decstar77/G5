@@ -12,21 +12,16 @@ namespace atto {
         ENTITY_TYPE_ENEMY,
     };
 
-    struct EntityId {
-        i32 index;
-        i32 generation;
-        bool operator==( const EntityId & other ) const {
-            return index == other.index && generation == other.generation;
-        }
-    };
 
     struct ShipDestination {
         glm::vec2 pos;
         bool valid;
     };
-
+    
+    struct Entity;
+    typedef ObjectHandle<Entity> EntityHandle;
     struct Entity {
-        EntityId id;
+        EntityHandle id;
         EntityType type;
         glm::vec2 pos;
         glm::vec2 vel;
@@ -49,8 +44,9 @@ namespace atto {
         Entity * SpawnEntity( EntityType type, glm::vec2 pos );
 
     public:
-        constexpr static int MAX_ENTITIES = 1024;
-        FixedList<Entity, MAX_ENTITIES> entities;
+        constexpr static int    MAX_ENTITIES = 1024;
+        FixedObjectPool<Entity, MAX_ENTITIES> entityPool;
+
         
     public: // Resources
         TextureResource * sprShipA = nullptr;

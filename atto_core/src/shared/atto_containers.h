@@ -13,6 +13,7 @@ namespace atto
 
     template<typename _type_>
     inline void ZeroStruct(_type_& t) {
+        static_assert( std::is_pointer<_type_>::value == false, "Highly likely bug to use ZeroStruct on pointer type! Use ZeroStructPtr instead" );
         memset(&t, 0, sizeof(_type_));
     }
 
@@ -1068,5 +1069,111 @@ namespace atto
 
     template<typename _type_>
     ObjectHandle<_type_> ObjectHandle<_type_>::INVALID = ObjectHandle<_type_>::Create( -1, -1 );
+
+    template<typename _type_, i32 capcity>
+    class FixedObjectPool {
+    public:
+        _type_ *    Add( ObjectHandle<_type_> & hdl );
+        _type_ *    Get( ObjectHandle<_type_> hdlt );
+        bool        Remove( ObjectHandle<_type_> hdlt );
+        void        GatherActiveObjs( FixedList<_type_ *, capcity> & inList );
+
+    private:
+        void        Initialize();
+        i32         FindFreeIndex();
+    private:
+        bool                                        initialized;
+        FixedList<_type_, capcity>                  objs;
+        FixedList<i32, capcity>                     idxs; // The free list
+        FixedList<i32, capcity>                     gens;
+        FixedList<b8, capcity>                      activeList; // This is for GetList but could be used and cached in other methods for spoods.
+    };
+
+    template<typename _type_, i32 capcity>
+    void FixedObjectPool<_type_, capcity>::Initialize() {
+        if( initialized == false ) {
+            for( i32 i = capcity - 1; i >= 0; i-- ) {
+                idxs.Add( i );
+            }
+            initialized = true;
+        }
+    }
+
+    template<typename _type_, i32 capcity>
+    i32 FixedObjectPool<_type_, capcity>::FindFreeIndex() {
+        const i32 freeListCount = idxs.GetCount();
+        if( freeListCount > 0 ) {
+            const i32 freeIndex = idxs[ freeListCount - 1 ];
+            idxs.RemoveIndex( freeListCount - 1 );
+            return freeIndex;
+        }
+
+        return -1;
+    }
+
+    template<typename _type_, i32 capcity>
+    _type_ * FixedObjectPool<_type_, capcity>::Add( ObjectHandle<_type_> & hdl ) {
+        Initialize();
+        i32 idx = FindFreeIndex();
+        if( idx == -1 ) {
+            return nullptr;
+        }
+
+        hdl.idx = idx;
+        hdl.gen = gens[ idx ];
+
+        _type_ * obj = &objs[ idx ];
+        return obj;
+    }
+
+    template<typename _type_, i32 capcity>
+    _type_ * FixedObjectPool<_type_, capcity>::Get( ObjectHandle<_type_> hdlt ) {
+        Initialize();
+        if( gens[ hdlt.idx ] != hdlt.gen ) {
+            return nullptr;
+        }
+        
+        return &objs[ hdlt.idx ];
+    }
+
+    template<typename _type_, i32 capcity>
+    bool FixedObjectPool<_type_, capcity>::Remove( ObjectHandle<_type_> hdlt ) {
+        Initialize();
+        if( gens[ hdlt.idx ] != hdlt.gen ) {
+            return false;
+        }
+
+        gens[ idx ]++;
+
+        idxs.Add( hdlt.idx );
+
+        return true;
+    }
+
+    template<typename _type_, i32 capcity>
+    void FixedObjectPool<_type_, capcity>::GatherActiveObjs( FixedList<_type_ *, capcity> & inList ) {
+        for( i32 i = 0; i < capcity; i++ ) {
+            activeList[ i ] = true;
+        }
+
+        const i32 freeCount = idxs.GetCount();
+        for( i32 i = 0; i < freeCount; i++ ) {
+            activeList[ idxs[ i ] ] = false;
+        }
+
+        const i32 activeCount = capcity - freeCount;
+
+        i32 count = 0;
+        for( i32 i = 0; i < capcity; i++ ) {
+            if( activeList[ i ] ) {
+                _type_ * t = &objs[ i ];
+                inList.Add( t );
+                count++;
+            }
+            if( count == activeCount ) {
+                break;
+            }
+        }
+    }
 
 }
