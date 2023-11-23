@@ -101,6 +101,9 @@ namespace atto {
 
         void                        GLResetSurface(f32 w, f32 h);
 
+        static void                 DEBUG_WriteTextFile( const char * path, const char * text );
+        static void                 DEBUG_ReadTextFile( const char * path, char * text, i32 maxLen );
+
     public:
         ResourceRegistry    resources = {};
 

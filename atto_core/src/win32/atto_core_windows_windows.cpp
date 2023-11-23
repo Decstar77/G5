@@ -1,6 +1,8 @@
 #include "atto_core_windows.h"
 
 #include <string>
+#include <fstream>
+#include <iostream>
 #include <Windows.h>
 
 extern "C" {
@@ -71,4 +73,34 @@ namespace atto {
 
         return FileTimeToUInt64(lastWriteTime);
     }
+
+
+    void WindowsCore::DEBUG_WriteTextFile( const char * path, const char * text ) {
+        std::ofstream file( path );
+        file << text;
+        file.close();
+    }
+
+    void WindowsCore::DEBUG_ReadTextFile( const char * path, char * text, i32 maxLen ) {
+        std::ifstream file( path );
+
+        if( file.is_open() ) {
+            file.seekg( 0, std::ios::end );
+            std::streampos fileSize = file.tellg();
+            file.seekg( 0, std::ios::beg );
+
+            if( static_cast<i32>( fileSize ) > maxLen ) {
+                std::cout << "DEBUG_ReadTextFile :: File size is too big. Truncating to " << maxLen << " bytes." << std::endl;
+            }
+
+            maxLen = Min( maxLen, static_cast<i32>( fileSize ) );
+
+            file.read( text, maxLen );
+
+            text[ maxLen ] = '\0';
+
+            file.close();
+        }
+    }
+
 }

@@ -32,6 +32,17 @@ namespace atto {
         SmallString     basePath;
     };
 
+    REFL_DECLARE( GameSettings );
+    REFL_VAR( GameSettings, windowWidth );
+    REFL_VAR( GameSettings, windowHeight );
+    REFL_VAR( GameSettings, windowStartPosX );
+    REFL_VAR( GameSettings, windowStartPosY );
+    REFL_VAR( GameSettings, noAudio );
+    REFL_VAR( GameSettings, fullscreen );
+    REFL_VAR( GameSettings, vsync );
+    REFL_VAR( GameSettings, showDebug );
+    REFL_VAR( GameSettings, basePath );
+
     struct TextureResource {
         SmallString name;
         i32 width;
@@ -175,12 +186,12 @@ namespace atto {
         SmallString                         NetStatusText();
         u32                                 NetGetPing();
 
-        void * MemoryAllocatePermanent( u64 bytes );
-        void * MemoryAllocateTransient( u64 bytes );
-        template<typename _type_> _type_ * MemoryAllocateTransient();
-        template<typename _type_> _type_ * MemoryAllocateTransientCPP();
-        template<typename _type_> _type_ * MemoryAllocatePermanent();
-        template<typename _type_> _type_ * MemoryAllocatePermanentCPP();
+        void *                              MemoryAllocatePermanent( u64 bytes );
+        void *                              MemoryAllocateTransient( u64 bytes );
+        template<typename _type_> _type_ *  MemoryAllocateTransient();
+        template<typename _type_> _type_ *  MemoryAllocateTransientCPP();
+        template<typename _type_> _type_ *  MemoryAllocatePermanent();
+        template<typename _type_> _type_ *  MemoryAllocatePermanentCPP();
 
         bool                                InputKeyDown( KeyCode keyCode );
         bool                                InputKeyUp( KeyCode keyCode );

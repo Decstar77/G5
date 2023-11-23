@@ -559,7 +559,7 @@ namespace atto {
                 LogOutput( LogLevel::INFO, "Using config file %s", argv[ 1 ] );
                 nlohmann::json data = nlohmann::json::parse( configFile );
 
-                theGameSettings = JSON_Read<GameSettings>( data );
+                //theGameSettings = JSON_Read<GameSettings>( data );
 
                 configFile.close();
             }
