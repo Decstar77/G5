@@ -89,68 +89,86 @@ namespace atto {
         return j;
     }
 
-    u8 JSON_Read_u8( const nlohmann::json & j ) {
-        return j.get<u8>();
+    void JSON_Read( const nlohmann::json & j, u8 & o ) {
+        o = j.get<u8>();
     }
 
-    bool JSON_Read_bool( const nlohmann::json & j ) {
-        return j.get<bool>();
+    void JSON_Read( const nlohmann::json & j, bool & o ) {
+        o = j.get<bool>();
     }
 
-    i32 JSON_Read_i32( const nlohmann::json & j ) {
-        return j.get<i32>();
+    void JSON_Read( const nlohmann::json & j, i32 & o ) {
+        o = j.get<i32>();
     }
 
-    i64 JSON_Read_i64( const nlohmann::json & j ) {
-        return j.get<i64>();
+    void JSON_Read( const nlohmann::json & j, i64 & o ) {
+        o = j.get<i64>();
     }
 
-    u32 JSON_Read_u32( const nlohmann::json & j ) {
-        return j.get<u32>();
+    void JSON_Read( const nlohmann::json & j, u32 & o ) {
+        o = j.get<u32>();
     }
 
-    u64 JSON_Read_u64( const nlohmann::json & j ) {
-        return j.get<u64>();
+    void JSON_Read( const nlohmann::json & j, u64 & o ) {
+        o = j.get<u64>();
     }
 
-    f32 JSON_Read_f32( const nlohmann::json & j ) {
-        return j.get<f32>();
+    void JSON_Read( const nlohmann::json & j, f32 & o ) {
+        o = j.get<f32>();
     }
 
-    f64 JSON_Read_f64( const nlohmann::json & j ) {
-        return j.get<f64>();
+    void JSON_Read( const nlohmann::json & j, f64 & o ) {
+        o = j.get<f64>();
     }
 
-    SmallString JSON_Read_SmallString( const nlohmann::json & j ) {
-        return SmallString::FromLiteral( j.get<std::string>().c_str() );
+    void JSON_Read( const nlohmann::json & j, SmallString & o ) {
+        o = SmallString::FromLiteral( j.get<std::string>().c_str() );
     }
 
-    LargeString JSON_Read_LargeString( const nlohmann::json & j ) {
-        return LargeString::FromLiteral( j.get<std::string>().c_str() );
+    void JSON_Read( const nlohmann::json & j, LargeString & o ) {
+        o = LargeString::FromLiteral( j.get<std::string>().c_str() );
     }
 
-    glm::vec2 JSON_Read_vec2( const nlohmann::json & j ) {
-        return glm::vec2( j.at( "x" ).get<float>(), j.at( "y" ).get<float>() );
+    void JSON_Read( const nlohmann::json & j, glm::vec2 & o ) {
+        o = glm::vec2( j.at( "x" ).get<float>(), j.at( "y" ).get<float>() );
     }
 
-    glm::vec3 JSON_Read_vec3( const nlohmann::json & j ) {
-        return glm::vec3( j.at( "x" ).get<float>(), j.at( "y" ).get<float>(), j.at( "z" ).get<float>() );
+    void JSON_Read( const nlohmann::json & j, glm::vec3 & o ) {
+        o = glm::vec3( j.at( "x" ).get<float>(), j.at( "y" ).get<float>(), j.at( "z" ).get<float>() );
     }
 
-    glm::vec4 JSON_Read_vec4( const nlohmann::json & j ) {
-        return glm::vec4( j.at( "x" ).get<float>(), j.at( "y" ).get<float>(), j.at( "z" ).get<float>(), j.at( "w" ).get<float>() );
+    void JSON_Read( const nlohmann::json & j, glm::vec4 & o ) {
+        o = glm::vec4( j.at( "x" ).get<float>(), j.at( "y" ).get<float>(), j.at( "z" ).get<float>(), j.at( "w" ).get<float>() );
     }
 
-    glm::mat2 JSON_Read_mat2( const nlohmann::json & j ) {
-        return glm::mat2( JSON_Read_vec2( j.at( "col1" ) ), JSON_Read_vec2( j.at( "col2" ) ) );
+    void JSON_Read( const nlohmann::json & j, glm::mat2 & o ) {
+        glm::vec2 col1;
+        glm::vec2 col2;
+        JSON_Read( j.at( "col1" ), col1 );
+        JSON_Read( j.at( "col2" ), col2 );
+        o = glm::mat2( col1, col2 );
     }
 
-    glm::mat3 JSON_Read_mat3( const nlohmann::json & j ) {
-        return glm::mat3( JSON_Read_vec3( j.at( "col1" ) ), JSON_Read_vec3( j.at( "col2" ) ), JSON_Read_vec3( j.at( "col3" ) ) );
+    void JSON_Read( const nlohmann::json & j, glm::mat3 & o ) {
+        glm::vec3 col1;
+        glm::vec3 col2;
+        glm::vec3 col3;
+        JSON_Read( j.at( "col1" ), col1 );
+        JSON_Read( j.at( "col2" ), col2 );
+        JSON_Read( j.at( "col3" ), col3 );
+        o = glm::mat3( col1, col2, col3 );
     }
 
-    glm::mat4 JSON_Read_mat4( const nlohmann::json & j ) {
-        return glm::mat4( JSON_Read_vec4( j.at( "col1" ) ), JSON_Read_vec4( j.at( "col2" ) ), JSON_Read_vec4( j.at( "col3" ) ), JSON_Read_vec4( j.at( "col4" ) ) );
+    void JSON_Read( const nlohmann::json & j, glm::mat4 & o ) {
+        glm::vec4 col1;
+        glm::vec4 col2;
+        glm::vec4 col3;
+        glm::vec4 col4;
+        JSON_Read( j.at( "col1" ), col1 );
+        JSON_Read( j.at( "col2" ), col2 );
+        JSON_Read( j.at( "col3" ), col3 );
+        JSON_Read( j.at( "col4" ), col4 );
+        o = glm::mat4( col1, col2, col3, col4 );
     }
 }
 

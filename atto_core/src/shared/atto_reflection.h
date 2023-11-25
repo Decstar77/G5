@@ -47,79 +47,29 @@ namespace atto {
         return j;
     }
 
-    inline void JSON_Read( const nlohmann::json & j, u8 & o ) {
-        o = j.get<u8>();
-    }
-
-    inline void JSON_Read( const nlohmann::json & j, bool & o ) {
-        o = j.get<bool>();
-    }
-
-    inline void JSON_Read( const nlohmann::json & j, i32 & o ) {
-        o = j.get<i32>();
-    }
-
-    inline void JSON_Read( const nlohmann::json & j, i64 & o ) {
-        o = j.get<i64>();
-    }
-
-    inline void JSON_Read( const nlohmann::json & j, u32 & o ) {
-        o = j.get<u32>();
-    }
-
-    inline void JSON_Read( const nlohmann::json & j, u64 & o ) {
-        o = j.get<u64>();
-    }
-
-    inline f32 JSON_Read<f32>( const nlohmann::json & j ) {
-        return j.get<f32>();
-    }
-
-    inline f64 JSON_Read<f64>( const nlohmann::json & j ) {
-        return j.get<f64>();
-    }
-
-    inline SmallString JSON_Read<SmallString>( const nlohmann::json & j ) {
-        return SmallString::FromLiteral( j.get<std::string>().c_str() );
-    }
-
-    inline LargeString JSON_Read<LargeString>( const nlohmann::json & j ) {
-        return LargeString::FromLiteral( j.get<std::string>().c_str() );
-    }
-
-    inline glm::vec2 JSON_Read<glm::vec2>( const nlohmann::json & j ) {
-        return glm::vec2( j.at( "x" ).get<float>(), j.at( "y" ).get<float>() );
-    }
-
-    inline glm::vec3 JSON_Read<glm::vec3>( const nlohmann::json & j ) {
-        return glm::vec3( j.at( "x" ).get<float>(), j.at( "y" ).get<float>(), j.at( "z" ).get<float>() );
-    }
-
-    inline glm::vec4 JSON_Read<glm::vec4>( const nlohmann::json & j ) {
-        return glm::vec4( j.at( "x" ).get<float>(), j.at( "y" ).get<float>(), j.at( "z" ).get<float>(), j.at( "w" ).get<float>() );
-    }
-
-    inline glm::mat2 JSON_Read<glm::mat2>( const nlohmann::json & j ) {
-        return glm::mat2( JSON_Read<glm::vec2>( j.at( "col1" ) ), JSON_Read<glm::vec2>( j.at( "col2" ) ) );
-    }
-
-    inline glm::mat3 JSON_Read<glm::mat3>( const nlohmann::json & j ) {
-        return glm::mat3( JSON_Read<glm::vec3>( j.at( "col1" ) ), JSON_Read<glm::vec3>( j.at( "col2" ) ), JSON_Read<glm::vec3>( j.at( "col3" ) ) );
-    }
-
-    inline glm::mat4 JSON_Read<glm::mat4>( const nlohmann::json & j ) {
-        return glm::mat4( JSON_Read<glm::vec4>( j.at( "col1" ) ), JSON_Read<glm::vec4>( j.at( "col2" ) ), JSON_Read<glm::vec4>( j.at( "col3" ) ), JSON_Read<glm::vec4>( j.at( "col4" ) ) );
-    }
+    void JSON_Read( const nlohmann::json & j, u8 & o );
+    void JSON_Read( const nlohmann::json & j, bool & o );
+    void JSON_Read( const nlohmann::json & j, i32 & o );
+    void JSON_Read( const nlohmann::json & j, i64 & o );
+    void JSON_Read( const nlohmann::json & j, u32 & o );
+    void JSON_Read( const nlohmann::json & j, u64 & o );
+    void JSON_Read( const nlohmann::json & j, f32 & o );
+    void JSON_Read( const nlohmann::json & j, f64 & o );
+    void JSON_Read( const nlohmann::json & j, SmallString & o );
+    void JSON_Read( const nlohmann::json & j, LargeString & o );
+    void JSON_Read( const nlohmann::json & j, glm::vec2 & o );
+    void JSON_Read( const nlohmann::json & j, glm::vec3 & o );
+    void JSON_Read( const nlohmann::json & j, glm::vec4 & o );
+    void JSON_Read( const nlohmann::json & j, glm::mat2 & o );
+    void JSON_Read( const nlohmann::json & j, glm::mat3 & o );
+    void JSON_Read( const nlohmann::json & j, glm::mat4 & o );
 
     template<typename _type_, i32 c>
-    inline FixedList<_type_, c> JSON_Read( const  nlohmann::json & j ) {
-        FixedList<_type_, c> list = {};
-
+    inline void JSON_Read( const  nlohmann::json & j, FixedList<_type_, c> & list ) {
         for( const auto & element : j ) {
-            list.Add( JSON_Read<_type_>( element ) );
+            _type_& t = list.AddEmpty();
+            JSON_Read( element, t );
         }
-
-        return list;
     }
 
     template<typename _type_>
@@ -156,7 +106,7 @@ namespace atto {
 
         virtual void JSON_Read( void * obj, const nlohmann::json & j ) const override {
             _type_ * t = (_type_ *)( ( (byte *)obj ) + offset );
-            *t = atto::JSON_Read<_type_>( j );
+            atto::JSON_Read( j, *t );
         }
     };
 

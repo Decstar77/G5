@@ -19,8 +19,7 @@ namespace atto {
     class Game;
     class NetClient;
 
-    ATTO_REFLECT_STRUCT( GameSettings )
-        struct GameSettings {
+    struct GameSettings {
         i32             windowWidth;
         i32             windowHeight;
         i32             windowStartPosX;
