@@ -9,11 +9,6 @@
 
 namespace atto {
 
-#define ATTO_REFLECT_STRUCT(name)  nlohmann::json JSON_Write(const struct name &obj); \
-                            template<> inline name JSON_Read(const nlohmann::json& j);
-
-#define ATTO_REFLECT_ENUM(name) const char * EnumToString(enum class name obj);
-
 #define AF_IGNORE
 
     nlohmann::json JSON_Write( bool v );

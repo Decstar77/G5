@@ -91,7 +91,6 @@ project "atto_core"
 
     prebuildcommands
     {
-        string.format("\"%s\"", path.join(ABSOLUTE_SOL_PATH, "bin/%{cfg.architecture}/atto_type_gen.exe"))
     }
 
 project "atto_server"
@@ -139,26 +138,6 @@ project "atto_server"
     }
 
     dependson { "AttoTypeGen", "atto_core" }
-
-project "atto_type_gen"
-    location("atto_type_gen")
-    kind "ConsoleApp"
-    language "C#"
-    dotnetframework "4.7.2"
-    
-    files {
-        "atto_type_gen/src/**.cs",
-    }
-    
-    links {
-        "System",
-        "System.Core",
-        "System.Data",
-        "System.Net.Http",
-    }
-
-    targetdir("bin/%{cfg.architecture}")
-    objdir("tmp/%{cfg.architecture}")
 
 project "glad"
     location(GLAD_DIR)

@@ -1,5 +1,4 @@
 #include "../shared/atto_client.h"
-#include "../gen/atto_reflection_gen.h"
 #include "../game/atto_game.h"
 #include "../shared/atto_colors.h"
 #include "../content/atto_content.h"
@@ -554,18 +553,9 @@ namespace atto {
 
     void WindowsCore::OsParseStartArgs( int argc, char ** argv ) {
         if( argc > 1 ) {
-            std::ifstream configFile( argv[ 1 ] );
-            if( configFile.is_open() ) {
-                LogOutput( LogLevel::INFO, "Using config file %s", argv[ 1 ] );
-                nlohmann::json data = nlohmann::json::parse( configFile );
-
-                //theGameSettings = JSON_Read<GameSettings>( data );
-
-                configFile.close();
-            }
-            else {
-                LogOutput( LogLevel::FATAL, "Could not read config file" );
-            }
+            GameSettings settings = {};
+            REFL_READ_JSON( argv[ 1 ], GameSettings, settings );
+            theGameSettings = settings;
         }
         else {
             GameSettings settings = {};
