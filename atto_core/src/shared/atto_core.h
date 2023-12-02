@@ -200,6 +200,7 @@ namespace atto {
         bool                                InputMouseButtonUp( MouseButton button );
         bool                                InputMouseButtonJustPressed( MouseButton button );
         bool                                InputMouseButtonJustReleased( MouseButton button );
+        bool                                InputMouseHasMoved();
         glm::vec2                           InputMousePosPixels();
         glm::vec2                           InputMousePosWorld();
         FrameInput & InputGetFrameInput();

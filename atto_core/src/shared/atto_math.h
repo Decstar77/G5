@@ -10,8 +10,8 @@
 
 namespace atto {
 
-    inline i16 NormalizedF64ToI16(f64 v) {
-        return static_cast<i16>(v * 32767.0);
+    inline i16 NormalizedF64ToI16( f64 v ) {
+        return static_cast<i16>( v * 32767.0 );
     }
 
     struct Manifold {
@@ -26,11 +26,11 @@ namespace atto {
         glm::vec2   pos;
         f32         rad;
 
-        bool                    Intersects(const Circle& circle);
-        bool                    Collision(const Circle& other, Manifold& manifold) const;
-        bool                    Contains(glm::vec2 point) const;
-        static bool             Contains(glm::vec2 c, f32 r, glm::vec2 point);
-        static Circle           Create(glm::vec2 pos, f32 rad);
+        bool                    Intersects( const Circle & circle );
+        bool                    Collision( const Circle & other, Manifold & manifold ) const;
+        bool                    Contains( glm::vec2 point ) const;
+        static bool             Contains( glm::vec2 c, f32 r, glm::vec2 point );
+        static Circle           Create( glm::vec2 pos, f32 rad );
     };
 
     struct BoxBounds {
@@ -42,15 +42,15 @@ namespace atto {
         glm::vec2               GetCenter() const;
         glm::vec2               GetSize() const;
 
-        void                    Translate(const glm::vec2& translation);
+        void                    Translate( const glm::vec2 & translation );
 
-        bool                    Intersects(const BoxBounds& other) const;
-        bool                    Intersects(const Circle& other) const;
+        bool                    Intersects( const BoxBounds & other ) const;
+        bool                    Intersects( const Circle & other ) const;
 
-        bool                    Collision(const BoxBounds& other, Manifold& manifold) const;
-        bool                    Contains(const glm::vec2& point) const;
-        void                    Expand(f32 mul);
+        bool                    Collision( const BoxBounds & other, Manifold & manifold ) const;
+        bool                    Contains( const glm::vec2 & point ) const;
+        void                    Expand( f32 mul );
 
-        void                    CreateFromCenterSize(const glm::vec2& center, const glm::vec2& size);
+        void                    CreateFromCenterSize( const glm::vec2 & center, const glm::vec2 & size );
     };
 }

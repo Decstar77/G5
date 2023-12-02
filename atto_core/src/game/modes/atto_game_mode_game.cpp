@@ -1,4 +1,5 @@
 #include "atto_game_mode_game.h"
+#include "../../shared/atto_colors.h"
 
 namespace atto {
     GameModeType GameModeGame::GetGameModeType() {
@@ -7,6 +8,7 @@ namespace atto {
 
     void GameModeGame::Init( Core * core ) {
         SpawnEntity( ENTITY_TYPE_SHIP_A, glm::vec2( 400, 400 ) );
+        SpawnEntity( ENTITY_TYPE_SHIP_A, glm::vec2( 200, 400 ) );
 
         sprShipA = core->ResourceGetAndLoadTexture( "kenny_sprites_01/ship_A.png" );
         sprShipB = core->ResourceGetAndLoadTexture( "kenny_sprites_01/ship_B.png" );
@@ -17,12 +19,23 @@ namespace atto {
     }
 
     void GameModeGame::Update( Core * core, f32 dt ) {
-        glm::vec2 mousePosWorld = core->InputMousePosWorld();
+        const bool mouseHasMoved = core->InputMouseHasMoved();
+        const glm::vec2 mousePosWorld = core->InputMousePosWorld();
 
         FixedList<Entity *, MAX_ENTITIES> & entities = * core->MemoryAllocateTransient<FixedList<Entity *, MAX_ENTITIES>>();
         entityPool.GatherActiveObjs( entities );
 
         FixedList<Entity *, MAX_ENTITIES> & selectedEntities = *core->MemoryAllocateTransient<FixedList<Entity *, MAX_ENTITIES>>();
+
+        if( core->InputMouseButtonJustPressed( MOUSE_BUTTON_1 ) ) {
+            selectionStartDragPos = mousePosWorld;
+            selectionEndDragPos = mousePosWorld;
+            selectionDragging = true;
+        }
+
+        if( mouseHasMoved && selectionDragging ) {
+            selectionEndDragPos = mousePosWorld;
+        }
 
         const i32 entityCount = entities.GetCount();
         for( i32 entityIndex = 0; entityIndex < entityCount; ++entityIndex ) {
@@ -32,19 +45,21 @@ namespace atto {
                 case ENTITY_TYPE_SHIP_BEGIN: break;
                 case ENTITY_TYPE_SHIP_A:
                 {
-                    if( core->InputMouseButtonJustPressed( MOUSE_BUTTON_1 ) ) {
+                    if( core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) && selectionDragging ) {
                         Circle c = {};
                         c.pos = ent->pos;
                         c.rad = 32.0f;
-
-                        if( c.Contains( mousePosWorld ) == true ) {
-                            ent->selected = true;
+                        if( selectionEndDragPos - selectionStartDragPos == glm::vec2( 0 ) ) {
+                            ent->selected = c.Contains( mousePosWorld );
                         }
                         else {
-                            ent->selected = false;
+                            BoxBounds bb = {};
+                            bb.min = glm::min( selectionStartDragPos, selectionEndDragPos );
+                            bb.max = glm::max( selectionStartDragPos, selectionEndDragPos );
+                            ent->selected = bb.Intersects( c );
                         }
                     }
-
+                    
                     if( ent->selected ) {
                         selectedEntities.Add( ent );
                     }
@@ -99,6 +114,12 @@ namespace atto {
             }
         }
 
+        if( core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) && selectionDragging ) {
+            selectionDragging = false;
+            selectionEndDragPos = glm::vec2( 0 );
+            selectionStartDragPos = glm::vec2( 0 );
+        }
+
         if( core->InputMouseButtonJustPressed( MOUSE_BUTTON_2 ) ) {
             ShipDestination dest = {};
             dest.pos = mousePosWorld;
@@ -113,7 +134,6 @@ namespace atto {
     }
 
     void GameModeGame::Render( Core * core, f32 dt ) {
-
         FixedList<Entity *, MAX_ENTITIES> & entities = *core->MemoryAllocateTransient<FixedList<Entity *, MAX_ENTITIES>>();
         entityPool.GatherActiveObjs( entities );
 
@@ -137,6 +157,12 @@ namespace atto {
                 case ENTITY_TYPE_ENEMY: break;
                 default: break;
             }
+        }
+
+        if( selectionDragging == true ) {
+            glm::vec2 bl = glm::min( selectionStartDragPos, selectionEndDragPos );
+            glm::vec2 tr = glm::max( selectionStartDragPos, selectionEndDragPos );
+            core->RenderDrawRect( bl, tr, Colors::BOX_SELECTION_COLOR );
         }
 
         FontHandle f = core->ResourceGetFont("default");

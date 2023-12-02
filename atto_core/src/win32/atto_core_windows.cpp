@@ -32,6 +32,7 @@ namespace atto {
     static void MousePositionCallback( GLFWwindow * window, double xpos, double ypos ) {
         Core * core = (Core *)glfwGetWindowUserPointer( window );
         FrameInput & fi = core->InputGetFrameInput();
+        fi.lastMousePosPixels = fi.mousePosPixels;
         fi.mousePosPixels = glm::vec2( (f32)xpos, (f32)ypos );
     }
 

@@ -265,6 +265,10 @@ namespace atto {
         return !input.mouseButtons[ button ] && input.lastMouseButtons[ button ];
     }
 
+    bool Core::InputMouseHasMoved() {
+        return input.lastMousePosPixels - input.mousePosPixels != glm::vec2( 0 );
+    }
+
     glm::vec2 Core::InputMousePosPixels() {
         return input.mousePosPixels;
     }

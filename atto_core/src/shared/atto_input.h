@@ -153,6 +153,7 @@ namespace atto
 
     struct FrameInput {
         glm::vec2 mousePosPixels;
+        glm::vec2 lastMousePosPixels;
         glm::vec2 mouseWheelDelta;
 
         FixedList<b8, KEY_CODE_COUNT> keys;

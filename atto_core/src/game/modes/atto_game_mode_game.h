@@ -47,6 +47,9 @@ namespace atto {
         constexpr static int    MAX_ENTITIES = 1024;
         FixedObjectPool<Entity, MAX_ENTITIES> entityPool;
 
+        bool                                    selectionDragging = false;
+        glm::vec2                               selectionStartDragPos = glm::vec2( 0 );
+        glm::vec2                               selectionEndDragPos = glm::vec2( 0 );
         
     public: // Resources
         TextureResource * sprShipA = nullptr;
