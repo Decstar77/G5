@@ -205,9 +205,15 @@ namespace atto {
         }
     }
 
+    static i32 YSortEntities( Entity *& a, Entity *& b ) {
+        return (i32)(b->pos.y - a->pos.y);
+    }
+
     void GameModeGame::Render( Core * core, f32 dt ) {
         FixedList<Entity *, MAX_ENTITIES> & entities = *core->MemoryAllocateTransient<FixedList<Entity *, MAX_ENTITIES>>();
         entityPool.GatherActiveObjs( entities );
+
+        entities.Sort( &YSortEntities );
 
         const int entityCount = entities.GetCount();
         for( int entityIndex = 0; entityIndex < entityCount; ++entityIndex ) {
@@ -230,6 +236,7 @@ namespace atto {
                 default: break;
             }
         }
+
     #if 0
         for( i32 entityIndexA = 0; entityIndexA < entityCount; entityIndexA++ ) {
             Entity * entA = entities[ entityIndexA ];
