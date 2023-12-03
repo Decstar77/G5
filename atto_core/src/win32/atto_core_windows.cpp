@@ -9,6 +9,7 @@
 #include "GLFW/glfw3.h"
 
 #include <fstream>
+#include "../editor/atto_editor.h"
 
 namespace atto {
 
@@ -148,9 +149,12 @@ namespace atto {
 
         ALInitialize();
 
+        EngineImgui::Initialize( window );
+
         client = new NetClient( this );
 
         game = new Game();
+        bool showDemoWindow = true;
 
         f32 simTickRate = 1.0f / 30.0f;
         f32 simTickCurrent = 0.0f;
@@ -186,8 +190,11 @@ namespace atto {
                 }
             }
 
+            EngineImgui::NewFrame();
             game->Update( this, this->deltaTime );
             game->Render( this, this->deltaTime );
+
+            EngineImgui::EndFrame();
 
             glfwSwapBuffers( window );
 
@@ -198,6 +205,8 @@ namespace atto {
             this->deltaTime = (f32)( endTime - startTime );
             startTime = endTime;
         }
+
+        EngineImgui::Shutdown();
 
         delete client;
     }

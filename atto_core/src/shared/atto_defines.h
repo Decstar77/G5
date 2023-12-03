@@ -2,6 +2,7 @@
 
 #define ATTO_DEBUG 1
 #define ATTO_DEBUG_RENDERING 1
+#define ATTO_EDITOR 1
 
 
 #define Assert(expr)                                                            \
@@ -20,12 +21,9 @@
         }                                                                       \
 }
 
-
-
 #if ATTO_DEBUG
 
 #else 
-
 
 #endif
 

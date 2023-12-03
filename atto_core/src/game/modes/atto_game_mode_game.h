@@ -54,6 +54,10 @@ namespace atto {
         }
     };
 
+    struct SprTileSheet {
+        TextureResource * tile01;
+    };
+
     class GameModeGame : public GameMode {
     public:
         GameModeType GetGameModeType() override;
@@ -76,12 +80,14 @@ namespace atto {
         
         FixedObjectPool<ArrivalCircle, MAX_ENTITIES> arrivalCirclePool;
 
-    public: // Resources
+    public: 
+        // Resources
         TextureResource * spr_RedWorker = nullptr;
         TextureResource * sprShipB = nullptr;
         TextureResource * sprEnemyA = nullptr;
         TextureResource * sprEnemyB = nullptr;
         TextureResource * sprStationA = nullptr;
         TextureResource * sprSelectionCircle = nullptr;
+        SprTileSheet      sprTileSheet = {};
     };
 }

@@ -163,9 +163,4 @@ namespace atto
         FixedList<b8, MOUSE_BUTTON_8> lastMouseButtons;
     };
 
-#define IsKeyDown(input, key) (input.keys[key])
-#define IsKeyJustDown(input, key) (input.keys[key] && input.lastKeys[key] == false)
-#define IsMouseDown(input, key) (input.mouseButtons[key])
-#define IsMouseJustDown(input, key) (input.mouseButtons[key] && input.lastMouseButtons[key] == false)
-#define IsMouseJustUp(input, key) (input.mouseButtons[key] == false && input.lastMouseButtons[key] == true)
 }

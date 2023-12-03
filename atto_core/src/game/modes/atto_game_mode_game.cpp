@@ -9,7 +9,7 @@ namespace atto {
     void GameModeGame::Init( Core * core ) {
         SpawnEntityShipA( glm::vec2( 400, 400 ) );
         SpawnEntityShipA( glm::vec2( 200, 400 ) );
-
+        
         SpawnEntityShipA( glm::vec2( 400, 600 ) );
         SpawnEntityShipA( glm::vec2( 200, 600 ) );
 

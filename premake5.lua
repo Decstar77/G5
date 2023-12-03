@@ -8,6 +8,7 @@ local JSON_DIR = "vendor/json"
 local ENET_DIR  = "vendor/enet"
 local FONTSTASH_DIR = "vendor/fontstash"
 local ABSOLUTE_SOL_PATH = path.getabsolute(".")
+local IMGUI_DIR = path.join(ABSOLUTE_SOL_PATH, "atto_core/src/editor/imgui")
 
 solution "Atto"
     location("")
@@ -66,7 +67,8 @@ project "atto_core"
 		path.join(FONTSTASH_DIR, "src"),
         GLM_DIR,
         AUDIO_FILE_DIR,
-        "atto/src/"
+        "atto/src/",
+        IMGUI_DIR
     }
     
     libdirs
