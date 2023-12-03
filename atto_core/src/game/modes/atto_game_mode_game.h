@@ -12,23 +12,46 @@ namespace atto {
         ENTITY_TYPE_ENEMY,
     };
 
-
-    struct ShipDestination {
-        glm::vec2 pos;
-        bool valid;
-    };
-    
     struct Entity;
     typedef ObjectHandle<Entity> EntityHandle;
+    constexpr static int    MAX_ENTITIES = 1024;
+
+    struct ArrivalCircle;
+    typedef ObjectHandle<ArrivalCircle> ArrivalCircleHandle;
+    struct ArrivalCircle {
+        ArrivalCircleHandle id;
+        FixedList<EntityHandle, MAX_ENTITIES> ents;
+        i32 aliveHandleCount;
+        glm::vec2 pos;
+        f32 targetRad;
+        f32 slowRad;
+        f32 timeToTarget;
+    };
+
+    struct ShipDestination {
+        ArrivalCircleHandle arrivalCircle;
+        bool moving;
+    };
+
+    
     struct Entity {
         EntityHandle id;
         EntityType type;
         glm::vec2 pos;
         glm::vec2 vel;
-        f32 rotation;
+        f32 ori;
         TextureResource * sprite;
         ShipDestination dest;
+        bool hasCollision;
+        Circle collisionCircle;
         bool selected;
+
+        
+        inline Circle GetCollisionCircleWorld() const {
+            Circle c = collisionCircle;
+            c.pos += pos;
+            return c;
+        }
     };
 
     class GameModeGame : public GameMode {
@@ -42,17 +65,19 @@ namespace atto {
     public:
         Entity * SpawnEntity( EntityType type );
         Entity * SpawnEntity( EntityType type, glm::vec2 pos );
+        Entity * SpawnEntityShipA( glm::vec2 pos );
 
     public:
-        constexpr static int    MAX_ENTITIES = 1024;
         FixedObjectPool<Entity, MAX_ENTITIES> entityPool;
 
         bool                                    selectionDragging = false;
         glm::vec2                               selectionStartDragPos = glm::vec2( 0 );
         glm::vec2                               selectionEndDragPos = glm::vec2( 0 );
         
+        FixedObjectPool<ArrivalCircle, MAX_ENTITIES> arrivalCirclePool;
+
     public: // Resources
-        TextureResource * sprShipA = nullptr;
+        TextureResource * spr_RedWorker = nullptr;
         TextureResource * sprShipB = nullptr;
         TextureResource * sprEnemyA = nullptr;
         TextureResource * sprEnemyB = nullptr;

@@ -1068,7 +1068,7 @@ namespace atto
     };
 
     template<typename _type_>
-    ObjectHandle<_type_> ObjectHandle<_type_>::INVALID = ObjectHandle<_type_>::Create( -1, -1 );
+    ObjectHandle<_type_> ObjectHandle<_type_>::INVALID = ObjectHandle<_type_>::Create( 0, 0 );
 
     template<typename _type_, i32 capcity>
     class FixedObjectPool {
@@ -1092,8 +1092,11 @@ namespace atto
     template<typename _type_, i32 capcity>
     void FixedObjectPool<_type_, capcity>::Initialize() {
         if( initialized == false ) {
-            for( i32 i = capcity - 1; i >= 0; i-- ) {
+            for( i32 i = capcity - 1; i >= 1; i-- ) {
                 idxs.Add( i );
+            }
+            for( i32 i = 0; i < capcity; i++ ) {
+                gens.Add( 1 );
             }
             initialized = true;
         }
@@ -1129,6 +1132,15 @@ namespace atto
     template<typename _type_, i32 capcity>
     _type_ * FixedObjectPool<_type_, capcity>::Get( ObjectHandle<_type_> hdlt ) {
         Initialize();
+
+        if( hdlt.idx == 0 || hdlt.idx >= capcity ) {
+            return nullptr;
+        }
+        
+        if( hdlt.gen == 0 ) {
+            return nullptr;
+        }
+
         if( gens[ hdlt.idx ] != hdlt.gen ) {
             return nullptr;
         }
@@ -1139,11 +1151,20 @@ namespace atto
     template<typename _type_, i32 capcity>
     bool FixedObjectPool<_type_, capcity>::Remove( ObjectHandle<_type_> hdlt ) {
         Initialize();
+
+        if( hdlt.idx == 0 || hdlt.idx >= capcity ) {
+            return nullptr;
+        }
+
+        if( hdlt.gen == 0 ) {
+            return nullptr;
+        }
+
         if( gens[ hdlt.idx ] != hdlt.gen ) {
             return false;
         }
 
-        gens[ idx ]++;
+        gens[ hdlt.idx ]++;
 
         idxs.Add( hdlt.idx );
 

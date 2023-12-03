@@ -7,10 +7,16 @@ namespace atto {
     }
 
     void GameModeGame::Init( Core * core ) {
-        SpawnEntity( ENTITY_TYPE_SHIP_A, glm::vec2( 400, 400 ) );
-        SpawnEntity( ENTITY_TYPE_SHIP_A, glm::vec2( 200, 400 ) );
+        SpawnEntityShipA( glm::vec2( 400, 400 ) );
+        SpawnEntityShipA( glm::vec2( 200, 400 ) );
 
-        sprShipA = core->ResourceGetAndLoadTexture( "kenny_sprites_01/ship_A.png" );
+        SpawnEntityShipA( glm::vec2( 400, 600 ) );
+        SpawnEntityShipA( glm::vec2( 200, 600 ) );
+
+        SpawnEntityShipA( glm::vec2( 400, 200 ) );
+        SpawnEntityShipA( glm::vec2( 200, 200 ) );
+
+        spr_RedWorker = core->ResourceGetAndLoadTexture( "kenny_sprites_03/unit/scifiUnit_11.png" );
         sprShipB = core->ResourceGetAndLoadTexture( "kenny_sprites_01/ship_B.png" );
         sprEnemyA = core->ResourceGetAndLoadTexture( "kenny_sprites_01/enemy_A.png" );
         sprEnemyB = core->ResourceGetAndLoadTexture( "kenny_sprites_01/enemy_B.png" );
@@ -22,7 +28,7 @@ namespace atto {
         const bool mouseHasMoved = core->InputMouseHasMoved();
         const glm::vec2 mousePosWorld = core->InputMousePosWorld();
 
-        FixedList<Entity *, MAX_ENTITIES> & entities = * core->MemoryAllocateTransient<FixedList<Entity *, MAX_ENTITIES>>();
+        FixedList<Entity *, MAX_ENTITIES> & entities = *core->MemoryAllocateTransient<FixedList<Entity *, MAX_ENTITIES>>();
         entityPool.GatherActiveObjs( entities );
 
         FixedList<Entity *, MAX_ENTITIES> & selectedEntities = *core->MemoryAllocateTransient<FixedList<Entity *, MAX_ENTITIES>>();
@@ -59,7 +65,7 @@ namespace atto {
                             ent->selected = bb.Intersects( c );
                         }
                     }
-                    
+
                     if( ent->selected ) {
                         selectedEntities.Add( ent );
                     }
@@ -70,33 +76,43 @@ namespace atto {
                     const f32 drag = 0.90f;
                     glm::vec2 steer = glm::vec2( 0, 0 );
 
-                    const f32 targetRad = 32.0f;    core->RenderDrawCircle( ent->dest.pos, targetRad, glm::vec4( 0, 1, 0, 0.8f ) );
-                    const f32 slowRad = 128.0f;     core->RenderDrawCircle( ent->dest.pos, slowRad, glm::vec4( 1, 0, 0, 0.8f ) );
-                    const f32 timeToTarget = 0.1f;
+                    ArrivalCircle * arrivalCircle = arrivalCirclePool.Get( ent->dest.arrivalCircle );
+                    if( arrivalCircle != nullptr ) {
+                        const f32 targetRad = arrivalCircle->targetRad;
+                        const f32 slowRad = arrivalCircle->slowRad;
+                        const f32 timeToTarget = arrivalCircle->timeToTarget;
 
-                    glm::vec2 dir = ent->dest.pos - ent->pos;
-                    f32 dist = glm::length( dir );
+                        //core->RenderDrawCircle( arrivalCircle->pos, targetRad, glm::vec4( 0, 1, 0, 0.8f ) );
+                        //core->RenderDrawCircle( arrivalCircle->pos, slowRad, glm::vec4( 1, 0, 0, 0.8f ) );
 
-                    if( dist < targetRad ) {
-                        ent->dest.valid = false;
-                    }
+                        glm::vec2 dir = arrivalCircle->pos - ent->pos;
+                        f32 dist = glm::length( dir );
 
-                    if( ent->dest.valid ) {
-                        f32 targetSpeed = 0.0;
-                        if( dist > slowRad ) {
-                            targetSpeed = acc;
-                        }
-                        else {
-                            targetSpeed = maxSpeed * ( dist / slowRad );
+                        if( dist < targetRad ) {
+                            ent->dest.moving = false;
                         }
 
-                        glm::vec2 targetVel = glm::normalize( dir ) * targetSpeed;
-                        steer = targetVel - ent->vel;
-                        steer /= timeToTarget;
+                        if( ent->dest.moving == true ) {
+                            f32 targetSpeed = 0.0;
+                            if( dist > slowRad ) {
+                                targetSpeed = acc;
+                            }
+                            else {
+                                targetSpeed = maxSpeed * ( dist / slowRad );
+                            }
+
+                            glm::vec2 targetVel = glm::normalize( dir ) * targetSpeed;
+                            steer = targetVel - ent->vel;
+                            steer /= timeToTarget;
+                        }
+
+                        if( ent->dest.moving == false ) {
+                            arrivalCircle->targetRad = glm::max( arrivalCircle->targetRad, dist );
+                        }
                     }
 
                     ent->vel += steer * dt;
-                    if( ent->dest.valid == false ) {
+                    if( ent->dest.moving == false ) {
                         ent->vel *= drag;
                     }
 
@@ -104,6 +120,10 @@ namespace atto {
                         ent->vel = glm::normalize( ent->vel );
                         ent->vel = ent->vel * maxSpeed;
                     }
+
+                    //if( glm::length2( ent->vel ) > 0.1f ) {
+                    //    ent->ori = glm::atan( ent->vel.x, ent->vel.y );
+                    //}
 
                     ent->pos += ent->vel * dt;
 
@@ -114,6 +134,46 @@ namespace atto {
             }
         }
 
+        for( i32 entityIndexA = 0; entityIndexA < entityCount; entityIndexA++ ) {
+            Entity * entA = entities[ entityIndexA ];
+            if( entA->hasCollision ) {
+                for( i32 entityIndexB = entityIndexA + 1; entityIndexB < entityCount; entityIndexB++ ) {
+                    Entity * entB = entities[ entityIndexB ];
+                    if( entB->hasCollision ) {
+                        Circle ca = entA->GetCollisionCircleWorld();
+                        Circle cb = entB->GetCollisionCircleWorld();
+
+                        Manifold m = {};
+                        if( ca.Collision( cb, m ) ) {
+                            entA->pos -= m.normal * m.penetration * 0.5f;
+                            entB->pos += m.normal * m.penetration * 0.5f;
+                        }
+                    }
+                }
+            }
+        }
+
+        FixedList<ArrivalCircle *, MAX_ENTITIES> & activeArrivalCircles = *core->MemoryAllocateTransient<FixedList<ArrivalCircle *, MAX_ENTITIES>>();
+        arrivalCirclePool.GatherActiveObjs( activeArrivalCircles );
+        const i32 activeArrivalCirclesCount = activeArrivalCircles.GetCount();
+        for( int arrivalCircleIndex = 0; arrivalCircleIndex < activeArrivalCirclesCount; arrivalCircleIndex++ ) {
+            ArrivalCircle * c = activeArrivalCircles[ arrivalCircleIndex ];
+            for( int entHandleIndex = 0; entHandleIndex < c->ents.GetCount(); entHandleIndex++ ) {
+                EntityHandle h = c->ents[ entHandleIndex ];
+                Entity * ent = entityPool.Get( h );
+                if( ent == nullptr || ent->dest.arrivalCircle != c->id || ent->dest.moving == false ) {
+                    c->ents.RemoveValue( h );
+                    entHandleIndex--;
+                    continue;
+                }
+            }
+
+            if( c->ents.GetCount() == 0 ) {
+                arrivalCirclePool.Remove( c->id );
+            }
+        }
+
+
         if( core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) && selectionDragging ) {
             selectionDragging = false;
             selectionEndDragPos = glm::vec2( 0 );
@@ -121,13 +181,25 @@ namespace atto {
         }
 
         if( core->InputMouseButtonJustPressed( MOUSE_BUTTON_2 ) ) {
+            ArrivalCircleHandle arrivalHandle = {};
+            ArrivalCircle * circle = arrivalCirclePool.Add( arrivalHandle );
+            Assert( circle != nullptr );
+
+            circle->id = arrivalHandle;
+            circle->targetRad = 45.0f;
+            circle->slowRad = 128.0f;
+            circle->timeToTarget = 0.1f;
+            circle->pos = mousePosWorld;
+            circle->aliveHandleCount = selectedEntities.GetCount();
+
             ShipDestination dest = {};
-            dest.pos = mousePosWorld;
-            dest.valid = true;
-            
+            dest.arrivalCircle = arrivalHandle;
+            dest.moving = true;
+
             const int selectedEntityCount = selectedEntities.GetCount();
             for( int selectedEntityIndex = 0; selectedEntityIndex < selectedEntityCount; ++selectedEntityIndex ) {
-                Entity * ent = selectedEntities[selectedEntityIndex];
+                Entity * ent = selectedEntities[ selectedEntityIndex ];
+                circle->ents.Add( ent->id );
                 ent->dest = dest;
             }
         }
@@ -146,10 +218,10 @@ namespace atto {
                 case ENTITY_TYPE_SHIP_A:
                 {
                     if( ent->selected ) {
-                        core->RenderDrawSprite( sprSelectionCircle, ent->pos );
+                        core->RenderDrawSprite( sprSelectionCircle, ent->pos, 0.0f, glm::vec2( 0.5f ) );
                     }
 
-                    core->RenderDrawSprite( sprEnemyA, ent->pos, 0.0f, glm::vec2( 1 ) );
+                    core->RenderDrawSprite( spr_RedWorker, ent->pos, ent->ori, glm::vec2( 1 ) );
                     //core->RenderDrawRect( ent->pos, glm::vec2( 32 ), 0.0f );
 
                 } break;
@@ -158,6 +230,15 @@ namespace atto {
                 default: break;
             }
         }
+    #if 0
+        for( i32 entityIndexA = 0; entityIndexA < entityCount; entityIndexA++ ) {
+            Entity * entA = entities[ entityIndexA ];
+            if( entA->hasCollision ) {
+                Circle c = entA->GetCollisionCircleWorld();
+                core->RenderDrawCircle( c.pos, c.rad, glm::vec4( 0.5f, 0.5f, 1, 0.8f ) );
+            }
+        }
+    #endif
 
         if( selectionDragging == true ) {
             glm::vec2 bl = glm::min( selectionStartDragPos, selectionEndDragPos );
@@ -165,7 +246,7 @@ namespace atto {
             core->RenderDrawRect( bl, tr, Colors::BOX_SELECTION_COLOR );
         }
 
-        FontHandle f = core->ResourceGetFont("default");
+        FontHandle f = core->ResourceGetFont( "default" );
         core->RenderDrawText( f, glm::vec2( 100, 100 ), 128.0f, "Hello World" );
 
         core->RenderSubmit();
@@ -182,7 +263,7 @@ namespace atto {
             entity->id = hdl;
             entity->type = type;
             entity->selected = false;
-            entity->dest.valid = false;
+            entity->dest.moving = false;
             return entity;
         }
 
@@ -195,6 +276,16 @@ namespace atto {
         Entity * ent = SpawnEntity( type );
         if( ent != nullptr ) {
             ent->pos = pos;
+        }
+
+        return ent;
+    }
+
+    Entity * GameModeGame::SpawnEntityShipA( glm::vec2 pos ) {
+        Entity * ent = SpawnEntity( ENTITY_TYPE_SHIP_A, pos );
+        if( ent != nullptr ) {
+            ent->hasCollision = true;
+            ent->collisionCircle.rad = 20.0f;
         }
 
         return ent;
