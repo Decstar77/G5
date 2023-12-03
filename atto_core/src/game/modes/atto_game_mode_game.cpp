@@ -7,21 +7,33 @@ namespace atto {
     }
 
     void GameModeGame::Init( Core * core ) {
-        SpawnEntityShipA( glm::vec2( 400, 400 ) );
-        SpawnEntityShipA( glm::vec2( 200, 400 ) );
-        
-        SpawnEntityShipA( glm::vec2( 400, 600 ) );
-        SpawnEntityShipA( glm::vec2( 200, 600 ) );
-
-        SpawnEntityShipA( glm::vec2( 400, 200 ) );
-        SpawnEntityShipA( glm::vec2( 200, 200 ) );
-
         spr_RedWorker = core->ResourceGetAndLoadTexture( "kenny_sprites_03/unit/scifiUnit_11.png" );
+        spr_Structure_Hub = core->ResourceGetAndLoadTexture( "kenny_sprites_03/structure/scifiStructure_04.png" );
         sprShipB = core->ResourceGetAndLoadTexture( "kenny_sprites_01/ship_B.png" );
         sprEnemyA = core->ResourceGetAndLoadTexture( "kenny_sprites_01/enemy_A.png" );
         sprEnemyB = core->ResourceGetAndLoadTexture( "kenny_sprites_01/enemy_B.png" );
         sprStationA = core->ResourceGetAndLoadTexture( "kenny_sprites_01/station_A.png" );
         sprSelectionCircle = core->ResourceGetAndLoadTexture( "unit_selection_01.png" );
+
+    #if 1
+        SpawnEntityUnitWorker( glm::vec2( 400, 400 ) );
+        SpawnEntityUnitWorker( glm::vec2( 200, 400 ) );
+
+        SpawnEntityUnitWorker( glm::vec2( 400, 600 ) );
+        SpawnEntityUnitWorker( glm::vec2( 200, 600 ) );
+
+        SpawnEntityUnitWorker( glm::vec2( 400, 200 ) );
+        SpawnEntityUnitWorker( glm::vec2( 200, 200 ) );
+    #else 
+        for( int x = 0; x < 20; x++ ) {
+            for( int y = 0; y < 20; y++ ) {
+                SpawnEntityUnitWorker( glm::vec2( x, y ) * 30.0f + glm::vec2(800, 200));
+            }
+        }
+
+    #endif
+        SpawnEntityStructureHub( glm::vec2( 1000, 1000 ) );
+        
     }
 
     void GameModeGame::Update( Core * core, f32 dt ) {
@@ -48,21 +60,20 @@ namespace atto {
             Entity * ent = entities[ entityIndex ];
             switch( ent->type ) {
                 case ENTITY_TYPE_INVALID: break;
-                case ENTITY_TYPE_SHIP_BEGIN: break;
-                case ENTITY_TYPE_SHIP_A:
+                case ENTITY_TYPE_UNITS_BEGIN: break;
+                case ENTITY_TYPE_UNIT_WORKER:
                 {
                     if( core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) && selectionDragging ) {
-                        Circle c = {};
-                        c.pos = ent->pos;
-                        c.rad = 32.0f;
+                        Collider c = ent->GetSelectionColliderWorld();
                         if( selectionEndDragPos - selectionStartDragPos == glm::vec2( 0 ) ) {
                             ent->selected = c.Contains( mousePosWorld );
                         }
                         else {
-                            BoxBounds bb = {};
-                            bb.min = glm::min( selectionStartDragPos, selectionEndDragPos );
-                            bb.max = glm::max( selectionStartDragPos, selectionEndDragPos );
-                            ent->selected = bb.Intersects( c );
+                            Collider bb = {};
+                            bb.type = COLLIDER_TYPE_BOX;
+                            bb.box.min = glm::min( selectionStartDragPos, selectionEndDragPos );
+                            bb.box.max = glm::max( selectionStartDragPos, selectionEndDragPos );
+                            ent->selected = c.Intersects( bb );
                         }
                     }
 
@@ -128,7 +139,7 @@ namespace atto {
                     ent->pos += ent->vel * dt;
 
                 } break;
-                case ENTITY_TYPE_SHIP_END: break;
+                case ENTITY_TYPE_UNITS_END: break;
                 case ENTITY_TYPE_ENEMY: break;
                 default: break;
             }
@@ -140,13 +151,21 @@ namespace atto {
                 for( i32 entityIndexB = entityIndexA + 1; entityIndexB < entityCount; entityIndexB++ ) {
                     Entity * entB = entities[ entityIndexB ];
                     if( entB->hasCollision ) {
-                        Circle ca = entA->GetCollisionCircleWorld();
-                        Circle cb = entB->GetCollisionCircleWorld();
+                        Collider ca = entA->GetCollisionCircleWorld();
+                        Collider cb = entB->GetCollisionCircleWorld();
 
                         Manifold m = {};
                         if( ca.Collision( cb, m ) ) {
-                            entA->pos -= m.normal * m.penetration * 0.5f;
-                            entB->pos += m.normal * m.penetration * 0.5f;
+                            if( entA->isCollisionStatic == true ) {
+                                entB->pos += m.normal * m.penetration;
+                            }
+                            else if( entB->isCollisionStatic == true ) {
+                                entA->pos -= m.normal * m.penetration;
+                            }
+                            else {
+                                entA->pos -= m.normal * m.penetration * 0.5f;
+                                entB->pos += m.normal * m.penetration * 0.5f;
+                            }
                         }
                     }
                 }
@@ -206,7 +225,7 @@ namespace atto {
     }
 
     static i32 YSortEntities( Entity *& a, Entity *& b ) {
-        return (i32)(b->pos.y - a->pos.y);
+        return (i32)( b->pos.y - a->pos.y );
     }
 
     void GameModeGame::Render( Core * core, f32 dt ) {
@@ -218,22 +237,13 @@ namespace atto {
         const int entityCount = entities.GetCount();
         for( int entityIndex = 0; entityIndex < entityCount; ++entityIndex ) {
             Entity * ent = entities[ entityIndex ];
-            switch( ent->type ) {
-                case ENTITY_TYPE_INVALID: break;
-                case ENTITY_TYPE_SHIP_BEGIN: break;
-                case ENTITY_TYPE_SHIP_A:
-                {
-                    if( ent->selected ) {
-                        core->RenderDrawSprite( sprSelectionCircle, ent->pos, 0.0f, glm::vec2( 0.5f ) );
-                    }
-
-                    core->RenderDrawSprite( spr_RedWorker, ent->pos, ent->ori, glm::vec2( 1 ) );
-                    //core->RenderDrawRect( ent->pos, glm::vec2( 32 ), 0.0f );
-
-                } break;
-                case ENTITY_TYPE_SHIP_END: break;
-                case ENTITY_TYPE_ENEMY: break;
-                default: break;
+            if( ent->sprite != nullptr ) {
+                //if( ent->selected ) {
+                //    core->RenderDrawSprite( sprSelectionCircle, ent->pos, 0.0f, glm::vec2( 0.5f ) );
+                //}
+                glm::vec4 color = ent->selected ? glm::vec4( 0.6f, 1.2f, 0.6f, 1.0f ) : glm::vec4( 1 );
+                core->RenderDrawSprite( ent->sprite, ent->pos, ent->ori, glm::vec2( 1 ), color );
+                //core->RenderDrawRect( ent->pos, glm::vec2( 32 ), 0.0f );
             }
         }
 
@@ -246,7 +256,24 @@ namespace atto {
             }
         }
     #endif
-
+    #if 0
+        for( i32 entityIndexA = 0; entityIndexA < entityCount; entityIndexA++ ) {
+            Entity * ent = entities[ entityIndexA ];
+            if( ent->isSelectable ) {
+                Collider c = ent->GetSelectionColliderWorld();
+                switch( c.type ) {
+                    case COLLIDER_TYPE_CIRCLE:
+                    {
+                        core->RenderDrawCircle( c.circle.pos, c.circle.rad, glm::vec4( 0.5f, 0.5f, 1, 0.8f ) );
+                    } break;
+                    case COLLIDER_TYPE_BOX:
+                    {
+                        core->RenderDrawRect( c.box.min, c.box.max, glm::vec4( 0.5f, 0.5f, 1, 0.8f ) );
+                    } break;
+                }
+            }
+        }
+    #endif
         if( selectionDragging == true ) {
             glm::vec2 bl = glm::min( selectionStartDragPos, selectionEndDragPos );
             glm::vec2 tr = glm::max( selectionStartDragPos, selectionEndDragPos );
@@ -288,14 +315,55 @@ namespace atto {
         return ent;
     }
 
-    Entity * GameModeGame::SpawnEntityShipA( glm::vec2 pos ) {
-        Entity * ent = SpawnEntity( ENTITY_TYPE_SHIP_A, pos );
+    Entity * GameModeGame::SpawnEntityUnitWorker( glm::vec2 pos ) {
+        Entity * ent = SpawnEntity( ENTITY_TYPE_UNIT_WORKER, pos );
         if( ent != nullptr ) {
+            ent->sprite = spr_RedWorker;
             ent->hasCollision = true;
-            ent->collisionCircle.rad = 20.0f;
+            ent->isSelectable = true;
+            ent->selectionCollider.type = COLLIDER_TYPE_CIRCLE;
+            ent->selectionCollider.circle.rad = 22.0f;
+
+            ent->collisionCollider.type = COLLIDER_TYPE_CIRCLE;
+            ent->collisionCollider.circle.rad = 20.0f;
         }
 
         return ent;
+    }
+
+
+    Entity * GameModeGame::SpawnEntityStructureHub( glm::vec2 pos ) {
+        Entity * ent = SpawnEntity( ENTITY_TYPE_STRUCTURE_HUB, pos );
+        if( ent != nullptr ) {
+            ent->sprite = spr_Structure_Hub;
+            ent->isSelectable = true;
+            ent->selectionCollider.type = COLLIDER_TYPE_BOX;
+            ent->selectionCollider.box.min = glm::vec2( -64 );
+            ent->selectionCollider.box.max = glm::vec2( 64 );
+
+            ent->hasCollision = true;
+            ent->isCollisionStatic = true;
+            ent->collisionCollider.type = COLLIDER_TYPE_BOX;
+            ent->collisionCollider.box.min = glm::vec2( -64 );
+            ent->collisionCollider.box.max = glm::vec2( 64 );
+            //ent->collisionCircle.rad = 20.0f;
+        }
+
+        return ent;
+    }
+
+
+    Collider Entity::GetSelectionColliderWorld() const {
+        Collider c = selectionCollider;
+        c.Translate( pos );
+        return c;
+    }
+
+
+    Collider Entity::GetCollisionCircleWorld() const {
+        Collider c = collisionCollider;
+        c.Translate( pos );
+        return c;
     }
 
 }

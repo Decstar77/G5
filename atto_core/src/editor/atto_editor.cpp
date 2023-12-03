@@ -15,8 +15,8 @@ namespace atto {
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
         // Setup Dear ImGui style
-        ImGui::StyleColorsDark();
-        //ImGui::StyleColorsLight();
+        //ImGui::StyleColorsDark();
+        ImGui::StyleColorsLight();
 
         const char * glsl_version = "#version 130";
         ImGui_ImplGlfw_InitForOpenGL( window, true );
@@ -33,8 +33,12 @@ namespace atto {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-        bool showDemoWindow = true;
-        ImGui::ShowDemoWindow( &showDemoWindow );
+        //bool showDemoWindow = false;
+        //ImGui::ShowDemoWindow( &showDemoWindow );
+    }
+
+    void EngineImgui::DoFrame() {
+
     }
 
     void EngineImgui::EndFrame() {

@@ -13,7 +13,9 @@ namespace atto {
         static void Shutdown();
 
         static void NewFrame();
+        static void DoFrame();
         static void EndFrame();
+
     };
 }
 

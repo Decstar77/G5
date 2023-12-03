@@ -5,9 +5,13 @@
 namespace atto {
     enum EntityType {
         ENTITY_TYPE_INVALID = 0,
-        ENTITY_TYPE_SHIP_BEGIN,
-        ENTITY_TYPE_SHIP_A,
-        ENTITY_TYPE_SHIP_END,
+        ENTITY_TYPE_UNITS_BEGIN,
+        ENTITY_TYPE_UNIT_WORKER,
+        ENTITY_TYPE_UNITS_END,
+
+        ENTITY_TYPE_STRUCTURE_BEGIN,
+        ENTITY_TYPE_STRUCTURE_HUB,
+        ENTITY_TYPE_STRUCTURE_END,
 
         ENTITY_TYPE_ENEMY,
     };
@@ -35,23 +39,28 @@ namespace atto {
 
     
     struct Entity {
-        EntityHandle id;
-        EntityType type;
-        glm::vec2 pos;
-        glm::vec2 vel;
-        f32 ori;
+        EntityHandle    id;
+        EntityType      type;
+        glm::vec2       pos;
+        glm::vec2       vel;
+        f32             ori;
+
         TextureResource * sprite;
         ShipDestination dest;
+
+        // Make these flags
         bool hasCollision;
-        Circle collisionCircle;
+        bool isCollisionStatic;
+        bool isSelectable;
+
+        Collider selectionCollider;
+        Collider collisionCollider;
+        
         bool selected;
 
-        
-        inline Circle GetCollisionCircleWorld() const {
-            Circle c = collisionCircle;
-            c.pos += pos;
-            return c;
-        }
+
+        Collider GetSelectionColliderWorld() const;
+        Collider GetCollisionCircleWorld() const;
     };
 
     struct SprTileSheet {
@@ -69,7 +78,8 @@ namespace atto {
     public:
         Entity * SpawnEntity( EntityType type );
         Entity * SpawnEntity( EntityType type, glm::vec2 pos );
-        Entity * SpawnEntityShipA( glm::vec2 pos );
+        Entity * SpawnEntityUnitWorker( glm::vec2 pos );
+        Entity * SpawnEntityStructureHub( glm::vec2 pos );
 
     public:
         FixedObjectPool<Entity, MAX_ENTITIES> entityPool;
@@ -83,6 +93,8 @@ namespace atto {
     public: 
         // Resources
         TextureResource * spr_RedWorker = nullptr;
+        TextureResource * spr_Structure_Hub = nullptr;
+        
         TextureResource * sprShipB = nullptr;
         TextureResource * sprEnemyA = nullptr;
         TextureResource * sprEnemyB = nullptr;

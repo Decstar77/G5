@@ -19,6 +19,13 @@ namespace atto {
         glm::vec2 pointA;
         glm::vec2 pointB;
         glm::vec2 normal;
+
+        inline void Flip() {
+            normal = -normal;
+            glm::vec2 temp = pointA;
+            pointA = pointB;
+            pointB = temp;
+        }
     };
 
 
@@ -26,7 +33,7 @@ namespace atto {
         glm::vec2   pos;
         f32         rad;
 
-        bool                    Intersects( const Circle & circle );
+        bool                    Intersects( const Circle & circle ) const;
         bool                    Collision( const Circle & other, Manifold & manifold ) const;
         bool                    Contains( glm::vec2 point ) const;
         static bool             Contains( glm::vec2 c, f32 r, glm::vec2 point );
@@ -48,9 +55,30 @@ namespace atto {
         bool                    Intersects( const Circle & other ) const;
 
         bool                    Collision( const BoxBounds & other, Manifold & manifold ) const;
+        bool                    Collision( const Circle & other, Manifold & manifold ) const;
+
         bool                    Contains( const glm::vec2 & point ) const;
         void                    Expand( f32 mul );
 
         void                    CreateFromCenterSize( const glm::vec2 & center, const glm::vec2 & size );
     };
+
+    enum ColliderType {
+        COLLIDER_TYPE_CIRCLE,
+        COLLIDER_TYPE_BOX,
+    };
+
+    struct Collider {
+        ColliderType type;
+        union {
+            Circle circle;
+            BoxBounds box;
+        };
+
+        void                    Translate( const glm::vec2 & translation );
+        bool                    Contains( const glm::vec2 & point ) const;
+        bool                    Intersects( const Collider & other ) const;
+        bool                    Collision( const Collider & other, Manifold & manifold ) const;
+    };
+
 }
