@@ -346,7 +346,6 @@ namespace atto {
             ent->collisionCollider.type = COLLIDER_TYPE_BOX;
             ent->collisionCollider.box.min = glm::vec2( -64 );
             ent->collisionCollider.box.max = glm::vec2( 64 );
-            //ent->collisionCircle.rad = 20.0f;
         }
 
         return ent;
