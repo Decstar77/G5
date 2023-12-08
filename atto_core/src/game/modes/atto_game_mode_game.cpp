@@ -58,29 +58,32 @@ namespace atto {
         const i32 entityCount = entities.GetCount();
         for( i32 entityIndex = 0; entityIndex < entityCount; ++entityIndex ) {
             Entity * ent = entities[ entityIndex ];
+            if( core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) && selectionDragging ) {
+                Collider c = ent->GetSelectionColliderWorld();
+                if( selectionEndDragPos - selectionStartDragPos == glm::vec2( 0 ) ) {
+                    ent->selected = c.Contains( mousePosWorld );
+                }
+                else {
+                    Collider bb = {};
+                    bb.type = COLLIDER_TYPE_BOX;
+                    bb.box.min = glm::min( selectionStartDragPos, selectionEndDragPos );
+                    bb.box.max = glm::max( selectionStartDragPos, selectionEndDragPos );
+                    ent->selected = c.Intersects( bb );
+                }
+            }
+
+            if( ent->selected ) {
+                selectedEntities.Add( ent );
+            }
+        }
+
+        for( i32 entityIndex = 0; entityIndex < entityCount; ++entityIndex ) {
+            Entity * ent = entities[ entityIndex ];
             switch( ent->type ) {
                 case ENTITY_TYPE_INVALID: break;
                 case ENTITY_TYPE_UNITS_BEGIN: break;
                 case ENTITY_TYPE_UNIT_WORKER:
                 {
-                    if( core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) && selectionDragging ) {
-                        Collider c = ent->GetSelectionColliderWorld();
-                        if( selectionEndDragPos - selectionStartDragPos == glm::vec2( 0 ) ) {
-                            ent->selected = c.Contains( mousePosWorld );
-                        }
-                        else {
-                            Collider bb = {};
-                            bb.type = COLLIDER_TYPE_BOX;
-                            bb.box.min = glm::min( selectionStartDragPos, selectionEndDragPos );
-                            bb.box.max = glm::max( selectionStartDragPos, selectionEndDragPos );
-                            ent->selected = c.Intersects( bb );
-                        }
-                    }
-
-                    if( ent->selected ) {
-                        selectedEntities.Add( ent );
-                    }
-
                     const f32 acc = 500;
                     const f32 maxSpeed = 200;
                     const f32 maxSpeed2 = maxSpeed * maxSpeed;
@@ -222,6 +225,24 @@ namespace atto {
                 ent->dest = dest;
             }
         }
+
+        f32 cameraSpeed = 200.0f;
+        glm::vec2 cameraPos = core->GetCameraPos();
+        //core->LogOutput( LogLevel::DEBUG, "CameraPos: %f, %f", cameraPos.x, cameraPos.y );
+
+        if( core->InputKeyDown( KEY_CODE_W ) ) {
+            cameraPos.y += cameraSpeed * dt;
+        }
+        if( core->InputKeyDown( KEY_CODE_S ) ) {
+            cameraPos.y -= cameraSpeed * dt;
+        }
+        if( core->InputKeyDown( KEY_CODE_A ) ) {
+            cameraPos.x -= cameraSpeed * dt;
+        }
+        if( core->InputKeyDown( KEY_CODE_D ) ) {
+            cameraPos.x += cameraSpeed * dt;
+        }
+        core->SetCameraPos( cameraPos );
     }
 
     static i32 YSortEntities( Entity *& a, Entity *& b ) {
@@ -256,7 +277,7 @@ namespace atto {
             }
         }
     #endif
-    #if 0
+    #if 1
         for( i32 entityIndexA = 0; entityIndexA < entityCount; entityIndexA++ ) {
             Entity * ent = entities[ entityIndexA ];
             if( ent->isSelectable ) {
@@ -280,8 +301,24 @@ namespace atto {
             core->RenderDrawRect( bl, tr, Colors::BOX_SELECTION_COLOR );
         }
 
-        FontHandle f = core->ResourceGetFont( "default" );
-        core->RenderDrawText( f, glm::vec2( 100, 100 ), 128.0f, "Hello World" );
+        //FontHandle f = core->ResourceGetFont( "default" );
+        //core->RenderDrawText( f, glm::vec2( 100, 100 ), 128.0f, "Hello World" );
+        {
+            core->RenderDrawRectNDC( glm::vec2( -1, -1 ), glm::vec2( 1, -0.777f ), Colors::MIDNIGHT_BLUE );
+            glm::vec2 start = glm::vec2( -1, -1 );
+            glm::vec2 end = glm::vec2( 1, -0.777f );
+            i32 count = 10;
+            f32 dx = ( end.x - start.x ) / (f32)count;
+            f32 padding = 0.025f;
+            start.x -= dx;
+            end.x = start.x + dx;
+            for( int i = 0; i < 10; i++ ) {
+                start.x += dx;
+                end.x = start.x + dx;
+                core->RenderDrawRectNDC( start + padding, end - padding );
+            }
+        }
+
 
         core->RenderSubmit();
     }

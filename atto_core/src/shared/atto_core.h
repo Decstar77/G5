@@ -77,6 +77,7 @@ namespace atto {
     struct DrawCommand {
         DrawCommandType type;
         glm::vec4 color;
+        glm::mat4 projection;
         struct {
             union {
                 struct {
@@ -150,6 +151,9 @@ namespace atto {
         f32                                 GetDeltaTime() const;
         f64                                 GetLastTime() const;
 
+        glm::vec2                           GetCameraPos();
+        void                                SetCameraPos( glm::vec2 pos );
+
         virtual TextureResource *           ResourceGetAndLoadTexture( const char * name ) = 0;
         virtual AudioResource *             ResourceGetAndLoadAudio( const char * name ) = 0;
         virtual FontHandle                  ResourceGetFont( const char * name ) = 0;
@@ -174,6 +178,7 @@ namespace atto {
         void                                RenderDrawSprite( TextureResource * texture, glm::vec2 center, f32 rot = 0.0f, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
         void                                RenderDrawSpriteBL( TextureResource * texture, glm::vec2 bl, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
         void                                RenderDrawText( FontHandle font, glm::vec2 tl, f32 fontSize, const char * text, glm::vec4 colour = glm::vec4( 1 ) );
+        void                                RenderDrawRectNDC( glm::vec2 bl, glm::vec2 tr, glm::vec4 colour = glm::vec4( 1 ) );
         virtual void                        RenderSetCamera( f32 width, f32 height ) = 0;
         virtual void                        RenderSubmit() = 0;
 
@@ -203,7 +208,7 @@ namespace atto {
         bool                                InputMouseHasMoved();
         glm::vec2                           InputMousePosPixels();
         glm::vec2                           InputMousePosWorld();
-        FrameInput & InputGetFrameInput();
+        FrameInput &                        InputGetFrameInput();
 
         virtual void                        WindowClose() = 0;
         virtual void                        WindowSetTitle( const char * title ) = 0;

@@ -275,7 +275,7 @@ namespace atto {
 
                     GLEnableAlphaBlending();
                     GLShaderProgramBind( shapeProgram );
-                    GLShaderProgramSetMat4( "p", cameraProjection );
+                    GLShaderProgramSetMat4( "p", cmd.projection );
                     GLShaderProgramSetInt( "mode", 0 );
                     GLShaderProgramSetVec4( "color", cmd.color );
 

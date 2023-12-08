@@ -12,6 +12,14 @@ namespace atto {
         return currentTime;
     }
 
+    glm::vec2 Core::GetCameraPos() {
+        return cameraPos;
+    }
+
+    void Core::SetCameraPos( glm::vec2 pos ) {
+        cameraPos = pos;
+    }
+
     glm::vec2 Core::ViewPosToScreenPos( glm::vec2 world ) {
         // @NOTE: Convert to [ 0, 1] not NDC[-1, 1] because 
         // @NOTE: we're doing a small optimization here by not doing the inverse of the camera matrix
@@ -74,8 +82,9 @@ namespace atto {
     void Core::RenderDrawCircle( glm::vec2 pos, f32 radius, glm::vec4 colour /*= glm::vec4(1)*/ ) {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::CIRCLE;
+        cmd.projection = cameraProjection;
         cmd.color = colour;
-        cmd.circle.c = pos;
+        cmd.circle.c = pos - cameraPos;
         cmd.circle.r = radius;
         drawCommands.drawList.Add( cmd );
     }
@@ -83,17 +92,26 @@ namespace atto {
     void Core::RenderDrawRect( glm::vec2 bl, glm::vec2 tr, glm::vec4 colour /*= glm::vec4(1)*/ ) {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::RECT;
+        cmd.projection = cameraProjection;
         cmd.color = colour;
         cmd.rect.bl = bl;
         cmd.rect.br = glm::vec2( tr.x, bl.y );
         cmd.rect.tr = tr;
         cmd.rect.tl = glm::vec2( bl.x, tr.y );
+
+        // @NOTE: We're doing this here because we want to do it in view space
+        cmd.rect.bl -= cameraPos;
+        cmd.rect.tr -= cameraPos;
+        cmd.rect.br -= cameraPos;
+        cmd.rect.tl -= cameraPos;
+
         drawCommands.drawList.Add( cmd );
     }
 
     void Core::RenderDrawRect( glm::vec2 center, glm::vec2 dim, f32 rot, const glm::vec4 & color /*= glm::vec4(1)*/ ) {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::RECT;
+        cmd.projection = cameraProjection;
         cmd.color = color;
 
         cmd.rect.bl = -dim / 2.0f;
@@ -107,10 +125,10 @@ namespace atto {
         cmd.rect.br = rotationMatrix * cmd.rect.br;
         cmd.rect.tl = rotationMatrix * cmd.rect.tl;
 
-        cmd.rect.bl += center;
-        cmd.rect.tr += center;
-        cmd.rect.br += center;
-        cmd.rect.tl += center;
+        cmd.rect.bl += center - cameraPos;
+        cmd.rect.tr += center - cameraPos;
+        cmd.rect.br += center - cameraPos;
+        cmd.rect.tl += center - cameraPos;
 
         drawCommands.drawList.Add( cmd );
     }
@@ -158,10 +176,10 @@ namespace atto {
         cmd.rect.br = rotationMatrix * cmd.rect.br;
         cmd.rect.tl = rotationMatrix * cmd.rect.tl;
 
-        cmd.rect.bl += center;
-        cmd.rect.tr += center;
-        cmd.rect.br += center;
-        cmd.rect.tl += center;
+        cmd.rect.bl += center - cameraPos;
+        cmd.rect.tr += center - cameraPos;
+        cmd.rect.br += center - cameraPos;
+        cmd.rect.tl += center - cameraPos;
 
         drawCommands.drawList.Add( cmd );
     }
@@ -180,6 +198,18 @@ namespace atto {
         cmd.text.bl = bl;
         cmd.text.fontSize = fontSize;
 
+        drawCommands.drawList.Add( cmd );
+    }
+
+    void Core::RenderDrawRectNDC( glm::vec2 bl, glm::vec2 tr, glm::vec4 colour /*= glm::vec4( 1 ) */ ) {
+        DrawCommand cmd = {};
+        cmd.type = DrawCommandType::RECT;
+        cmd.projection = glm::mat4( 1 );
+        cmd.color = colour;
+        cmd.rect.bl = bl;
+        cmd.rect.br = glm::vec2( tr.x, bl.y );
+        cmd.rect.tr = tr;
+        cmd.rect.tl = glm::vec2( bl.x, tr.y );
         drawCommands.drawList.Add( cmd );
     }
 
@@ -312,9 +342,9 @@ namespace atto {
     void Core::MemoryClearPermanent() {
         thePermanentMemoryMutex.lock();
 
-#if ATTO_DEBUG
+    #if ATTO_DEBUG
         memset( thePermanentMemory, 0, thePermanentMemorySize );
-#endif
+    #endif
 
         thePermanentMemoryCurrent = 0;
         thePermanentMemoryMutex.unlock();
@@ -328,9 +358,9 @@ namespace atto {
     void Core::MemoryClearTransient() {
         theTransientMemoryMutex.lock();
 
-#if ATTO_DEBUG
+    #if ATTO_DEBUG
         memset( theTransientMemory, 0, theTransientMemorySize );
-#endif
+    #endif
 
         theTransientMemoryCurrent = 0;
         theTransientMemoryMutex.unlock();
