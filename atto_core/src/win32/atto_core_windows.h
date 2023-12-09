@@ -94,7 +94,7 @@ namespace atto {
         virtual AudioSpeaker        AudioPlay(AudioResource* audioResource, f32 volume = 1.0f, bool looping = false) override;
 
         void                        RenderSetCamera( f32 width, f32 height ) override;
-        void                        RenderSubmit() override;
+        void                        RenderSubmit( DrawContext * dcxt, bool clearBackBuffers ) override;
 
         void WindowClose() override;
         void WindowSetTitle(const char* title) override;

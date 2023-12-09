@@ -67,12 +67,13 @@ namespace atto {
         TextureResource * tile01;
     };
 
+    typedef FixedList<Entity *, MAX_ENTITIES> EntList;
+
     class GameModeGame : public GameMode {
     public:
         GameModeType GetGameModeType() override;
         void Init( Core * core ) override;
-        void Update( Core * core, f32 dt ) override;
-        void Render( Core * core, f32 dt ) override;
+        void UpdateAndRender( Core * core, f32 dt ) override;
         void Shutdown( Core * core ) override;
 
     public:
@@ -81,8 +82,14 @@ namespace atto {
         Entity * SpawnEntityUnitWorker( glm::vec2 pos );
         Entity * SpawnEntityStructureHub( glm::vec2 pos );
 
+
+        bool     SelectionHasType(EntityType type );
+
     public:
-        FixedObjectPool<Entity, MAX_ENTITIES> entityPool;
+        FixedObjectPool<Entity, MAX_ENTITIES>   entityPool;
+
+        EntList                                 activeEntities;   // These lists are updated once per Update call. So most likely once per frame.
+        EntList                                 selectedEntities; // These lists are updated once per Update call. So most likely once per frame.
 
         bool                                    selectionDragging = false;
         glm::vec2                               selectionStartDragPos = glm::vec2( 0 );

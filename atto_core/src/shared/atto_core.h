@@ -108,7 +108,26 @@ namespace atto {
         };
     };
 
-    struct RenderCommands {
+    class DrawContext {
+        friend class Core;
+        friend class WindowsCore;
+    public:
+        void RenderDrawCircle( glm::vec2 pos, f32 radius, glm::vec4 colour = glm::vec4( 1 ) );
+        void RenderDrawRect( glm::vec2 bl, glm::vec2 tr, glm::vec4 colour = glm::vec4( 1 ) );
+        void RenderDrawRect( glm::vec2 center, glm::vec2 dim, f32 rot, const glm::vec4 & color = glm::vec4( 1 ) );
+        void RenderDrawLine( glm::vec2 start, glm::vec2 end, f32 thicc, const glm::vec4 & color = glm::vec4( 1 ) );
+        void RenderDrawSprite( TextureResource * texture, glm::vec2 center, f32 rot = 0.0f, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
+        void RenderDrawSpriteBL( TextureResource * texture, glm::vec2 bl, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
+        void RenderDrawText( FontHandle font, glm::vec2 tl, f32 fontSize, const char * text, glm::vec4 colour = glm::vec4( 1 ) );
+        void RenderDrawRectNDC( glm::vec2 bl, glm::vec2 tr, glm::vec4 colour = glm::vec4( 1 ) );
+        void RenderDrawSpriteNDC( TextureResource * texture, glm::vec2 center, f32 rot = 0.0f, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
+        void RenderDrawSpriteNDC_BL( TextureResource * texture, glm::vec2 bl, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
+    private:
+        f32 mainSurfaceWidth;
+        f32 mainSurfaceHeight;
+        glm::vec2 cameraPos;
+        glm::mat4 cameraProjection;
+        glm::mat4 screenProjection;
         FixedList<DrawCommand, 1024> drawList;
     };
 
@@ -171,16 +190,9 @@ namespace atto {
         f32                                 ScreenLengthToWorldLength( f32 screenLength );
         f32                                 WorldLengthToScreenLength( f32 worldLength );
 
-        void                                RenderDrawCircle( glm::vec2 pos, f32 radius, glm::vec4 colour = glm::vec4( 1 ) );
-        void                                RenderDrawRect( glm::vec2 bl, glm::vec2 tr, glm::vec4 colour = glm::vec4( 1 ) );
-        void                                RenderDrawRect( glm::vec2 center, glm::vec2 dim, f32 rot, const glm::vec4 & color = glm::vec4( 1 ) );
-        void                                RenderDrawLine( glm::vec2 start, glm::vec2 end, f32 thicc, const glm::vec4 & color = glm::vec4( 1 ) );
-        void                                RenderDrawSprite( TextureResource * texture, glm::vec2 center, f32 rot = 0.0f, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
-        void                                RenderDrawSpriteBL( TextureResource * texture, glm::vec2 bl, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
-        void                                RenderDrawText( FontHandle font, glm::vec2 tl, f32 fontSize, const char * text, glm::vec4 colour = glm::vec4( 1 ) );
-        void                                RenderDrawRectNDC( glm::vec2 bl, glm::vec2 tr, glm::vec4 colour = glm::vec4( 1 ) );
+        DrawContext *                       RenderGetDrawContext( i32 index );
         virtual void                        RenderSetCamera( f32 width, f32 height ) = 0;
-        virtual void                        RenderSubmit() = 0;
+        virtual void                        RenderSubmit( DrawContext * dcxt, bool clearBackBuffers ) = 0;
 
         virtual AudioSpeaker                AudioPlay( AudioResource * audioResource, f32 volume = 1.0f, bool looping = false ) = 0;
 
@@ -206,6 +218,7 @@ namespace atto {
         bool                                InputMouseButtonJustPressed( MouseButton button );
         bool                                InputMouseButtonJustReleased( MouseButton button );
         bool                                InputMouseHasMoved();
+        glm::vec2                           InputMousePosNDC();
         glm::vec2                           InputMousePosPixels();
         glm::vec2                           InputMousePosWorld();
         FrameInput &                        InputGetFrameInput();
@@ -221,11 +234,11 @@ namespace atto {
         virtual void                        Run( int argc, char ** argv ) = 0;
 
     protected:
-        GameSettings        theGameSettings = {};
-        LoggingState        logger = {};
-        RenderCommands      drawCommands = {};
-        FrameInput          input = {};
-        UIState             uiState = {};
+        GameSettings                theGameSettings = {};
+        LoggingState                logger = {};
+        FixedList<DrawContext, 8>   drawContexts = {};
+        FrameInput                  input = {};
+        UIState                     uiState = {};
 
         Game * game = nullptr;
 

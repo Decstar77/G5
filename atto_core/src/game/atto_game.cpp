@@ -2,7 +2,7 @@
 #include "modes/atto_game_mode_game.h"
 
 namespace atto {
-    void Game::Update( Core * core, f32 dt ) {
+    void Game::UpdateAndRender( Core * core, f32 dt ) {
         if( core->InputKeyDown( KEY_CODE_ESCAPE ) ) {
             core->WindowClose();
         }
@@ -12,10 +12,6 @@ namespace atto {
             gameMode->Init( core );
         }
 
-        gameMode->Update( core, dt );
-    }
-
-    void Game::Render( Core * core, f32 dt ) {
-        gameMode->Render( core, dt );
+        gameMode->UpdateAndRender( core, dt );
     }
 }

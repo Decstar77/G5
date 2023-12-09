@@ -191,8 +191,7 @@ namespace atto {
             }
 
             EngineImgui::NewFrame();
-            game->Update( this, this->deltaTime );
-            game->Render( this, this->deltaTime );
+            game->UpdateAndRender( this, this->deltaTime );
 
             EngineImgui::EndFrame();
 
@@ -217,15 +216,17 @@ namespace atto {
         GLResetSurface( viewport.z, viewport.w );
     }
 
-    void WindowsCore::RenderSubmit() {
+    void WindowsCore::RenderSubmit( DrawContext * dcxt, bool clearBackBuffers ) {
         //glClearColor(0.5f, 0.2f, 0.2f, 1.0f);
         //glClearColor( 0.1f, 0.1f, 0.2f, 1.0f );
-        glClearColor( Colors::SILVER.x, Colors::SILVER.y, Colors::SILVER.z, 1.0f );
-        glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+        if( clearBackBuffers ) {
+            glClearColor( Colors::SILVER.x, Colors::SILVER.y, Colors::SILVER.z, 1.0f );
+            glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+        }
 
-        const i32 drawCount = drawCommands.drawList.GetCount();
+        const i32 drawCount = dcxt->drawList.GetCount();
         for( i32 i = 0; i < drawCount; i++ ) {
-            DrawCommand & cmd = drawCommands.drawList[ i ];
+            DrawCommand & cmd = dcxt->drawList[ i ];
             switch( cmd.type ) {
                 case DrawCommandType::CIRCLE:
                 {
@@ -308,7 +309,7 @@ namespace atto {
                     GLShaderProgramSetSampler( "texture0", 0 );
                     GLShaderProgramSetVec4( "color", cmd.color );
                     GLShaderProgramSetTexture( 0, texture->handle );
-                    GLShaderProgramSetMat4( "p", cameraProjection );
+                    GLShaderProgramSetMat4( "p", cmd.projection );
 
                     glBindVertexArray( spriteVertexBuffer.vao );
                     GLVertexBufferUpdate( spriteVertexBuffer, 0, sizeof( vertices ), vertices );
@@ -327,8 +328,6 @@ namespace atto {
                 } break;
             }
         }
-
-        ZeroStruct( drawCommands );
     }
 
     TextureResource * WindowsCore::ResourceGetAndLoadTexture( const char * name ) {

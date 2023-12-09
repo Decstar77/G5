@@ -2,6 +2,10 @@
 #include "../../shared/atto_colors.h"
 
 namespace atto {
+    static i32 YSortEntities( Entity *& a, Entity *& b ) {
+        return (i32)( b->pos.y - a->pos.y );
+    }
+
     GameModeType GameModeGame::GetGameModeType() {
         return GameModeType::IN_GAME;
     }
@@ -36,14 +40,15 @@ namespace atto {
         
     }
 
-    void GameModeGame::Update( Core * core, f32 dt ) {
+    void GameModeGame::UpdateAndRender( Core * core, f32 dt ) {
         const bool mouseHasMoved = core->InputMouseHasMoved();
+        const glm::vec2 mousePosNDC = core->InputMousePosNDC();
         const glm::vec2 mousePosWorld = core->InputMousePosWorld();
+        //core->LogOutput( LogLevel::DEBUG, "MOUSE NDC: %f, %f", mousePosNDC.x, mousePosNDC.y );
+        //core->LogOutput( LogLevel::DEBUG, "MOUSE WORLD: %f, %f", mousePosWorld.x, mousePosWorld.y );
 
-        FixedList<Entity *, MAX_ENTITIES> & entities = *core->MemoryAllocateTransient<FixedList<Entity *, MAX_ENTITIES>>();
-        entityPool.GatherActiveObjs( entities );
-
-        FixedList<Entity *, MAX_ENTITIES> & selectedEntities = *core->MemoryAllocateTransient<FixedList<Entity *, MAX_ENTITIES>>();
+        activeEntities.Clear( true );
+        entityPool.GatherActiveObjs( activeEntities );
 
         if( core->InputMouseButtonJustPressed( MOUSE_BUTTON_1 ) ) {
             selectionStartDragPos = mousePosWorld;
@@ -55,9 +60,10 @@ namespace atto {
             selectionEndDragPos = mousePosWorld;
         }
 
-        const i32 entityCount = entities.GetCount();
-        for( i32 entityIndex = 0; entityIndex < entityCount; ++entityIndex ) {
-            Entity * ent = entities[ entityIndex ];
+        selectedEntities.Clear( true );
+        const i32 activeEntityCount = activeEntities.GetCount();
+        for( i32 entityIndex = 0; entityIndex < activeEntityCount; ++entityIndex ) {
+            Entity * ent = activeEntities[ entityIndex ];
             if( core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) && selectionDragging ) {
                 Collider c = ent->GetSelectionColliderWorld();
                 if( selectionEndDragPos - selectionStartDragPos == glm::vec2( 0 ) ) {
@@ -77,8 +83,38 @@ namespace atto {
             }
         }
 
-        for( i32 entityIndex = 0; entityIndex < entityCount; ++entityIndex ) {
-            Entity * ent = entities[ entityIndex ];
+        DrawContext * uiDraws = core->RenderGetDrawContext( 1 );
+        bool isMouseOverUI = false;
+        {
+          //FontHandle f = core->ResourceGetFont( "default" );
+          //core->RenderDrawText( f, glm::vec2( 100, 100 ), 128.0f, "Hello World" );
+            bool hasBuilding = SelectionHasType( ENTITY_TYPE_STRUCTURE_HUB );
+            BoxBounds bb = {};
+            bb.min = glm::vec2( -1, -1 );
+            bb.max = glm::vec2( 1, -0.777f );
+            isMouseOverUI = bb.Contains( mousePosNDC );
+            uiDraws->RenderDrawRectNDC( glm::vec2( -1, -1 ), glm::vec2( 1, -0.777f ), Colors::MIDNIGHT_BLUE );
+            glm::vec2 start = glm::vec2( -1, -1 );
+            glm::vec2 end = glm::vec2( 1, -0.777f );
+            i32 count = 10;
+            f32 dx = ( end.x - start.x ) / (f32)count;
+            f32 padding = 0.025f;
+            start.x -= dx;
+            end.x = start.x + dx;
+            bool once = false;
+            for( int i = 0; i < 10; i++ ) {
+                start.x += dx;
+                end.x = start.x + dx;
+                uiDraws->RenderDrawRectNDC( start + padding, end - padding );
+                if( hasBuilding && once == false ) {
+                    once = true;
+                    uiDraws->RenderDrawSpriteNDC( spr_RedWorker, ( ( end - padding ) + ( start + padding ) ) / 2.0f, 0.0f, glm::vec2( 2.0f ) );
+                }
+            }
+        }
+
+        for( i32 entityIndex = 0; entityIndex < activeEntityCount; ++entityIndex ) {
+            Entity * ent = activeEntities[ entityIndex ];
             switch( ent->type ) {
                 case ENTITY_TYPE_INVALID: break;
                 case ENTITY_TYPE_UNITS_BEGIN: break;
@@ -148,11 +184,11 @@ namespace atto {
             }
         }
 
-        for( i32 entityIndexA = 0; entityIndexA < entityCount; entityIndexA++ ) {
-            Entity * entA = entities[ entityIndexA ];
+        for( i32 entityIndexA = 0; entityIndexA < activeEntityCount; entityIndexA++ ) {
+            Entity * entA = activeEntities[ entityIndexA ];
             if( entA->hasCollision ) {
-                for( i32 entityIndexB = entityIndexA + 1; entityIndexB < entityCount; entityIndexB++ ) {
-                    Entity * entB = entities[ entityIndexB ];
+                for( i32 entityIndexB = entityIndexA + 1; entityIndexB < activeEntityCount; entityIndexB++ ) {
+                    Entity * entB = activeEntities[ entityIndexB ];
                     if( entB->hasCollision ) {
                         Collider ca = entA->GetCollisionCircleWorld();
                         Collider cb = entB->GetCollisionCircleWorld();
@@ -194,7 +230,6 @@ namespace atto {
                 arrivalCirclePool.Remove( c->id );
             }
         }
-
 
         if( core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) && selectionDragging ) {
             selectionDragging = false;
@@ -243,27 +278,19 @@ namespace atto {
             cameraPos.x += cameraSpeed * dt;
         }
         core->SetCameraPos( cameraPos );
-    }
 
-    static i32 YSortEntities( Entity *& a, Entity *& b ) {
-        return (i32)( b->pos.y - a->pos.y );
-    }
 
-    void GameModeGame::Render( Core * core, f32 dt ) {
-        FixedList<Entity *, MAX_ENTITIES> & entities = *core->MemoryAllocateTransient<FixedList<Entity *, MAX_ENTITIES>>();
-        entityPool.GatherActiveObjs( entities );
+        activeEntities.Sort( &YSortEntities );
+        DrawContext * dctx = core->RenderGetDrawContext( 0 );
 
-        entities.Sort( &YSortEntities );
-
-        const int entityCount = entities.GetCount();
-        for( int entityIndex = 0; entityIndex < entityCount; ++entityIndex ) {
-            Entity * ent = entities[ entityIndex ];
+        for( int entityIndex = 0; entityIndex < activeEntityCount; ++entityIndex ) {
+            Entity * ent = activeEntities[ entityIndex ];
             if( ent->sprite != nullptr ) {
                 //if( ent->selected ) {
                 //    core->RenderDrawSprite( sprSelectionCircle, ent->pos, 0.0f, glm::vec2( 0.5f ) );
                 //}
                 glm::vec4 color = ent->selected ? glm::vec4( 0.6f, 1.2f, 0.6f, 1.0f ) : glm::vec4( 1 );
-                core->RenderDrawSprite( ent->sprite, ent->pos, ent->ori, glm::vec2( 1 ), color );
+                dctx->RenderDrawSprite( ent->sprite, ent->pos, ent->ori, glm::vec2( 1 ), color );
                 //core->RenderDrawRect( ent->pos, glm::vec2( 32 ), 0.0f );
             }
         }
@@ -277,7 +304,7 @@ namespace atto {
             }
         }
     #endif
-    #if 1
+    #if 0
         for( i32 entityIndexA = 0; entityIndexA < entityCount; entityIndexA++ ) {
             Entity * ent = entities[ entityIndexA ];
             if( ent->isSelectable ) {
@@ -298,30 +325,13 @@ namespace atto {
         if( selectionDragging == true ) {
             glm::vec2 bl = glm::min( selectionStartDragPos, selectionEndDragPos );
             glm::vec2 tr = glm::max( selectionStartDragPos, selectionEndDragPos );
-            core->RenderDrawRect( bl, tr, Colors::BOX_SELECTION_COLOR );
+            dctx->RenderDrawRect( bl, tr, Colors::BOX_SELECTION_COLOR );
         }
 
-        //FontHandle f = core->ResourceGetFont( "default" );
-        //core->RenderDrawText( f, glm::vec2( 100, 100 ), 128.0f, "Hello World" );
-        {
-            core->RenderDrawRectNDC( glm::vec2( -1, -1 ), glm::vec2( 1, -0.777f ), Colors::MIDNIGHT_BLUE );
-            glm::vec2 start = glm::vec2( -1, -1 );
-            glm::vec2 end = glm::vec2( 1, -0.777f );
-            i32 count = 10;
-            f32 dx = ( end.x - start.x ) / (f32)count;
-            f32 padding = 0.025f;
-            start.x -= dx;
-            end.x = start.x + dx;
-            for( int i = 0; i < 10; i++ ) {
-                start.x += dx;
-                end.x = start.x + dx;
-                core->RenderDrawRectNDC( start + padding, end - padding );
-            }
-        }
-
-
-        core->RenderSubmit();
+        core->RenderSubmit( dctx, true );
+        core->RenderSubmit( uiDraws, false );
     }
+
 
     void GameModeGame::Shutdown( Core * core ) {
     }
@@ -388,6 +398,16 @@ namespace atto {
         return ent;
     }
 
+    bool GameModeGame::SelectionHasType( EntityType type ) {
+        const i32 entsCount = selectedEntities.GetCount();
+        for( i32 i = 0; i < entsCount; i++ ) {
+            Entity * ent = selectedEntities[ i ];
+            if( ent->type == type ) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     Collider Entity::GetSelectionColliderWorld() const {
         Collider c = selectionCollider;

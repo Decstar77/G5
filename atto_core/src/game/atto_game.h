@@ -12,16 +12,14 @@ namespace atto {
     public:
         virtual GameModeType       GetGameModeType() = 0;
         virtual void                Init( Core * core ) = 0;
-        virtual void                Update( Core * core, f32 dt ) = 0;
-        virtual void                Render( Core * core, f32 dt ) = 0;
+        virtual void                UpdateAndRender( Core * core, f32 dt ) = 0;
         virtual void                Shutdown( Core * core ) = 0;
     };
 
     
     class Game {
     public:
-        void Update( Core * core, f32 dt );
-        void Render( Core * core, f32 dt );
+        void UpdateAndRender( Core * core, f32 dt );
 
     private:
         GameMode * gameMode = nullptr;

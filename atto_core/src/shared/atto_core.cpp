@@ -79,17 +79,29 @@ namespace atto {
         return ( worldLength / cameraWidth ) * viewport.z;
     }
 
-    void Core::RenderDrawCircle( glm::vec2 pos, f32 radius, glm::vec4 colour /*= glm::vec4(1)*/ ) {
+
+    DrawContext * Core::RenderGetDrawContext( i32 index ) {
+        DrawContext * d = &drawContexts[ index ];
+        ZeroStructPtr( d );
+        d->cameraPos = cameraPos;;
+        d->cameraProjection = cameraProjection;
+        d->screenProjection = screenProjection;
+        d->mainSurfaceHeight = mainSurfaceHeight;
+        d->mainSurfaceWidth = mainSurfaceWidth;
+        return d;
+    }
+
+    void DrawContext::RenderDrawCircle( glm::vec2 pos, f32 radius, glm::vec4 colour /*= glm::vec4(1)*/ ) {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::CIRCLE;
         cmd.projection = cameraProjection;
         cmd.color = colour;
         cmd.circle.c = pos - cameraPos;
         cmd.circle.r = radius;
-        drawCommands.drawList.Add( cmd );
+        drawList.Add( cmd );
     }
 
-    void Core::RenderDrawRect( glm::vec2 bl, glm::vec2 tr, glm::vec4 colour /*= glm::vec4(1)*/ ) {
+    void DrawContext::RenderDrawRect( glm::vec2 bl, glm::vec2 tr, glm::vec4 colour /*= glm::vec4(1)*/ ) {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::RECT;
         cmd.projection = cameraProjection;
@@ -105,10 +117,10 @@ namespace atto {
         cmd.rect.br -= cameraPos;
         cmd.rect.tl -= cameraPos;
 
-        drawCommands.drawList.Add( cmd );
+        drawList.Add( cmd );
     }
 
-    void Core::RenderDrawRect( glm::vec2 center, glm::vec2 dim, f32 rot, const glm::vec4 & color /*= glm::vec4(1)*/ ) {
+    void DrawContext::RenderDrawRect( glm::vec2 center, glm::vec2 dim, f32 rot, const glm::vec4 & color /*= glm::vec4(1)*/ ) {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::RECT;
         cmd.projection = cameraProjection;
@@ -130,10 +142,10 @@ namespace atto {
         cmd.rect.br += center - cameraPos;
         cmd.rect.tl += center - cameraPos;
 
-        drawCommands.drawList.Add( cmd );
+        drawList.Add( cmd );
     }
 
-    void Core::RenderDrawLine( glm::vec2 start, glm::vec2 end, f32 thicc, const glm::vec4 & color /*= glm::vec4(1)*/ ) {
+    void DrawContext::RenderDrawLine( glm::vec2 start, glm::vec2 end, f32 thicc, const glm::vec4 & color /*= glm::vec4(1)*/ ) {
         //glm::vec2 direction = glm::normalize( end - start );
         //glm::vec2 perpendicular( direction.y, -direction.x );
 
@@ -158,10 +170,11 @@ namespace atto {
         //drawCommands.drawList.Add( cmd );
     }
 
-    void Core::RenderDrawSprite( TextureResource * texture, glm::vec2 center, f32 rot, glm::vec2 size, glm::vec4 colour ) {
+    void DrawContext::RenderDrawSprite( TextureResource * texture, glm::vec2 center, f32 rot, glm::vec2 size, glm::vec4 colour ) {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::SPRITE;
         cmd.color = colour;
+        cmd.projection = cameraProjection;
         cmd.sprite.textureRes = texture;
 
         glm::vec2 dim = glm::vec2( texture->width, texture->height ) * size;
@@ -181,15 +194,15 @@ namespace atto {
         cmd.rect.br += center - cameraPos;
         cmd.rect.tl += center - cameraPos;
 
-        drawCommands.drawList.Add( cmd );
+        drawList.Add( cmd );
     }
 
-    void Core::RenderDrawSpriteBL( TextureResource * texture, glm::vec2 bl, glm::vec2 size /*= glm::vec2( 1 )*/, glm::vec4 colour /*= glm::vec4( 1 ) */ ) {
+    void DrawContext::RenderDrawSpriteBL( TextureResource * texture, glm::vec2 bl, glm::vec2 size /*= glm::vec2( 1 )*/, glm::vec4 colour /*= glm::vec4( 1 ) */ ) {
         glm::vec2 dim = glm::vec2( texture->width, texture->height );
         RenderDrawSprite( texture, bl + dim / 2.0f * size, 0.0f, size, colour );
     }
 
-    void Core::RenderDrawText( FontHandle font, glm::vec2 bl, f32 fontSize, const char * text, glm::vec4 colour /*= glm::vec4( 1 ) */ ) {
+    void DrawContext::RenderDrawText( FontHandle font, glm::vec2 bl, f32 fontSize, const char * text, glm::vec4 colour /*= glm::vec4( 1 ) */ ) {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::TEXT;
         cmd.color = colour;
@@ -198,10 +211,10 @@ namespace atto {
         cmd.text.bl = bl;
         cmd.text.fontSize = fontSize;
 
-        drawCommands.drawList.Add( cmd );
+        drawList.Add( cmd );
     }
 
-    void Core::RenderDrawRectNDC( glm::vec2 bl, glm::vec2 tr, glm::vec4 colour /*= glm::vec4( 1 ) */ ) {
+    void DrawContext::RenderDrawRectNDC( glm::vec2 bl, glm::vec2 tr, glm::vec4 colour /*= glm::vec4( 1 ) */ ) {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::RECT;
         cmd.projection = glm::mat4( 1 );
@@ -210,7 +223,39 @@ namespace atto {
         cmd.rect.br = glm::vec2( tr.x, bl.y );
         cmd.rect.tr = tr;
         cmd.rect.tl = glm::vec2( bl.x, tr.y );
-        drawCommands.drawList.Add( cmd );
+        drawList.Add( cmd );
+    }
+
+    void DrawContext::RenderDrawSpriteNDC( TextureResource * texture, glm::vec2 center, f32 rot /*= 0.0f*/, glm::vec2 size /*= glm::vec2( 1 )*/, glm::vec4 colour /*= glm::vec4( 1 ) */ ) {
+        DrawCommand cmd = {};
+        cmd.type = DrawCommandType::SPRITE;
+        cmd.color = colour;
+        cmd.projection = glm::mat4( 1 );
+        cmd.sprite.textureRes = texture;
+
+        glm::vec2 dim = glm::vec2( texture->width, texture->height ) * size / glm::vec2( mainSurfaceWidth, mainSurfaceHeight );
+        cmd.rect.bl = -dim / 2.0f;
+        cmd.rect.tr = dim / 2.0f;
+        cmd.rect.br = glm::vec2( cmd.rect.tr.x, cmd.rect.bl.y );
+        cmd.rect.tl = glm::vec2( cmd.rect.bl.x, cmd.rect.tr.y );
+
+        glm::mat2 rotationMatrix = glm::mat2( cos( rot ), -sin( rot ), sin( rot ), cos( rot ) );
+        cmd.rect.bl = rotationMatrix * cmd.rect.bl;
+        cmd.rect.tr = rotationMatrix * cmd.rect.tr;
+        cmd.rect.br = rotationMatrix * cmd.rect.br;
+        cmd.rect.tl = rotationMatrix * cmd.rect.tl;
+
+        cmd.rect.bl += center;
+        cmd.rect.tr += center;
+        cmd.rect.br += center;
+        cmd.rect.tl += center;
+
+        drawList.Add( cmd );
+    }
+
+    void DrawContext::RenderDrawSpriteNDC_BL( TextureResource * texture, glm::vec2 bl, glm::vec2 size /*= glm::vec2( 1 )*/, glm::vec4 colour /*= glm::vec4( 1 ) */ ) {
+        glm::vec2 dim = glm::vec2( texture->width, texture->height ) / glm::vec2( mainSurfaceWidth, mainSurfaceHeight );
+        RenderDrawSpriteNDC( texture, bl + dim / 2.0f * size, 0.0f, size, colour );
     }
 
     void Core::NetConnect() {
@@ -297,6 +342,10 @@ namespace atto {
 
     bool Core::InputMouseHasMoved() {
         return input.lastMousePosPixels - input.mousePosPixels != glm::vec2( 0 );
+    }
+
+    glm::vec2 Core::InputMousePosNDC() {
+        return ( input.mousePosPixels / glm::vec2( mainSurfaceWidth, -mainSurfaceHeight ) * 2.0f ) - glm::vec2( 1, -1 );
     }
 
     glm::vec2 Core::InputMousePosPixels() {
