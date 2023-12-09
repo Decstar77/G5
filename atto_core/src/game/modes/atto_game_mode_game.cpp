@@ -31,13 +31,13 @@ namespace atto {
     #else 
         for( int x = 0; x < 20; x++ ) {
             for( int y = 0; y < 20; y++ ) {
-                SpawnEntityUnitWorker( glm::vec2( x, y ) * 30.0f + glm::vec2(800, 200));
+                SpawnEntityUnitWorker( glm::vec2( x, y ) * 30.0f + glm::vec2( 800, 200 ) );
             }
         }
 
     #endif
         SpawnEntityStructureHub( glm::vec2( 1000, 1000 ) );
-        
+
     }
 
     void GameModeGame::UpdateAndRender( Core * core, f32 dt ) {
@@ -47,42 +47,21 @@ namespace atto {
         //core->LogOutput( LogLevel::DEBUG, "MOUSE NDC: %f, %f", mousePosNDC.x, mousePosNDC.y );
         //core->LogOutput( LogLevel::DEBUG, "MOUSE WORLD: %f, %f", mousePosWorld.x, mousePosWorld.y );
 
+        // @NOTE: Gather active entities
         activeEntities.Clear( true );
         entityPool.GatherActiveObjs( activeEntities );
-
-        if( core->InputMouseButtonJustPressed( MOUSE_BUTTON_1 ) ) {
-            selectionStartDragPos = mousePosWorld;
-            selectionEndDragPos = mousePosWorld;
-            selectionDragging = true;
-        }
-
-        if( mouseHasMoved && selectionDragging ) {
-            selectionEndDragPos = mousePosWorld;
-        }
-
-        selectedEntities.Clear( true );
         const i32 activeEntityCount = activeEntities.GetCount();
+
+        // @NOTE: Gather selected entities
+        selectedEntities.Clear( true );
         for( i32 entityIndex = 0; entityIndex < activeEntityCount; ++entityIndex ) {
             Entity * ent = activeEntities[ entityIndex ];
-            if( core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) && selectionDragging ) {
-                Collider c = ent->GetSelectionColliderWorld();
-                if( selectionEndDragPos - selectionStartDragPos == glm::vec2( 0 ) ) {
-                    ent->selected = c.Contains( mousePosWorld );
-                }
-                else {
-                    Collider bb = {};
-                    bb.type = COLLIDER_TYPE_BOX;
-                    bb.box.min = glm::min( selectionStartDragPos, selectionEndDragPos );
-                    bb.box.max = glm::max( selectionStartDragPos, selectionEndDragPos );
-                    ent->selected = c.Intersects( bb );
-                }
-            }
-
             if( ent->selected ) {
                 selectedEntities.Add( ent );
             }
         }
 
+        // @NOTE: Draw UI Code
         DrawContext * uiDraws = core->RenderGetDrawContext( 1 );
         bool isMouseOverUI = false;
         {
@@ -105,10 +84,66 @@ namespace atto {
             for( int i = 0; i < 10; i++ ) {
                 start.x += dx;
                 end.x = start.x + dx;
-                uiDraws->RenderDrawRectNDC( start + padding, end - padding );
+                uiDraws->RenderDrawRectNDC( start + padding, end - padding, glm::vec4( 0.7f, 0.7f, 0.7f, 1.0f ) );
                 if( hasBuilding && once == false ) {
                     once = true;
+                    BoxBounds bb2 = {};
+                    bb2.min = start + padding;
+                    bb2.max = end - padding;
+
+                    if( bb2.Contains( mousePosNDC ) ) {
+                        if( core->InputMouseButtonDown( MOUSE_BUTTON_1 ) ) {
+                            uiDraws->RenderDrawRectNDC( start + padding, end - padding, glm::vec4( 0.9f, 0.9f, 0.9f, 1.0f ) );
+                        }
+                        else {
+                            uiDraws->RenderDrawRectNDC( start + padding, end - padding, glm::vec4( 0.8f, 0.8f, 0.8f, 1.0f ) );
+                        }
+                        
+                        if( core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) ) {
+                            for( i32 entityIndex = 0; entityIndex < activeEntityCount; ++entityIndex ) {
+                                Entity * ent = activeEntities[ entityIndex ];
+                                if( ent->selected && ent->type == ENTITY_TYPE_STRUCTURE_HUB) {
+                                    glm::vec2 spawnPos = ent->pos + glm::vec2( 0, 100 );
+                                    SpawnEntityUnitWorker( spawnPos );
+                                }
+                            }
+                        }
+                    }
+
                     uiDraws->RenderDrawSpriteNDC( spr_RedWorker, ( ( end - padding ) + ( start + padding ) ) / 2.0f, 0.0f, glm::vec2( 2.0f ) );
+                }
+            }
+        }
+
+        // @NOTE: Update selection if input is for the world
+        if( isMouseOverUI == false && core->InputMouseButtonJustPressed( MOUSE_BUTTON_1 ) ) {
+            selectionStartDragPos = mousePosWorld;
+            selectionEndDragPos = mousePosWorld;
+            selectionDragging = true;
+        }
+
+        if( mouseHasMoved && selectionDragging ) {
+            selectionEndDragPos = mousePosWorld;
+        }
+
+        if( core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) && selectionDragging ) {
+            for( i32 entityIndex = 0; entityIndex < activeEntityCount; ++entityIndex ) {
+                Entity * ent = activeEntities[ entityIndex ];
+
+                Collider c = ent->GetSelectionColliderWorld();
+                if( selectionEndDragPos - selectionStartDragPos == glm::vec2( 0 ) ) {
+                    ent->selected = c.Contains( mousePosWorld );
+                }
+                else {
+                    Collider bb = {};
+                    bb.type = COLLIDER_TYPE_BOX;
+                    bb.box.min = glm::min( selectionStartDragPos, selectionEndDragPos );
+                    bb.box.max = glm::max( selectionStartDragPos, selectionEndDragPos );
+                    ent->selected = c.Intersects( bb );
+                }
+
+                if( ent->selected ) {
+                    selectedEntities.Add( ent );
                 }
             }
         }
@@ -236,28 +271,29 @@ namespace atto {
             selectionEndDragPos = glm::vec2( 0 );
             selectionStartDragPos = glm::vec2( 0 );
         }
+        if( isMouseOverUI == false ) {
+            if( core->InputMouseButtonJustPressed( MOUSE_BUTTON_2 ) ) {
+                ArrivalCircleHandle arrivalHandle = {};
+                ArrivalCircle * circle = arrivalCirclePool.Add( arrivalHandle );
+                Assert( circle != nullptr );
 
-        if( core->InputMouseButtonJustPressed( MOUSE_BUTTON_2 ) ) {
-            ArrivalCircleHandle arrivalHandle = {};
-            ArrivalCircle * circle = arrivalCirclePool.Add( arrivalHandle );
-            Assert( circle != nullptr );
+                circle->id = arrivalHandle;
+                circle->targetRad = 45.0f;
+                circle->slowRad = 128.0f;
+                circle->timeToTarget = 0.1f;
+                circle->pos = mousePosWorld;
+                circle->aliveHandleCount = selectedEntities.GetCount();
 
-            circle->id = arrivalHandle;
-            circle->targetRad = 45.0f;
-            circle->slowRad = 128.0f;
-            circle->timeToTarget = 0.1f;
-            circle->pos = mousePosWorld;
-            circle->aliveHandleCount = selectedEntities.GetCount();
+                ShipDestination dest = {};
+                dest.arrivalCircle = arrivalHandle;
+                dest.moving = true;
 
-            ShipDestination dest = {};
-            dest.arrivalCircle = arrivalHandle;
-            dest.moving = true;
-
-            const int selectedEntityCount = selectedEntities.GetCount();
-            for( int selectedEntityIndex = 0; selectedEntityIndex < selectedEntityCount; ++selectedEntityIndex ) {
-                Entity * ent = selectedEntities[ selectedEntityIndex ];
-                circle->ents.Add( ent->id );
-                ent->dest = dest;
+                const int selectedEntityCount = selectedEntities.GetCount();
+                for( int selectedEntityIndex = 0; selectedEntityIndex < selectedEntityCount; ++selectedEntityIndex ) {
+                    Entity * ent = selectedEntities[ selectedEntityIndex ];
+                    circle->ents.Add( ent->id );
+                    ent->dest = dest;
+                }
             }
         }
 
@@ -317,10 +353,10 @@ namespace atto {
                     case COLLIDER_TYPE_BOX:
                     {
                         core->RenderDrawRect( c.box.min, c.box.max, glm::vec4( 0.5f, 0.5f, 1, 0.8f ) );
-                    } break;
-                }
-            }
+            } break;
         }
+    }
+}
     #endif
         if( selectionDragging == true ) {
             glm::vec2 bl = glm::min( selectionStartDragPos, selectionEndDragPos );
