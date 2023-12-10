@@ -32,12 +32,12 @@ namespace atto {
         f32 timeToTarget;
     };
 
-    struct ShipDestination {
-        ArrivalCircleHandle arrivalCircle;
+    struct EntityTarget {
+        ArrivalCircleHandle     arrivalCircle;
+        EntityHandle            entity;
         bool moving;
     };
 
-    
     struct Entity {
         EntityHandle    id;
         EntityType      type;
@@ -45,8 +45,8 @@ namespace atto {
         glm::vec2       vel;
         f32             ori;
 
-        TextureResource * sprite;
-        ShipDestination dest;
+        TextureResource *   sprite;
+        EntityTarget        target;
 
         // Make these flags
         bool hasCollision;
@@ -107,11 +107,6 @@ namespace atto {
         TextureResource * spr_BlueWorker = nullptr;
         TextureResource * spr_Structure_Hub = nullptr;
         
-        TextureResource * sprShipB = nullptr;
-        TextureResource * sprEnemyA = nullptr;
-        TextureResource * sprEnemyB = nullptr;
-        TextureResource * sprStationA = nullptr;
-        TextureResource * sprSelectionCircle = nullptr;
         SprTileSheet      sprTileSheet = {};
     };
 }

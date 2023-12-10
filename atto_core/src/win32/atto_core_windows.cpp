@@ -140,7 +140,8 @@ namespace atto {
         i32 h = 0;
         glfwGetFramebufferSize( window, &w, &h );
 
-        RenderSetCamera( 1920, 1080 );
+        RenderSetCamera( 320, 180 );
+        //RenderSetCamera( 640, 360 );
         GLResetSurface( (f32)w, (f32)h );
 
         GLInitializeShapeRendering();
@@ -341,6 +342,7 @@ namespace atto {
         
         ContentTextureProcesor textureProcessor = {};
         textureProcessor.LoadFromFile( name );
+        textureProcessor.MakeAlphaEdge();
         textureProcessor.FixAplhaEdges();
 
         Win32TextureResource textureResource = {};
@@ -456,13 +458,13 @@ namespace atto {
             }
         )";
 
-#if 0
+#if 1
         const char * fragmentShaderSource = R"(
             #version 330 core
             out vec4 FragColor;
 
             in vec2 vertexTexCoord;
-
+            uniform vec4 color;
             uniform sampler2D texture0;
 
             vec2 uv_cstantos( vec2 uv, vec2 res ) {
@@ -536,7 +538,7 @@ namespace atto {
                 //vec4 sampled = texture(texture0, vertexTexCoord);
                 //sampled.rgb *= sampled.a;
                 //if (sampled.a < 1) discard;
-                FragColor = sampled;
+                FragColor = sampled * color;
             }
         )";
 #else 

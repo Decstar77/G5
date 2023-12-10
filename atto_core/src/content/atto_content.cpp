@@ -13,21 +13,80 @@ namespace atto {
 
     ContentTextureProcesor::~ContentTextureProcesor() {
         if( pixelData != nullptr ) {
-            stbi_image_free( pixelData );
+            free( pixelData );
         }
     }
 
     bool ContentTextureProcesor::LoadFromFile( const char * file ) {
-        LargeString filePath = StringFormat::Large( "res/sprites/%s", file );
+        filePath = StringFormat::Large( "res/sprites/%s", file );
         pixelData = stbi_load( filePath.GetCStr(), &width, &height, &channels, 4 );
 
         if( pixelData == nullptr ) {
             //LogOutput( LogLevel::ERR, "Failed to load texture asset \t %s", name );
             return false;
         }
-        
+
 
         return true;
+    }
+
+
+    void ContentTextureProcesor::MakeAlphaEdge() {
+        if( channels != 4 ) {
+            return;
+        }
+
+        bool needsBorder = false;
+        for( int y = 0; y < height; y++ ) {
+            for( int x = 0; x < width; x++ ) {
+                u8 r;
+                u8 g;
+                u8 b;
+                u8 a;
+                GetPixel( x, y, r, g, b, a );
+
+                if( a != 0 ) {
+                    needsBorder = true;
+                }
+            }
+        }
+
+        if( needsBorder == false ) {
+            return;
+        }
+
+        const i32 newWidth = width + 2;
+        const i32 newHeight = height + 2;
+        const i32 newSize = newWidth * newHeight * 4;
+        byte * newData = (byte *)malloc( newSize );
+
+        if( newData == nullptr ) {
+            INVALID_CODE_PATH;
+            return;
+        }
+
+        memset( newData, 0, newSize );
+
+        for( int y = 1; y < newHeight - 1; y++ ) {
+            for( int x = 1; x < newWidth - 1; x++ ) {
+                u8 r;
+                u8 g;
+                u8 b;
+                u8 a;
+                GetPixel( x - 1, y - 1, r, g, b, a );
+
+                newData[ ( y * newWidth + x ) * 4 + 0 ] = r;
+                newData[ ( y * newWidth + x ) * 4 + 1 ] = g;
+                newData[ ( y * newWidth + x ) * 4 + 2 ] = b;
+                newData[ ( y * newWidth + x ) * 4 + 3 ] = a;
+            }
+        }
+
+        free( pixelData );
+
+        pixelData = newData;
+        width = newWidth;
+        height = newHeight;
     }
 
     void ContentTextureProcesor::FixAplhaEdges() {
@@ -92,4 +151,14 @@ namespace atto {
         }
     }
 
+    void ContentTextureProcesor::GetPixel( i32 x, i32 y, u8 & r, u8 & g, u8 & b, u8 & a ) {
+        Assert( x < width && x >= 0 );
+        Assert( y < height && y >= 0 );
+
+        i32 offset = ( y * width + x ) * 4;
+        r = pixelData[ offset + 0 ];
+        g = pixelData[ offset + 1 ];
+        b = pixelData[ offset + 2 ];
+        a = pixelData[ offset + 3 ];
+    }
 }
