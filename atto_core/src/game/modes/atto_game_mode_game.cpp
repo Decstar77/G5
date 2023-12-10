@@ -12,6 +12,7 @@ namespace atto {
 
     void GameModeGame::Init( Core * core ) {
         spr_RedWorker = core->ResourceGetAndLoadTexture( "kenny_sprites_03/unit/scifiUnit_11.png" );
+        spr_BlueWorker = core->ResourceGetAndLoadTexture( "kenny_sprites_03/unit/scifiUnit_47.png" );
         spr_Structure_Hub = core->ResourceGetAndLoadTexture( "kenny_sprites_03/structure/scifiStructure_04.png" );
         sprShipB = core->ResourceGetAndLoadTexture( "kenny_sprites_01/ship_B.png" );
         sprEnemyA = core->ResourceGetAndLoadTexture( "kenny_sprites_01/enemy_A.png" );
@@ -20,14 +21,17 @@ namespace atto {
         sprSelectionCircle = core->ResourceGetAndLoadTexture( "unit_selection_01.png" );
 
     #if 1
-        SpawnEntityUnitWorker( glm::vec2( 400, 400 ) );
-        SpawnEntityUnitWorker( glm::vec2( 200, 400 ) );
+        SpawnEntityUnitWorker( glm::vec2( 400, 400 ), 1 );
+        SpawnEntityUnitWorker( glm::vec2( 200, 400 ), 1 );
+        
+        SpawnEntityUnitWorker( glm::vec2( 400, 600 ), 1 );
+        SpawnEntityUnitWorker( glm::vec2( 200, 600 ), 1 );
 
-        SpawnEntityUnitWorker( glm::vec2( 400, 600 ) );
-        SpawnEntityUnitWorker( glm::vec2( 200, 600 ) );
+        SpawnEntityUnitWorker( glm::vec2( 400, 200 ), 1 );
+        SpawnEntityUnitWorker( glm::vec2( 200, 200 ), 1 );
 
-        SpawnEntityUnitWorker( glm::vec2( 400, 200 ) );
-        SpawnEntityUnitWorker( glm::vec2( 200, 200 ) );
+        SpawnEntityUnitWorker( glm::vec2( 800, 200 ), 2 );
+        SpawnEntityUnitWorker( glm::vec2( 600, 200 ), 2 );
     #else 
         for( int x = 0; x < 20; x++ ) {
             for( int y = 0; y < 20; y++ ) {
@@ -36,7 +40,7 @@ namespace atto {
         }
 
     #endif
-        SpawnEntityStructureHub( glm::vec2( 1000, 1000 ) );
+        SpawnEntityStructureHub( glm::vec2( 1000, 1000 ), 1 );
 
     }
 
@@ -103,8 +107,8 @@ namespace atto {
                             for( i32 entityIndex = 0; entityIndex < activeEntityCount; ++entityIndex ) {
                                 Entity * ent = activeEntities[ entityIndex ];
                                 if( ent->selected && ent->type == ENTITY_TYPE_STRUCTURE_HUB) {
-                                    glm::vec2 spawnPos = ent->pos + glm::vec2( 0, 100 );
-                                    SpawnEntityUnitWorker( spawnPos );
+                                    glm::vec2 spawnPos = ent->pos + glm::vec2( Random::Float( -10, 10 ), 100 );
+                                    SpawnEntityUnitWorker( spawnPos, 1 );
                                 }
                             }
                         }
@@ -130,6 +134,14 @@ namespace atto {
             for( i32 entityIndex = 0; entityIndex < activeEntityCount; ++entityIndex ) {
                 Entity * ent = activeEntities[ entityIndex ];
 
+                if( ent->isSelectable == false ) {
+                    continue;
+                }
+
+                if( ent->teamNumber != playerTeamNumber ) {
+                    continue;
+                }
+                
                 Collider c = ent->GetSelectionColliderWorld();
                 if( selectionEndDragPos - selectionStartDragPos == glm::vec2( 0 ) ) {
                     ent->selected = c.Contains( mousePosWorld );
@@ -148,103 +160,114 @@ namespace atto {
             }
         }
 
-        for( i32 entityIndex = 0; entityIndex < activeEntityCount; ++entityIndex ) {
-            Entity * ent = activeEntities[ entityIndex ];
-            switch( ent->type ) {
-                case ENTITY_TYPE_INVALID: break;
-                case ENTITY_TYPE_UNITS_BEGIN: break;
-                case ENTITY_TYPE_UNIT_WORKER:
-                {
-                    const f32 acc = 500;
-                    const f32 maxSpeed = 200;
-                    const f32 maxSpeed2 = maxSpeed * maxSpeed;
-                    const f32 drag = 0.90f;
-                    glm::vec2 steer = glm::vec2( 0, 0 );
+        const f32 fixedDt = 0.01f;
+        const i32 maxIterations = 3;
+        dtAccumulator += dt;
+        i32 iterations = 0;
+        while( dtAccumulator > fixedDt && iterations < maxIterations ) {
+            iterations++;
+            dtAccumulator -= fixedDt;
 
-                    ArrivalCircle * arrivalCircle = arrivalCirclePool.Get( ent->dest.arrivalCircle );
-                    if( arrivalCircle != nullptr ) {
-                        const f32 targetRad = arrivalCircle->targetRad;
-                        const f32 slowRad = arrivalCircle->slowRad;
-                        const f32 timeToTarget = arrivalCircle->timeToTarget;
+            for( i32 entityIndex = 0; entityIndex < activeEntityCount; ++entityIndex ) {
+                Entity * ent = activeEntities[ entityIndex ];
+                switch( ent->type ) {
+                    case ENTITY_TYPE_INVALID: break;
+                    case ENTITY_TYPE_UNITS_BEGIN: break;
+                    case ENTITY_TYPE_UNIT_WORKER:
+                    {
+                        const f32 acc = 500;
+                        const f32 maxSpeed = 200;
+                        const f32 maxSpeed2 = maxSpeed * maxSpeed;
+                        const f32 drag = 0.90f;
+                        glm::vec2 steer = glm::vec2( 0, 0 );
 
-                        //core->RenderDrawCircle( arrivalCircle->pos, targetRad, glm::vec4( 0, 1, 0, 0.8f ) );
-                        //core->RenderDrawCircle( arrivalCircle->pos, slowRad, glm::vec4( 1, 0, 0, 0.8f ) );
+                        ArrivalCircle * arrivalCircle = arrivalCirclePool.Get( ent->dest.arrivalCircle );
+                        if( arrivalCircle != nullptr ) {
+                            const f32 targetRad = arrivalCircle->targetRad;
+                            const f32 slowRad = arrivalCircle->slowRad;
+                            const f32 timeToTarget = arrivalCircle->timeToTarget;
 
-                        glm::vec2 dir = arrivalCircle->pos - ent->pos;
-                        f32 dist = glm::length( dir );
+                            //core->RenderDrawCircle( arrivalCircle->pos, targetRad, glm::vec4( 0, 1, 0, 0.8f ) );
+                            //core->RenderDrawCircle( arrivalCircle->pos, slowRad, glm::vec4( 1, 0, 0, 0.8f ) );
 
-                        if( dist < targetRad ) {
-                            ent->dest.moving = false;
+                            glm::vec2 dir = arrivalCircle->pos - ent->pos;
+                            f32 dist = glm::length( dir );
+
+                            if( dist < targetRad ) {
+                                ent->dest.moving = false;
+                            }
+
+                            if( ent->dest.moving == true ) {
+                                f32 targetSpeed = 0.0;
+                                if( dist > slowRad ) {
+                                    targetSpeed = acc;
+                                }
+                                else {
+                                    targetSpeed = maxSpeed * ( dist / slowRad );
+                                }
+
+                                glm::vec2 targetVel = glm::normalize( dir ) * targetSpeed;
+                                steer = targetVel - ent->vel;
+                                steer /= timeToTarget;
+                            }
+
+                            if( ent->dest.moving == false ) {
+                                arrivalCircle->targetRad = glm::max( arrivalCircle->targetRad, dist );
+                            }
                         }
 
-                        if( ent->dest.moving == true ) {
-                            f32 targetSpeed = 0.0;
-                            if( dist > slowRad ) {
-                                targetSpeed = acc;
-                            }
-                            else {
-                                targetSpeed = maxSpeed * ( dist / slowRad );
-                            }
-
-                            glm::vec2 targetVel = glm::normalize( dir ) * targetSpeed;
-                            steer = targetVel - ent->vel;
-                            steer /= timeToTarget;
-                        }
-
+                        ent->vel += steer * fixedDt;
                         if( ent->dest.moving == false ) {
-                            arrivalCircle->targetRad = glm::max( arrivalCircle->targetRad, dist );
+                            ent->vel *= drag;
                         }
-                    }
 
-                    ent->vel += steer * dt;
-                    if( ent->dest.moving == false ) {
-                        ent->vel *= drag;
-                    }
+                        if( glm::length2( ent->vel ) > maxSpeed2 ) {
+                            ent->vel = glm::normalize( ent->vel );
+                            ent->vel = ent->vel * maxSpeed;
+                        }
 
-                    if( glm::length2( ent->vel ) > maxSpeed2 ) {
-                        ent->vel = glm::normalize( ent->vel );
-                        ent->vel = ent->vel * maxSpeed;
-                    }
+                        //if( glm::length2( ent->vel ) > 0.1f ) {
+                        //    ent->ori = glm::atan( ent->vel.x, ent->vel.y );
+                        //}
 
-                    //if( glm::length2( ent->vel ) > 0.1f ) {
-                    //    ent->ori = glm::atan( ent->vel.x, ent->vel.y );
-                    //}
+                        ent->pos += ent->vel * fixedDt;
 
-                    ent->pos += ent->vel * dt;
-
-                } break;
-                case ENTITY_TYPE_UNITS_END: break;
-                case ENTITY_TYPE_ENEMY: break;
-                default: break;
+                    } break;
+                    case ENTITY_TYPE_UNITS_END: break;
+                    case ENTITY_TYPE_ENEMY: break;
+                    default: break;
+                }
             }
-        }
 
-        for( i32 entityIndexA = 0; entityIndexA < activeEntityCount; entityIndexA++ ) {
-            Entity * entA = activeEntities[ entityIndexA ];
-            if( entA->hasCollision ) {
-                for( i32 entityIndexB = entityIndexA + 1; entityIndexB < activeEntityCount; entityIndexB++ ) {
-                    Entity * entB = activeEntities[ entityIndexB ];
-                    if( entB->hasCollision ) {
-                        Collider ca = entA->GetCollisionCircleWorld();
-                        Collider cb = entB->GetCollisionCircleWorld();
+            for( i32 entityIndexA = 0; entityIndexA < activeEntityCount; entityIndexA++ ) {
+                Entity * entA = activeEntities[ entityIndexA ];
+                if( entA->hasCollision ) {
+                    for( i32 entityIndexB = entityIndexA + 1; entityIndexB < activeEntityCount; entityIndexB++ ) {
+                        Entity * entB = activeEntities[ entityIndexB ];
+                        if( entB->hasCollision ) {
+                            Collider ca = entA->GetCollisionCircleWorld();
+                            Collider cb = entB->GetCollisionCircleWorld();
 
-                        Manifold m = {};
-                        if( ca.Collision( cb, m ) ) {
-                            if( entA->isCollisionStatic == true ) {
-                                entB->pos += m.normal * m.penetration;
-                            }
-                            else if( entB->isCollisionStatic == true ) {
-                                entA->pos -= m.normal * m.penetration;
-                            }
-                            else {
-                                entA->pos -= m.normal * m.penetration * 0.5f;
-                                entB->pos += m.normal * m.penetration * 0.5f;
+                            Manifold m = {};
+                            if( ca.Collision( cb, m ) ) {
+                                if( entA->isCollisionStatic == true ) {
+                                    entB->pos += m.normal * m.penetration;
+                                }
+                                else if( entB->isCollisionStatic == true ) {
+                                    entA->pos -= m.normal * m.penetration;
+                                }
+                                else {
+                                    entA->pos -= m.normal * m.penetration * 0.5f;
+                                    entB->pos += m.normal * m.penetration * 0.5f;
+                                }
                             }
                         }
                     }
                 }
             }
         }
+
+        //core->LogOutput( LogLevel::INFO, "Iterations %d", iterations );
 
         FixedList<ArrivalCircle *, MAX_ENTITIES> & activeArrivalCircles = *core->MemoryAllocateTransient<FixedList<ArrivalCircle *, MAX_ENTITIES>>();
         arrivalCirclePool.GatherActiveObjs( activeArrivalCircles );
@@ -372,7 +395,7 @@ namespace atto {
     void GameModeGame::Shutdown( Core * core ) {
     }
 
-    Entity * GameModeGame::SpawnEntity( EntityType type ) {
+    Entity * GameModeGame::SpawnEntity( EntityType type, i32 teamNumber ) {
         EntityHandle hdl = {};
         Entity * entity = entityPool.Add( hdl );
         ZeroStructPtr( entity );
@@ -381,6 +404,7 @@ namespace atto {
             entity->type = type;
             entity->selected = false;
             entity->dest.moving = false;
+            entity->teamNumber = teamNumber;
             return entity;
         }
 
@@ -389,8 +413,8 @@ namespace atto {
         return nullptr;
     }
 
-    Entity * GameModeGame::SpawnEntity( EntityType type, glm::vec2 pos ) {
-        Entity * ent = SpawnEntity( type );
+    Entity * GameModeGame::SpawnEntity( EntityType type, glm::vec2 pos, i32 teamNumber ) {
+        Entity * ent = SpawnEntity( type, teamNumber );
         if( ent != nullptr ) {
             ent->pos = pos;
         }
@@ -398,10 +422,20 @@ namespace atto {
         return ent;
     }
 
-    Entity * GameModeGame::SpawnEntityUnitWorker( glm::vec2 pos ) {
-        Entity * ent = SpawnEntity( ENTITY_TYPE_UNIT_WORKER, pos );
+    Entity * GameModeGame::SpawnEntityUnitWorker( glm::vec2 pos, i32 teamNumber ) {
+        Entity * ent = SpawnEntity( ENTITY_TYPE_UNIT_WORKER, pos, teamNumber );
         if( ent != nullptr ) {
-            ent->sprite = spr_RedWorker;
+            if( teamNumber == 1 ) {
+                ent->sprite = spr_RedWorker;
+            }
+            else if ( teamNumber == 2 ) {
+                ent->sprite = spr_BlueWorker;
+            }
+            else {
+                INVALID_CODE_PATH;
+            }
+
+            
             ent->hasCollision = true;
             ent->isSelectable = true;
             ent->selectionCollider.type = COLLIDER_TYPE_CIRCLE;
@@ -415,8 +449,8 @@ namespace atto {
     }
 
 
-    Entity * GameModeGame::SpawnEntityStructureHub( glm::vec2 pos ) {
-        Entity * ent = SpawnEntity( ENTITY_TYPE_STRUCTURE_HUB, pos );
+    Entity * GameModeGame::SpawnEntityStructureHub( glm::vec2 pos, i32 teamNumber ) {
+        Entity * ent = SpawnEntity( ENTITY_TYPE_STRUCTURE_HUB, pos, teamNumber );
         if( ent != nullptr ) {
             ent->sprite = spr_Structure_Hub;
             ent->isSelectable = true;

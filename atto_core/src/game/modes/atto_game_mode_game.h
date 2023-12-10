@@ -58,6 +58,8 @@ namespace atto {
         
         bool selected;
 
+        i32 teamNumber;
+
 
         Collider GetSelectionColliderWorld() const;
         Collider GetCollisionCircleWorld() const;
@@ -77,15 +79,17 @@ namespace atto {
         void Shutdown( Core * core ) override;
 
     public:
-        Entity * SpawnEntity( EntityType type );
-        Entity * SpawnEntity( EntityType type, glm::vec2 pos );
-        Entity * SpawnEntityUnitWorker( glm::vec2 pos );
-        Entity * SpawnEntityStructureHub( glm::vec2 pos );
+        Entity * SpawnEntity( EntityType type, i32 teamNumber );
+        Entity * SpawnEntity( EntityType type, glm::vec2 pos, i32 teamNumber );
+        Entity * SpawnEntityUnitWorker( glm::vec2 pos, i32 teamNumber );
+        Entity * SpawnEntityStructureHub( glm::vec2 pos, i32 teamNumber );
 
 
-        bool     SelectionHasType(EntityType type );
+        bool     SelectionHasType( EntityType type );
 
     public:
+        f32                                     dtAccumulator = 0.0f;
+        i32                                     playerTeamNumber = 1;
         FixedObjectPool<Entity, MAX_ENTITIES>   entityPool;
 
         EntList                                 activeEntities;   // These lists are updated once per Update call. So most likely once per frame.
@@ -94,12 +98,13 @@ namespace atto {
         bool                                    selectionDragging = false;
         glm::vec2                               selectionStartDragPos = glm::vec2( 0 );
         glm::vec2                               selectionEndDragPos = glm::vec2( 0 );
-        
+
         FixedObjectPool<ArrivalCircle, MAX_ENTITIES> arrivalCirclePool;
 
     public: 
         // Resources
         TextureResource * spr_RedWorker = nullptr;
+        TextureResource * spr_BlueWorker = nullptr;
         TextureResource * spr_Structure_Hub = nullptr;
         
         TextureResource * sprShipB = nullptr;

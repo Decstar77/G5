@@ -1,6 +1,7 @@
 #pragma once
 
 #include "atto_defines.h"
+#include "atto_random.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
