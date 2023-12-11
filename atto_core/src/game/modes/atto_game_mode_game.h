@@ -45,8 +45,17 @@ namespace atto {
         glm::vec2       vel;
         f32             ori;
 
-        TextureResource *   sprite;
+        TextureResource *   spriteCurrent;
+        TextureResource *   spriteIdle;
+        TextureResource *   spriteFiring;
         EntityTarget        target;
+
+        f32                 fireRate;
+        f32                 fireRateAccumulator;
+        i32                 fireDamage;
+
+        i32                 maxHealth;
+        i32                 currentHealth;
 
         // Make these flags
         bool hasCollision;
@@ -103,8 +112,11 @@ namespace atto {
 
     public: 
         // Resources
+        TextureResource * spr_BlueWorker_Idle = nullptr;
+        TextureResource * spr_BlueWorker_Firing = nullptr;
+        TextureResource * spr_BlueWorker_Firing_Muzzel = nullptr;
+        TextureResource * spr_BlueWorker_Selection = nullptr;
         TextureResource * spr_RedWorker = nullptr;
-        TextureResource * spr_BlueWorker = nullptr;
         TextureResource * spr_Structure_Hub = nullptr;
         
         SprTileSheet      sprTileSheet = {};

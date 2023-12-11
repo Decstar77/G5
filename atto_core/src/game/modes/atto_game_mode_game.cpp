@@ -11,8 +11,11 @@ namespace atto {
     }
 
     void GameModeGame::Init( Core * core ) {
-        spr_RedWorker = core->ResourceGetAndLoadTexture( "unit_basic_man.png" );
-        spr_BlueWorker = core->ResourceGetAndLoadTexture( "unit_basic_man.png" );
+        spr_BlueWorker_Idle = core->ResourceGetAndLoadTexture( "unit_basic_man.png" );
+        spr_BlueWorker_Firing = core->ResourceGetAndLoadTexture( "unit_basic_man_firing.png" );
+        spr_BlueWorker_Firing_Muzzel = core->ResourceGetAndLoadTexture( "unit_basic_man_firing_muzzel.png" );
+        spr_BlueWorker_Selection = core->ResourceGetAndLoadTexture( "unit_basic_man_selection.png" );
+        spr_RedWorker = core->ResourceGetAndLoadTexture( "unit_basic_enemy.png" );
         spr_Structure_Hub = core->ResourceGetAndLoadTexture( "unit_basic_man.png" );
 
     #if 1
@@ -63,9 +66,12 @@ namespace atto {
             }
         }
 
+        DrawContext * spriteDraws = core->RenderGetDrawContext( 0 );
+        DrawContext * uiDraws = core->RenderGetDrawContext( 1 );
+        DrawContext * debugDraws = core->RenderGetDrawContext( 2 );
+
 
         // @NOTE: Draw UI Code
-        DrawContext * uiDraws = core->RenderGetDrawContext( 1 );
         bool isMouseOverUI = false;
         {
           //FontHandle f = core->ResourceGetFont( "default" );
@@ -113,7 +119,7 @@ namespace atto {
                         }
                     }
 
-                    uiDraws->RenderDrawSpriteNDC( spr_RedWorker, ( ( end - padding ) + ( start + padding ) ) / 2.0f, 0.0f, glm::vec2( 2.0f ) );
+                    uiDraws->RenderDrawSpriteNDC( spr_BlueWorker_Idle, ( ( end - padding ) + ( start + padding ) ) / 2.0f, 0.0f, glm::vec2( 2.0f ) );
                 }
             }
         }
@@ -159,8 +165,7 @@ namespace atto {
             }
         }
 
-        DrawContext * debugDraws = core->RenderGetDrawContext( 2 );
-
+        
         const f32 fixedDt = 0.01f;
         const i32 maxIterations = 3;
         dtAccumulator += dt;
@@ -186,7 +191,7 @@ namespace atto {
 
                         const f32 myRange = 25.0f;
                         bool inRangeOfTarget = false;
-                        if( targetEnt != nullptr ) {
+                        if( targetEnt != nullptr && targetEnt->teamNumber != ent->teamNumber ) {
                             //debugDraws->RenderDrawCircle( targetEnt->pos, myRange, glm::vec4( 0, 1, 0, 0.8f ) );
 
                             f32 targetDist = glm::distance( targetEnt->pos, ent->pos ); // @SPEED(): Use dist 2
@@ -253,6 +258,23 @@ namespace atto {
 
                         ent->pos += ent->vel * fixedDt;
 
+                        if( inRangeOfTarget == true ) {
+                            ent->spriteCurrent = ent->spriteFiring;
+                            ent->fireRateAccumulator += fixedDt;
+                            if( ent->fireRateAccumulator >= ent->fireRate ) {
+                                ent->fireRateAccumulator = 0.0f;
+                                spriteDraws->RenderDrawSprite( spr_BlueWorker_Firing_Muzzel, ent->pos + glm::vec2( 9, -0.5f ) );
+                                
+                                targetEnt->currentHealth -= ent->fireDamage;
+                                if( targetEnt->currentHealth <= 0 ) {
+                                    entityPool.Remove( targetEnt->id );
+                                }
+                            }
+                        }
+                        else {
+                            ent->spriteCurrent = ent->spriteIdle;
+                        }
+
                     } break;
                     case ENTITY_TYPE_UNITS_END: break;
                     case ENTITY_TYPE_ENEMY: break;
@@ -317,7 +339,6 @@ namespace atto {
         }
         if( isMouseOverUI == false ) {
             if( core->InputMouseButtonJustPressed( MOUSE_BUTTON_2 ) ) {
-
                 ArrivalCircleHandle arrivalHandle = {};
                 ArrivalCircle * circle = arrivalCirclePool.Add( arrivalHandle );
                 Assert( circle != nullptr );
@@ -363,16 +384,18 @@ namespace atto {
 
 
         activeEntities.Sort( &YSortEntities );
-        DrawContext * spriteDraws = core->RenderGetDrawContext( 0 );
 
         for( int entityIndex = 0; entityIndex < activeEntityCount; ++entityIndex ) {
             Entity * ent = activeEntities[ entityIndex ];
-            if( ent->sprite != nullptr ) {
+            if( ent->spriteCurrent != nullptr ) {
                 //if( ent->selected ) {
                 //    core->RenderDrawSprite( sprSelectionCircle, ent->pos, 0.0f, glm::vec2( 0.5f ) );
                 //}
-                glm::vec4 color = ent->selected ? glm::vec4( 0.6f, 1.2f, 0.6f, 1.0f ) : glm::vec4( 1 );
-                spriteDraws->RenderDrawSprite( ent->sprite, ent->pos, ent->ori, glm::vec2( 1 ), color );
+                //glm::vec4 color = ent->selected ? glm::vec4( 0.6f, 1.2f, 0.6f, 1.0f ) : glm::vec4( 1 );
+                if( ent->selected ) {
+                    spriteDraws->RenderDrawSprite( spr_BlueWorker_Selection, ent->pos - glm::vec2( 0.5f, 8 ) );
+                }
+                spriteDraws->RenderDrawSprite( ent->spriteCurrent, ent->pos, ent->ori, glm::vec2( 1 ) );
                 //core->RenderDrawRect( ent->pos, glm::vec2( 32 ), 0.0f );
             }
         }
@@ -459,25 +482,33 @@ namespace atto {
         Entity * ent = SpawnEntity( ENTITY_TYPE_UNIT_WORKER, pos, teamNumber );
         if( ent != nullptr ) {
             if( teamNumber == 1 ) {
-                ent->sprite = spr_RedWorker;
+                ent->spriteCurrent = spr_BlueWorker_Idle;
+                ent->spriteIdle = spr_BlueWorker_Idle;
+                ent->spriteFiring = spr_BlueWorker_Firing;
             }
             else if( teamNumber == 2 ) {
-                ent->sprite = spr_BlueWorker;
+                ent->spriteCurrent = spr_RedWorker;
+                ent->spriteIdle = spr_RedWorker;
+                ent->spriteFiring = spr_BlueWorker_Firing;
             }
             else {
                 INVALID_CODE_PATH;
             }
 
-
             ent->hasCollision = true;
             ent->isSelectable = true;
             ent->selectionCollider.type = COLLIDER_TYPE_CIRCLE;
             ent->selectionCollider.circle.rad = 5;
-            ent->selectionCollider.circle.pos.y = -6;
+            ent->selectionCollider.circle.pos.x = -0.5f;
+            ent->selectionCollider.circle.pos.y = -2;
 
             ent->collisionCollider.type = COLLIDER_TYPE_CIRCLE;
-            ent->collisionCollider.circle.rad = 5;
-            ent->collisionCollider.circle.pos.y = -6;
+            ent->collisionCollider.circle = ent->selectionCollider.circle;
+
+            ent->fireRate = 1.0f;
+            ent->fireDamage = 10;
+            ent->maxHealth = 50;
+            ent->currentHealth = ent->maxHealth;
         }
 
         return ent;
@@ -487,7 +518,7 @@ namespace atto {
     Entity * GameModeGame::SpawnEntityStructureHub( glm::vec2 pos, i32 teamNumber ) {
         Entity * ent = SpawnEntity( ENTITY_TYPE_STRUCTURE_HUB, pos, teamNumber );
         if( ent != nullptr ) {
-            ent->sprite = spr_Structure_Hub;
+            ent->spriteCurrent = spr_Structure_Hub;
             ent->isSelectable = true;
             ent->selectionCollider.type = COLLIDER_TYPE_BOX;
             ent->selectionCollider.box.min = glm::vec2( -64 );
