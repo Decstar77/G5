@@ -69,9 +69,27 @@ namespace atto {
 
         i32 teamNumber;
 
-
         Collider GetSelectionColliderWorld() const;
         Collider GetCollisionCircleWorld() const;
+    };
+
+    struct Particle {
+        glm::vec2 pos;
+        glm::vec2 vel;
+        f32       ori;
+        f32       oriVel;
+        bool      alive;
+        f32       life; // In seconds
+        f32       scale;
+        f32       scaleRate;
+        f32       alpha;
+    };
+    
+    struct ParticleEmiiter;
+    typedef ObjectHandle<ParticleEmiiter> ParticleEmiiterHandle;
+    struct ParticleEmiiter {
+        ParticleEmiiterHandle handle;
+        FixedList<Particle, 128> parts;
     };
 
     struct SprTileSheet {
@@ -93,22 +111,25 @@ namespace atto {
         Entity * SpawnEntityUnitWorker( glm::vec2 pos, i32 teamNumber );
         Entity * SpawnEntityStructureHub( glm::vec2 pos, i32 teamNumber );
 
+        ParticleEmiiter * SpawnParticleEmitter( glm::vec2 pos );
 
         bool     SelectionHasType( EntityType type );
 
     public:
         f32                                     dtAccumulator = 0.0f;
         i32                                     playerTeamNumber = 1;
-        FixedObjectPool<Entity, MAX_ENTITIES>   entityPool;
+        FixedObjectPool<Entity, MAX_ENTITIES>   entityPool = {};
 
-        EntList                                 activeEntities;   // These lists are updated once per Update call. So most likely once per frame.
-        EntList                                 selectedEntities; // These lists are updated once per Update call. So most likely once per frame.
+        EntList                                 activeEntities = {};   // These lists are updated once per Update call. So most likely once per frame.
+        EntList                                 selectedEntities = {}; // These lists are updated once per Update call. So most likely once per frame.
+        FixedList<ParticleEmiiter *, 512>       particleEmitters = {}; // These lists are updated once per Update call. So most likely once per frame.
 
         bool                                    selectionDragging = false;
         glm::vec2                               selectionStartDragPos = glm::vec2( 0 );
         glm::vec2                               selectionEndDragPos = glm::vec2( 0 );
 
-        FixedObjectPool<ArrivalCircle, MAX_ENTITIES> arrivalCirclePool;
+        FixedObjectPool<ArrivalCircle, MAX_ENTITIES>    arrivalCirclePool = {};
+        FixedObjectPool<ParticleEmiiter, 512>           particleEmitterPool = {};
 
     public: 
         // Resources
@@ -118,6 +139,7 @@ namespace atto {
         TextureResource * spr_BlueWorker_Selection = nullptr;
         TextureResource * spr_RedWorker = nullptr;
         TextureResource * spr_Structure_Hub = nullptr;
+        TextureResource * spr_Particle_Grey1x1 = nullptr;
         
         SprTileSheet      sprTileSheet = {};
     };

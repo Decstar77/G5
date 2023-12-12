@@ -1182,6 +1182,8 @@ namespace atto {
 
     template<typename _type_, i32 capcity>
     void FixedObjectPool<_type_, capcity>::GatherActiveObjs( FixedList<_type_ *, capcity> & inList ) {
+        Initialize();
+
         for( i32 i = 0; i < capcity; i++ ) {
             activeList[ i ] = true;
         }
@@ -1191,10 +1193,10 @@ namespace atto {
             activeList[ idxs[ i ] ] = false;
         }
 
-        const i32 activeCount = capcity - freeCount;
+        const i32 activeCount = capcity - freeCount - 1;    // @NOTE: -1 because we don't want to include the first element
 
         i32 count = 0;
-        for( i32 i = 0; i < capcity; i++ ) {
+        for( i32 i = 1; i < capcity; i++ ) {                // @NOTE: Start at 1 because we don't want to include the first element
             if( activeList[ i ] ) {
                 _type_ * t = &objs[ i ];
                 inList.Add( t );

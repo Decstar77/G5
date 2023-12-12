@@ -17,6 +17,7 @@ namespace atto {
         spr_BlueWorker_Selection = core->ResourceGetAndLoadTexture( "unit_basic_man_selection.png" );
         spr_RedWorker = core->ResourceGetAndLoadTexture( "unit_basic_enemy.png" );
         spr_Structure_Hub = core->ResourceGetAndLoadTexture( "unit_basic_man.png" );
+        spr_Particle_Grey1x1 = core->ResourceGetAndLoadTexture( "part_basic_grey_1x1.png" );
 
     #if 1
         SpawnEntityUnitWorker( glm::vec2( 40, 40 ), 1 );
@@ -50,6 +51,9 @@ namespace atto {
         // @NOTE: Gather active entities
         activeEntities.Clear( true );
         entityPool.GatherActiveObjs( activeEntities );
+        particleEmitters.Clear( true );
+        particleEmitterPool.GatherActiveObjs( particleEmitters );
+
         const i32 activeEntityCount = activeEntities.GetCount();
 
         // @NOTE: Gather selected entities and find hovered entity
@@ -70,6 +74,9 @@ namespace atto {
         DrawContext * uiDraws = core->RenderGetDrawContext( 1 );
         DrawContext * debugDraws = core->RenderGetDrawContext( 2 );
 
+        if( core->InputMouseButtonJustPressed( MOUSE_BUTTON_1 ) ) {
+            SpawnParticleEmitter( mousePosWorld );
+        }
 
         // @NOTE: Draw UI Code
         bool isMouseOverUI = false;
@@ -165,7 +172,7 @@ namespace atto {
             }
         }
 
-        
+
         const f32 fixedDt = 0.01f;
         const i32 maxIterations = 3;
         dtAccumulator += dt;
@@ -282,6 +289,33 @@ namespace atto {
                 }
             }
 
+            const i32 activeParticleEmiiterCount = particleEmitters.GetCount();
+            for( i32 emitterIndex = 0; emitterIndex < activeParticleEmiiterCount; emitterIndex++ ) {
+                ParticleEmiiter * emit = particleEmitters[ emitterIndex ];
+                bool isActive = false;
+                const i32 partCount = emit->parts.GetCapcity();
+                for( i32 partIndex = 0; partIndex < partCount; partIndex++ ) {
+                    Particle & p = emit->parts[ partIndex ];
+
+                    p.life -= fixedDt;
+                    if( p.life <= 0.0f ) {
+                        p.life = 0.0f;
+                        p.alive = false;
+                        continue;
+                    }
+
+                    isActive = true;
+
+                    p.scale += p.scaleRate * fixedDt;
+
+                    p.pos += p.vel * fixedDt;
+                }
+
+                if( isActive == false ) {
+                    particleEmitterPool.Remove( emit->handle );
+                }
+            }
+
             for( i32 entityIndexA = 0; entityIndexA < activeEntityCount; entityIndexA++ ) {
                 Entity * entA = activeEntities[ entityIndexA ];
                 if( entA->hasCollision ) {
@@ -382,9 +416,19 @@ namespace atto {
         }
         core->SetCameraPos( cameraPos );
 
+        const i32 activeParticleEmiiterCount = particleEmitters.GetCount();
+        for( i32 emitterIndex = 0; emitterIndex < activeParticleEmiiterCount; emitterIndex++ ) {
+            ParticleEmiiter * emit = particleEmitters[ emitterIndex ];
+            const i32 partCount = emit->parts.GetCapcity();
+            for( i32 partIndex = 0; partIndex < partCount; partIndex++ ) {
+                Particle & p = emit->parts[ partIndex ];
+                if( p.alive == true ) {
+                    spriteDraws->RenderDrawSprite( spr_Particle_Grey1x1, p.pos, 0.0f, glm::vec2( p.scale ) );
+                }
+            }
+        }
 
         activeEntities.Sort( &YSortEntities );
-
         for( int entityIndex = 0; entityIndex < activeEntityCount; ++entityIndex ) {
             Entity * ent = activeEntities[ entityIndex ];
             if( ent->spriteCurrent != nullptr ) {
@@ -532,6 +576,30 @@ namespace atto {
         }
 
         return ent;
+    }
+
+    ParticleEmiiter * GameModeGame::SpawnParticleEmitter( glm::vec2 pos ) {
+        ParticleEmiiterHandle hdl;
+        ParticleEmiiter * emit = particleEmitterPool.Add( hdl );
+        Assert( emit != nullptr );
+
+        if( emit != nullptr ) {
+            ZeroStructPtr( emit );
+            emit->handle = hdl;
+            i32 spawnCount = 20;
+            for( i32 i = 0; i < spawnCount; i++ ) {
+                Particle p = {};
+                p.alive = true;
+                p.pos = pos;
+                p.life = Random::Float( 0.05f, 0.2f );
+                p.scale = 1.0f;
+                p.scaleRate = -0.05f;
+                p.vel = glm::vec2( Random::Float( -1, 1 ), Random::Float( -1, 1 ) ) * Random::Float( 15, 20 );
+                emit->parts.Add( p );
+            }
+        }
+
+        return emit;
     }
 
     bool GameModeGame::SelectionHasType( EntityType type ) {

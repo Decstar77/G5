@@ -218,10 +218,11 @@ namespace atto {
     }
 
     void WindowsCore::RenderSubmit( DrawContext * dcxt, bool clearBackBuffers ) {
-        //glClearColor(0.5f, 0.2f, 0.2f, 1.0f);
-        //glClearColor( 0.1f, 0.1f, 0.2f, 1.0f );
         if( clearBackBuffers ) {
-            glClearColor( Colors::SILVER.x, Colors::SILVER.y, Colors::SILVER.z, 1.0f );
+            //glClearColor(0.5f, 0.2f, 0.2f, 1.0f);
+            glClearColor(0.2f, 0.5f, 0.2f, 1.0f);
+            //glClearColor( 0.1f, 0.1f, 0.2f, 1.0f );
+            //glClearColor( Colors::SILVER.x, Colors::SILVER.y, Colors::SILVER.z, 1.0f );
             glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
         }
 
