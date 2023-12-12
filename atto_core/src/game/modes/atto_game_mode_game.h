@@ -141,6 +141,9 @@ namespace atto {
         TextureResource * spr_Structure_Hub = nullptr;
         TextureResource * spr_Particle_Grey1x1 = nullptr;
         
+        AudioResource *   snd_WorkerFire = nullptr;
+        AudioResource *   snd_WorkerDeath = nullptr;
+
         SprTileSheet      sprTileSheet = {};
     };
 }

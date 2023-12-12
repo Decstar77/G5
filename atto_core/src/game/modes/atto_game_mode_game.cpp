@@ -19,6 +19,9 @@ namespace atto {
         spr_Structure_Hub = core->ResourceGetAndLoadTexture( "unit_basic_man.png" );
         spr_Particle_Grey1x1 = core->ResourceGetAndLoadTexture( "part_basic_grey_1x1.png" );
 
+        snd_WorkerDeath = core->ResourceGetAndLoadAudio( "basic_death_1.wav" );
+        snd_WorkerFire = core->ResourceGetAndLoadAudio( "gun_pistol_shot_01.wav" );
+
     #if 1
         SpawnEntityUnitWorker( glm::vec2( 40, 40 ), 1 );
         SpawnEntityUnitWorker( glm::vec2( 20, 40 ), 1 );
@@ -74,9 +77,9 @@ namespace atto {
         DrawContext * uiDraws = core->RenderGetDrawContext( 1 );
         DrawContext * debugDraws = core->RenderGetDrawContext( 2 );
 
-        if( core->InputMouseButtonJustPressed( MOUSE_BUTTON_1 ) ) {
-            SpawnParticleEmitter( mousePosWorld );
-        }
+        //if( core->InputMouseButtonJustPressed( MOUSE_BUTTON_1 ) ) {
+        //    SpawnParticleEmitter( mousePosWorld );
+        //}
 
         // @NOTE: Draw UI Code
         bool isMouseOverUI = false;
@@ -198,10 +201,11 @@ namespace atto {
 
                         const f32 myRange = 25.0f;
                         bool inRangeOfTarget = false;
+                        f32 targetDist = -1.0f;
                         if( targetEnt != nullptr && targetEnt->teamNumber != ent->teamNumber ) {
                             //debugDraws->RenderDrawCircle( targetEnt->pos, myRange, glm::vec4( 0, 1, 0, 0.8f ) );
 
-                            f32 targetDist = glm::distance( targetEnt->pos, ent->pos ); // @SPEED(): Use dist 2
+                            targetDist = glm::distance( targetEnt->pos, ent->pos ); // @SPEED(): Use dist 2
                             if( targetDist <= myRange ) {
                                 inRangeOfTarget = true;
                             }
@@ -271,10 +275,18 @@ namespace atto {
                             if( ent->fireRateAccumulator >= ent->fireRate ) {
                                 ent->fireRateAccumulator = 0.0f;
                                 spriteDraws->RenderDrawSprite( spr_BlueWorker_Firing_Muzzel, ent->pos + glm::vec2( 9, -0.5f ) );
-                                
+
+                                glm::vec2 dir = ( ent->pos - targetEnt->pos ) / targetDist;
+                                glm::vec2 pos = targetEnt->pos + dir * 3.0f;
+                                SpawnParticleEmitter( pos );
+
+                                core->AudioPlay( snd_WorkerFire );
+
                                 targetEnt->currentHealth -= ent->fireDamage;
                                 if( targetEnt->currentHealth <= 0 ) {
                                     entityPool.Remove( targetEnt->id );
+                                    
+                                    core->AudioPlay( snd_WorkerDeath );
                                 }
                             }
                         }
