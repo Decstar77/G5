@@ -140,8 +140,8 @@ namespace atto {
         i32 h = 0;
         glfwGetFramebufferSize( window, &w, &h );
 
-        RenderSetCamera( 320, 180 );
-        //RenderSetCamera( 640, 360 );
+        //RenderSetCamera( 320, 180 );
+        RenderSetCamera( 640, 360 );
         GLResetSurface( (f32)w, (f32)h );
 
         GLInitializeShapeRendering();
@@ -340,7 +340,7 @@ namespace atto {
                 return &textureResource;
             }
         }
-        
+
         ContentTextureProcesor textureProcessor = {};
         textureProcessor.LoadFromFile( name );
         textureProcessor.MakeAlphaEdge();

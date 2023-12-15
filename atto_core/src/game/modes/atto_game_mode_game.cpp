@@ -16,12 +16,16 @@ namespace atto {
         spr_BlueWorker_Firing_Muzzel = core->ResourceGetAndLoadTexture( "unit_basic_man_firing_muzzel.png" );
         spr_BlueWorker_Selection = core->ResourceGetAndLoadTexture( "unit_basic_man_selection.png" );
         spr_RedWorker = core->ResourceGetAndLoadTexture( "unit_basic_enemy.png" );
-        spr_Structure_Hub = core->ResourceGetAndLoadTexture( "unit_basic_man.png" );
+        spr_Bld_Blue_Townhall = core->ResourceGetAndLoadTexture( "bld_blue_townhall.png" );
         spr_Particle_Grey1x1 = core->ResourceGetAndLoadTexture( "part_basic_grey_1x1.png" );
 
         snd_WorkerDeath = core->ResourceGetAndLoadAudio( "basic_death_1.wav" );
         snd_WorkerFire = core->ResourceGetAndLoadAudio( "gun_pistol_shot_01.wav" );
 
+    #if 0
+        snd_BackgroundMusic = core->ResourceGetAndLoadAudio( "music/peace_2.ogg" );
+        core->AudioPlay( snd_BackgroundMusic );
+    #endif
     #if 1
         SpawnEntityUnitWorker( glm::vec2( 40, 40 ), 1 );
         SpawnEntityUnitWorker( glm::vec2( 20, 40 ), 1 );
@@ -39,8 +43,8 @@ namespace atto {
         }
 
     #endif
-        //SpawnEntityStructureHub( glm::vec2( 100, 100 ), 1 );
 
+        SpawnEntityTownhall( glm::vec2( 200, 100 ), 1 );
     }
 
     void GameModeGame::UpdateAndRender( Core * core, f32 dt ) {
@@ -129,7 +133,7 @@ namespace atto {
                         }
                     }
 
-                    uiDraws->RenderDrawSpriteNDC( spr_BlueWorker_Idle, ( ( end - padding ) + ( start + padding ) ) / 2.0f, 0.0f, glm::vec2( 2.0f ) );
+                    uiDraws->RenderDrawSpriteNDC( spr_BlueWorker_Idle, ( ( end - padding ) + ( start + padding ) ) / 2.0f, 0.0f, glm::vec2( 10.0f ) );
                 }
             }
         }
@@ -272,7 +276,8 @@ namespace atto {
                         if( inRangeOfTarget == true ) {
                             ent->spriteCurrent = ent->spriteFiring;
                             ent->fireRateAccumulator += fixedDt;
-                            if( ent->fireRateAccumulator >= ent->fireRate ) {
+                            f32 rngFire = Random::Float( 0, 0.5f );
+                            if( ent->fireRateAccumulator - rngFire >= ent->fireRate ) {
                                 ent->fireRateAccumulator = 0.0f;
                                 spriteDraws->RenderDrawSprite( spr_BlueWorker_Firing_Muzzel, ent->pos + glm::vec2( 9, -0.5f ) );
 
@@ -475,18 +480,18 @@ namespace atto {
         }
     #endif
     #if 0
-        for( i32 entityIndexA = 0; entityIndexA < entityCount; entityIndexA++ ) {
-            Entity * ent = entities[ entityIndexA ];
+        for( i32 entityIndexA = 0; entityIndexA < activeEntityCount; entityIndexA++ ) {
+            Entity * ent = activeEntities[ entityIndexA ];
             if( ent->isSelectable ) {
                 Collider c = ent->GetSelectionColliderWorld();
                 switch( c.type ) {
                     case COLLIDER_TYPE_CIRCLE:
                     {
-                        core->RenderDrawCircle( c.circle.pos, c.circle.rad, glm::vec4( 0.5f, 0.5f, 1, 0.8f ) );
+                        debugDraws->RenderDrawCircle( c.circle.pos, c.circle.rad, glm::vec4( 0.5f, 0.5f, 1, 0.8f ) );
                     } break;
                     case COLLIDER_TYPE_BOX:
                     {
-                        core->RenderDrawRect( c.box.min, c.box.max, glm::vec4( 0.5f, 0.5f, 1, 0.8f ) );
+                        debugDraws->RenderDrawRect( c.box.min, c.box.max, glm::vec4( 0.5f, 0.5f, 1, 0.8f ) );
                     } break;
                 }
             }
@@ -571,20 +576,20 @@ namespace atto {
     }
 
 
-    Entity * GameModeGame::SpawnEntityStructureHub( glm::vec2 pos, i32 teamNumber ) {
+    Entity * GameModeGame::SpawnEntityTownhall( glm::vec2 pos, i32 teamNumber ) {
         Entity * ent = SpawnEntity( ENTITY_TYPE_STRUCTURE_HUB, pos, teamNumber );
         if( ent != nullptr ) {
-            ent->spriteCurrent = spr_Structure_Hub;
+            ent->spriteCurrent = spr_Bld_Blue_Townhall;
             ent->isSelectable = true;
             ent->selectionCollider.type = COLLIDER_TYPE_BOX;
-            ent->selectionCollider.box.min = glm::vec2( -64 );
-            ent->selectionCollider.box.max = glm::vec2( 64 );
+            ent->selectionCollider.box.min = glm::vec2( -32 );
+            ent->selectionCollider.box.max = glm::vec2( 32 );
 
             ent->hasCollision = true;
             ent->isCollisionStatic = true;
             ent->collisionCollider.type = COLLIDER_TYPE_BOX;
-            ent->collisionCollider.box.min = glm::vec2( -64 );
-            ent->collisionCollider.box.max = glm::vec2( 64 );
+            ent->collisionCollider.box.min = glm::vec2( -32 );
+            ent->collisionCollider.box.max = glm::vec2( 32 );
         }
 
         return ent;

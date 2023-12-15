@@ -109,7 +109,7 @@ namespace atto {
         Entity * SpawnEntity( EntityType type, i32 teamNumber );
         Entity * SpawnEntity( EntityType type, glm::vec2 pos, i32 teamNumber );
         Entity * SpawnEntityUnitWorker( glm::vec2 pos, i32 teamNumber );
-        Entity * SpawnEntityStructureHub( glm::vec2 pos, i32 teamNumber );
+        Entity * SpawnEntityTownhall( glm::vec2 pos, i32 teamNumber );
 
         ParticleEmiiter * SpawnParticleEmitter( glm::vec2 pos );
 
@@ -138,11 +138,12 @@ namespace atto {
         TextureResource * spr_BlueWorker_Firing_Muzzel = nullptr;
         TextureResource * spr_BlueWorker_Selection = nullptr;
         TextureResource * spr_RedWorker = nullptr;
-        TextureResource * spr_Structure_Hub = nullptr;
+        TextureResource * spr_Bld_Blue_Townhall = nullptr;
         TextureResource * spr_Particle_Grey1x1 = nullptr;
-        
+
         AudioResource *   snd_WorkerFire = nullptr;
         AudioResource *   snd_WorkerDeath = nullptr;
+        AudioResource *   snd_BackgroundMusic = nullptr;
 
         SprTileSheet      sprTileSheet = {};
     };
