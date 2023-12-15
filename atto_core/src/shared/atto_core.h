@@ -58,6 +58,29 @@ namespace atto {
         i32 bitDepth;
     };
 
+    struct StaticMeshResource {
+        SmallString name;
+        i32 vertexCount;
+        i32 indexCount;
+        i32 vertexStride;
+        i32 indexStride;
+    };
+
+    struct StaticMeshVertex {
+        glm::vec3 position;
+        glm::vec3 normal;
+        glm::vec2 uv;
+    };
+
+    struct StaticMeshData {
+        i32                 vertexCount;
+        StaticMeshVertex *  vertices;
+        i32                 indexCount;
+        u16 *               indices;
+
+        void Free();
+    };
+
     struct AudioSpeaker {
         u32         sourceHandle;
         i32         index;
@@ -72,6 +95,9 @@ namespace atto {
         SPRITE,
         TEXT,
         LINE,
+        
+        // 3D
+        PLANE,
     };
 
     struct DrawCommand {
@@ -104,30 +130,48 @@ namespace atto {
                     f32 fontSize;
                     FontHandle font;
                 } text;
+                struct {
+                    glm::vec3 center;
+                    glm::vec3 normal;
+                    glm::vec2 dim;
+                    glm::vec4 color;
+                } plane;
             };
         };
+    };
+
+    struct Camera {
+        glm::vec3 pos;
+        glm::vec3 dir;
+        f32 yfov;
+        f32 zNear;
+        f32 zFar;
     };
 
     class DrawContext {
         friend class Core;
         friend class WindowsCore;
     public:
-        void RenderDrawCircle( glm::vec2 pos, f32 radius, glm::vec4 colour = glm::vec4( 1 ) );
-        void RenderDrawRect( glm::vec2 bl, glm::vec2 tr, glm::vec4 colour = glm::vec4( 1 ) );
-        void RenderDrawRect( glm::vec2 center, glm::vec2 dim, f32 rot, const glm::vec4 & color = glm::vec4( 1 ) );
-        void RenderDrawLine( glm::vec2 start, glm::vec2 end, f32 thicc, const glm::vec4 & color = glm::vec4( 1 ) );
-        void RenderDrawSprite( TextureResource * texture, glm::vec2 center, f32 rot = 0.0f, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
-        void RenderDrawSpriteBL( TextureResource * texture, glm::vec2 bl, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
-        void RenderDrawText( FontHandle font, glm::vec2 tl, f32 fontSize, const char * text, glm::vec4 colour = glm::vec4( 1 ) );
-        void RenderDrawRectNDC( glm::vec2 bl, glm::vec2 tr, glm::vec4 colour = glm::vec4( 1 ) );
-        void RenderDrawSpriteNDC( TextureResource * texture, glm::vec2 center, f32 rot = 0.0f, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
-        void RenderDrawSpriteNDC_BL( TextureResource * texture, glm::vec2 bl, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
+        void SetCamera( Camera camera );
+
+        void DrawCircle( glm::vec2 pos, f32 radius, glm::vec4 colour = glm::vec4( 1 ) );
+        void DrawRect( glm::vec2 bl, glm::vec2 tr, glm::vec4 colour = glm::vec4( 1 ) );
+        void DrawRect( glm::vec2 center, glm::vec2 dim, f32 rot, const glm::vec4 & color = glm::vec4( 1 ) );
+        void DrawLine( glm::vec2 start, glm::vec2 end, f32 thicc, const glm::vec4 & color = glm::vec4( 1 ) );
+        void DrawSprite( TextureResource * texture, glm::vec2 center, f32 rot = 0.0f, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
+        void DrawSpriteBL( TextureResource * texture, glm::vec2 bl, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
+        void DrawText2D( FontHandle font, glm::vec2 tl, f32 fontSize, const char * text, glm::vec4 colour = glm::vec4( 1 ) );
+
+        void DrawPlane( glm::vec3 center, glm::vec3 normal, glm::vec2 dim, glm::vec4 colour = glm::vec4( 1 ) );
+
     private:
-        f32 mainSurfaceWidth;
-        f32 mainSurfaceHeight;
-        glm::vec2 cameraPos;
-        glm::mat4 cameraProjection;
-        glm::mat4 screenProjection;
+        glm::mat4       cameraProj;
+        glm::mat4       cameraView;
+
+        f32             mainSurfaceWidth;
+        f32             mainSurfaceHeight;
+        f32             mainAspect;
+        glm::mat4       screenProjection;
         FixedList<DrawCommand, 1024> drawList;
     };
 
@@ -169,29 +213,13 @@ namespace atto {
 
         f32                                 GetDeltaTime() const;
         f64                                 GetLastTime() const;
-
-        glm::vec2                           GetCameraPos();
-        void                                SetCameraPos( glm::vec2 pos );
-
+        Camera                              CreateDefaultCamera() const;
+        
         virtual TextureResource *           ResourceGetAndLoadTexture( const char * name ) = 0;
         virtual AudioResource *             ResourceGetAndLoadAudio( const char * name ) = 0;
         virtual FontHandle                  ResourceGetFont( const char * name ) = 0;
 
-        void                                UIBegin();
-        bool                                UIPushButton( const char * text, glm::vec2 center, glm::vec4 color = glm::vec4( 1 ) );
-        void                                UIEndAndRender();
-
-        glm::vec2                           ViewPosToScreenPos( glm::vec2 worldPos );
-        glm::vec2                           ScreenPosToViewPos( glm::vec2 screenPos );
-
-        glm::vec2                           ScreenPosToWorldPos( glm::vec2 screenPos );
-        glm::vec2                           WorldPosToScreenPos( glm::vec2 worldPos );
-
-        f32                                 ScreenLengthToWorldLength( f32 screenLength );
-        f32                                 WorldLengthToScreenLength( f32 worldLength );
-
         DrawContext *                       RenderGetDrawContext( i32 index );
-        virtual void                        RenderSetCamera( f32 width, f32 height ) = 0;
         virtual void                        RenderSubmit( DrawContext * dcxt, bool clearBackBuffers ) = 0;
 
         virtual AudioSpeaker                AudioPlay( AudioResource * audioResource, f32 volume = 1.0f, bool looping = false ) = 0;
@@ -220,7 +248,6 @@ namespace atto {
         bool                                InputMouseHasMoved();
         glm::vec2                           InputMousePosNDC();
         glm::vec2                           InputMousePosPixels();
-        glm::vec2                           InputMousePosWorld();
         FrameInput &                        InputGetFrameInput();
 
         virtual void                        WindowClose() = 0;
@@ -247,14 +274,9 @@ namespace atto {
         f64                 currentTime = 0.0f;
         f32                 deltaTime = 0.0f;
 
-        f32                 cameraWidth;
-        f32                 cameraHeight;
-        glm::vec2           cameraPos;
         f32                 mainSurfaceWidth;
         f32                 mainSurfaceHeight;
-        glm::vec4           viewport;
         glm::mat4           screenProjection;
-        glm::mat4           cameraProjection;
 
         u8 * thePermanentMemory = nullptr;
         u64 thePermanentMemorySize = 0;
@@ -270,9 +292,6 @@ namespace atto {
         void    MemoryClearPermanent();
         void    MemoryMakeTransient( u64 bytes );
         void    MemoryClearTransient();
-
-        void    GGPOStartSession( i32 local, i32 peer );
-        void    GGPOPoll();
 
         virtual u64  OsGetFileLastWriteTime( const char * fileName ) = 0;
         virtual void OsLogMessage( const char * message, u8 colour ) = 0;

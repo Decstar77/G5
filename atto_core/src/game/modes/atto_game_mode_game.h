@@ -5,50 +5,20 @@
 namespace atto {
     enum EntityType {
         ENTITY_TYPE_INVALID = 0,
-        ENTITY_TYPE_UNITS_BEGIN,
-        ENTITY_TYPE_UNIT_WORKER,
-        ENTITY_TYPE_UNITS_END,
-
-        ENTITY_TYPE_STRUCTURE_BEGIN,
-        ENTITY_TYPE_STRUCTURE_HUB,
-        ENTITY_TYPE_STRUCTURE_END,
-
-        ENTITY_TYPE_ENEMY,
+       
     };
+
+    constexpr static int    MAX_ENTITIES = 1024;
 
     struct Entity;
     typedef ObjectHandle<Entity> EntityHandle;
-    constexpr static int    MAX_ENTITIES = 1024;
-
-    struct ArrivalCircle;
-    typedef ObjectHandle<ArrivalCircle> ArrivalCircleHandle;
-    struct ArrivalCircle {
-        ArrivalCircleHandle id;
-        FixedList<EntityHandle, MAX_ENTITIES> ents;
-        i32 aliveHandleCount;
-        glm::vec2 pos;
-        f32 targetRad;
-        f32 slowRad;
-        f32 timeToTarget;
-    };
-
-    struct EntityTarget {
-        ArrivalCircleHandle     arrivalCircle;
-        EntityHandle            entity;
-        bool moving;
-    };
+    typedef FixedList<Entity *, MAX_ENTITIES> EntList;
 
     struct Entity {
         EntityHandle    id;
         EntityType      type;
-        glm::vec2       pos;
-        glm::vec2       vel;
-        f32             ori;
-
-        TextureResource *   spriteCurrent;
-        TextureResource *   spriteIdle;
-        TextureResource *   spriteFiring;
-        EntityTarget        target;
+        glm::vec3       pos;
+        glm::mat3       ori;
 
         f32                 fireRate;
         f32                 fireRateAccumulator;
@@ -64,7 +34,7 @@ namespace atto {
 
         Collider selectionCollider;
         Collider collisionCollider;
-        
+
         bool selected;
 
         i32 teamNumber;
@@ -72,31 +42,6 @@ namespace atto {
         Collider GetSelectionColliderWorld() const;
         Collider GetCollisionCircleWorld() const;
     };
-
-    struct Particle {
-        glm::vec2 pos;
-        glm::vec2 vel;
-        f32       ori;
-        f32       oriVel;
-        bool      alive;
-        f32       life; // In seconds
-        f32       scale;
-        f32       scaleRate;
-        f32       alpha;
-    };
-    
-    struct ParticleEmiiter;
-    typedef ObjectHandle<ParticleEmiiter> ParticleEmiiterHandle;
-    struct ParticleEmiiter {
-        ParticleEmiiterHandle handle;
-        FixedList<Particle, 128> parts;
-    };
-
-    struct SprTileSheet {
-        TextureResource * tile01;
-    };
-
-    typedef FixedList<Entity *, MAX_ENTITIES> EntList;
 
     class GameModeGame : public GameMode {
     public:
@@ -106,45 +51,7 @@ namespace atto {
         void Shutdown( Core * core ) override;
 
     public:
-        Entity * SpawnEntity( EntityType type, i32 teamNumber );
-        Entity * SpawnEntity( EntityType type, glm::vec2 pos, i32 teamNumber );
-        Entity * SpawnEntityUnitWorker( glm::vec2 pos, i32 teamNumber );
-        Entity * SpawnEntityTownhall( glm::vec2 pos, i32 teamNumber );
-
-        ParticleEmiiter * SpawnParticleEmitter( glm::vec2 pos );
-
-        bool     SelectionHasType( EntityType type );
-
-    public:
+        Camera                                  playerCamera = {};
         f32                                     dtAccumulator = 0.0f;
-        i32                                     playerTeamNumber = 1;
-        FixedObjectPool<Entity, MAX_ENTITIES>   entityPool = {};
-
-        EntList                                 activeEntities = {};   // These lists are updated once per Update call. So most likely once per frame.
-        EntList                                 selectedEntities = {}; // These lists are updated once per Update call. So most likely once per frame.
-        FixedList<ParticleEmiiter *, 512>       particleEmitters = {}; // These lists are updated once per Update call. So most likely once per frame.
-
-        bool                                    selectionDragging = false;
-        glm::vec2                               selectionStartDragPos = glm::vec2( 0 );
-        glm::vec2                               selectionEndDragPos = glm::vec2( 0 );
-
-        FixedObjectPool<ArrivalCircle, MAX_ENTITIES>    arrivalCirclePool = {};
-        FixedObjectPool<ParticleEmiiter, 512>           particleEmitterPool = {};
-
-    public: 
-        // Resources
-        TextureResource * spr_BlueWorker_Idle = nullptr;
-        TextureResource * spr_BlueWorker_Firing = nullptr;
-        TextureResource * spr_BlueWorker_Firing_Muzzel = nullptr;
-        TextureResource * spr_BlueWorker_Selection = nullptr;
-        TextureResource * spr_RedWorker = nullptr;
-        TextureResource * spr_Bld_Blue_Townhall = nullptr;
-        TextureResource * spr_Particle_Grey1x1 = nullptr;
-
-        AudioResource *   snd_WorkerFire = nullptr;
-        AudioResource *   snd_WorkerDeath = nullptr;
-        AudioResource *   snd_BackgroundMusic = nullptr;
-
-        SprTileSheet      sprTileSheet = {};
     };
 }

@@ -1,6 +1,7 @@
 #include "../shared/atto_client.h"
 #include "../game/atto_game.h"
 #include "../shared/atto_colors.h"
+#include "../shared/atto_mesh_generation.h"
 #include "../content/atto_content.h"
 
 #include "atto_core_windows.h"
@@ -141,12 +142,13 @@ namespace atto {
         glfwGetFramebufferSize( window, &w, &h );
 
         //RenderSetCamera( 320, 180 );
-        RenderSetCamera( 640, 360 );
+        //RenderSetCamera( 640, 360 );
         GLResetSurface( (f32)w, (f32)h );
 
         GLInitializeShapeRendering();
         GLInitializeSpriteRendering();
         GLInitializeTextRendering();
+        GLInitializeUnlitModelRendering();
 
         ALInitialize();
 
@@ -211,10 +213,46 @@ namespace atto {
         delete client;
     }
 
-    void WindowsCore::RenderSetCamera( f32 width, f32 height ) {
-        cameraWidth = width;
-        cameraHeight = height;
-        GLResetSurface( viewport.z, viewport.w );
+    StaticMeshResource * WindowsCore::ResourceMeshCreate( const char * name, StaticMeshData data ) {
+        const i32 meshResourceCount = resources.meshes.GetCount();
+        for( i32 i = 0; i < meshResourceCount; i++ ) {
+            StaticMeshResource & meshResource = resources.meshes[ i ];
+            if( meshResource.name == name ) {
+                INVALID_CODE_PATH;
+                return nullptr;
+            }
+        }
+
+        Win32StaticMeshResource meshResource = {};
+        meshResource.name = name;
+        meshResource.vertexCount = data.vertexCount;
+        meshResource.vertexStride = sizeof( StaticMeshVertex );
+        meshResource.indexStride = sizeof( u16 );
+        meshResource.indexCount = data.indexCount;
+        
+        glGenVertexArrays( 1, &meshResource.vao );
+        glGenBuffers( 1, &meshResource.vbo );
+        glGenBuffers( 1, &meshResource.ibo );
+
+        glBindVertexArray( meshResource.vao );
+        glBindBuffer( GL_ARRAY_BUFFER, meshResource.vbo );
+        glBufferData( GL_ARRAY_BUFFER, data.vertexCount * sizeof( StaticMeshVertex ), data.vertices, GL_STATIC_DRAW );
+
+        glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, meshResource.ibo );
+        glBufferData( GL_ELEMENT_ARRAY_BUFFER, data.indexCount * sizeof( u16 ), data.indices, GL_STATIC_DRAW );
+
+        glEnableVertexAttribArray( 0 );
+        glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, sizeof( StaticMeshVertex ), (void *)0 );
+
+        glEnableVertexAttribArray( 1 );
+        glVertexAttribPointer( 1, 3, GL_FLOAT, GL_FALSE, sizeof( StaticMeshVertex ), (void *)offsetof( StaticMeshVertex, normal ) );
+
+        glEnableVertexAttribArray( 2 );
+        glVertexAttribPointer( 2, 2, GL_FLOAT, GL_FALSE, sizeof( StaticMeshVertex ), (void *)offsetof( StaticMeshVertex, uv ) );
+
+        glBindVertexArray( 0 );
+
+        return resources.meshes.Add( meshResource );
     }
 
     void WindowsCore::RenderSubmit( DrawContext * dcxt, bool clearBackBuffers ) {
@@ -232,8 +270,8 @@ namespace atto {
             switch( cmd.type ) {
                 case DrawCommandType::CIRCLE:
                 {
-                    cmd.circle.c = WorldPosToScreenPos( cmd.circle.c );
-                    cmd.circle.r = WorldLengthToScreenLength( cmd.circle.r );
+                    //cmd.circle.c = WorldPosToScreenPos( cmd.circle.c );
+                    //cmd.circle.r = WorldLengthToScreenLength( cmd.circle.r );
 
                     f32 x1 = cmd.circle.c.x - cmd.circle.r;
                     f32 y1 = cmd.circle.c.y - cmd.circle.r;
@@ -254,8 +292,7 @@ namespace atto {
                     GLShaderProgramSetMat4( "p", screenProjection );
                     GLShaderProgramSetInt( "mode", 1 );
                     GLShaderProgramSetVec4( "color", cmd.color );
-                    GLShaderProgramSetVec4( "shapePosAndSize",
-                        glm::vec4( cmd.circle.c.x, (f32)viewport.w - cmd.circle.c.y, cmd.circle.r, cmd.circle.r ) );
+                    //GLShaderProgramSetVec4( "shapePosAndSize", glm::vec4( cmd.circle.c.x, (f32)viewport.w - cmd.circle.c.y, cmd.circle.r, cmd.circle.r ) );
                     GLShaderProgramSetVec4( "shapeRadius",
                         glm::vec4( cmd.circle.r - 2, 0, 0, 0 ) ); // The 4 here is to stop the circle from being cut of from the edges
 
@@ -322,7 +359,22 @@ namespace atto {
                 case DrawCommandType::TEXT:
                 {
                     RenderDrawCommandText( cmd );
-                
+                } break;
+                case DrawCommandType::PLANE:
+                {
+                    // enable backface culling
+                    glEnable( GL_CULL_FACE );
+                    glCullFace( GL_FRONT );
+                    glFrontFace( GL_CCW );
+
+                    GLShaderProgramBind( staticMeshUnlitProgram );
+                    GLShaderProgramSetVec4( "color", glm::vec4( 1 ) );
+                    GLShaderProgramSetMat4( "pvm", glm::mat4( 1 ) );
+                    
+                    glBindVertexArray( staticMeshPlane->vao );
+                    glDrawElements( GL_TRIANGLES, staticMeshPlane->indexCount, GL_UNSIGNED_SHORT, 0 );
+                    glBindVertexArray( 0 );
+
                 } break;
                 default:
                 {
@@ -459,7 +511,7 @@ namespace atto {
             }
         )";
 
-#if 1
+#if 0
         const char * fragmentShaderSource = R"(
             #version 330 core
             out vec4 FragColor;
@@ -558,9 +610,51 @@ namespace atto {
         )";
 #endif
 
-        VertexLayoutSprite sprite = {};
         spriteProgram = GLCreateShaderProgram( vertexShaderSource, fragmentShaderSource );
+        
+        VertexLayoutSprite sprite = {};
         spriteVertexBuffer = GLCreateVertexBuffer( &sprite, 6, nullptr, true );
+    }
+
+    void WindowsCore::GLInitializeUnlitModelRendering() {
+        const char * vertexShaderSource = R"(
+            #version 330 core
+            layout (location = 0) in vec3 aPos;
+            layout (location = 1) in vec3 aNormal;
+            layout (location = 2) in vec2 aTexCoords;
+
+            out vec2 TexCoords;
+
+            uniform mat4 pvm;
+
+            void main()
+            {
+                TexCoords = aTexCoords;
+                gl_Position = pvm * vec4(aPos, 1.0);
+            }
+        )";
+
+
+        const char * fragmentShaderSource = R"(
+            #version 330 core
+            out vec4 FragColor;
+
+            in vec2 TexCoords;
+
+            uniform sampler2D texture0;
+            uniform vec4 color;
+
+            void main()
+            {
+                //FragColor = texture(texture0, TexCoords) * color;
+                FragColor = color;
+            }
+        )";
+
+        staticMeshUnlitProgram = GLCreateShaderProgram( vertexShaderSource, fragmentShaderSource );
+        staticMeshPlane     = (Win32StaticMeshResource *)ResourceMeshCreate( "Plane",   StaticMeshGeneration::CreateQuad( -1, 1, 2.0f, 2.0f, 0.0f ) );
+        staticMeshCube      = (Win32StaticMeshResource *)ResourceMeshCreate( "Cube",    StaticMeshGeneration::CreateBox( 1, 1, 1, 0 ) );
+        staticMeshSphere    = (Win32StaticMeshResource *)ResourceMeshCreate( "Sphere",  StaticMeshGeneration::CreateSphere( 1, 8, 8 ) );
     }
 
     void WindowsCore::OsParseStartArgs( int argc, char ** argv ) {
@@ -800,22 +894,24 @@ namespace atto {
 
     void WindowsCore::GLResetSurface( f32 w, f32 h ) {
         // Maintain aspect ratio with black bars
-        f32 ratioX = (f32)w / (f32)cameraWidth;
-        f32 ratioY = (f32)h / (f32)cameraHeight;
-        f32 ratio = ratioX < ratioY ? ratioX : ratioY;
+        //f32 ratioX = (f32)w / (f32)cameraWidth;
+        //f32 ratioY = (f32)h / (f32)cameraHeight;
+        //f32 ratio = ratioX < ratioY ? ratioX : ratioY;
+        //
+        //i32 viewWidth = (i32)( cameraWidth * ratio );
+        //i32 viewHeight = (i32)( cameraHeight * ratio );
+        //
+        //i32 viewX = (i32)( ( w - cameraWidth * ratio ) / 2 );
+        //i32 viewY = (i32)( ( h - cameraHeight * ratio ) / 2 );
+        //
+        //glViewport( viewX, viewY, viewWidth, viewHeight );
+        //
+        //mainSurfaceWidth = w;
+        //mainSurfaceHeight = h;
+        //viewport = glm::vec4( viewX, viewY, viewWidth, viewHeight );
+        //cameraProjection = glm::ortho( 0.0f, (f32)cameraWidth, 0.0f, (f32)cameraHeight, -1.0f, 1.0f );
 
-        i32 viewWidth = (i32)( cameraWidth * ratio );
-        i32 viewHeight = (i32)( cameraHeight * ratio );
-
-        i32 viewX = (i32)( ( w - cameraWidth * ratio ) / 2 );
-        i32 viewY = (i32)( ( h - cameraHeight * ratio ) / 2 );
-
-        glViewport( viewX, viewY, viewWidth, viewHeight );
-
-        mainSurfaceWidth = w;
-        mainSurfaceHeight = h;
-        viewport = glm::vec4( viewX, viewY, viewWidth, viewHeight );
-        cameraProjection = glm::ortho( 0.0f, (f32)cameraWidth, 0.0f, (f32)cameraHeight, -1.0f, 1.0f );
+        glViewport( 0, 0, (i32)w, (i32)h );
         screenProjection = glm::ortho( 0.0f, (f32)w, (f32)h, 0.0f, -1.0f, 1.0f );
     }
 
@@ -850,6 +946,24 @@ namespace atto {
         return (i32)sizeof( SpriteVertex );
     }
 
+    void VertexLayoutStaticModel::Layout() {
+        glEnableVertexAttribArray( 0 );
+        glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, sizeof( StaticMeshVertex ), (void *)0 );
+        
+        glEnableVertexAttribArray( 1 );
+        glVertexAttribPointer( 1, 3, GL_FLOAT, GL_FALSE, sizeof( StaticMeshVertex ), (void *)offsetof( StaticMeshVertex, normal ) );
+        
+        glEnableVertexAttribArray( 2 );
+        glVertexAttribPointer( 2, 2, GL_FLOAT, GL_FALSE, sizeof( StaticMeshVertex ), (void *)offsetof( StaticMeshVertex, uv ) );
+    }
+
+    i32 VertexLayoutStaticModel::SizeBytes() {
+        return (i32)sizeof( StaticMeshVertex );
+    }
+
+    i32 VertexLayoutStaticModel::StrideBytes() {
+        return (i32)sizeof( StaticMeshVertex );
+    }
 
 }
 

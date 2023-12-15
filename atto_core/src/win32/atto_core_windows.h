@@ -69,6 +69,13 @@ namespace atto {
         i32 StrideBytes() override;
     };
 
+    class VertexLayoutStaticModel : public VertexLayout {
+        
+        void Layout() override;
+        i32 SizeBytes() override;
+        i32 StrideBytes() override;
+    };
+
     struct Win32TextureResource : public TextureResource {
         u32 handle;
     };
@@ -77,9 +84,16 @@ namespace atto {
         u32 handle;
     };
 
+    struct Win32StaticMeshResource : public StaticMeshResource {
+        u32 vao;
+        u32 vbo;
+        u32 ibo;
+    };
+
     struct ResourceRegistry {
         FixedList<Win32TextureResource, 1024>       textures;
         FixedList<Win32AudioResource, 1024>         audios;
+        FixedList<Win32StaticMeshResource, 1024>          meshes;
         FontContext                                 fontContext;
     };
 
@@ -91,9 +105,10 @@ namespace atto {
         virtual AudioResource*      ResourceGetAndLoadAudio(const char* name) override;
         virtual FontHandle          ResourceGetFont( const char * name ) override;
 
+        StaticMeshResource *        ResourceMeshCreate( const char * name, StaticMeshData data );
+
         virtual AudioSpeaker        AudioPlay(AudioResource* audioResource, f32 volume = 1.0f, bool looping = false) override;
 
-        void                        RenderSetCamera( f32 width, f32 height ) override;
         void                        RenderSubmit( DrawContext * dcxt, bool clearBackBuffers ) override;
 
         void WindowClose() override;
@@ -105,7 +120,7 @@ namespace atto {
         static void                 DEBUG_ReadTextFile( const char * path, char * text, i32 maxLen );
 
     public:
-        ResourceRegistry    resources = {};
+        ResourceRegistry            resources = {};
 
         ShaderProgram * boundProgram;
 
@@ -114,6 +129,12 @@ namespace atto {
         ShaderProgram               spriteProgram;
         VertexBuffer                spriteVertexBuffer;
         
+        ShaderProgram                     staticMeshUnlitProgram;
+        Win32StaticMeshResource *         staticMeshPlane;
+        Win32StaticMeshResource *         staticMeshCube;
+        Win32StaticMeshResource *         staticMeshSphere;
+        Win32StaticMeshResource *         staticMeshCylinder;
+
         ALCdevice*                  alDevice = nullptr;
         ALCcontext*                 alContext = nullptr;
         FixedList<AudioSpeaker, 32> alSpeakers;
@@ -166,6 +187,7 @@ namespace atto {
         void            GLInitializeShapeRendering();
         void            GLInitializeSpriteRendering();
         void            GLInitializeTextRendering();
+        void            GLInitializeUnlitModelRendering();
 
         void            GLFontsRenderCreate( i32 width, i32 height );
         void            GLFontsRenderUpdate( i32 * rect, const byte * data );

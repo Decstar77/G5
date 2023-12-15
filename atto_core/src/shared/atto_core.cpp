@@ -12,118 +12,58 @@ namespace atto {
         return currentTime;
     }
 
-    glm::vec2 Core::GetCameraPos() {
-        return cameraPos;
+    Camera Core::CreateDefaultCamera() const {
+        Camera camera = {};
+        camera.pos = glm::vec3( 0, 0, 0 );
+        camera.dir = glm::vec3( 0, 0, -1 );
+        camera.yfov = glm::radians( 45.0f );
+        camera.zNear = 0.1f;
+        camera.zFar = 250.0f;
+        return camera;
     }
-
-    void Core::SetCameraPos( glm::vec2 pos ) {
-        cameraPos = pos;
-    }
-
-    glm::vec2 Core::ViewPosToScreenPos( glm::vec2 world ) {
-        // @NOTE: Convert to [ 0, 1] not NDC[-1, 1] because 
-        // @NOTE: we're doing a small optimization here by not doing the inverse of the camera matrix
-        // @NOTE: but instead just using the camera width and height
-
-        f32 l = viewport.x;
-        f32 r = viewport.x + viewport.z;
-        f32 nx = world.x / cameraWidth;
-        f32 sx = l + nx * ( r - l );
-
-        f32 b = viewport.y;
-        f32 t = viewport.y + viewport.w;
-        f32 ny = world.y / cameraHeight;
-        f32 sy = b + ny * ( t - b );
-
-        sy = mainSurfaceHeight - sy;
-
-        return glm::vec2( sx, sy );
-    }
-
-    glm::vec2 Core::ScreenPosToViewPos( glm::vec2 screenPos ) {
-        screenPos.y = mainSurfaceHeight - screenPos.y;
-
-        // @NOTE: Convert to [ 0, 1] not NDC[-1, 1] because 
-        // @NOTE: we're doing a small optimization here by not doing the inverse of the camera matrix
-        // @NOTE: but instead just using the camera width and height
-
-        f32 l = viewport.x;
-        f32 r = viewport.x + viewport.z;
-        f32 nx = ( screenPos.x - l ) / ( r - l );
-
-        f32 b = viewport.y;
-        f32 t = viewport.y + viewport.w;
-        f32 ny = ( screenPos.y - b ) / ( t - b );
-
-        f32 wx = nx * cameraWidth;
-        f32 wy = ny * cameraHeight;
-
-        return glm::vec2( wx, wy );
-    }
-
-    glm::vec2 Core::ScreenPosToWorldPos( glm::vec2 screenPos ) {
-        glm::vec2 viewPos = ScreenPosToViewPos( screenPos );
-        return viewPos + cameraPos;
-    }
-
-    glm::vec2 Core::WorldPosToScreenPos( glm::vec2 worldPos ) {
-        glm::vec2 viewPos = worldPos - cameraPos;
-        return ViewPosToScreenPos( viewPos );
-    }
-
-    f32 Core::ScreenLengthToWorldLength( f32 screenLength ) {
-        return ( screenLength / viewport.z ) * cameraWidth;
-    }
-
-    f32 Core::WorldLengthToScreenLength( f32 worldLength ) {
-        return ( worldLength / cameraWidth ) * viewport.z;
-    }
-
 
     DrawContext * Core::RenderGetDrawContext( i32 index ) {
         DrawContext * d = &drawContexts[ index ];
         ZeroStructPtr( d );
-        d->cameraPos = cameraPos;;
-        d->cameraProjection = cameraProjection;
         d->screenProjection = screenProjection;
         d->mainSurfaceHeight = mainSurfaceHeight;
         d->mainSurfaceWidth = mainSurfaceWidth;
+        d->mainAspect = mainSurfaceWidth / mainSurfaceHeight;
         return d;
     }
 
-    void DrawContext::RenderDrawCircle( glm::vec2 pos, f32 radius, glm::vec4 colour /*= glm::vec4(1)*/ ) {
+    void DrawContext::SetCamera( Camera camera ) {
+        cameraView = glm::lookAt( camera.pos, camera.pos + camera.dir, glm::vec3( 0, 1, 0 ) );
+        cameraProj = glm::perspective( camera.yfov, mainAspect, camera.zNear, camera.zFar );
+    }
+
+    void DrawContext::DrawCircle( glm::vec2 pos, f32 radius, glm::vec4 colour /*= glm::vec4(1)*/ ) {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::CIRCLE;
-        cmd.projection = cameraProjection;
+        cmd.projection = screenProjection;
         cmd.color = colour;
-        cmd.circle.c = pos - cameraPos;
+        cmd.circle.c = pos;
         cmd.circle.r = radius;
         drawList.Add( cmd );
     }
 
-    void DrawContext::RenderDrawRect( glm::vec2 bl, glm::vec2 tr, glm::vec4 colour /*= glm::vec4(1)*/ ) {
+    void DrawContext::DrawRect( glm::vec2 bl, glm::vec2 tr, glm::vec4 colour /*= glm::vec4(1)*/ ) {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::RECT;
-        cmd.projection = cameraProjection;
+        cmd.projection = screenProjection;
         cmd.color = colour;
         cmd.rect.bl = bl;
         cmd.rect.br = glm::vec2( tr.x, bl.y );
         cmd.rect.tr = tr;
         cmd.rect.tl = glm::vec2( bl.x, tr.y );
 
-        // @NOTE: We're doing this here because we want to do it in view space
-        cmd.rect.bl -= cameraPos;
-        cmd.rect.tr -= cameraPos;
-        cmd.rect.br -= cameraPos;
-        cmd.rect.tl -= cameraPos;
-
         drawList.Add( cmd );
     }
 
-    void DrawContext::RenderDrawRect( glm::vec2 center, glm::vec2 dim, f32 rot, const glm::vec4 & color /*= glm::vec4(1)*/ ) {
+    void DrawContext::DrawRect( glm::vec2 center, glm::vec2 dim, f32 rot, const glm::vec4 & color /*= glm::vec4(1)*/ ) {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::RECT;
-        cmd.projection = cameraProjection;
+        cmd.projection = screenProjection;
         cmd.color = color;
 
         cmd.rect.bl = -dim / 2.0f;
@@ -137,15 +77,15 @@ namespace atto {
         cmd.rect.br = rotationMatrix * cmd.rect.br;
         cmd.rect.tl = rotationMatrix * cmd.rect.tl;
 
-        cmd.rect.bl += center - cameraPos;
-        cmd.rect.tr += center - cameraPos;
-        cmd.rect.br += center - cameraPos;
-        cmd.rect.tl += center - cameraPos;
+        cmd.rect.bl += center;
+        cmd.rect.tr += center;
+        cmd.rect.br += center;
+        cmd.rect.tl += center;
 
         drawList.Add( cmd );
     }
 
-    void DrawContext::RenderDrawLine( glm::vec2 start, glm::vec2 end, f32 thicc, const glm::vec4 & color /*= glm::vec4(1)*/ ) {
+    void DrawContext::DrawLine( glm::vec2 start, glm::vec2 end, f32 thicc, const glm::vec4 & color /*= glm::vec4(1)*/ ) {
         //glm::vec2 direction = glm::normalize( end - start );
         //glm::vec2 perpendicular( direction.y, -direction.x );
 
@@ -170,70 +110,14 @@ namespace atto {
         //drawCommands.drawList.Add( cmd );
     }
 
-    void DrawContext::RenderDrawSprite( TextureResource * texture, glm::vec2 center, f32 rot, glm::vec2 size, glm::vec4 colour ) {
+    void DrawContext::DrawSprite( TextureResource * texture, glm::vec2 center, f32 rot, glm::vec2 size, glm::vec4 colour ) {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::SPRITE;
         cmd.color = colour;
-        cmd.projection = cameraProjection;
+        cmd.projection = screenProjection;
         cmd.sprite.textureRes = texture;
 
         glm::vec2 dim = glm::vec2( texture->width, texture->height ) * size;
-        cmd.rect.bl = -dim / 2.0f;
-        cmd.rect.tr = dim / 2.0f;
-        cmd.rect.br = glm::vec2( cmd.rect.tr.x, cmd.rect.bl.y );
-        cmd.rect.tl = glm::vec2( cmd.rect.bl.x, cmd.rect.tr.y );
-
-        glm::mat2 rotationMatrix = glm::mat2( cos( rot ), -sin( rot ), sin( rot ), cos( rot ) );
-        cmd.rect.bl = rotationMatrix * cmd.rect.bl;
-        cmd.rect.tr = rotationMatrix * cmd.rect.tr;
-        cmd.rect.br = rotationMatrix * cmd.rect.br;
-        cmd.rect.tl = rotationMatrix * cmd.rect.tl;
-
-        cmd.rect.bl += center - cameraPos;
-        cmd.rect.tr += center - cameraPos;
-        cmd.rect.br += center - cameraPos;
-        cmd.rect.tl += center - cameraPos;
-
-        drawList.Add( cmd );
-    }
-
-    void DrawContext::RenderDrawSpriteBL( TextureResource * texture, glm::vec2 bl, glm::vec2 size /*= glm::vec2( 1 )*/, glm::vec4 colour /*= glm::vec4( 1 ) */ ) {
-        glm::vec2 dim = glm::vec2( texture->width, texture->height );
-        RenderDrawSprite( texture, bl + dim / 2.0f * size, 0.0f, size, colour );
-    }
-
-    void DrawContext::RenderDrawText( FontHandle font, glm::vec2 bl, f32 fontSize, const char * text, glm::vec4 colour /*= glm::vec4( 1 ) */ ) {
-        DrawCommand cmd = {};
-        cmd.type = DrawCommandType::TEXT;
-        cmd.color = colour;
-        cmd.text.font = font;
-        cmd.text.text = text;
-        cmd.text.bl = bl;
-        cmd.text.fontSize = fontSize;
-
-        drawList.Add( cmd );
-    }
-
-    void DrawContext::RenderDrawRectNDC( glm::vec2 bl, glm::vec2 tr, glm::vec4 colour /*= glm::vec4( 1 ) */ ) {
-        DrawCommand cmd = {};
-        cmd.type = DrawCommandType::RECT;
-        cmd.projection = glm::mat4( 1 );
-        cmd.color = colour;
-        cmd.rect.bl = bl;
-        cmd.rect.br = glm::vec2( tr.x, bl.y );
-        cmd.rect.tr = tr;
-        cmd.rect.tl = glm::vec2( bl.x, tr.y );
-        drawList.Add( cmd );
-    }
-
-    void DrawContext::RenderDrawSpriteNDC( TextureResource * texture, glm::vec2 center, f32 rot /*= 0.0f*/, glm::vec2 size /*= glm::vec2( 1 )*/, glm::vec4 colour /*= glm::vec4( 1 ) */ ) {
-        DrawCommand cmd = {};
-        cmd.type = DrawCommandType::SPRITE;
-        cmd.color = colour;
-        cmd.projection = glm::mat4( 1 );
-        cmd.sprite.textureRes = texture;
-
-        glm::vec2 dim = glm::vec2( texture->width, texture->height ) * size / glm::vec2( mainSurfaceWidth, mainSurfaceHeight );
         cmd.rect.bl = -dim / 2.0f;
         cmd.rect.tr = dim / 2.0f;
         cmd.rect.br = glm::vec2( cmd.rect.tr.x, cmd.rect.bl.y );
@@ -253,9 +137,32 @@ namespace atto {
         drawList.Add( cmd );
     }
 
-    void DrawContext::RenderDrawSpriteNDC_BL( TextureResource * texture, glm::vec2 bl, glm::vec2 size /*= glm::vec2( 1 )*/, glm::vec4 colour /*= glm::vec4( 1 ) */ ) {
-        glm::vec2 dim = glm::vec2( texture->width, texture->height ) / glm::vec2( mainSurfaceWidth, mainSurfaceHeight );
-        RenderDrawSpriteNDC( texture, bl + dim / 2.0f * size, 0.0f, size, colour );
+    void DrawContext::DrawSpriteBL( TextureResource * texture, glm::vec2 bl, glm::vec2 size /*= glm::vec2( 1 )*/, glm::vec4 colour /*= glm::vec4( 1 ) */ ) {
+        glm::vec2 dim = glm::vec2( texture->width, texture->height );
+        DrawSprite( texture, bl + dim / 2.0f * size, 0.0f, size, colour );
+    }
+
+    void DrawContext::DrawText2D( FontHandle font, glm::vec2 bl, f32 fontSize, const char * text, glm::vec4 colour /*= glm::vec4( 1 ) */ ) {
+        DrawCommand cmd = {};
+        cmd.type = DrawCommandType::TEXT;
+        cmd.color = colour;
+        cmd.text.font = font;
+        cmd.text.text = text;
+        cmd.text.bl = bl;
+        cmd.text.fontSize = fontSize;
+
+        drawList.Add( cmd );
+    }
+
+    void DrawContext::DrawPlane( glm::vec3 center, glm::vec3 normal, glm::vec2 dim, glm::vec4 colour /*= glm::vec4( 1 ) */ ) {
+        DrawCommand cmd = {};
+        cmd.type = DrawCommandType::PLANE;
+        cmd.color = colour;
+        cmd.plane.center = center;
+        cmd.plane.normal = normal;
+        cmd.plane.dim = dim;
+
+        drawList.Add( cmd );
     }
 
     void Core::NetConnect() {
@@ -352,10 +259,6 @@ namespace atto {
         return input.mousePosPixels;
     }
 
-    glm::vec2 Core::InputMousePosWorld() {
-        return ScreenPosToWorldPos( input.mousePosPixels );
-    }
-
     FrameInput & Core::InputGetFrameInput() {
         return input;
     }
@@ -438,7 +341,14 @@ namespace atto {
     //    return glm::vec2(win.x, win.y);
     //}
 
-
+    void StaticMeshData::Free() {
+        if( vertices != nullptr ) {
+            free( vertices );
+        }
+        if( indices != nullptr ) {
+            free( indices );
+        }
+    }
 
 }
 
