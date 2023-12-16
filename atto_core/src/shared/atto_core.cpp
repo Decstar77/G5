@@ -32,9 +32,9 @@ namespace atto {
         return d;
     }
 
-    void DrawContext::SetCamera( Camera camera ) {
-        cameraView = glm::lookAt( camera.pos, camera.pos + camera.dir, glm::vec3( 0, 1, 0 ) );
-        cameraProj = glm::perspective( camera.yfov, mainAspect, camera.zNear, camera.zFar );
+    void DrawContext::SetCamera( glm::mat4 v, f32 yfov, f32 zNear, f32 zFar ) {
+        cameraView = v;
+        cameraProj = glm::perspective( glm::radians(yfov), mainAspect, zNear, zFar );
     }
 
     void DrawContext::DrawCircle( glm::vec2 pos, f32 radius, glm::vec4 colour /*= glm::vec4(1)*/ ) {
@@ -257,6 +257,10 @@ namespace atto {
 
     glm::vec2 Core::InputMousePosPixels() {
         return input.mousePosPixels;
+    }
+
+    glm::vec2 Core::InputMouseDeltaPixels() {
+        return input.mouseDeltaPixels;
     }
 
     FrameInput & Core::InputGetFrameInput() {

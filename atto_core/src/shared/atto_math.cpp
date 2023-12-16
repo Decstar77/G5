@@ -7,7 +7,7 @@ namespace atto {
         return distSqrd < radSum * radSum;
     }
 
-    bool Circle::Collision( const Circle & other, Manifold & manifold ) const {
+    bool Circle::Collision( const Circle & other, Manifold2D & manifold ) const {
         glm::vec2 normal = other.pos - pos;
         f32 dist = glm::length( normal );
         f32 radSum = rad + other.rad;
@@ -92,7 +92,7 @@ namespace atto {
         return distSqrd < other.rad * other.rad;
     }
 
-    bool BoxBounds::Collision( const BoxBounds & other, Manifold & manifold ) const {
+    bool BoxBounds::Collision( const BoxBounds & other, Manifold2D & manifold ) const {
         if( Intersects( other ) ) {
             f32 xOverlap = glm::min( max.x, other.max.x ) - glm::max( min.x, other.min.x );
             f32 yOverlap = glm::min( max.y, other.max.y ) - glm::max( min.y, other.min.y );
@@ -124,7 +124,7 @@ namespace atto {
         return false;
     }
 
-    bool BoxBounds::Collision( const Circle & circle, Manifold & manifold ) const {
+    bool BoxBounds::Collision( const Circle & circle, Manifold2D & manifold ) const {
           // Calculate the closest point on the box to the circle
         glm::vec2 closestPoint = glm::clamp( circle.pos, min, max );
 
@@ -165,7 +165,7 @@ namespace atto {
     }
 
 
-    void Collider::Translate( const glm::vec2 & translation ) {
+    void Collider2D::Translate( const glm::vec2 & translation ) {
         switch( type ) {
             case COLLIDER_TYPE_CIRCLE: circle.pos += translation; return;
             case COLLIDER_TYPE_BOX: box.Translate( translation ); return;
@@ -173,7 +173,7 @@ namespace atto {
         Assert( false );
     }
 
-    bool Collider::Contains( const glm::vec2 & point ) const {
+    bool Collider2D::Contains( const glm::vec2 & point ) const {
         switch( type ) {
             case COLLIDER_TYPE_CIRCLE: return circle.Contains( point );
             case COLLIDER_TYPE_BOX: return box.Contains( point );
@@ -183,7 +183,7 @@ namespace atto {
     }
 
 
-    bool Collider::Intersects( const Collider & other ) const {
+    bool Collider2D::Intersects( const Collider2D & other ) const {
         switch( type ) {
             case COLLIDER_TYPE_CIRCLE:
             {
@@ -218,8 +218,7 @@ namespace atto {
         return false;
     }
 
-
-    bool Collider::Collision( const Collider & other, Manifold & manifold ) const {
+    bool Collider2D::Collision( const Collider2D & other, Manifold2D & manifold ) const {
         switch( type ) {
             case COLLIDER_TYPE_CIRCLE:
             {
@@ -254,6 +253,81 @@ namespace atto {
 
         Assert( false );
         return false;
+    }
+
+    inline bool IsPointInsideTriangle( Collider triangle, glm::vec3 point ) {
+        glm::vec3 a = triangle.tri.p1 - point;
+        glm::vec3 b = triangle.tri.p2 - point;
+        glm::vec3 c = triangle.tri.p3 - point;
+
+        glm::vec3 u = glm::cross( b, c );
+        glm::vec3 v = glm::cross( c, a );
+        glm::vec3 w = glm::cross( a, b );
+
+        f32 d = glm::dot( u, v );
+        f32 e = glm::dot( u, w );
+
+        bool result = ( d >= 0.0f && e >= 0.0f );
+
+        return result;
+    }
+
+    glm::vec3 ClosestPoint_Sphere( glm::vec3 c, f32 r, glm::vec3 p ) {
+        glm::vec3 d = p - c;
+        glm::vec3 result = c + ( glm::normalize( d ) * r );
+        return result;
+    }
+
+    glm::vec3 ClosestPoint_Plane( glm::vec3 c, glm::vec3 n, glm::vec3 p ) {
+        f32 dot = glm::dot( n, p );
+        f32 d = glm::dot( n, c );
+        f32 dist = ( dot - d );
+        glm::vec3 result = p - dist * n;
+        return result;
+    }
+
+    glm::vec3 ClosestPoint_LineSegment( glm::vec3 a, glm::vec3 b, glm::vec3 p ) {
+        glm::vec3 l = b - a;
+        f32 nume = glm::dot( p - a, l );
+        f32 demon = glm::dot( l, l );
+        f32 t = nume / demon;
+        t = glm::clamp( t, 0.0f, 1.0f );
+        glm::vec3 result = a + l * t;
+        return result;
+    }
+
+    glm::vec3 ClosestPoint_Triangle( Collider tri, glm::vec3 p ) {
+        glm::vec3 res = ClosestPoint_Plane( tri.tri.p1, tri.tri.n, p );
+        if( IsPointInsideTriangle( tri, res ) == false ) {
+            glm::vec3 a = ClosestPoint_LineSegment( tri.tri.p1, tri.tri.p2, p );
+            glm::vec3 b = ClosestPoint_LineSegment( tri.tri.p2, tri.tri.p3, p );
+            glm::vec3 c = ClosestPoint_LineSegment( tri.tri.p3, tri.tri.p1, p );
+
+            f32 aa = glm::length2( p - a );
+            f32 bb = glm::length2( p - b );
+            f32 cc = glm::length2( p - c );
+
+            if( aa <= bb && aa <= cc ) {
+                res = a;
+            }
+            else if( bb <= aa && bb <= cc ) {
+                res = b;
+            }
+            else // @NOTE: (cc <= aa && cc <= bb)
+            {
+                res = c;
+            }
+        }
+        return res;
+    }
+
+    bool CollisionCheck_SphereVsTri( Collider s, Collider t, Manifold & manifold ) {
+        Assert( s.type == COLLIDER_TYPE_SHPERE );
+        Assert( t.type == COLLIDER_TYPE_TRIANGLE );
+        glm::vec3 close = ClosestPoint_Triangle( t, s.sphere.c );
+        f32 d2 = glm::distance2( close, s.sphere.c );
+        bool result = d2 <= s.sphere.r * s.sphere.r;
+        return result;
     }
 
 }

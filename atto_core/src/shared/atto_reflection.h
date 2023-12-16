@@ -104,10 +104,52 @@ namespace atto {
             atto::JSON_Read( j, *t );
         }
     };
+    
+    class ReflSuper : public ReflBase {
+    public:
+        FixedList< ReflBase *, REFL_MAX_VAR_COUNT > * super;
+        ReflSuper( const char * name, i32 offset, FixedList< ReflBase *, REFL_MAX_VAR_COUNT > & data, FixedList< ReflBase *, REFL_MAX_VAR_COUNT > & super ) {
+            this->name = SmallString::FromLiteral( name );
+            this->offset = offset;
+            this->super = &super;
+            data.Add( this );
+        }
+
+        virtual nlohmann::json JSON_Save( const void * obj ) const override {
+            nlohmann::json j = {};
+            const void * v = (const void *)( ( (const byte *)obj ) + offset );
+            const i32 c = super->GetCount();
+            for( i32 i = 0; i < c; i++ ) {
+                const ReflBase * r = *super->Get( i );
+                j[ r->name.GetCStr() ] = r->JSON_Save( obj );
+            }
+            return j;
+        }
+
+        virtual void JSON_Read( void * obj, const nlohmann::json & j ) const override {
+            const i32 c = super->GetCount();
+            for( i32 i = 0; i < c; i++ ) {
+                const ReflBase * r = *super->Get( i );
+                void * v = (void *)( ( (byte *)obj ) + offset );
+                r->JSON_Read( v, j[ r->name.GetCStr() ] );
+            }
+        }
+    };
+    
+    class ReflSuperList : public ReflBase {
+        FixedList< ReflBase *, REFL_MAX_VAR_COUNT > * super;
+        ReflSuperList( const char * name, i32 offset, FixedList< ReflBase *, REFL_MAX_VAR_COUNT > & data, FixedList< ReflBase *, REFL_MAX_VAR_COUNT > & super ) {
+            this->name = SmallString::FromLiteral( name );
+            this->offset = offset;
+            this->super = &super;
+            data.Add( this );
+        }
+    }
 
 #define REFL_GET_LIST( name )   _refl_##name##_data
 #define REFL_DECLARE( name )    inline FixedList< ReflBase *, REFL_MAX_VAR_COUNT > REFL_GET_LIST( name )
-#define REFL_VAR( clss, varr )  inline Refl _refl_##clss##_var_##varr## = Refl< decltype( ##clss##::varr ) >( #varr, (i32)offsetof( clss, varr ), REFL_GET_LIST( clss ) );
+#define REFL_VAR( clss, varr )  inline Refl _refl_##clss##_var_##varr## = Refl< decltype( ##clss##::varr ) >( #varr, (i32)offsetof( clss, varr ), REFL_GET_LIST( clss ) )
+#define RELF_VAR( clss, subClss, varr ) inline ReflSuper _refl_##clss##_var_##varr## = ReflSuper( #varr, (i32)offsetof( clss, varr ), REFL_GET_LIST( clss ) , REFL_GET_LIST( subClss ) )
 #define REFL_WRITE_JSON( path, className, inst ) RelfWriteJsonInternal( path, REFL_GET_LIST( className ), inst )
 #define REFL_READ_JSON( path, className, inst) RelfReadJsonInternal( path, REFL_GET_LIST( className ), inst )
 

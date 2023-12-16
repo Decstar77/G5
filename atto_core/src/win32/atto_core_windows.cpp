@@ -14,16 +14,17 @@
 
 namespace atto {
 
-    static GLFWmonitor * monitor = nullptr;
+    static GLFWmonitor *               monitor = nullptr;
     static LargeString                 monitorName = LargeString::FromLiteral( "" );
     static f64                         monitorRefreshRate = 0;
-    static GLFWwindow * window = nullptr;
+    static GLFWwindow *                window = nullptr;
     static i32                         windowWidth = 0;
     static i32                         windowHeight = 0;
     static f32                         windowAspect = 0;
     static SmallString                 windowTitle = SmallString::FromLiteral( "Game" );
     static bool                        windowFullscreen = false;
     static bool                        shouldClose = false;
+    static bool                        firstMouse = true;
 
     static void KeyCallback( GLFWwindow * window, int key, int scancode, int action, int mods ) {
         Core * core = (Core *)glfwGetWindowUserPointer( window );
@@ -34,8 +35,18 @@ namespace atto {
     static void MousePositionCallback( GLFWwindow * window, double xpos, double ypos ) {
         Core * core = (Core *)glfwGetWindowUserPointer( window );
         FrameInput & fi = core->InputGetFrameInput();
-        fi.lastMousePosPixels = fi.mousePosPixels;
+        if( firstMouse ) {
+            fi.lastMousePosPixels.x = (f32)xpos;
+            fi.lastMousePosPixels.y = (f32)ypos;
+            firstMouse = false;
+        }
+        else {
+            fi.lastMousePosPixels = fi.mousePosPixels;
+        }
+
         fi.mousePosPixels = glm::vec2( (f32)xpos, (f32)ypos );
+        fi.mouseDeltaPixels.x = fi.mousePosPixels.x - fi.lastMousePosPixels.x;
+        fi.mouseDeltaPixels.y = fi.lastMousePosPixels.y - fi.mousePosPixels.y;
     }
 
     static void MouseButtonCallback( GLFWwindow * window, int button, int action, int mods ) {
@@ -157,6 +168,11 @@ namespace atto {
         client = new NetClient( this );
 
         game = new Game();
+
+    #if ATTO_EDITOR
+        editor = new Editor();
+    #endif
+        
         bool showDemoWindow = true;
 
         f32 simTickRate = 1.0f / 30.0f;
@@ -169,6 +185,7 @@ namespace atto {
             fi.lastKeys = fi.keys;
             fi.lastMouseButtons = fi.mouseButtons;
             fi.mouseWheelDelta = glm::vec2( 0.0f, 0.0f );
+            fi.mouseDeltaPixels = glm::vec2( 0.0f, 0.0f );
 
             glfwPollEvents();
 
@@ -193,10 +210,13 @@ namespace atto {
                 }
             }
 
+        #if ATTO_EDITOR
             EngineImgui::NewFrame();
-            game->UpdateAndRender( this, this->deltaTime );
-
+            editor->UpdateAndRender( this, game, deltaTime );
             EngineImgui::EndFrame();
+        #else 
+            game->UpdateAndRender( this, this->deltaTime );
+        #endif
 
             glfwSwapBuffers( window );
 
@@ -293,9 +313,9 @@ namespace atto {
                     GLShaderProgramSetInt( "mode", 1 );
                     GLShaderProgramSetVec4( "color", cmd.color );
                     //GLShaderProgramSetVec4( "shapePosAndSize", glm::vec4( cmd.circle.c.x, (f32)viewport.w - cmd.circle.c.y, cmd.circle.r, cmd.circle.r ) );
-                    GLShaderProgramSetVec4( "shapeRadius",
-                        glm::vec4( cmd.circle.r - 2, 0, 0, 0 ) ); // The 4 here is to stop the circle from being cut of from the edges
+                    GLShaderProgramSetVec4( "shapeRadius", glm::vec4( cmd.circle.r - 2, 0, 0, 0 ) ); // The 4 here is to stop the circle from being cut of from the edges
 
+                    glDisable( GL_CULL_FACE );
                     glBindVertexArray( shapeVertexBuffer.vao );
                     GLVertexBufferUpdate( shapeVertexBuffer, 0, sizeof( vertices ), vertices );
                     glDrawArrays( GL_TRIANGLES, 0, 6 );
@@ -319,6 +339,7 @@ namespace atto {
                     GLShaderProgramSetInt( "mode", 0 );
                     GLShaderProgramSetVec4( "color", cmd.color );
 
+                    glDisable( GL_CULL_FACE );
                     glBindVertexArray( shapeVertexBuffer.vao );
                     GLVertexBufferUpdate( shapeVertexBuffer, 0, sizeof( vertices ), vertices );
                     glDrawArrays( GL_TRIANGLES, 0, 6 );
@@ -350,6 +371,7 @@ namespace atto {
                     GLShaderProgramSetTexture( 0, texture->handle );
                     GLShaderProgramSetMat4( "p", cmd.projection );
 
+                    glDisable( GL_CULL_FACE );
                     glBindVertexArray( spriteVertexBuffer.vao );
                     GLVertexBufferUpdate( spriteVertexBuffer, 0, sizeof( vertices ), vertices );
                     glDrawArrays( GL_TRIANGLES, 0, 6 );
@@ -362,15 +384,15 @@ namespace atto {
                 } break;
                 case DrawCommandType::PLANE:
                 {
-                    // enable backface culling
-                    glEnable( GL_CULL_FACE );
-                    glCullFace( GL_FRONT );
-                    glFrontFace( GL_CCW );
+                    glm::mat4 v = dcxt->cameraView;
+                    glm::mat4 p = dcxt->cameraProj;
+                    glm::mat4 pvm = p * v;
 
                     GLShaderProgramBind( staticMeshUnlitProgram );
                     GLShaderProgramSetVec4( "color", glm::vec4( 1 ) );
-                    GLShaderProgramSetMat4( "pvm", glm::mat4( 1 ) );
-                    
+                    GLShaderProgramSetMat4( "pvm", pvm );
+
+                    glEnable( GL_CULL_FACE );
                     glBindVertexArray( staticMeshPlane->vao );
                     glDrawElements( GL_TRIANGLES, staticMeshPlane->indexCount, GL_UNSIGNED_SHORT, 0 );
                     glBindVertexArray( 0 );
@@ -422,6 +444,18 @@ namespace atto {
         glBindTexture( GL_TEXTURE_2D, 0 );
 
         return resources.textures.Add( textureResource );
+    }
+
+    void WindowsCore::InputDisableMouse() {
+        glfwSetInputMode( window, GLFW_CURSOR, GLFW_CURSOR_DISABLED );
+    }
+
+    void WindowsCore::InputEnableMouse() {
+        glfwSetInputMode( window, GLFW_CURSOR, GLFW_CURSOR_NORMAL );
+    }
+
+    bool WindowsCore::InputIsMouseDisabled() {
+        return glfwGetInputMode( window, GLFW_CURSOR ) == GLFW_CURSOR_DISABLED;
     }
 
     void WindowsCore::WindowClose() {
@@ -660,7 +694,7 @@ namespace atto {
     void WindowsCore::OsParseStartArgs( int argc, char ** argv ) {
         if( argc > 1 ) {
             GameSettings settings = {};
-            REFL_READ_JSON( argv[ 1 ], GameSettings, settings );
+            //REFL_READ_JSON( argv[ 1 ], GameSettings, settings );
             theGameSettings = settings;
         }
         else {
@@ -906,8 +940,8 @@ namespace atto {
         //
         //glViewport( viewX, viewY, viewWidth, viewHeight );
         //
-        //mainSurfaceWidth = w;
-        //mainSurfaceHeight = h;
+        mainSurfaceWidth = w;
+        mainSurfaceHeight = h;
         //viewport = glm::vec4( viewX, viewY, viewWidth, viewHeight );
         //cameraProjection = glm::ortho( 0.0f, (f32)cameraWidth, 0.0f, (f32)cameraHeight, -1.0f, 1.0f );
 

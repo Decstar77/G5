@@ -15,7 +15,13 @@ namespace atto {
         static void NewFrame();
         static void DoFrame();
         static void EndFrame();
+    };
 
+    class Core;
+    class Game;
+    class Editor {
+    public:
+        void UpdateAndRender( Core * core, Game * game, f32 dt );
     };
 }
 

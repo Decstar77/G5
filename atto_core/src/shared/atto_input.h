@@ -155,6 +155,7 @@ namespace atto
         glm::vec2 mousePosPixels;
         glm::vec2 lastMousePosPixels;
         glm::vec2 mouseWheelDelta;
+        glm::vec2 mouseDeltaPixels;
 
         FixedList<b8, KEY_CODE_COUNT> keys;
         FixedList<b8, KEY_CODE_COUNT> lastKeys;

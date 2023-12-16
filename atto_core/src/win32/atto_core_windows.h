@@ -110,9 +110,13 @@ namespace atto {
         virtual AudioSpeaker        AudioPlay(AudioResource* audioResource, f32 volume = 1.0f, bool looping = false) override;
 
         void                        RenderSubmit( DrawContext * dcxt, bool clearBackBuffers ) override;
+        
+        void                        InputDisableMouse() override;
+        void                        InputEnableMouse() override;
+        bool                        InputIsMouseDisabled() override;
 
-        void WindowClose() override;
-        void WindowSetTitle(const char* title) override;
+        void                        WindowClose() override;
+        void                        WindowSetTitle(const char* title) override;
 
         void                        GLResetSurface(f32 w, f32 h);
 

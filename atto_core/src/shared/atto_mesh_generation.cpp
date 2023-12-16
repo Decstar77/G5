@@ -82,6 +82,13 @@ namespace atto {
         return result;
     }
 
+    static void SwapWindingOrder( StaticMeshData & mesh ) {
+        for( i32 i = 0; i < mesh.indexCount; i += 3 ) {
+            u16 tmp = mesh.indices[ i + 1 ];
+            mesh.indices[ i + 1 ] = mesh.indices[ i + 2 ];
+            mesh.indices[ i + 2 ] = tmp;
+        }
+    }
 
     StaticMeshData StaticMeshGeneration::CreateQuad( f32 x, f32 y, f32 w, f32 h, f32 depth ) {
         StaticMeshData meshData = {};
@@ -102,6 +109,8 @@ namespace atto {
         meshData.indices[ 3 ] = 0;
         meshData.indices[ 4 ] = 2;
         meshData.indices[ 5 ] = 3;
+
+        SwapWindingOrder( meshData );
 
         return meshData;
     }

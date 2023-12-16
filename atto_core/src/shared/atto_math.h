@@ -15,7 +15,7 @@ namespace atto {
         return static_cast<i16>( v * 32767.0 );
     }
 
-    struct Manifold {
+    struct Manifold2D {
         f32 penetration;
         glm::vec2 pointA;
         glm::vec2 pointB;
@@ -35,7 +35,7 @@ namespace atto {
         f32         rad;
 
         bool                    Intersects( const Circle & circle ) const;
-        bool                    Collision( const Circle & other, Manifold & manifold ) const;
+        bool                    Collision( const Circle & other, Manifold2D & manifold ) const;
         bool                    Contains( glm::vec2 point ) const;
         static bool             Contains( glm::vec2 c, f32 r, glm::vec2 point );
         static Circle           Create( glm::vec2 pos, f32 rad );
@@ -55,8 +55,8 @@ namespace atto {
         bool                    Intersects( const BoxBounds & other ) const;
         bool                    Intersects( const Circle & other ) const;
 
-        bool                    Collision( const BoxBounds & other, Manifold & manifold ) const;
-        bool                    Collision( const Circle & other, Manifold & manifold ) const;
+        bool                    Collision( const BoxBounds & other, Manifold2D & manifold ) const;
+        bool                    Collision( const Circle & other, Manifold2D & manifold ) const;
 
         bool                    Contains( const glm::vec2 & point ) const;
         void                    Expand( f32 mul );
@@ -67,9 +67,11 @@ namespace atto {
     enum ColliderType {
         COLLIDER_TYPE_CIRCLE,
         COLLIDER_TYPE_BOX,
+        COLLIDER_TYPE_SHPERE,
+        COLLIDER_TYPE_TRIANGLE,
     };
 
-    struct Collider {
+    struct Collider2D {
         ColliderType type;
         union {
             Circle circle;
@@ -78,8 +80,38 @@ namespace atto {
 
         void                    Translate( const glm::vec2 & translation );
         bool                    Contains( const glm::vec2 & point ) const;
-        bool                    Intersects( const Collider & other ) const;
-        bool                    Collision( const Collider & other, Manifold & manifold ) const;
+        bool                    Intersects( const Collider2D & other ) const;
+        bool                    Collision( const Collider2D & other, Manifold2D & manifold ) const;
     };
+
+    struct Manifold {
+        f32 penetration;
+        glm::vec3 pointA;
+        glm::vec3 pointB;
+        glm::vec3 normal;
+    };
+
+    struct Collider {
+        ColliderType type;
+        union {
+            struct {
+                glm::vec3 c;
+                f32 r;
+            } sphere;
+            struct {
+                glm::vec3 p1;
+                glm::vec3 p2;
+                glm::vec3 p3;
+                glm::vec3 n;
+            } tri;
+        };
+    };
+
+    glm::vec3 ClosestPoint_Sphere( glm::vec3 c, f32 r, glm::vec3 p );
+    glm::vec3 ClosestPoint_Plane( glm::vec3 c, glm::vec3 n, glm::vec3 p );
+    glm::vec3 ClosestPoint_LineSegment( glm::vec3 a, glm::vec3 b, glm::vec3 p );
+    glm::vec3 ClosestPoint_Triangle( Collider tri, glm::vec3 p );
+    
+    bool CollisionCheck_SphereVsTri( Collider sphere, Collider tri, Manifold & manifold );
 
 }

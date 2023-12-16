@@ -17,6 +17,7 @@ struct GGPOSession;
 namespace atto {
     class Core;
     class Game;
+    class Editor;
     class NetClient;
 
     struct GameSettings {
@@ -31,16 +32,16 @@ namespace atto {
         SmallString     basePath;
     };
 
-    REFL_DECLARE( GameSettings );
-    REFL_VAR( GameSettings, windowWidth );
-    REFL_VAR( GameSettings, windowHeight );
-    REFL_VAR( GameSettings, windowStartPosX );
-    REFL_VAR( GameSettings, windowStartPosY );
-    REFL_VAR( GameSettings, noAudio );
-    REFL_VAR( GameSettings, fullscreen );
-    REFL_VAR( GameSettings, vsync );
-    REFL_VAR( GameSettings, showDebug );
-    REFL_VAR( GameSettings, basePath );
+    //REFL_DECLARE( GameSettings );
+    //REFL_VAR( GameSettings, windowWidth );
+    //REFL_VAR( GameSettings, windowHeight );
+    //REFL_VAR( GameSettings, windowStartPosX );
+    //REFL_VAR( GameSettings, windowStartPosY );
+    //REFL_VAR( GameSettings, noAudio );
+    //REFL_VAR( GameSettings, fullscreen );
+    //REFL_VAR( GameSettings, vsync );
+    //REFL_VAR( GameSettings, showDebug );
+    //REFL_VAR( GameSettings, basePath );
 
     struct TextureResource {
         SmallString name;
@@ -152,7 +153,7 @@ namespace atto {
         friend class Core;
         friend class WindowsCore;
     public:
-        void SetCamera( Camera camera );
+        void SetCamera( glm::mat4 view, f32 yfov, f32 zNear, f32 zFar );
 
         void DrawCircle( glm::vec2 pos, f32 radius, glm::vec4 colour = glm::vec4( 1 ) );
         void DrawRect( glm::vec2 bl, glm::vec2 tr, glm::vec4 colour = glm::vec4( 1 ) );
@@ -248,7 +249,11 @@ namespace atto {
         bool                                InputMouseHasMoved();
         glm::vec2                           InputMousePosNDC();
         glm::vec2                           InputMousePosPixels();
+        glm::vec2                           InputMouseDeltaPixels();
         FrameInput &                        InputGetFrameInput();
+        virtual void                        InputDisableMouse() = 0;
+        virtual void                        InputEnableMouse() = 0;
+        virtual bool                        InputIsMouseDisabled() = 0;
 
         virtual void                        WindowClose() = 0;
         virtual void                        WindowSetTitle( const char * title ) = 0;
@@ -267,7 +272,8 @@ namespace atto {
         FrameInput                  input = {};
         UIState                     uiState = {};
 
-        Game * game = nullptr;
+        Game *                      game = nullptr;
+        Editor *                    editor = nullptr;
 
         NetClient * client = nullptr;
 

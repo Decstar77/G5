@@ -21,7 +21,7 @@ namespace atto {
     public:
         void UpdateAndRender( Core * core, f32 dt );
 
-    private:
+    public:
         GameMode * gameMode = nullptr;
     };
 }
