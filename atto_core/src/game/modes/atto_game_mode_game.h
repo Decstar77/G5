@@ -22,6 +22,8 @@ namespace atto {
         glm::vec3 up;
         glm::vec3 right;
         bool noclip;
+
+        glm::mat3 GetOrientation() const;
     };
 
     struct Entity;
@@ -32,6 +34,8 @@ namespace atto {
         EntityType      type;
         glm::vec3       pos;
         glm::mat3       ori;
+
+        glm::vec3       vel;
 
         EntCamera           camera;
 
@@ -57,6 +61,20 @@ namespace atto {
         glm::mat4   CameraGetViewMatrix() const;
     };
 
+    struct MapTriangle {
+        glm::vec3   p1;
+        glm::vec3   p2;
+        glm::vec3   p3;
+        glm::vec3   normal;
+
+        inline void         ComputeNormal() { normal = glm::normalize( glm::cross( p2 - p1, p3 - p1 ) ); }
+        inline glm::vec3    GetCenter() const { return ( p1 + p2 + p3 ) / 3.0f; }
+    };
+
+    struct Map {
+        FixedList<MapTriangle, 1024> triangles;
+    };
+
     class GameModeGame : public GameMode {
     public:
         GameModeType GetGameModeType() override;
@@ -67,12 +85,15 @@ namespace atto {
         Entity * SpawnEntity( EntityType type );
         Entity * SpawnPlayer( glm::vec3 pos );
 
-        void     EntityUpdateCamera( Core * core, Entity * ent );
+        void     EntityUpdatePlayer( Core * core, Entity * ent );
     public:
 
+        Map                                     map;
         FixedObjectPool< Entity, MAX_ENTITIES > entityPool;
         f32                                     dtAccumulator = 0.0f;
 
         Entity *                                localPlayer = nullptr;
+        
+
     };
 }

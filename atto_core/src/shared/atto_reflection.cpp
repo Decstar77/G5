@@ -170,5 +170,260 @@ namespace atto {
         JSON_Read( j.at( "col4" ), col4 );
         o = glm::mat4( col1, col2, col3, col4 );
     }
+
+    struct TypeDescriptor_I32 : TypeDescriptor {
+        TypeDescriptor_I32() {
+            name = "i32";
+            size = sizeof( i32 );
+        }
+
+        nlohmann::json JSON_Write( const void * obj ) override {
+            return nlohmann::json( *(i32 *)obj );
+        }
+    };
+
+    template <>
+    TypeDescriptor * GetPrimitiveDescriptor<int>() {
+        static TypeDescriptor_I32 typeDesc;
+        return &typeDesc;
+    }
+
+    struct TypeDescriptor_U32 : TypeDescriptor {
+        TypeDescriptor_U32() {
+            name = "u32";
+            size = sizeof( u32 );
+        }
+
+        nlohmann::json JSON_Write( const void * obj ) override {
+            return nlohmann::json( *(u32 *)obj );
+        }
+    };
+
+    template <>
+    TypeDescriptor * GetPrimitiveDescriptor<unsigned int>() {
+        static TypeDescriptor_U32 typeDesc;
+        return &typeDesc;
+    }
+
+    struct TypeDescriptor_I64 : TypeDescriptor {
+        TypeDescriptor_I64() {
+            name = "i64";
+            size = sizeof( i64 );
+        }
+
+        nlohmann::json JSON_Write( const void * obj ) override {
+            return nlohmann::json( *(i64 *)obj );
+        }
+    };
+
+    template <>
+    TypeDescriptor * GetPrimitiveDescriptor<i64>() {
+        static TypeDescriptor_I64 typeDesc;
+        return &typeDesc;
+    }
+
+    struct TypeDescriptor_U64 : TypeDescriptor {
+        TypeDescriptor_U64() {
+            name = "u64";
+            size = sizeof( u64 );
+        }
+
+        nlohmann::json JSON_Write( const void * obj ) override {
+            return nlohmann::json( *(u64 *)obj );
+        }
+    };
+
+    template <>
+    TypeDescriptor * GetPrimitiveDescriptor<u64>() {
+        static TypeDescriptor_U64 typeDesc;
+        return &typeDesc;
+    }
+
+    struct TypeDescriptor_F32 : TypeDescriptor {
+        TypeDescriptor_F32() {
+            name = "f32";
+            size = sizeof( f32 );
+        }
+
+        nlohmann::json JSON_Write( const void * obj ) override {
+            return nlohmann::json( *(f32 *)obj );
+        }
+    };
+
+    template <>
+    TypeDescriptor * GetPrimitiveDescriptor<f32>() {
+        static TypeDescriptor_F32 typeDesc;
+        return &typeDesc;
+    }
+
+    struct TypeDescriptor_F64 : TypeDescriptor {
+        TypeDescriptor_F64() {
+            name = "f64";
+            size = sizeof( f64 );
+        }
+
+        nlohmann::json JSON_Write( const void * obj ) override {
+            return nlohmann::json( *(f64 *)obj );
+        }
+    };
+
+    template <>
+    TypeDescriptor * GetPrimitiveDescriptor<f64>() {
+        static TypeDescriptor_F64 typeDesc;
+        return &typeDesc;
+    }
+
+    struct TypeDescriptor_Bool : TypeDescriptor {
+        TypeDescriptor_Bool() {
+            name = "bool";
+            size = sizeof( bool );
+        }
+
+        nlohmann::json JSON_Write( const void * obj ) override {
+            return nlohmann::json( *(bool *)obj );
+        }
+    };
+    
+    template <>
+    TypeDescriptor * GetPrimitiveDescriptor<bool>() {
+        static TypeDescriptor_Bool typeDesc;
+        return &typeDesc;
+    }
+
+    struct TypeDescriptor_Vec2 : TypeDescriptor {
+        TypeDescriptor_Vec2() {
+            name = "vec2";
+            size = sizeof( glm::vec2 );
+        }
+
+        nlohmann::json JSON_Write( const void * obj ) override {
+            return atto::JSON_Write( *(glm::vec2 *)obj );
+        }
+    };
+    
+    template <>
+    TypeDescriptor * GetPrimitiveDescriptor<glm::vec2>() {
+        static TypeDescriptor_Vec2 typeDesc;
+        return &typeDesc;
+    }
+
+    struct TypeDescriptor_Vec3 : TypeDescriptor {
+        TypeDescriptor_Vec3() {
+            name = "vec3";
+            size = sizeof( glm::vec3 );
+        }
+
+        nlohmann::json JSON_Write( const void * obj ) override {
+            return atto::JSON_Write( *(glm::vec3 *)obj );
+        }
+    };
+
+    template <>
+    TypeDescriptor * GetPrimitiveDescriptor<glm::vec3>() {
+        static TypeDescriptor_Vec3 typeDesc;
+        return &typeDesc;
+    }
+
+    struct TypeDescriptor_Vec4 : TypeDescriptor {
+        TypeDescriptor_Vec4() {
+            name = "vec4";
+            size = sizeof( glm::vec4 );
+        }
+
+        nlohmann::json JSON_Write( const void * obj ) override {
+            return atto::JSON_Write( *(glm::vec4 *)obj );
+        }
+    };
+    
+    template <>
+    TypeDescriptor * GetPrimitiveDescriptor<glm::vec4>() {
+        static TypeDescriptor_Vec4 typeDesc;
+        return &typeDesc;
+    }
+
+    struct TypeDescriptor_Mat2 : TypeDescriptor {
+        TypeDescriptor_Mat2() {
+            name = "mat2";
+            size = sizeof( glm::mat2 );
+        }
+
+        nlohmann::json JSON_Write( const void * obj ) override {
+            return atto::JSON_Write( *(glm::mat2 *)obj );
+        }
+    };
+    
+    template <>
+    TypeDescriptor * GetPrimitiveDescriptor<glm::mat2>() {
+        static TypeDescriptor_Mat2 typeDesc;
+        return &typeDesc;
+    }
+    
+    struct TypeDescriptor_Mat3 : TypeDescriptor {
+        TypeDescriptor_Mat3() {
+            name = "mat3";
+            size = sizeof( glm::mat3 );
+        }
+
+        nlohmann::json JSON_Write( const void * obj ) override {
+            return atto::JSON_Write( *(glm::mat3 *)obj );
+        }
+    };
+    
+    template <>
+    TypeDescriptor * GetPrimitiveDescriptor<glm::mat3>() {
+        static TypeDescriptor_Mat3 typeDesc;
+        return &typeDesc;
+    }
+
+    struct TypeDescriptor_Mat4 : TypeDescriptor {
+        TypeDescriptor_Mat4() {
+            name = "mat4";
+            size = sizeof( glm::mat4 );
+        }
+
+        nlohmann::json JSON_Write( const void * obj ) override {
+            return atto::JSON_Write( *(glm::mat4 *)obj );
+        }
+    };
+    
+    template <>
+    TypeDescriptor * GetPrimitiveDescriptor<glm::mat4>() {
+        static TypeDescriptor_Mat4 typeDesc;
+        return &typeDesc;
+    }
+
+    struct TypeDescriptor_SmallString : TypeDescriptor {
+        TypeDescriptor_SmallString() {
+            name = "smallstring";
+            size = sizeof( SmallString );
+        }
+
+        nlohmann::json JSON_Write( const void * obj ) override {
+            return atto::JSON_Write( *(SmallString*)obj );
+        }
+    };
+    
+    template <>
+    TypeDescriptor * GetPrimitiveDescriptor<SmallString>() {
+        static TypeDescriptor_SmallString typeDesc;
+        return &typeDesc;
+    }
+
+    struct TypeDescriptor_LargeString : TypeDescriptor {
+        TypeDescriptor_LargeString() {
+            name = "largestring";
+            size = sizeof( LargeString );
+        }
+
+        nlohmann::json JSON_Write( const void * obj ) override {
+            return atto::JSON_Write( *(LargeString *)obj );
+        }
+    };
+
+    template <>
+    TypeDescriptor * GetPrimitiveDescriptor<LargeString>() {
+        static TypeDescriptor_LargeString typeDesc;
+        return &typeDesc;
+    }
 }
 

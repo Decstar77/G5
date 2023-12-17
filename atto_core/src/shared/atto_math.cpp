@@ -321,6 +321,22 @@ namespace atto {
         return res;
     }
 
+    bool CollisionCheck_SphereVsPlane( Collider s, Collider p, Manifold & manifold ) {
+        Assert( s.type == COLLIDER_TYPE_SHPERE );
+        Assert( p.type == COLLIDER_TYPE_PLANE );
+        glm::vec3 close = ClosestPoint_Plane( p.plane.c, p.plane.n, s.sphere.c );
+        f32 d2 = glm::distance2( close, s.sphere.c );
+        bool result = d2 <= s.sphere.r * s.sphere.r;
+        if( result == true ) {
+            manifold.pointB = close;
+            manifold.normal = glm::normalize( s.sphere.c - close );
+            manifold.pointA = s.sphere.c - manifold.normal * s.sphere.r;
+            manifold.penetration = glm::distance( manifold.pointA, manifold.pointB );
+        }
+
+        return result;
+    }
+
     bool CollisionCheck_SphereVsTri( Collider s, Collider t, Manifold & manifold ) {
         Assert( s.type == COLLIDER_TYPE_SHPERE );
         Assert( t.type == COLLIDER_TYPE_TRIANGLE );

@@ -3,6 +3,11 @@
 #include "atto_containers.h"
 #include "atto_math.h"
 
+#include <vector>
+#include <iostream>
+#include <string>
+#include <cstddef>
+
 #ifndef ATTO_SERVER
 
 #include "json/json.hpp"
@@ -30,18 +35,6 @@ namespace atto {
     nlohmann::json JSON_Write( glm::mat3 v );
     nlohmann::json JSON_Write( glm::mat4 v );
 
-    template<typename _type_, i32 c>
-    nlohmann::json JSON_Write( const FixedList<_type_, c> & list ) {
-        nlohmann::json j = nlohmann::json::array();
-
-        const int count = list.GetCount();
-        for( int i = 0; i < count; ++i ) {
-            j.push_back( JSON_Write( list[ i ] ) );
-        }
-
-        return j;
-    }
-
     void JSON_Read( const nlohmann::json & j, u8 & o );
     void JSON_Read( const nlohmann::json & j, bool & o );
     void JSON_Read( const nlohmann::json & j, i32 & o );
@@ -59,135 +52,125 @@ namespace atto {
     void JSON_Read( const nlohmann::json & j, glm::mat3 & o );
     void JSON_Read( const nlohmann::json & j, glm::mat4 & o );
 
-    template<typename _type_, i32 c>
-    inline void JSON_Read( const  nlohmann::json & j, FixedList<_type_, c> & list ) {
-        for( const auto & element : j ) {
-            _type_& t = list.AddEmpty();
-            JSON_Read( element, t );
-        }
-    }
-
-    template<typename _type_>
-    inline bool JSON_WriteToFile( const char * path, const _type_ & obj ) {
-        nlohmann::json j = JSON_Write( obj );
-        return WriteTextFile( path, j.dump().c_str() );
-    }
-
-    constexpr i32 REFL_MAX_VAR_COUNT = 100;
-
-    class ReflBase {
-    public:
-        virtual nlohmann::json  JSON_Save( const void * obj ) const = 0;
-        virtual void            JSON_Read( void * obj, const nlohmann::json & j ) const = 0;
-
-    public:
+    struct TypeDescriptor {
+        i32         size;
         SmallString name;
-        i32 offset;
+        virtual ~TypeDescriptor() {}
+        virtual nlohmann::json JSON_Write( const void * obj ) = 0;
     };
 
-    template<typename _type_>
-    class Refl : public ReflBase {
-    public:
-        Refl( const char * name, i32 offset, FixedList< ReflBase *, REFL_MAX_VAR_COUNT > & data ) {
-            this->name = SmallString::FromLiteral( name );
-            this->offset = offset;
-            data.Add( this );
+    template <typename T>
+    TypeDescriptor * GetPrimitiveDescriptor();
+
+    struct DefaultResolver {
+        template <typename T> static char func( decltype( &T::Reflection ) );
+        template <typename T> static int func( ... );
+        template <typename T>
+        struct IsReflected {
+            enum { value = ( sizeof( func<T>( nullptr ) ) == sizeof( char ) ) };
+        };
+
+        // This version is called if T has a static member named "Reflection":
+        template <typename T, typename std::enable_if<IsReflected<T>::value, int>::type = 0>
+        static TypeDescriptor * get() {
+            return &T::Reflection;
         }
 
-        virtual nlohmann::json JSON_Save( const void * obj ) const override {
-            const _type_ * t = (const _type_ *)( ( (const byte *)obj ) + offset );
-            return JSON_Write( *t );
-        }
-
-        virtual void JSON_Read( void * obj, const nlohmann::json & j ) const override {
-            _type_ * t = (_type_ *)( ( (byte *)obj ) + offset );
-            atto::JSON_Read( j, *t );
+        // This version is called otherwise:
+        template <typename T, typename std::enable_if<!IsReflected<T>::value, int>::type = 0>
+        static TypeDescriptor * get() {
+            return GetPrimitiveDescriptor<T>();
         }
     };
-    
-    class ReflSuper : public ReflBase {
-    public:
-        FixedList< ReflBase *, REFL_MAX_VAR_COUNT > * super;
-        ReflSuper( const char * name, i32 offset, FixedList< ReflBase *, REFL_MAX_VAR_COUNT > & data, FixedList< ReflBase *, REFL_MAX_VAR_COUNT > & super ) {
+
+    template <typename T>
+    struct TypeResolver {
+        static TypeDescriptor * get() {
+            return DefaultResolver::get<T>();
+        }
+    };
+
+    struct TypeDescriptor_Struct : TypeDescriptor {
+        struct Member {
+            i32 offset;
+            SmallString name;
+            TypeDescriptor * type;
+        };
+
+        std::vector<Member> members;
+
+        TypeDescriptor_Struct( void ( *init )( TypeDescriptor_Struct * ) ) {
+            name = "";
+            size = 0;
+            init( this );
+        }
+        TypeDescriptor_Struct( const char * name, i32 size, const std::initializer_list<Member> & init ) {
             this->name = SmallString::FromLiteral( name );
-            this->offset = offset;
-            this->super = &super;
-            data.Add( this );
+            this->size = size;
+            for( const Member & member : init ) {
+                members.push_back( member );
+            }
         }
 
-        virtual nlohmann::json JSON_Save( const void * obj ) const override {
-            nlohmann::json j = {};
-            const void * v = (const void *)( ( (const byte *)obj ) + offset );
-            const i32 c = super->GetCount();
-            for( i32 i = 0; i < c; i++ ) {
-                const ReflBase * r = *super->Get( i );
-                j[ r->name.GetCStr() ] = r->JSON_Save( obj );
+        nlohmann::json JSON_Write( const void * obj ) override {
+            nlohmann::json j;
+            for( const Member & member : members ) {
+                j[ member.name.GetCStr() ] = member.type->JSON_Write( (char *)obj + member.offset );
             }
             return j;
         }
+    };
 
-        virtual void JSON_Read( void * obj, const nlohmann::json & j ) const override {
-            const i32 c = super->GetCount();
-            for( i32 i = 0; i < c; i++ ) {
-                const ReflBase * r = *super->Get( i );
-                void * v = (void *)( ( (byte *)obj ) + offset );
-                r->JSON_Read( v, j[ r->name.GetCStr() ] );
+#define REFLECT() \
+    friend struct DefaultResolver; \
+    static TypeDescriptor_Struct Reflection; \
+    static void initReflection(TypeDescriptor_Struct*);
+
+#define REFLECT_STRUCT_BEGIN(type) \
+    TypeDescriptor_Struct type::Reflection{type::initReflection}; \
+    void type::initReflection(TypeDescriptor_Struct* typeDesc) { \
+        using T = type; \
+        typeDesc->name = #type; \
+        typeDesc->size = sizeof(T); \
+        typeDesc->members = {
+
+#define REFLECT_STRUCT_MEMBER(name) \
+            { offsetof(T, name), SmallString::FromLiteral(#name), TypeResolver<decltype(T::name)>::get()},
+
+#define REFLECT_STRUCT_END() \
+        }; \
+    }
+
+    template <typename _type_, i32 cap>
+    struct TypeDescriptor_FixedList : TypeDescriptor {
+        TypeDescriptor *    itemType;
+        
+        TypeDescriptor_FixedList( _type_ * ) {
+            this->size = sizeof( FixedList<_type_, cap> );
+            this->name = SmallString::FromLiteral( "FixedList" );
+            this->itemType = TypeResolver<_type_>::get();
+        }
+
+        virtual nlohmann::json TypeDescriptor_FixedList::JSON_Write( const void * obj ) override {
+            const FixedList< _type_, cap > * list = ( const FixedList< _type_, cap > * )obj;
+            nlohmann::json j = nlohmann::json::array();
+            for( i32 i = 0; i < list->GetCount(); i++ ) {
+                j.push_back(  itemType->JSON_Write( &list[ i ] ) );
             }
+            return j;
         }
     };
-    
-    class ReflSuperList : public ReflBase {
-        FixedList< ReflBase *, REFL_MAX_VAR_COUNT > * super;
-        ReflSuperList( const char * name, i32 offset, FixedList< ReflBase *, REFL_MAX_VAR_COUNT > & data, FixedList< ReflBase *, REFL_MAX_VAR_COUNT > & super ) {
-            this->name = SmallString::FromLiteral( name );
-            this->offset = offset;
-            this->super = &super;
-            data.Add( this );
+
+    template <typename T, i32 cap>
+    class TypeResolver<FixedList<T, cap>> {
+    public:
+        static TypeDescriptor * get() {
+            static TypeDescriptor_FixedList<T, cap> typeDesc( ( T * )nullptr );
+            return &typeDesc;
         }
-    }
+    };
 
-#define REFL_GET_LIST( name )   _refl_##name##_data
-#define REFL_DECLARE( name )    inline FixedList< ReflBase *, REFL_MAX_VAR_COUNT > REFL_GET_LIST( name )
-#define REFL_VAR( clss, varr )  inline Refl _refl_##clss##_var_##varr## = Refl< decltype( ##clss##::varr ) >( #varr, (i32)offsetof( clss, varr ), REFL_GET_LIST( clss ) )
-#define RELF_VAR( clss, subClss, varr ) inline ReflSuper _refl_##clss##_var_##varr## = ReflSuper( #varr, (i32)offsetof( clss, varr ), REFL_GET_LIST( clss ) , REFL_GET_LIST( subClss ) )
-#define REFL_WRITE_JSON( path, className, inst ) RelfWriteJsonInternal( path, REFL_GET_LIST( className ), inst )
-#define REFL_READ_JSON( path, className, inst) RelfReadJsonInternal( path, REFL_GET_LIST( className ), inst )
-
-    template<typename _type_>
-    inline void RelfWriteJsonInternal( const char * path, const FixedList< ReflBase *, REFL_MAX_VAR_COUNT > & varList, const _type_ & inst ) {
-        nlohmann::json j;
-
-        const i32 varCount = varList.GetCount();
-        for( i32 varIndex = 0; varIndex < varCount; varIndex++ ) {
-            ReflBase * r = varList[ varIndex ];
-            j[ r->name.GetCStr() ] = r->JSON_Save( &inst );
-        }
-
-        WindowsCore::DEBUG_WriteTextFile( path, j.dump().c_str());
-    }
-
-    template<typename _type_>
-    inline void RelfReadJsonInternal( const char * path, const FixedList< ReflBase *, REFL_MAX_VAR_COUNT > & varList, _type_ & inst ) {
-        const i32 mbSize = 16;
-        const i32 size = Megabytes( mbSize );
-        char * buf = new char[ size ];
-
-        WindowsCore::DEBUG_ReadTextFile( path, buf, size );
-
-        nlohmann::json j = nlohmann::json::parse( buf );
-        const i32 varCount = varList.GetCount();
-        for( i32 varIndex = 0; varIndex < varCount; varIndex++ ) {
-            ReflBase * r = varList[ varIndex ];
-            r->JSON_Read( (void *)( &inst ), j[ r->name.GetCStr() ] );
-        }
-
-        delete[] buf;
-    }
 }
-#else 
-
-#define ATTO_REFLECT_STRUCT(name)
-#define ATTO_REFLECT_ENUM(name)
 
 #endif
 

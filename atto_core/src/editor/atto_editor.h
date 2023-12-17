@@ -21,7 +21,10 @@ namespace atto {
     class Game;
     class Editor {
     public:
+        void MainMenuBar( Core * core, Game * game );
         void UpdateAndRender( Core * core, Game * game, f32 dt );
+
+        bool showCanvas = false;
     };
 }
 

@@ -384,15 +384,31 @@ namespace atto {
                 } break;
                 case DrawCommandType::PLANE:
                 {
+                    glm::vec3 up = glm::vec3( 0, 1, 0 );
+                    f32 d = glm::dot( up, cmd.plane.normal );
+                    if( d > 0.999f || d < -0.999f ) {
+                        up = glm::vec3( 0, 0, 1 );
+                    }
+
+                    glm::mat4 m;
+                    m[ 0 ] = glm::vec4( glm::cross( up, cmd.plane.normal ), 0 );
+                    m[ 1 ] = glm::vec4( up, 0 );
+                    m[ 2 ] = glm::vec4( cmd.plane.normal, 0 );
+                    m[ 3 ] = glm::vec4( cmd.plane.center, 1 );
+
+                    m = glm::scale( m, glm::vec3( cmd.plane.dim, 1.0f ) );
+
                     glm::mat4 v = dcxt->cameraView;
                     glm::mat4 p = dcxt->cameraProj;
-                    glm::mat4 pvm = p * v;
+                    glm::mat4 pvm = p * v * m;
 
                     GLShaderProgramBind( staticMeshUnlitProgram );
-                    GLShaderProgramSetVec4( "color", glm::vec4( 1 ) );
+                    GLShaderProgramSetVec4( "color", cmd.color );
                     GLShaderProgramSetMat4( "pvm", pvm );
 
                     glEnable( GL_CULL_FACE );
+                    glEnable( GL_DEPTH_TEST );
+
                     glBindVertexArray( staticMeshPlane->vao );
                     glDrawElements( GL_TRIANGLES, staticMeshPlane->indexCount, GL_UNSIGNED_SHORT, 0 );
                     glBindVertexArray( 0 );

@@ -30,18 +30,9 @@ namespace atto {
         bool            vsync;
         bool            showDebug;
         SmallString     basePath;
-    };
 
-    //REFL_DECLARE( GameSettings );
-    //REFL_VAR( GameSettings, windowWidth );
-    //REFL_VAR( GameSettings, windowHeight );
-    //REFL_VAR( GameSettings, windowStartPosX );
-    //REFL_VAR( GameSettings, windowStartPosY );
-    //REFL_VAR( GameSettings, noAudio );
-    //REFL_VAR( GameSettings, fullscreen );
-    //REFL_VAR( GameSettings, vsync );
-    //REFL_VAR( GameSettings, showDebug );
-    //REFL_VAR( GameSettings, basePath );
+        REFLECT();
+    };
 
     struct TextureResource {
         SmallString name;
@@ -135,7 +126,6 @@ namespace atto {
                     glm::vec3 center;
                     glm::vec3 normal;
                     glm::vec2 dim;
-                    glm::vec4 color;
                 } plane;
             };
         };
