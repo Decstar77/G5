@@ -93,7 +93,7 @@ namespace atto {
     struct ResourceRegistry {
         FixedList<Win32TextureResource, 1024>       textures;
         FixedList<Win32AudioResource, 1024>         audios;
-        FixedList<Win32StaticMeshResource, 1024>          meshes;
+        FixedList<Win32StaticMeshResource, 1024>    meshes;
         FontContext                                 fontContext;
     };
 

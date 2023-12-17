@@ -335,7 +335,7 @@ namespace atto {
 
                     GLEnableAlphaBlending();
                     GLShaderProgramBind( shapeProgram );
-                    GLShaderProgramSetMat4( "p", cmd.projection );
+                    GLShaderProgramSetMat4( "p", screenProjection );
                     GLShaderProgramSetInt( "mode", 0 );
                     GLShaderProgramSetVec4( "color", cmd.color );
 
@@ -369,7 +369,7 @@ namespace atto {
                     GLShaderProgramSetSampler( "texture0", 0 );
                     GLShaderProgramSetVec4( "color", cmd.color );
                     GLShaderProgramSetTexture( 0, texture->handle );
-                    GLShaderProgramSetMat4( "p", cmd.projection );
+                    GLShaderProgramSetMat4( "p", screenProjection );
 
                     glDisable( GL_CULL_FACE );
                     glBindVertexArray( spriteVertexBuffer.vao );
@@ -412,7 +412,23 @@ namespace atto {
                     glBindVertexArray( staticMeshPlane->vao );
                     glDrawElements( GL_TRIANGLES, staticMeshPlane->indexCount, GL_UNSIGNED_SHORT, 0 );
                     glBindVertexArray( 0 );
+                } break;
+                case DrawCommandType::SPHERE:
+                {
+                    glm::mat4 v = dcxt->cameraView;
+                    glm::mat4 p = dcxt->cameraProj;
+                    glm::mat4 pvm = p * v;
 
+                    GLShaderProgramBind( staticMeshUnlitProgram );
+                    GLShaderProgramSetVec4( "color", cmd.color );
+                    GLShaderProgramSetMat4( "pvm", pvm );
+
+                    glEnable( GL_CULL_FACE );
+                    glEnable( GL_DEPTH_TEST );
+
+                    glBindVertexArray( staticMeshSphere->vao );
+                    glDrawElements( GL_TRIANGLES, staticMeshSphere->indexCount, GL_UNSIGNED_SHORT, 0 );
+                    glBindVertexArray( 0 );
                 } break;
                 default:
                 {

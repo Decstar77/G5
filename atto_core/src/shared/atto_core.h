@@ -90,12 +90,12 @@ namespace atto {
         
         // 3D
         PLANE,
+        SPHERE,
     };
 
     struct DrawCommand {
         DrawCommandType type;
         glm::vec4 color;
-        glm::mat4 projection;
         struct {
             union {
                 struct {
@@ -127,6 +127,10 @@ namespace atto {
                     glm::vec3 normal;
                     glm::vec2 dim;
                 } plane;
+                struct {
+                    glm::vec3 center;
+                    f32 r;
+                } sphere;
             };
         };
     };
@@ -154,6 +158,7 @@ namespace atto {
         void DrawText2D( FontHandle font, glm::vec2 tl, f32 fontSize, const char * text, glm::vec4 colour = glm::vec4( 1 ) );
 
         void DrawPlane( glm::vec3 center, glm::vec3 normal, glm::vec2 dim, glm::vec4 colour = glm::vec4( 1 ) );
+        void DrawSphere( glm::vec3 center, f32 r, glm::vec4 colour = glm::vec4( 1 ) );
 
     private:
         glm::mat4       cameraProj;

@@ -34,13 +34,12 @@ namespace atto {
 
     void DrawContext::SetCamera( glm::mat4 v, f32 yfov, f32 zNear, f32 zFar ) {
         cameraView = v;
-        cameraProj = glm::perspective( glm::radians(yfov), mainAspect, zNear, zFar );
+        cameraProj = glm::perspective( glm::radians( yfov ), mainAspect, zNear, zFar );
     }
 
     void DrawContext::DrawCircle( glm::vec2 pos, f32 radius, glm::vec4 colour /*= glm::vec4(1)*/ ) {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::CIRCLE;
-        cmd.projection = screenProjection;
         cmd.color = colour;
         cmd.circle.c = pos;
         cmd.circle.r = radius;
@@ -50,7 +49,6 @@ namespace atto {
     void DrawContext::DrawRect( glm::vec2 bl, glm::vec2 tr, glm::vec4 colour /*= glm::vec4(1)*/ ) {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::RECT;
-        cmd.projection = screenProjection;
         cmd.color = colour;
         cmd.rect.bl = bl;
         cmd.rect.br = glm::vec2( tr.x, bl.y );
@@ -63,7 +61,6 @@ namespace atto {
     void DrawContext::DrawRect( glm::vec2 center, glm::vec2 dim, f32 rot, const glm::vec4 & color /*= glm::vec4(1)*/ ) {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::RECT;
-        cmd.projection = screenProjection;
         cmd.color = color;
 
         cmd.rect.bl = -dim / 2.0f;
@@ -114,7 +111,6 @@ namespace atto {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::SPRITE;
         cmd.color = colour;
-        cmd.projection = screenProjection;
         cmd.sprite.textureRes = texture;
 
         glm::vec2 dim = glm::vec2( texture->width, texture->height ) * size;
@@ -161,6 +157,16 @@ namespace atto {
         cmd.plane.center = center;
         cmd.plane.normal = normal;
         cmd.plane.dim = dim;
+
+        drawList.Add( cmd );
+    }
+
+    void DrawContext::DrawSphere( glm::vec3 center, f32 r, glm::vec4 colour /*= glm::vec4( 1 ) */ ) {
+        DrawCommand cmd = {};
+        cmd.type = DrawCommandType::SPHERE;
+        cmd.color = colour;
+        cmd.sphere.center = center;
+        cmd.sphere.r = r;
 
         drawList.Add( cmd );
     }
