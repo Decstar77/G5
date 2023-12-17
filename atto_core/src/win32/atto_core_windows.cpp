@@ -233,7 +233,7 @@ namespace atto {
         delete client;
     }
 
-    StaticMeshResource * WindowsCore::ResourceMeshCreate( const char * name, StaticMeshData data ) {
+    StaticMeshResource * WindowsCore::ResourceMeshCreate( const char * name, StaticMeshData & data ) {
         const i32 meshResourceCount = resources.meshes.GetCount();
         for( i32 i = 0; i < meshResourceCount; i++ ) {
             StaticMeshResource & meshResource = resources.meshes[ i ];
@@ -260,6 +260,48 @@ namespace atto {
 
         glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, meshResource.ibo );
         glBufferData( GL_ELEMENT_ARRAY_BUFFER, data.indexCount * sizeof( u16 ), data.indices, GL_STATIC_DRAW );
+
+        glEnableVertexAttribArray( 0 );
+        glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, sizeof( StaticMeshVertex ), (void *)0 );
+
+        glEnableVertexAttribArray( 1 );
+        glVertexAttribPointer( 1, 3, GL_FLOAT, GL_FALSE, sizeof( StaticMeshVertex ), (void *)offsetof( StaticMeshVertex, normal ) );
+
+        glEnableVertexAttribArray( 2 );
+        glVertexAttribPointer( 2, 2, GL_FLOAT, GL_FALSE, sizeof( StaticMeshVertex ), (void *)offsetof( StaticMeshVertex, uv ) );
+
+        glBindVertexArray( 0 );
+
+        data.Free();
+
+        return resources.meshes.Add( meshResource );
+    }
+
+    StaticMeshResource * WindowsCore::ResourceMeshCreate( const char * name, i32 vertexCount ) {
+        const i32 meshResourceCount = resources.meshes.GetCount();
+        for( i32 i = 0; i < meshResourceCount; i++ ) {
+            StaticMeshResource & meshResource = resources.meshes[ i ];
+            if( meshResource.name == name ) {
+                INVALID_CODE_PATH;
+                return nullptr;
+            }
+        }
+
+        Win32StaticMeshResource meshResource = {};
+        meshResource.name = name;
+        meshResource.vertexCount = vertexCount;
+        meshResource.vertexStride = sizeof( StaticMeshVertex );
+        meshResource.indexStride = -1 ;
+        meshResource.indexCount = -1;
+        meshResource.updateable = true;
+        
+        glGenVertexArrays( 1, &meshResource.vao );
+        glGenBuffers( 1, &meshResource.vbo );
+
+        glBindVertexArray( meshResource.vao );
+
+        glBindBuffer( GL_ARRAY_BUFFER, meshResource.vbo );
+        glBufferData( GL_ARRAY_BUFFER, meshResource.vertexCount * meshResource.vertexStride, NULL, GL_DYNAMIC_DRAW );
 
         glEnableVertexAttribArray( 0 );
         glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, sizeof( StaticMeshVertex ), (void *)0 );
@@ -415,9 +457,11 @@ namespace atto {
                 } break;
                 case DrawCommandType::SPHERE:
                 {
+                    glm::mat4 m = glm::translate( glm::mat4( 1.0f ), cmd.sphere.center );
+
                     glm::mat4 v = dcxt->cameraView;
                     glm::mat4 p = dcxt->cameraProj;
-                    glm::mat4 pvm = p * v;
+                    glm::mat4 pvm = p * v * m;
 
                     GLShaderProgramBind( staticMeshUnlitProgram );
                     GLShaderProgramSetVec4( "color", cmd.color );
@@ -428,6 +472,30 @@ namespace atto {
 
                     glBindVertexArray( staticMeshSphere->vao );
                     glDrawElements( GL_TRIANGLES, staticMeshSphere->indexCount, GL_UNSIGNED_SHORT, 0 );
+                    glBindVertexArray( 0 );
+                } break;
+                case DrawCommandType::TRIANGLE:
+                {
+                    StaticMeshVertex vertices[ 3 ] = {
+                        { cmd.triangle.p1, glm::vec3( 0 ), glm::vec2( 0 )},
+                        { cmd.triangle.p2, glm::vec3( 0 ), glm::vec2( 0 )},
+                        { cmd.triangle.p3, glm::vec3( 0 ), glm::vec2( 0 )}
+                    };
+
+                    glm::mat4 v = dcxt->cameraView;
+                    glm::mat4 p = dcxt->cameraProj;
+                    glm::mat4 pvm = p * v;
+
+                    GLShaderProgramBind( staticMeshUnlitProgram );
+                    GLShaderProgramSetVec4( "color", cmd.color );
+                    GLShaderProgramSetMat4( "pvm", pvm );
+
+                    glDisable( GL_CULL_FACE );
+                    glEnable( GL_DEPTH_TEST );
+
+                    glBindVertexArray( staticMeshTriangle->vao );
+                    GetVertexBufferUpdate( staticMeshTriangle->vbo, 0, sizeof( vertices ), vertices );
+                    glDrawArrays( GL_TRIANGLES, 0, 6 );
                     glBindVertexArray( 0 );
                 } break;
                 default:
@@ -718,6 +786,7 @@ namespace atto {
         )";
 
         staticMeshUnlitProgram = GLCreateShaderProgram( vertexShaderSource, fragmentShaderSource );
+        staticMeshTriangle  = (Win32StaticMeshResource *)ResourceMeshCreate( "Triangle", 3 );
         staticMeshPlane     = (Win32StaticMeshResource *)ResourceMeshCreate( "Plane",   StaticMeshGeneration::CreateQuad( -1, 1, 2.0f, 2.0f, 0.0f ) );
         staticMeshCube      = (Win32StaticMeshResource *)ResourceMeshCreate( "Cube",    StaticMeshGeneration::CreateBox( 1, 1, 1, 0 ) );
         staticMeshSphere    = (Win32StaticMeshResource *)ResourceMeshCreate( "Sphere",  StaticMeshGeneration::CreateSphere( 1, 8, 8 ) );
@@ -954,6 +1023,12 @@ namespace atto {
     void WindowsCore::GLVertexBufferUpdate( VertexBuffer vertexBuffer, i32 offset, i32 size, const void * data ) {
         AssertMsg( vertexBuffer.size >= offset + size, "Vertex buffer update out of bounds" );
         glBindBuffer( GL_ARRAY_BUFFER, vertexBuffer.vbo );
+        glBufferSubData( GL_ARRAY_BUFFER, offset, size, data );
+        glBindBuffer( GL_ARRAY_BUFFER, 0 );
+    }
+
+    void WindowsCore::GetVertexBufferUpdate( u32 vbo, i32 offset, i32 size, const void * data ) {
+        glBindBuffer( GL_ARRAY_BUFFER, vbo );
         glBufferSubData( GL_ARRAY_BUFFER, offset, size, data );
         glBindBuffer( GL_ARRAY_BUFFER, 0 );
     }

@@ -105,7 +105,8 @@ namespace atto {
         virtual AudioResource*      ResourceGetAndLoadAudio(const char* name) override;
         virtual FontHandle          ResourceGetFont( const char * name ) override;
 
-        StaticMeshResource *        ResourceMeshCreate( const char * name, StaticMeshData data );
+        StaticMeshResource *        ResourceMeshCreate( const char * name, StaticMeshData & data );
+        StaticMeshResource *        ResourceMeshCreate( const char * name, i32 vertexCount );
 
         virtual AudioSpeaker        AudioPlay(AudioResource* audioResource, f32 volume = 1.0f, bool looping = false) override;
 
@@ -134,6 +135,7 @@ namespace atto {
         VertexBuffer                spriteVertexBuffer;
         
         ShaderProgram                     staticMeshUnlitProgram;
+        Win32StaticMeshResource *         staticMeshTriangle;
         Win32StaticMeshResource *         staticMeshPlane;
         Win32StaticMeshResource *         staticMeshCube;
         Win32StaticMeshResource *         staticMeshSphere;
@@ -182,12 +184,13 @@ namespace atto {
         void            GLEnableAlphaBlending();
         void            GLEnablePreMultipliedAlphaBlending();
 
-        bool            GLCheckShaderCompilationErrors(u32 shader);
-        bool            GLCheckShaderLinkErrors(u32 program);
-        ShaderProgram   GLCreateShaderProgram(const char* vertexSource, const char* fragmentSource);
-        VertexBuffer    GLCreateVertexBuffer( VertexLayout * layout, i32 vertexCount, const void* srcData, bool dyanmic);
-        void            GLVertexBufferUpdate(VertexBuffer vertexBuffer, i32 offset, i32 size, const void* data);
-
+        bool            GLCheckShaderCompilationErrors( u32 shader );
+        bool            GLCheckShaderLinkErrors( u32 program );
+        ShaderProgram   GLCreateShaderProgram( const char * vertexSource, const char * fragmentSource );
+        VertexBuffer    GLCreateVertexBuffer( VertexLayout * layout, i32 vertexCount, const void * srcData, bool dyanmic );
+        void            GLVertexBufferUpdate( VertexBuffer vertexBuffer, i32 offset, i32 size, const void * data );
+        void            GetVertexBufferUpdate( u32 vbo, i32 offset, i32 size, const void * data );
+        
         void            GLInitializeShapeRendering();
         void            GLInitializeSpriteRendering();
         void            GLInitializeTextRendering();

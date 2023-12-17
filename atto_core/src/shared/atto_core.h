@@ -56,6 +56,7 @@ namespace atto {
         i32 indexCount;
         i32 vertexStride;
         i32 indexStride;
+        bool updateable;
     };
 
     struct StaticMeshVertex {
@@ -91,6 +92,7 @@ namespace atto {
         // 3D
         PLANE,
         SPHERE,
+        TRIANGLE,
     };
 
     struct DrawCommand {
@@ -131,6 +133,11 @@ namespace atto {
                     glm::vec3 center;
                     f32 r;
                 } sphere;
+                struct {
+                    glm::vec3 p1;
+                    glm::vec3 p2;
+                    glm::vec3 p3;
+                } triangle;
             };
         };
     };
@@ -159,6 +166,7 @@ namespace atto {
 
         void DrawPlane( glm::vec3 center, glm::vec3 normal, glm::vec2 dim, glm::vec4 colour = glm::vec4( 1 ) );
         void DrawSphere( glm::vec3 center, f32 r, glm::vec4 colour = glm::vec4( 1 ) );
+        void DrawTriangle( glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec4 colour = glm::vec4( 1 ) );
 
     private:
         glm::mat4       cameraProj;

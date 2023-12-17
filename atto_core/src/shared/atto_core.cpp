@@ -171,6 +171,17 @@ namespace atto {
         drawList.Add( cmd );
     }
 
+    void DrawContext::DrawTriangle( glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec4 colour /*= glm::vec4( 1 ) */ ) {
+        DrawCommand cmd = {};
+        cmd.type = DrawCommandType::TRIANGLE;
+        cmd.color = colour;
+        cmd.triangle.p1 = p1;
+        cmd.triangle.p2 = p2;
+        cmd.triangle.p3 = p3;
+
+        drawList.Add( cmd );
+    }
+
     void Core::NetConnect() {
         if( client != nullptr ) {
             client->Connect();
