@@ -4,9 +4,10 @@
 using namespace atto;
 
 /*
-* TODO: Need to ui rendering (weekend task)
-* TODO: Better crash support, such as dump files + call stack. (night task)
-* TODO: Input replays (night task)
+* TODO: Make sure the normals are correct for the block maps !
+* TODO: Add mip-maps and anisotropic filtering !
+* TODO: Add collisions with the map tiles
+* TODO: Make saving a map layout work.
 */
 
 

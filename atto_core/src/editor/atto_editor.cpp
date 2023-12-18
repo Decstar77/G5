@@ -39,7 +39,6 @@ namespace atto {
             GameModeGame * leGame = ( (GameModeGame *)game->gameMode );
             Map * map = &leGame->map;
             if( ImGui::Begin( "Canvas", &showCanvas ) ) {
-                static ImVector<ImVec2> points;
                 static ImVec2 scrolling( 0.0f, 0.0f );
                 static bool addingLine = false;
 
@@ -66,24 +65,7 @@ namespace atto {
                 mousePosSnapped.x = i32( mousePosInCanvas.x / GRID_STEP ) * GRID_STEP;
                 mousePosSnapped.y = i32( mousePosInCanvas.y / GRID_STEP ) * GRID_STEP;
 
-                // Add first and second point
-                if( is_hovered && addingLine == false && ImGui::IsMouseClicked( ImGuiMouseButton_Left ) ) {
-                    points.push_back( mousePosSnapped );
-                    points.push_back( mousePosSnapped );
-                    addingLine = true;
-                }
-                if( addingLine ) {
-                    points.back() = mousePosSnapped;
-                    if( ImGui::IsMouseDown( ImGuiMouseButton_Left ) == false ) {
-                        addingLine = false;
-                        int c = points.size();
-                        glm::vec2 p1 = glm::vec2( points[ c - 2 ].x, points[ c - 2 ].y ) / GRID_STEP;
-                        glm::vec2 p2 = glm::vec2( points[ c - 1 ].x, points[ c - 1 ].y ) / GRID_STEP;
-                        //leGame->map.AddWall( p1, p2, false );
-                    }
-                }
-
-                if( is_hovered && core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) ) {
+                if( is_hovered && core->InputMouseButtonDown( MOUSE_BUTTON_1 ) ) {
                     i32 x = (i32)( mousePosSnapped.x / GRID_STEP );
                     i32 y = (i32)( mousePosSnapped.y / GRID_STEP );
                     if( core->InputKeyDown( KEY_CODE_LEFT_ALT ) ) {
@@ -109,11 +91,9 @@ namespace atto {
                 if( drag_delta.x == 0.0f && drag_delta.y == 0.0f )
                     ImGui::OpenPopupOnItemClick( "context", ImGuiPopupFlags_MouseButtonRight );
                 if( ImGui::BeginPopup( "context" ) ) {
-                    if( addingLine )
-                        points.resize( points.size() - 2 );
                     addingLine = false;
-                    if( ImGui::MenuItem( "Remove one", NULL, false, points.Size > 0 ) ) { points.resize( points.size() - 2 ); }
-                    if( ImGui::MenuItem( "Remove all", NULL, false, points.Size > 0 ) ) { points.clear(); }
+                    if( ImGui::MenuItem( "Remove one", NULL, false ) ) { }
+                    if( ImGui::MenuItem( "Remove all", NULL, false ) ) { }
                     ImGui::EndPopup();
                 }
 
@@ -128,10 +108,6 @@ namespace atto {
                     }
                 }
 
-                for( int n = 0; n < points.Size; n += 2 ) {
-                    drawList->AddLine( ImVec2( origin.x + points[ n ].x, origin.y + points[ n ].y ), ImVec2( origin.x + points[ n + 1 ].x, origin.y + points[ n + 1 ].y ), IM_COL32( 255, 255, 0, 255 ), 2.0f );
-                }
-
                 const i32 mapBlockCount = map->blocks.GetCapcity();
                 for( i32 blockIndex = 0; blockIndex < mapBlockCount; blockIndex++ ) {
                     const MapBlock & b = map->blocks[ blockIndex ];
@@ -139,7 +115,7 @@ namespace atto {
                         ImVec2 minV = { origin.x + b.xIndex * GRID_STEP,            origin.y + b.yIndex * GRID_STEP };
                         ImVec2 maxV = { origin.x + ( b.xIndex + 1 ) * GRID_STEP,    origin.y + ( b.yIndex + 1 ) * GRID_STEP };
 
-                        drawList->AddRectFilled( minV, maxV, IM_COL32( 255, 255, 0, 255 ) );
+                        drawList->AddRectFilled( minV, maxV, IM_COL32( 230, 230, 0, 255 ) );
                     }
                 }
 
@@ -149,7 +125,12 @@ namespace atto {
                     drawList->AddCircleFilled( p1, 5, IM_COL32( 255, 255, 0, 255 ) );
                     ImU32 c = core->InputKeyDown( KEY_CODE_LEFT_ALT ) ? IM_COL32( 200, 0, 0, 150 ) : IM_COL32( 200, 200, 0, 150 );
                     drawList->AddRectFilled( p1, p2, c );
-                    SmallString t = StringFormat::Small( "(%.2f, %.2f)", mousePosSnapped.x, mousePosSnapped.y );
+                    SmallString t = StringFormat::Small( "(%d, %d)", (i32)( mousePosSnapped.x / GRID_STEP ), (i32)( mousePosSnapped.y / GRID_STEP ) );
+                    ImVec2 p3 = ImVec2( p1.x + GRID_STEP / 2, p1.y + GRID_STEP / 2);
+                    ImVec2 s = ImGui::CalcTextSize( t.GetCStr() );
+                    p3.x -= s.x / 2;
+                    p3.y -= s.y / 2;
+                    drawList->AddText( p3, IM_COL32( 255, 255, 255, 255 ), t.GetCStr() );
                 }
 
                 drawList->PopClipRect();
