@@ -32,6 +32,9 @@ namespace atto {
     struct Entity {
         EntityHandle    handle;
         EntityType      type;
+
+        bool            sleeping;
+
         glm::vec3       pos;
         glm::mat3       ori;
 
@@ -65,27 +68,53 @@ namespace atto {
         glm::vec3   p1;
         glm::vec3   p2;
         glm::vec3   p3;
+        glm::vec2   uv1;
+        glm::vec2   uv2;
+        glm::vec2   uv3;
         glm::vec3   normal;
 
         inline void         ComputeNormal() { normal = glm::normalize( glm::cross( p2 - p1, p3 - p1 ) ); }
+        inline void         InvertNormal() { normal = -normal; Swap( p1, p3 ); }
         inline glm::vec3    GetCenter() const { return ( p1 + p2 + p3 ) / 3.0f; }
     };
 
-    struct Map {
-        FixedList<MapTriangle, 1024> triangles;
+    struct MapBlock {
+        bool filled;
+        i32 flatIndex;
+        i32 xIndex;
+        i32 yIndex;
+        glm::vec2 bottomLeftWS;
+        glm::vec2 topRightWS;
+    };
+
+    class Map {
+    public:
+        inline static f32 BlockDim = 3.0f;
+        i32                             mapWidth;
+        i32                             mapHeight;
+
+        FixedList<MapBlock, 1024>       blocks;
+        FixedList<MapTriangle, 1024>    triangles;
+
+    public:
+        bool                            AddBlock( i32 x, i32 y );
+        bool                            RemoveBlock( i32 x, i32 y );
+        void                            AddFloor( glm::vec2 p1, glm::vec2 p2, i32 level );
+        void                            AddWall( glm::vec2 p1, glm::vec2 p2, bool invertNormal );
+        void                            Bake();
     };
 
     class GameModeGame : public GameMode {
     public:
-        GameModeType GetGameModeType() override;
-        void Init( Core * core ) override;
-        void UpdateAndRender( Core * core, f32 dt ) override;
-        void Shutdown( Core * core ) override;
+        GameModeType            GetGameModeType() override;
+        void                    Init( Core * core ) override;
+        void                    UpdateAndRender( Core * core, f32 dt ) override;
+        void                    Shutdown( Core * core ) override;
 
-        Entity * SpawnEntity( EntityType type );
-        Entity * SpawnPlayer( glm::vec3 pos );
+        Entity *                SpawnEntity( EntityType type );
+        Entity *                SpawnPlayer( glm::vec3 pos );
 
-        void     EntityUpdatePlayer( Core * core, Entity * ent );
+        void                    EntityUpdatePlayer( Core * core, Entity * ent );
     public:
 
         Map                                     map;
@@ -93,6 +122,8 @@ namespace atto {
         f32                                     dtAccumulator = 0.0f;
 
         Entity *                                localPlayer = nullptr;
+
+        TextureResource *                       grid_Dark1 = nullptr;
         
 
     };

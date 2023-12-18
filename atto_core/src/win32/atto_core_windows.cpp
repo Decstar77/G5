@@ -446,6 +446,7 @@ namespace atto {
 
                     GLShaderProgramBind( staticMeshUnlitProgram );
                     GLShaderProgramSetVec4( "color", cmd.color );
+                    GLShaderProgramSetInt( "hasTexture", 0 );
                     GLShaderProgramSetMat4( "pvm", pvm );
 
                     glEnable( GL_CULL_FACE );
@@ -465,6 +466,7 @@ namespace atto {
 
                     GLShaderProgramBind( staticMeshUnlitProgram );
                     GLShaderProgramSetVec4( "color", cmd.color );
+                    GLShaderProgramSetInt( "hasTexture", 0 );
                     GLShaderProgramSetMat4( "pvm", pvm );
 
                     glEnable( GL_CULL_FACE );
@@ -477,9 +479,9 @@ namespace atto {
                 case DrawCommandType::TRIANGLE:
                 {
                     StaticMeshVertex vertices[ 3 ] = {
-                        { cmd.triangle.p1, glm::vec3( 0 ), glm::vec2( 0 )},
-                        { cmd.triangle.p2, glm::vec3( 0 ), glm::vec2( 0 )},
-                        { cmd.triangle.p3, glm::vec3( 0 ), glm::vec2( 0 )}
+                        { cmd.triangle.p1, glm::vec3( 0 ), cmd.triangle.uv1 },
+                        { cmd.triangle.p2, glm::vec3( 0 ), cmd.triangle.uv2 },
+                        { cmd.triangle.p3, glm::vec3( 0 ), cmd.triangle.uv3 }
                     };
 
                     glm::mat4 v = dcxt->cameraView;
@@ -487,8 +489,18 @@ namespace atto {
                     glm::mat4 pvm = p * v;
 
                     GLShaderProgramBind( staticMeshUnlitProgram );
-                    GLShaderProgramSetVec4( "color", cmd.color );
                     GLShaderProgramSetMat4( "pvm", pvm );
+
+                    if( cmd.triangle.texture != nullptr ) {
+                        GLShaderProgramSetInt( "hasTexture", 1 );
+                        Win32TextureResource * texture = (Win32TextureResource *)cmd.triangle.texture;
+                        GLShaderProgramSetSampler( "texture0", 0 );
+                        GLShaderProgramSetTexture( 0, texture->handle );
+                    }
+                    else {
+                        GLShaderProgramSetInt( "hasTexture", 0 );
+                        GLShaderProgramSetVec4( "color", cmd.color );
+                    }
 
                     glDisable( GL_CULL_FACE );
                     glEnable( GL_DEPTH_TEST );
@@ -527,7 +539,7 @@ namespace atto {
         textureResource.height = textureProcessor.height;
         textureResource.generateMipMaps = false;
 
-        glPixelStorei( GL_UNPACK_ALIGNMENT, 1 ); // @TODO: Remove this pack the textures
+        //glPixelStorei( GL_UNPACK_ALIGNMENT, 1 ); // @TODO: Remove this pack the textures
 
         glGenTextures( 1, &textureResource.handle );
         glBindTexture( GL_TEXTURE_2D, textureResource.handle );
@@ -777,11 +789,17 @@ namespace atto {
 
             uniform sampler2D texture0;
             uniform vec4 color;
+            uniform int hasTexture;
 
             void main()
             {
-                //FragColor = texture(texture0, TexCoords) * color;
-                FragColor = color;
+                if ( hasTexture == 1 ) {
+                    FragColor = texture(texture0, TexCoords);
+                } else {
+                    //FragColor = color;
+                    FragColor = vec4(TexCoords.x, TexCoords.y, 0, 1) ;
+                }
+                //FragColor = color * vec4(TexCoords.x, TexCoords.y, 1, 1) ;
             }
         )";
 

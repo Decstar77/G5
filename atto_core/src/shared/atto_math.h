@@ -15,6 +15,20 @@ namespace atto {
         return static_cast<i16>( v * 32767.0 );
     }
 
+    inline i32 PosIndexToFlatIndex( i32 x, i32 y, i32 width ) {
+        return y * width + x;
+    }
+
+    inline i32 FlatIndexToPosIndex( i32 flat, i32 width, i32 & x, i32 & y ) {
+        x = flat % width;
+        y = flat / width;
+        return flat;
+    }
+
+    inline i32 PosIndexToFlatIndex( i32 x, i32 y, i32 z, i32 width, i32 height ) {
+        return z * width * height + y * width + x;
+    }
+
     struct Manifold2D {
         f32 penetration;
         glm::vec2 pointA;

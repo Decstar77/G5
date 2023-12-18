@@ -171,13 +171,27 @@ namespace atto {
         drawList.Add( cmd );
     }
 
-    void DrawContext::DrawTriangle( glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec4 colour /*= glm::vec4( 1 ) */ ) {
+    void DrawContext::DrawTriangle( glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec4 colour) {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::TRIANGLE;
         cmd.color = colour;
         cmd.triangle.p1 = p1;
         cmd.triangle.p2 = p2;
         cmd.triangle.p3 = p3;
+
+        drawList.Add( cmd );
+    }
+
+    void DrawContext::DrawTriangle( glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec2 uv1, glm::vec2 uv2, glm::vec2 uv3, TextureResource * texture ) {
+        DrawCommand cmd = {};
+        cmd.type = DrawCommandType::TRIANGLE;
+        cmd.triangle.texture = texture;
+        cmd.triangle.p1 = p1;
+        cmd.triangle.p2 = p2;
+        cmd.triangle.p3 = p3;
+        cmd.triangle.uv1 = uv1;
+        cmd.triangle.uv2 = uv2;
+        cmd.triangle.uv3 = uv3;
 
         drawList.Add( cmd );
     }

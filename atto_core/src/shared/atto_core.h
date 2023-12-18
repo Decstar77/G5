@@ -137,6 +137,10 @@ namespace atto {
                     glm::vec3 p1;
                     glm::vec3 p2;
                     glm::vec3 p3;
+                    glm::vec2 uv1;
+                    glm::vec2 uv2;
+                    glm::vec2 uv3;
+                    TextureResource * texture;
                 } triangle;
             };
         };
@@ -167,6 +171,7 @@ namespace atto {
         void DrawPlane( glm::vec3 center, glm::vec3 normal, glm::vec2 dim, glm::vec4 colour = glm::vec4( 1 ) );
         void DrawSphere( glm::vec3 center, f32 r, glm::vec4 colour = glm::vec4( 1 ) );
         void DrawTriangle( glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec4 colour = glm::vec4( 1 ) );
+        void DrawTriangle( glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec2 uv1, glm::vec2 uv2, glm::vec2 uv3, TextureResource * texture );
 
     private:
         glm::mat4       cameraProj;
