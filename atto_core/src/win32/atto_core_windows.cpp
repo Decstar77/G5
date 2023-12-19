@@ -493,7 +493,7 @@ namespace atto {
                     GLShaderProgramSetInt( "hasTexture", 0 );
                     GLShaderProgramSetVec4( "color", cmd.color );
 
-                    glDisable( GL_CULL_FACE );
+                    glEnable( GL_CULL_FACE );
                     glEnable( GL_DEPTH_TEST );
 
                     glBindVertexArray( staticMeshTriangle->vao );
@@ -527,7 +527,7 @@ namespace atto {
                         GLShaderProgramSetVec4( "color", cmd.color );
                     }
 
-                    glDisable( GL_CULL_FACE );
+                    glEnable( GL_CULL_FACE );
                     glEnable( GL_DEPTH_TEST );
 
                     glBindVertexArray( staticMeshTriangle->vao );

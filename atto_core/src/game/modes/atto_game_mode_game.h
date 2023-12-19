@@ -74,7 +74,7 @@ namespace atto {
         glm::vec3   normal;
 
         inline void         ComputeNormal() { normal = glm::normalize( glm::cross( p2 - p1, p3 - p1 ) ); }
-        inline void         InvertNormal() { normal = -normal; Swap( p1, p3 ); }
+        inline void         InvertNormal() { normal = -normal; Swap( p1, p3 ); Swap( uv1, uv3 ); }
         inline glm::vec3    GetCenter() const { return ( p1 + p2 + p3 ) / 3.0f; }
     };
 
@@ -99,7 +99,7 @@ namespace atto {
     public:
         bool                            AddBlock( i32 x, i32 y );
         bool                            RemoveBlock( i32 x, i32 y );
-        void                            AddFloor( glm::vec2 p1, glm::vec2 p2, i32 level );
+        void                            AddFloor( glm::vec2 p1, glm::vec2 p2, i32 level, bool invertNormal );
         void                            AddWall( glm::vec2 p1, glm::vec2 p2, bool invertNormal );
         void                            Bake();
     };

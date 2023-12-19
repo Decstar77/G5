@@ -51,17 +51,19 @@ namespace atto {
         const i32 mapTriangleCount = map.triangles.GetCount();
         for( i32 i = 0; i < mapTriangleCount; ++i ) {
             MapTriangle & t = map.triangles[ i ];
-            //worldDraws->DrawTriangle( t.p1, t.p2, t.p3, t.uv1, t.uv2, t.uv3, grid_Dark1 );
+            worldDraws->DrawTriangle( t.p1, t.p2, t.p3, t.uv1, t.uv2, t.uv3, grid_Dark1 );
+            glm::vec3 c = t.GetCenter();
+            worldDraws->DrawLine( c, c + t.normal, 1.0f, glm::vec4( 1, 0, 0, 1 ) );
         }
 
 
         worldDraws->SetCamera( localPlayer->CameraGetViewMatrix(), localPlayer->camera.yfov, localPlayer->camera.zNear, localPlayer->camera.zFar );
         //worldDraws->DrawRect( glm::vec2( 0 ), glm::vec2( 100 ), 0.0f, glm::vec4( 1, 0, 0, 1 ) );
         //worldDraws->DrawPlane( glm::vec3( 0, 0, 0 ), glm::vec3( 0, 0, 1 ), glm::vec2( 1 ), glm::vec4( 0, 1, 0, 1 ) );
-        worldDraws->DrawPlane( glm::vec3( 0, 0, 0 ), glm::vec3( 0, 1, 0 ), glm::vec2( 10 ), glm::vec4( 0.4f, 0.4f, 0.2f, 1 ) );
+        //worldDraws->DrawPlane( glm::vec3( 0, 0, 0 ), glm::vec3( 0, 1, 0 ), glm::vec2( 10 ), glm::vec4( 0.4f, 0.4f, 0.2f, 1 ) );
         //worldDraws->DrawSphere( glm::vec3( 0, 3, 0 ), 1.0f );
         //worldDraws->DrawTriangle( glm::vec3( 0, 0, 0 ), glm::vec3( 0, 1, 0 ), glm::vec3( 1, 0, 0 ), glm::vec4( 1, 0, 0, 1 ) );
-        worldDraws->DrawLine( glm::vec3( 0, 0, 0 ), glm::vec3( 1, 1, 1 ), 1 );
+        //worldDraws->DrawLine( glm::vec3( 0, 0, 0 ), glm::vec3( 1, 1, 1 ), 1 );
         core->RenderSubmit( worldDraws, true );
     }
 
@@ -302,15 +304,15 @@ namespace atto {
         t2.ComputeNormal();
 
         if( invertNormal ) {
-            //t1.InvertNormal();
-            //t2.InvertNormal();
+            t1.InvertNormal();
+            t2.InvertNormal();
         }
 
         triangles.Add( t1 );
         triangles.Add( t2 );
     }
 
-    void Map::AddFloor( glm::vec2 p1, glm::vec2 p2, i32 level ) {
+    void Map::AddFloor( glm::vec2 p1, glm::vec2 p2, i32 level, bool invertNormal ) {
         MapTriangle t1 = {};
         t1.p1 = glm::vec3( p1.x, BlockDim * level,  p2.y );
         t1.p2 = glm::vec3( p1.x, BlockDim * level,  p1.y );
@@ -328,6 +330,11 @@ namespace atto {
         t2.uv2 = glm::vec2( 0, 1 );
         t2.uv3 = glm::vec2( 1, 0 );
         t2.ComputeNormal();
+
+        if( invertNormal ) {
+            t1.InvertNormal();
+            t2.InvertNormal();
+        }
 
         triangles.Add( t1 );
         triangles.Add( t2 );
@@ -370,8 +377,8 @@ namespace atto {
                     AddWall( b.bottomLeftWS + glm::vec2( 0, BlockDim ), b.bottomLeftWS + glm::vec2( BlockDim, BlockDim ), true );
                 }
 
-                AddFloor( b.bottomLeftWS, b.topRightWS, 0 );
-                AddFloor( b.bottomLeftWS, b.topRightWS, 1 );
+                AddFloor( b.bottomLeftWS, b.topRightWS, 0, true );
+                AddFloor( b.bottomLeftWS, b.topRightWS, 1, false );
             }
         }
     }
