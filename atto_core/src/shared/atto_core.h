@@ -87,11 +87,12 @@ namespace atto {
         RECT,
         SPRITE,
         TEXT,
-        LINE,
+        LINE2D,
         
         // 3D
         PLANE,
         SPHERE,
+        LINE,
         TRIANGLE,
     };
 
@@ -136,6 +137,10 @@ namespace atto {
                 struct {
                     glm::vec3 p1;
                     glm::vec3 p2;
+                } line;
+                struct {
+                    glm::vec3 p1;
+                    glm::vec3 p2;
                     glm::vec3 p3;
                     glm::vec2 uv1;
                     glm::vec2 uv2;
@@ -163,13 +168,14 @@ namespace atto {
         void DrawCircle( glm::vec2 pos, f32 radius, glm::vec4 colour = glm::vec4( 1 ) );
         void DrawRect( glm::vec2 bl, glm::vec2 tr, glm::vec4 colour = glm::vec4( 1 ) );
         void DrawRect( glm::vec2 center, glm::vec2 dim, f32 rot, const glm::vec4 & color = glm::vec4( 1 ) );
-        void DrawLine( glm::vec2 start, glm::vec2 end, f32 thicc, const glm::vec4 & color = glm::vec4( 1 ) );
+        void DrawLine2D( glm::vec2 start, glm::vec2 end, f32 thicc, const glm::vec4 & color = glm::vec4( 1 ) );
         void DrawSprite( TextureResource * texture, glm::vec2 center, f32 rot = 0.0f, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
         void DrawSpriteBL( TextureResource * texture, glm::vec2 bl, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
         void DrawText2D( FontHandle font, glm::vec2 tl, f32 fontSize, const char * text, glm::vec4 colour = glm::vec4( 1 ) );
 
         void DrawPlane( glm::vec3 center, glm::vec3 normal, glm::vec2 dim, glm::vec4 colour = glm::vec4( 1 ) );
         void DrawSphere( glm::vec3 center, f32 r, glm::vec4 colour = glm::vec4( 1 ) );
+        void DrawLine( glm::vec3 p1, glm::vec3 p2, f32 thicc, glm::vec4 colour = glm::vec4( 1 ) );
         void DrawTriangle( glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec4 colour = glm::vec4( 1 ) );
         void DrawTriangle( glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec2 uv1, glm::vec2 uv2, glm::vec2 uv3, TextureResource * texture );
 

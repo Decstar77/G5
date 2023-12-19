@@ -476,6 +476,31 @@ namespace atto {
                     glDrawElements( GL_TRIANGLES, staticMeshSphere->indexCount, GL_UNSIGNED_SHORT, 0 );
                     glBindVertexArray( 0 );
                 } break;
+                case DrawCommandType::LINE:
+                {
+                    StaticMeshVertex vertices[ 3 ] = {
+                        { cmd.line.p1,      glm::vec3( 0 ), glm::vec2( 0 ) },
+                        { cmd.line.p2,      glm::vec3( 0 ), glm::vec2( 0 ) },
+                        { glm::vec3( 0 ),   glm::vec3( 0 ), glm::vec2( 0 ) },
+                    };
+
+                    glm::mat4 v = dcxt->cameraView;
+                    glm::mat4 p = dcxt->cameraProj;
+                    glm::mat4 pvm = p * v;
+
+                    GLShaderProgramBind( staticMeshUnlitProgram );
+                    GLShaderProgramSetMat4( "pvm", pvm );
+                    GLShaderProgramSetInt( "hasTexture", 0 );
+                    GLShaderProgramSetVec4( "color", cmd.color );
+
+                    glDisable( GL_CULL_FACE );
+                    glEnable( GL_DEPTH_TEST );
+
+                    glBindVertexArray( staticMeshTriangle->vao );
+                    GetVertexBufferUpdate( staticMeshTriangle->vbo, 0, sizeof( vertices ), vertices );
+                    glDrawArrays( GL_LINES, 0, 2 );
+                    glBindVertexArray( 0 );
+                } break;
                 case DrawCommandType::TRIANGLE:
                 {
                     StaticMeshVertex vertices[ 3 ] = {
@@ -507,7 +532,7 @@ namespace atto {
 
                     glBindVertexArray( staticMeshTriangle->vao );
                     GetVertexBufferUpdate( staticMeshTriangle->vbo, 0, sizeof( vertices ), vertices );
-                    glDrawArrays( GL_TRIANGLES, 0, 6 );
+                    glDrawArrays( GL_TRIANGLES, 0, 3 );
                     glBindVertexArray( 0 );
                 } break;
                 default:
@@ -796,8 +821,8 @@ namespace atto {
                 if ( hasTexture == 1 ) {
                     FragColor = texture(texture0, TexCoords);
                 } else {
-                    //FragColor = color;
-                    FragColor = vec4(TexCoords.x, TexCoords.y, 0, 1) ;
+                    FragColor = color;
+                    //FragColor = vec4(TexCoords.x, TexCoords.y, 0, 1) ;
                 }
                 //FragColor = color * vec4(TexCoords.x, TexCoords.y, 1, 1) ;
             }

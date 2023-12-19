@@ -82,7 +82,7 @@ namespace atto {
         drawList.Add( cmd );
     }
 
-    void DrawContext::DrawLine( glm::vec2 start, glm::vec2 end, f32 thicc, const glm::vec4 & color /*= glm::vec4(1)*/ ) {
+    void DrawContext::DrawLine2D( glm::vec2 start, glm::vec2 end, f32 thicc, const glm::vec4 & color /*= glm::vec4(1)*/ ) {
         //glm::vec2 direction = glm::normalize( end - start );
         //glm::vec2 perpendicular( direction.y, -direction.x );
 
@@ -171,7 +171,17 @@ namespace atto {
         drawList.Add( cmd );
     }
 
-    void DrawContext::DrawTriangle( glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec4 colour) {
+    void DrawContext::DrawLine( glm::vec3 p1, glm::vec3 p2, f32 thicc, glm::vec4 colour /*= glm::vec4( 1 ) */ ) {
+        DrawCommand cmd = {};
+        cmd.type = DrawCommandType::LINE;
+        cmd.color = colour;
+        cmd.line.p1 = p1;
+        cmd.line.p2 = p2;
+
+        drawList.Add( cmd );
+    }
+
+    void DrawContext::DrawTriangle( glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec4 colour ) {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::TRIANGLE;
         cmd.color = colour;
