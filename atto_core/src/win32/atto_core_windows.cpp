@@ -155,7 +155,7 @@ namespace atto {
         //RenderSetCamera( 320, 180 );
         //RenderSetCamera( 640, 360 );
         GLResetSurface( (f32)w, (f32)h );
-
+        GLCheckCapablities();
         GLInitializeShapeRendering();
         GLInitializeSpriteRendering();
         GLInitializeTextRendering();
@@ -543,7 +543,7 @@ namespace atto {
         }
     }
 
-    TextureResource * WindowsCore::ResourceGetAndLoadTexture( const char * name ) {
+    TextureResource * WindowsCore::ResourceGetAndLoadTexture( const char * name, bool genMips, bool genAnti ) {
         const i32 textureResourceCount = resources.textures.GetCount();
         for( i32 i = 0; i < textureResourceCount; i++ ) {
             TextureResource & textureResource = resources.textures[ i ];
@@ -562,22 +562,31 @@ namespace atto {
         textureResource.channels = textureProcessor.channels;
         textureResource.width = textureProcessor.width;
         textureResource.height = textureProcessor.height;
-        textureResource.generateMipMaps = false;
+        textureResource.hasMips = genMips;
+        textureResource.hasAnti = genAnti;
 
         //glPixelStorei( GL_UNPACK_ALIGNMENT, 1 ); // @TODO: Remove this pack the textures
 
         glGenTextures( 1, &textureResource.handle );
         glBindTexture( GL_TEXTURE_2D, textureResource.handle );
         glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, textureResource.width, textureResource.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureProcessor.pixelData );
-        if( textureResource.generateMipMaps ) {
-            glGenerateMipmap( GL_TEXTURE_2D );
-        }
 
         glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
         glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, textureResource.generateMipMaps ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR );
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, genMips ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR );
         glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 
+        // Generate mipsmaps, thanks opengl for making this easy.
+        if( genMips ) {
+            glGenerateMipmap( GL_TEXTURE_2D );
+        }
+
+        if( genAnti ) {
+            f32 maxAnti = 0.0f;
+            glGetFloatv( GL_MAX_TEXTURE_MAX_ANISOTROPY, &maxAnti );
+            glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, maxAnti );
+        }
+        
         glBindTexture( GL_TEXTURE_2D, 0 );
 
         return resources.textures.Add( textureResource );
@@ -859,6 +868,10 @@ namespace atto {
 
             theGameSettings = settings;
         }
+    }
+
+    void WindowsCore::GLCheckCapablities() {
+        // I was going to check for antisotrophic filtering here but apparently this is standard in opengl 4.6 which makes sense and come one, which GPU won't have this ?
     }
 
     void WindowsCore::GLShaderProgramBind( ShaderProgram & program ) {

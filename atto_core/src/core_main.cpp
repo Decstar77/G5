@@ -6,7 +6,7 @@ using namespace atto;
 /*
 * TODO: Add a way to draw 3d lines. ( DONE )
 * TODO: Make sure the normals are correct for the block maps ! ( DONE )
-* TODO: Add mip-maps and anisotropic filtering !
+* TODO: Add mip-maps and anisotropic filtering ( DONE )!
 * TODO: Add collisions with the map tiles
 * TODO: Make saving a map layout work.
 */

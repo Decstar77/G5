@@ -11,7 +11,8 @@ namespace atto {
     }
 
     void GameModeGame::Init( Core * core ) {
-        grid_Dark1 = core->ResourceGetAndLoadTexture( "kenney_prototype/dark/texture_01.png" );
+        grid_Dark1 = core->ResourceGetAndLoadTexture( "kenney_prototype/dark/texture_01.png", true, true );
+        grid_Dark8 = core->ResourceGetAndLoadTexture( "kenney_prototype/dark/texture_08.png", true, true );
 
         localPlayer = SpawnPlayer( glm::vec3( 0, 0, 3 ) );
 
@@ -51,9 +52,15 @@ namespace atto {
         const i32 mapTriangleCount = map.triangles.GetCount();
         for( i32 i = 0; i < mapTriangleCount; ++i ) {
             MapTriangle & t = map.triangles[ i ];
-            worldDraws->DrawTriangle( t.p1, t.p2, t.p3, t.uv1, t.uv2, t.uv3, grid_Dark1 );
+            if( glm::abs( glm::dot( t.normal, glm::vec3( 0, 1, 0 ) ) ) > 0.9f ) {
+                worldDraws->DrawTriangle( t.p1, t.p2, t.p3, t.uv1, t.uv2, t.uv3, grid_Dark8 );
+            }
+            else {
+                worldDraws->DrawTriangle( t.p1, t.p2, t.p3, t.uv1, t.uv2, t.uv3, grid_Dark1 );
+            }
+            
             glm::vec3 c = t.GetCenter();
-            worldDraws->DrawLine( c, c + t.normal, 1.0f, glm::vec4( 1, 0, 0, 1 ) );
+            //worldDraws->DrawLine( c, c + t.normal, 1.0f, glm::vec4( 1, 0, 0, 1 ) );
         }
 
 

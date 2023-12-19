@@ -101,8 +101,8 @@ namespace atto {
     public:
         void Run(int argc, char** argv) override;
         
-        virtual TextureResource*    ResourceGetAndLoadTexture(const char* name) override;
-        virtual AudioResource*      ResourceGetAndLoadAudio(const char* name) override;
+        virtual TextureResource *   ResourceGetAndLoadTexture( const char * name, bool genMips, bool genAnti ) override;
+        virtual AudioResource *     ResourceGetAndLoadAudio( const char * name ) override;
         virtual FontHandle          ResourceGetFont( const char * name ) override;
 
         StaticMeshResource *        ResourceMeshCreate( const char * name, StaticMeshData & data );
@@ -168,6 +168,7 @@ namespace atto {
         bool            ALLoadOGG(const char* file, Win32AudioResource& audioBuffer);
         bool            ALLoadWAV(const char* file, Win32AudioResource& audioBuffer);
 
+        void            GLCheckCapablities();
         void            GLShaderProgramBind(ShaderProgram& program);
         i32             GLShaderProgramGetUniformLocation(ShaderProgram& program, const char* name);
         void            GLShaderProgramSetInt(const char* name, i32 value);

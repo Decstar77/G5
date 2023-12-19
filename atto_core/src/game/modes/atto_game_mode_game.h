@@ -124,6 +124,7 @@ namespace atto {
         Entity *                                localPlayer = nullptr;
 
         TextureResource *                       grid_Dark1 = nullptr;
+        TextureResource *                       grid_Dark8 = nullptr;
         
 
     };

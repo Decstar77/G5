@@ -39,7 +39,8 @@ namespace atto {
         i32 width;
         i32 height;
         i32 channels;
-        bool generateMipMaps;
+        bool hasMips;
+        bool hasAnti;
     };
 
     struct AudioResource {
@@ -230,7 +231,7 @@ namespace atto {
         f64                                 GetLastTime() const;
         Camera                              CreateDefaultCamera() const;
         
-        virtual TextureResource *           ResourceGetAndLoadTexture( const char * name ) = 0;
+        virtual TextureResource *           ResourceGetAndLoadTexture( const char * name, bool genMips, bool genAnti ) = 0;
         virtual AudioResource *             ResourceGetAndLoadAudio( const char * name ) = 0;
         virtual FontHandle                  ResourceGetFont( const char * name ) = 0;
 
