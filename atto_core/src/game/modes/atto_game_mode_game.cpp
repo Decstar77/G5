@@ -205,9 +205,7 @@ namespace atto {
             ent->camera.right = glm::normalize( glm::cross( ent->camera.front, glm::vec3( 0, 1, 0 ) ) );
             ent->camera.up = glm::normalize( glm::cross( ent->camera.right, ent->camera.front ) );
 
-            const f32 dt = core->GetDeltaTime();
-            const f32 v = 1400.0f * dt;
-
+            
             glm::mat3 ori = ent->camera.GetOrientation();
             ori[ 0 ].y = 0;
             ori[ 0 ] = glm::normalize( ori[ 0 ] );
@@ -218,56 +216,53 @@ namespace atto {
             glm::vec3 right = ori[ 0 ];
             glm::vec3 forward = ori[ 2 ];
 
-            glm::vec3 acc = glm::vec3( 0 );
-            if( core->InputKeyDown( KEY_CODE_W ) ) {
-                acc += forward * v;
-            }
-            if( core->InputKeyDown( KEY_CODE_S ) ) {
-                acc -= forward * v;
-            }
-            if( core->InputKeyDown( KEY_CODE_A ) ) {
-                acc -= right * v;
-            }
-            if( core->InputKeyDown( KEY_CODE_D ) ) {
-                acc += right * v;
-            }
+            const f32 tickTime = 0.01f; // 100Hz
+            const i32 maxTickIterations = 3;
+            const f32 dt = core->GetDeltaTime();
+            dtAccumulator += dt;
+            i32 tickIteration = 0;
+            while( dtAccumulator >= tickTime && tickIteration < maxTickIterations ) {
+                dtAccumulator -= tickTime;
+                tickIteration++;
 
-            const f32 resistance = 14.0f;
+                const f32 v = 6000.0f * tickTime;
 
-            // @NOTE: Linear drag
-            acc.x += -resistance * ent->vel.x;
-            acc.z += -resistance * ent->vel.z;
-
-            ent->vel += acc * dt;
-            ent->pos += ent->vel * dt;
-
-            // @NOTE: Collision with map
-        #if 0
-            Collider plane = {};
-            plane.type = COLLIDER_TYPE_PLANE;
-            plane.plane.c = glm::vec3( 0 );
-            plane.plane.n = glm::vec3( 0, 0, 1 );
-
-            ent->collisionCollider.sphere.c = ent->pos;
-
-            Manifold m = {};
-            if( CollisionCheck_SphereVsPlane( ent->collisionCollider, plane, m ) == true ) {
-                ent->pos += m.normal * m.penetration;
-            }
-        #else 
-            
-
-            ent->collisionCollider.sphere.c = ent->pos;
-            const i32 triCount = map.triangles.GetCount();
-            for( i32 triIndex = 0; triIndex < triCount; triIndex++ ) {
-                MapTriangle & tri = map.triangles[ triIndex ];
-                Manifold m = {};
-                if( CollisionCheck_SphereVsTri( ent->pos, ent->collisionCollider.sphere.r, tri.p1, tri.p2, tri.p3, tri.normal, m ) == true ) {
-                    ent->pos += m.normal * m.penetration;
+                glm::vec3 acc = glm::vec3( 0 );
+                if( core->InputKeyDown( KEY_CODE_W ) ) {
+                    acc += forward * v;
                 }
-            }
-        #endif
+                if( core->InputKeyDown( KEY_CODE_S ) ) {
+                    acc -= forward * v;
+                }
+                if( core->InputKeyDown( KEY_CODE_A ) ) {
+                    acc -= right * v;
+                }
+                if( core->InputKeyDown( KEY_CODE_D ) ) {
+                    acc += right * v;
+                }
 
+                const f32 resistance = 14.0f;
+
+                // @NOTE: Linear drag
+                acc.x += -resistance * ent->vel.x;
+                acc.z += -resistance * ent->vel.z;
+
+                ent->vel += acc * tickTime;
+                ent->pos += ent->vel * tickTime;
+
+                ent->collisionCollider.sphere.c = ent->pos;
+                const i32 triCount = map.triangles.GetCount();
+                for( i32 triIndex = 0; triIndex < triCount; triIndex++ ) {
+                    MapTriangle & tri = map.triangles[ triIndex ];
+                    Manifold m = {};
+                    if( CollisionCheck_SphereVsTri( ent->pos, ent->collisionCollider.sphere.r, tri.p1, tri.p2, tri.p3, tri.normal, m ) == true ) {
+                        ent->pos += m.normal * m.penetration;
+                    }
+                }
+                
+                // @HACK: Lock the player to the ground
+                ent->pos.y = ent->collisionCollider.sphere.c.y;
+            }
         }
     }
 

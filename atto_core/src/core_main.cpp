@@ -7,8 +7,9 @@ using namespace atto;
 * TODO: Add a way to draw 3d lines. ( DONE )
 * TODO: Make sure the normals are correct for the block maps ! ( DONE )
 * TODO: Add mip-maps and anisotropic filtering ( DONE )!
-* TODO: Add collisions with the map tiles
+* TODO: Add basic collisions with the map tiles ( DONE )!
 * TODO: Make saving a map layout work.
+* TODO: Make the editor override the local player
 */
 
 

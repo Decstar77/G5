@@ -89,7 +89,7 @@ namespace atto {
 
     class Map {
     public:
-        inline static f32 BlockDim = 3.0f;
+        inline static f32 BlockDim = 4.0f;
         i32                             mapWidth;
         i32                             mapHeight;
 
