@@ -155,32 +155,32 @@ namespace atto {
 
         void            RenderDrawCommandText( DrawCommand & cmd );
 
-        u64             OsGetFileLastWriteTime(const char* fileName) override;
-        void            OsLogMessage(const char* message, u8 colour) override;
-        void            OsErrorBox(const char* msg) override;
-        void            OsParseStartArgs(int argc, char** argv);
+        u64             OsGetFileLastWriteTime( const char * fileName ) override;
+        void            OsLogMessage( const char * message, u8 colour ) override;
+        void            OsErrorBox( const char * msg ) override;
+        void            OsParseStartArgs( int argc, char ** argv );
 
         bool            ALInitialize();
         void            ALShudown();
         void            ALCheckErrors();
-        u32             ALGetFormat(u32 numChannels, u32 bitDepth);
-        u32             ALCreateAudioBuffer(i32 sizeBytes, byte* data, i32 channels, i32 bitDepth, i32 sampleRate);
-        bool            ALLoadOGG(const char* file, Win32AudioResource& audioBuffer);
-        bool            ALLoadWAV(const char* file, Win32AudioResource& audioBuffer);
+        u32             ALGetFormat( u32 numChannels, u32 bitDepth );
+        u32             ALCreateAudioBuffer( i32 sizeBytes, byte * data, i32 channels, i32 bitDepth, i32 sampleRate );
+        bool            ALLoadOGG( const char * file, Win32AudioResource & audioBuffer );
+        bool            ALLoadWAV( const char * file, Win32AudioResource & audioBuffer );
 
         void            GLCheckCapablities();
-        void            GLShaderProgramBind(ShaderProgram& program);
-        i32             GLShaderProgramGetUniformLocation(ShaderProgram& program, const char* name);
-        void            GLShaderProgramSetInt(const char* name, i32 value);
-        void            GLShaderProgramSetSampler(const char* name, i32 value);
-        void            GLShaderProgramSetTexture(i32 location, u32 textureHandle);
+        void            GLShaderProgramBind( ShaderProgram & program );
+        i32             GLShaderProgramGetUniformLocation( ShaderProgram & program, const char * name );
+        void            GLShaderProgramSetInt( const char * name, i32 value );
+        void            GLShaderProgramSetSampler( const char * name, i32 value );
+        void            GLShaderProgramSetTexture( i32 location, u32 textureHandle );
         void            GLShaderProgramSetTexture( const char * name, u32 textureHandle, i32 slot );
-        void            GLShaderProgramSetFloat(const char* name, f32 value);
-        void            GLShaderProgramSetVec2(const char* name, glm::vec2 value);
-        void            GLShaderProgramSetVec3(const char* name, glm::vec3 value);
-        void            GLShaderProgramSetVec4(const char* name, glm::vec4 value);
-        void            GLShaderProgramSetMat3(const char* name, glm::mat3 value);
-        void            GLShaderProgramSetMat4(const char* name, glm::mat4 value);
+        void            GLShaderProgramSetFloat( const char * name, f32 value );
+        void            GLShaderProgramSetVec2( const char * name, glm::vec2 value );
+        void            GLShaderProgramSetVec3( const char * name, glm::vec3 value );
+        void            GLShaderProgramSetVec4( const char * name, glm::vec4 value );
+        void            GLShaderProgramSetMat3( const char * name, glm::mat3 value );
+        void            GLShaderProgramSetMat4( const char * name, glm::mat4 value );
 
         void            GLEnableAlphaBlending();
         void            GLEnablePreMultipliedAlphaBlending();

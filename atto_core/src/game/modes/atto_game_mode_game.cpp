@@ -15,7 +15,7 @@ namespace atto {
         grid_Dark8 = core->ResourceGetAndLoadTexture( "kenney_prototype/dark/texture_08.png", true, true );
 
         localPlayer = SpawnPlayer( glm::vec3( 0, 0, 3 ) );
-
+        localPlayer->pos.x = -2;
         f32 dim = 5.0f;
         MapTriangle t1 = {};
         t1.p1 = glm::vec3( -1, 0, 1 ) * dim;
@@ -25,6 +25,7 @@ namespace atto {
         t1.uv2 = glm::vec2( 0, 0 );
         t1.uv3 = glm::vec2( 1, 0 );
         t1.ComputeNormal();
+        t1.InvertNormal();
 
         MapTriangle t2 = {};
         t2.p1 = glm::vec3( 1, 0, 1 ) * dim;
@@ -34,6 +35,7 @@ namespace atto {
         t2.uv2 = glm::vec2( 0, 1 );
         t2.uv3 = glm::vec2( 1, 0 );
         t2.ComputeNormal();
+        t2.InvertNormal();
 
         map.triangles.Add( t1 );
         map.triangles.Add( t2 );
@@ -49,6 +51,8 @@ namespace atto {
         EntityUpdatePlayer( core, localPlayer );
 
         DrawContext * worldDraws = core->RenderGetDrawContext( 0 );
+        worldDraws->SetCamera( localPlayer->CameraGetViewMatrix(), localPlayer->camera.yfov, localPlayer->camera.zNear, localPlayer->camera.zFar );
+
         const i32 mapTriangleCount = map.triangles.GetCount();
         for( i32 i = 0; i < mapTriangleCount; ++i ) {
             MapTriangle & t = map.triangles[ i ];
@@ -64,7 +68,7 @@ namespace atto {
         }
 
 
-        worldDraws->SetCamera( localPlayer->CameraGetViewMatrix(), localPlayer->camera.yfov, localPlayer->camera.zNear, localPlayer->camera.zFar );
+        worldDraws->DrawSphere( localPlayer->pos, localPlayer->collisionCollider.sphere.r );
         //worldDraws->DrawRect( glm::vec2( 0 ), glm::vec2( 100 ), 0.0f, glm::vec4( 1, 0, 0, 1 ) );
         //worldDraws->DrawPlane( glm::vec3( 0, 0, 0 ), glm::vec3( 0, 0, 1 ), glm::vec2( 1 ), glm::vec4( 0, 1, 0, 1 ) );
         //worldDraws->DrawPlane( glm::vec3( 0, 0, 0 ), glm::vec3( 0, 1, 0 ), glm::vec2( 10 ), glm::vec4( 0.4f, 0.4f, 0.2f, 1 ) );
@@ -96,7 +100,6 @@ namespace atto {
             const f32 SPEED = 2.5f;
             const f32 SENSITIVITY = 0.1f;
             const f32 ZOOM = 45.0f;
-            ent->pos = pos;
             ent->camera.yaw = YAW;
             ent->camera.pitch = PITCH;
             ent->camera.movementSpeed = SPEED;
@@ -108,8 +111,9 @@ namespace atto {
             ent->camera.up = glm::vec3( 0.0f, 1.0f, 0.0f );
             ent->hasCollision = true;
             ent->collisionCollider.type = COLLIDER_TYPE_SHPERE;
-            ent->collisionCollider.sphere.r = 1.0f;
-            ent->collisionCollider.sphere.c = ent->pos;
+            ent->collisionCollider.sphere.r = 0.5f;
+            ent->collisionCollider.sphere.c = pos + glm::vec3( 0, ent->collisionCollider.sphere.r, 0 );
+            ent->pos = ent->collisionCollider.sphere.c;
         }
 
         return ent;
@@ -238,6 +242,7 @@ namespace atto {
             ent->pos += ent->vel * dt;
 
             // @NOTE: Collision with map
+        #if 0
             Collider plane = {};
             plane.type = COLLIDER_TYPE_PLANE;
             plane.plane.c = glm::vec3( 0 );
@@ -249,12 +254,25 @@ namespace atto {
             if( CollisionCheck_SphereVsPlane( ent->collisionCollider, plane, m ) == true ) {
                 ent->pos += m.normal * m.penetration;
             }
+        #else 
+            
+
+            ent->collisionCollider.sphere.c = ent->pos;
+            const i32 triCount = map.triangles.GetCount();
+            for( i32 triIndex = 0; triIndex < triCount; triIndex++ ) {
+                MapTriangle & tri = map.triangles[ triIndex ];
+                Manifold m = {};
+                if( CollisionCheck_SphereVsTri( ent->pos, ent->collisionCollider.sphere.r, tri.p1, tri.p2, tri.p3, tri.normal, m ) == true ) {
+                    ent->pos += m.normal * m.penetration;
+                }
+            }
+        #endif
 
         }
     }
 
     glm::mat4 Entity::CameraGetViewMatrix() const {
-        glm::vec3 headPos = pos + glm::vec3( 0, 1.8f, 0 );
+        glm::vec3 headPos = pos + glm::vec3( 0, 1.6f, 0 );
         return glm::lookAt( headPos, headPos + camera.front, camera.up );
     }
 

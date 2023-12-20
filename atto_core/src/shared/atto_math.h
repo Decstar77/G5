@@ -129,8 +129,10 @@ namespace atto {
     glm::vec3 ClosestPoint_Sphere( glm::vec3 c, f32 r, glm::vec3 p );
     glm::vec3 ClosestPoint_Plane( glm::vec3 c, glm::vec3 n, glm::vec3 p );
     glm::vec3 ClosestPoint_LineSegment( glm::vec3 a, glm::vec3 b, glm::vec3 p );
+    glm::vec3 ClosestPoint_Triangle( glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec3 n, glm::vec3 p );
     glm::vec3 ClosestPoint_Triangle( Collider tri, glm::vec3 p );
     
+    bool CollisionCheck_SphereVsTri( glm::vec3 c, f32 r, glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec3 n, Manifold & manifold );
     bool CollisionCheck_SphereVsPlane( Collider sphere, Collider plane, Manifold & manifold );
     bool CollisionCheck_SphereVsTri( Collider sphere, Collider tri, Manifold & manifold );
 

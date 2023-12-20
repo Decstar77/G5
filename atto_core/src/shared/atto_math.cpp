@@ -255,21 +255,25 @@ namespace atto {
         return false;
     }
 
-    inline bool IsPointInsideTriangle( Collider triangle, glm::vec3 point ) {
-        glm::vec3 a = triangle.tri.p1 - point;
-        glm::vec3 b = triangle.tri.p2 - point;
-        glm::vec3 c = triangle.tri.p3 - point;
+    inline bool IsPointInsideTriangle( glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec3 point ) {
+        // Compute barycentric coordinates
+        glm::vec3 v0 = p2 - p1;
+        glm::vec3 v1 = p3 - p1;
+        glm::vec3 v2 = point - p1;
 
-        glm::vec3 u = glm::cross( b, c );
-        glm::vec3 v = glm::cross( c, a );
-        glm::vec3 w = glm::cross( a, b );
+        f32 dot00 = glm::dot( v0, v0 );
+        f32 dot01 = glm::dot( v0, v1 );
+        f32 dot02 = glm::dot( v0, v2 );
+        f32 dot11 = glm::dot( v1, v1 );
+        f32 dot12 = glm::dot( v1, v2 );
 
-        f32 d = glm::dot( u, v );
-        f32 e = glm::dot( u, w );
+        // Compute barycentric coordinates
+        f32 invDenom = 1.0f / ( dot00 * dot11 - dot01 * dot01 );
+        f32 u = ( dot11 * dot02 - dot01 * dot12 ) * invDenom;
+        f32 v = ( dot00 * dot12 - dot01 * dot02 ) * invDenom;
 
-        bool result = ( d >= 0.0f && e >= 0.0f );
-
-        return result;
+        // Check if point is in triangle
+        return ( u >= 0.0f ) && ( v >= 0.0f ) && ( u + v <= 1.0f );
     }
 
     glm::vec3 ClosestPoint_Sphere( glm::vec3 c, f32 r, glm::vec3 p ) {
@@ -296,12 +300,12 @@ namespace atto {
         return result;
     }
 
-    glm::vec3 ClosestPoint_Triangle( Collider tri, glm::vec3 p ) {
-        glm::vec3 res = ClosestPoint_Plane( tri.tri.p1, tri.tri.n, p );
-        if( IsPointInsideTriangle( tri, res ) == false ) {
-            glm::vec3 a = ClosestPoint_LineSegment( tri.tri.p1, tri.tri.p2, p );
-            glm::vec3 b = ClosestPoint_LineSegment( tri.tri.p2, tri.tri.p3, p );
-            glm::vec3 c = ClosestPoint_LineSegment( tri.tri.p3, tri.tri.p1, p );
+    glm::vec3 ClosestPoint_Triangle( glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec3 n, glm::vec3 p ) {
+        glm::vec3 res = ClosestPoint_Plane( p1, n, p );
+        if( IsPointInsideTriangle( p1, p2, p3, res ) == false ) {
+            glm::vec3 a = ClosestPoint_LineSegment( p1, p2, p );
+            glm::vec3 b = ClosestPoint_LineSegment( p2, p3, p );
+            glm::vec3 c = ClosestPoint_LineSegment( p3, p1, p );
 
             f32 aa = glm::length2( p - a );
             f32 bb = glm::length2( p - b );
@@ -319,6 +323,24 @@ namespace atto {
             }
         }
         return res;
+    }
+
+    glm::vec3 ClosestPoint_Triangle( Collider tri, glm::vec3 p ) {
+        Assert( tri.type == COLLIDER_TYPE_TRIANGLE );
+        return ClosestPoint_Triangle( tri.tri.p1, tri.tri.p2, tri.tri.p3, tri.tri.n, p );
+    }
+
+    bool CollisionCheck_SphereVsTri( glm::vec3 c, f32 r, glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec3 n, Manifold & manifold ) {
+        glm::vec3 close = ClosestPoint_Triangle( p1, p2, p3, n, c );
+        f32 d2 = glm::distance2( close, c );
+        bool result = d2 <= r * r;
+        if( result ) {
+            manifold.pointB = close;
+            manifold.normal = glm::normalize( c - close );
+            manifold.pointA = c - manifold.normal * r;
+            manifold.penetration = glm::distance( manifold.pointA, manifold.pointB );
+        }
+        return result;
     }
 
     bool CollisionCheck_SphereVsPlane( Collider s, Collider p, Manifold & manifold ) {
@@ -340,10 +362,10 @@ namespace atto {
     bool CollisionCheck_SphereVsTri( Collider s, Collider t, Manifold & manifold ) {
         Assert( s.type == COLLIDER_TYPE_SHPERE );
         Assert( t.type == COLLIDER_TYPE_TRIANGLE );
-        glm::vec3 close = ClosestPoint_Triangle( t, s.sphere.c );
-        f32 d2 = glm::distance2( close, s.sphere.c );
-        bool result = d2 <= s.sphere.r * s.sphere.r;
-        return result;
+        return CollisionCheck_SphereVsTri( s.sphere.c, s.sphere.r, t.tri.p1, t.tri.p2, t.tri.p3, t.tri.n, manifold );
     }
+
+
+    
 
 }

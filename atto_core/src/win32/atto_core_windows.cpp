@@ -459,6 +459,7 @@ namespace atto {
                 case DrawCommandType::SPHERE:
                 {
                     glm::mat4 m = glm::translate( glm::mat4( 1.0f ), cmd.sphere.center );
+                    m = glm::scale( m, glm::vec3( cmd.sphere.r ) );
 
                     glm::mat4 v = dcxt->cameraView;
                     glm::mat4 p = dcxt->cameraProj;
