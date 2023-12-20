@@ -56,7 +56,8 @@ namespace atto {
         i32         size;
         SmallString name;
         virtual ~TypeDescriptor() {}
-        virtual nlohmann::json JSON_Write( const void * obj ) = 0;
+        virtual nlohmann::json      JSON_Write( const void * obj ) = 0;
+        virtual void                JSON_Read( const nlohmann::json & j, const void * obj ) = 0;
     };
 
     template <typename T>
@@ -104,6 +105,7 @@ namespace atto {
             size = 0;
             init( this );
         }
+        
         TypeDescriptor_Struct( const char * name, i32 size, const std::initializer_list<Member> & init ) {
             this->name = SmallString::FromLiteral( name );
             this->size = size;
@@ -118,6 +120,13 @@ namespace atto {
                 j[ member.name.GetCStr() ] = member.type->JSON_Write( (char *)obj + member.offset );
             }
             return j;
+        }
+
+        void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+            for( const Member & member : members ) {
+                const nlohmann::json & jj = j[ member.name.GetCStr() ];
+                member.type->JSON_Read( jj, (char *)obj + member.offset );
+            }
         }
     };
 
@@ -155,9 +164,19 @@ namespace atto {
             const FixedList< _type_, cap > * list = ( const FixedList< _type_, cap > * )obj;
             nlohmann::json j = nlohmann::json::array();
             for( i32 i = 0; i < list->GetCount(); i++ ) {
-                j.push_back(  itemType->JSON_Write( &list[ i ] ) );
+                j.push_back( itemType->JSON_Write( list->Get( i ) ) );
             }
             return j;
+        }
+
+        void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+            FixedList< _type_, cap > * list = ( FixedList< _type_, cap > * )obj;
+            list->Clear( true );
+            for( const nlohmann::json & jj : j ) {
+                _type_ item = {};
+                itemType->JSON_Read( jj, &item );
+                list->Add( item );
+            }
         }
     };
 

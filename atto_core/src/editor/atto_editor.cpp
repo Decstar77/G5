@@ -4,6 +4,8 @@
 #include "../game/modes/atto_game_mode_game.h"
 #include "imgui.h"
 
+#include "../win32/atto_core_windows.h"
+
 namespace atto {
 
     void Editor::UpdateAndRender( Core * core, Game * game, f32 dt ) {
@@ -24,10 +26,36 @@ namespace atto {
     }
 
     void Editor::MainMenuBar( Core * core, Game * game ) {
+        GameModeGame * leGame = ( (GameModeGame *)game->gameMode );
         if( ImGui::BeginMainMenuBar() ) {
 
             if( ImGui::MenuItem( "Canvas" ) ) {
                 showCanvas = !showCanvas;
+            }
+
+            if( ImGui::MenuItem( "Save Map" ) ) {
+                MapFile * mapFile = core->MemoryAllocateTransient<MapFile>();
+                leGame->map.SaveToMapFile( mapFile );
+               
+                TypeDescriptor * mapType = TypeResolver<MapFile>::get();
+                nlohmann::json j = mapType->JSON_Write( mapFile );
+                std::string json = j.dump( 4 );
+                
+                WindowsCore::DEBUG_WriteTextFile( "map.json", json.c_str() );
+            }
+
+            if( ImGui::MenuItem( "Load Map" ) ) {
+                MapFile * mapFile = core->MemoryAllocateTransient<MapFile>();
+                TypeDescriptor * mapType = TypeResolver<MapFile>::get();
+
+                char * mapText = (char *)core->MemoryAllocateTransient( Megabytes( 10 ) );
+                WindowsCore::DEBUG_ReadTextFile( "map.json", mapText, Megabytes( 10 ) );
+
+                nlohmann::json j = nlohmann::json::parse( mapText );
+
+                mapType->JSON_Read( j, mapFile );
+
+                leGame->map.LoadFromMapFile( mapFile );
             }
 
             ImGui::EndMainMenuBar();

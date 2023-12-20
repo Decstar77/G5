@@ -180,6 +180,10 @@ namespace atto {
         nlohmann::json JSON_Write( const void * obj ) override {
             return nlohmann::json( *(i32 *)obj );
         }
+
+        void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+            *(i32 *)obj = j.get<i32>();
+        }
     };
 
     template <>
@@ -196,6 +200,10 @@ namespace atto {
 
         nlohmann::json JSON_Write( const void * obj ) override {
             return nlohmann::json( *(u32 *)obj );
+        }
+
+        void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+            *(u32 *)obj = j.get<u32>();
         }
     };
 
@@ -214,6 +222,10 @@ namespace atto {
         nlohmann::json JSON_Write( const void * obj ) override {
             return nlohmann::json( *(i64 *)obj );
         }
+
+        void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+            *(i64 *)obj = j.get<i64>();
+        }
     };
 
     template <>
@@ -230,6 +242,10 @@ namespace atto {
 
         nlohmann::json JSON_Write( const void * obj ) override {
             return nlohmann::json( *(u64 *)obj );
+        }
+
+        void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+            *(u64 *)obj = j.get<u64>();
         }
     };
 
@@ -248,6 +264,10 @@ namespace atto {
         nlohmann::json JSON_Write( const void * obj ) override {
             return nlohmann::json( *(f32 *)obj );
         }
+
+        void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+            *(f32 *)obj = j.get<f32>();
+        }
     };
 
     template <>
@@ -264,6 +284,10 @@ namespace atto {
 
         nlohmann::json JSON_Write( const void * obj ) override {
             return nlohmann::json( *(f64 *)obj );
+        }
+
+        void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+            *(f64 *)obj = j.get<f64>();
         }
     };
 
@@ -282,6 +306,10 @@ namespace atto {
         nlohmann::json JSON_Write( const void * obj ) override {
             return nlohmann::json( *(bool *)obj );
         }
+
+        void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+            *(bool *)obj = j.get<bool>();
+        }
     };
     
     template <>
@@ -298,6 +326,10 @@ namespace atto {
 
         nlohmann::json JSON_Write( const void * obj ) override {
             return atto::JSON_Write( *(glm::vec2 *)obj );
+        }
+
+        void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+            atto::JSON_Read( j, *(glm::vec2 *)obj );
         }
     };
     
@@ -316,6 +348,10 @@ namespace atto {
         nlohmann::json JSON_Write( const void * obj ) override {
             return atto::JSON_Write( *(glm::vec3 *)obj );
         }
+
+        void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+            atto::JSON_Read( j, *(glm::vec3 *)obj );
+        }
     };
 
     template <>
@@ -332,6 +368,10 @@ namespace atto {
 
         nlohmann::json JSON_Write( const void * obj ) override {
             return atto::JSON_Write( *(glm::vec4 *)obj );
+        }
+
+        void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+            atto::JSON_Read( j, *(glm::vec4 *)obj );
         }
     };
     
@@ -350,6 +390,10 @@ namespace atto {
         nlohmann::json JSON_Write( const void * obj ) override {
             return atto::JSON_Write( *(glm::mat2 *)obj );
         }
+
+        void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+            atto::JSON_Read( j, *(glm::mat2 *)obj );
+        }
     };
     
     template <>
@@ -366,6 +410,10 @@ namespace atto {
 
         nlohmann::json JSON_Write( const void * obj ) override {
             return atto::JSON_Write( *(glm::mat3 *)obj );
+        }
+
+        void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+            atto::JSON_Read( j, *(glm::mat3 *)obj );
         }
     };
     
@@ -384,6 +432,10 @@ namespace atto {
         nlohmann::json JSON_Write( const void * obj ) override {
             return atto::JSON_Write( *(glm::mat4 *)obj );
         }
+
+        void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+            atto::JSON_Read( j, *(glm::mat4 *)obj );
+        }
     };
     
     template <>
@@ -401,6 +453,10 @@ namespace atto {
         nlohmann::json JSON_Write( const void * obj ) override {
             return atto::JSON_Write( *(SmallString*)obj );
         }
+
+        void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+            atto::JSON_Read( j, *(SmallString *)obj );
+        }
     };
     
     template <>
@@ -417,6 +473,10 @@ namespace atto {
 
         nlohmann::json JSON_Write( const void * obj ) override {
             return atto::JSON_Write( *(LargeString *)obj );
+        }
+
+        void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+            atto::JSON_Read( j, *(LargeString *)obj );
         }
     };
 

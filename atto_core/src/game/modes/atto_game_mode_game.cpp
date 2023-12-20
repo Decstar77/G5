@@ -332,6 +332,40 @@ namespace atto {
         triangles.Add( t2 );
     }
 
+    bool Map::LoadFromMapFile( MapFile * mapFile ) {
+        mapWidth = mapFile->mapWidth;
+        mapHeight = mapFile->mapHeight;
+
+        const i32 blockCount = mapFile->blocks.GetCount();
+        for( i32 blockIndex = 0; blockIndex < blockCount; blockIndex++ ) {
+            MapFileBlock & block = mapFile->blocks[ blockIndex ];
+            AddBlock( block.xIndex, block.yIndex );
+        }
+
+        Bake();
+
+        return true;
+    }
+
+    bool Map::SaveToMapFile( MapFile * mapFile ) {
+        ZeroStructPtr( mapFile ); // This may be overkill
+        mapFile->version = 1;
+        mapFile->mapWidth = mapWidth;
+        mapFile->mapHeight = mapHeight;
+        const i32 blockCount = blocks.GetCapcity();
+        for( i32 blockIndex = 0; blockIndex < blockCount; blockIndex++ ) {
+            MapBlock & block = blocks[ blockIndex ];
+            if( block.filled == true ) {
+                MapFileBlock b = {};
+                b.xIndex = block.xIndex;
+                b.yIndex = block.yIndex;
+                mapFile->blocks.Add( b );
+            }
+        }
+
+        return true;
+    }
+
     void Map::AddFloor( glm::vec2 p1, glm::vec2 p2, i32 level, bool invertNormal ) {
         MapTriangle t1 = {};
         t1.p1 = glm::vec3( p1.x, BlockDim * level,  p2.y );

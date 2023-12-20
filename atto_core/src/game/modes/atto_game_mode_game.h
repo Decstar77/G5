@@ -87,6 +87,22 @@ namespace atto {
         glm::vec2 topRightWS;
     };
 
+    struct MapFileBlock {
+        i32 xIndex;
+        i32 yIndex;
+
+        REFLECT();
+    };
+
+    struct MapFile {
+        i32 version;
+        i32 mapWidth;
+        i32 mapHeight;
+        FixedList<MapFileBlock, 1024> blocks;
+
+        REFLECT();
+    };
+
     class Map {
     public:
         inline static f32 BlockDim = 4.0f;
@@ -101,6 +117,8 @@ namespace atto {
         bool                            RemoveBlock( i32 x, i32 y );
         void                            AddFloor( glm::vec2 p1, glm::vec2 p2, i32 level, bool invertNormal );
         void                            AddWall( glm::vec2 p1, glm::vec2 p2, bool invertNormal );
+        bool                            LoadFromMapFile( MapFile * mapFile );
+        bool                            SaveToMapFile( MapFile * mapFile );
         void                            Bake();
     };
 
