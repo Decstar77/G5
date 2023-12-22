@@ -206,6 +206,16 @@ namespace atto {
         drawList.Add( cmd );
     }
 
+    void DrawContext::DrawMesh( StaticMeshResource * mesh, glm::mat4 m, TextureResource * albedo ) {
+        DrawCommand cmd = {};
+        cmd.type = DrawCommandType::MESH;
+        cmd.mesh.mesh = mesh;
+        cmd.mesh.m = m;
+        cmd.mesh.albedo = albedo;
+
+        drawList.Add( cmd );
+    }
+
     void Core::NetConnect() {
         if( client != nullptr ) {
             client->Connect();

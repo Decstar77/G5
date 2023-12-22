@@ -101,6 +101,7 @@ namespace atto {
         SPHERE,
         LINE,
         TRIANGLE,
+        MESH,
     };
 
     struct DrawCommand {
@@ -154,6 +155,11 @@ namespace atto {
                     glm::vec2 uv3;
                     TextureResource * texture;
                 } triangle;
+                struct {
+                    glm::mat4 m;
+                    StaticMeshResource * mesh;
+                    TextureResource * albedo;
+                } mesh;
             };
         };
     };
@@ -185,6 +191,8 @@ namespace atto {
         void DrawLine( glm::vec3 p1, glm::vec3 p2, f32 thicc, glm::vec4 colour = glm::vec4( 1 ) );
         void DrawTriangle( glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec4 colour = glm::vec4( 1 ) );
         void DrawTriangle( glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec2 uv1, glm::vec2 uv2, glm::vec2 uv3, TextureResource * texture );
+
+        void DrawMesh( StaticMeshResource * mesh, glm::mat4 m, TextureResource * albedo = nullptr );
 
     private:
         glm::mat4       cameraProj;

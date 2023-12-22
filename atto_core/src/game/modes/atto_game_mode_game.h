@@ -62,6 +62,7 @@ namespace atto {
         i32 teamNumber;
 
         glm::mat4   CameraGetViewMatrix() const;
+        glm::mat4   Player_ComputeHeadTransformMatrix() const;
     };
 
     struct MapTriangle {
@@ -149,6 +150,7 @@ namespace atto {
 
         TextureResource *                       grid_Dark1 = nullptr;
         TextureResource *                       grid_Dark8 = nullptr;
+        TextureResource *                       tex_PolygonScifi_01_C = nullptr;
         StaticMeshResource *                    mesh_Test = nullptr;
 
     };

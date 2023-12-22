@@ -178,7 +178,7 @@ namespace atto {
         filePath = StringFormat::Large( "res/models/%s", file );
 
         Assimp::Importer importer;
-        const aiScene * scene = importer.ReadFile( filePath.GetCStr(), aiProcess_Triangulate );
+        const aiScene * scene = importer.ReadFile( filePath.GetCStr(), aiProcess_Triangulate | aiProcess_FlipUVs );
 
         if( !scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode ) {
             core->LogOutput( LogLevel::ERR, "%s\n", importer.GetErrorString() );

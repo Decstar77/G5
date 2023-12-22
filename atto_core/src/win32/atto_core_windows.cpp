@@ -536,6 +536,40 @@ namespace atto {
                     glDrawArrays( GL_TRIANGLES, 0, 3 );
                     glBindVertexArray( 0 );
                 } break;
+                case DrawCommandType::MESH:
+                {
+                    Win32StaticMeshResource * mesh = (Win32StaticMeshResource *)cmd.mesh.mesh;
+                    Assert( mesh != nullptr );
+                    if( mesh == nullptr ) {
+                        break;
+                    }
+
+                    glm::mat4 v = dcxt->cameraView;
+                    glm::mat4 p = dcxt->cameraProj;
+                    glm::mat4 pvm = p * v * cmd.mesh.m;
+
+                    GLShaderProgramBind( staticMeshUnlitProgram );
+                    GLShaderProgramSetMat4( "pvm", pvm );
+                    
+                    if( cmd.mesh.albedo != nullptr ) {
+                        GLShaderProgramSetInt( "hasTexture", 1 );
+                        Win32TextureResource * texture = (Win32TextureResource *)cmd.mesh.albedo;
+                        GLShaderProgramSetSampler( "texture0", 0 );
+                        GLShaderProgramSetTexture( 0, texture->handle );
+                    }
+                    else {
+                        GLShaderProgramSetInt( "hasTexture", 0 );
+                        GLShaderProgramSetVec4( "color", cmd.color );
+                    }
+
+                    glEnable( GL_CULL_FACE );
+                    glEnable( GL_DEPTH_TEST );
+
+                    glBindVertexArray( mesh->vao );
+                    glDrawElements( GL_TRIANGLES, staticMeshSphere->indexCount, GL_UNSIGNED_SHORT, 0 );
+                    glBindVertexArray( 0 );
+
+                } break;
                 default:
                 {
                     //ATTOASSERT(false, "Invalid draw command type");

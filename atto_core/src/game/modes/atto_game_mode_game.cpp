@@ -13,7 +13,9 @@ namespace atto {
     void GameModeGame::Init( Core * core ) {
         grid_Dark1 = core->ResourceGetAndLoadTexture( "kenney_prototype/dark/texture_01.png", true, true );
         grid_Dark8 = core->ResourceGetAndLoadTexture( "kenney_prototype/dark/texture_08.png", true, true );
-        mesh_Test = core->ResourceGetAndLoadMesh( "test.obj" );
+        tex_PolygonScifi_01_C = core->ResourceGetAndLoadTexture( "PolygonScifi_01_C.png", false, false );
+
+        mesh_Test = core->ResourceGetAndLoadMesh( "wep_pistol_bot.obj" );
 
         map.playerStartPos = glm::vec3( 0, 0, 3 );
 
@@ -65,12 +67,13 @@ namespace atto {
             else {
                 worldDraws->DrawTriangle( t.p1, t.p2, t.p3, t.uv1, t.uv2, t.uv3, grid_Dark1 );
             }
-            
+
             glm::vec3 c = t.GetCenter();
             //worldDraws->DrawLine( c, c + t.normal, 1.0f, glm::vec4( 1, 0, 0, 1 ) );
         }
 
-        worldDraws->DrawSphere( localPlayer->pos, localPlayer->collisionCollider.sphere.r );
+        //worldDraws->DrawSphere( localPlayer->pos, localPlayer->collisionCollider.sphere.r );
+        worldDraws->DrawMesh( mesh_Test, localPlayer->Player_ComputeHeadTransformMatrix(), tex_PolygonScifi_01_C );
         //worldDraws->DrawRect( glm::vec2( 0 ), glm::vec2( 100 ), 0.0f, glm::vec4( 1, 0, 0, 1 ) );
         //worldDraws->DrawPlane( glm::vec3( 0, 0, 0 ), glm::vec3( 0, 0, 1 ), glm::vec2( 1 ), glm::vec4( 0, 1, 0, 1 ) );
         //worldDraws->DrawPlane( glm::vec3( 0, 0, 0 ), glm::vec3( 0, 1, 0 ), glm::vec2( 10 ), glm::vec4( 0.4f, 0.4f, 0.2f, 1 ) );
@@ -207,7 +210,7 @@ namespace atto {
             ent->camera.right = glm::normalize( glm::cross( ent->camera.front, glm::vec3( 0, 1, 0 ) ) );
             ent->camera.up = glm::normalize( glm::cross( ent->camera.right, ent->camera.front ) );
 
-            
+
             glm::mat3 ori = ent->camera.GetOrientation();
             ori[ 0 ].y = 0;
             ori[ 0 ] = glm::normalize( ori[ 0 ] );
@@ -261,7 +264,7 @@ namespace atto {
                         ent->pos += m.normal * m.penetration;
                     }
                 }
-                
+
                 // @HACK: Lock the player to the ground
                 ent->pos.y = ent->collisionCollider.sphere.c.y;
             }
@@ -271,6 +274,16 @@ namespace atto {
     glm::mat4 Entity::CameraGetViewMatrix() const {
         glm::vec3 headPos = pos + glm::vec3( 0, 1.6f, 0 );
         return glm::lookAt( headPos, headPos + camera.front, camera.up );
+    }
+
+    glm::mat4 Entity::Player_ComputeHeadTransformMatrix() const {
+        glm::vec3 headPos = pos + glm::vec3( 0, 1.6f, -2 );
+        glm::mat4 headTransform = glm::translate( glm::mat4( 1 ), headPos );
+        headTransform[ 0 ] = glm::vec4( camera.right, 0 );
+        headTransform[ 1 ] = glm::vec4( camera.up, 0 );
+        headTransform[ 2 ] = glm::vec4( camera.front, 0 );
+
+        return headTransform;
     }
 
     glm::mat3 EntCamera::GetOrientation() const {
@@ -371,18 +384,18 @@ namespace atto {
 
     void Map::AddFloor( glm::vec2 p1, glm::vec2 p2, i32 level, bool invertNormal ) {
         MapTriangle t1 = {};
-        t1.p1 = glm::vec3( p1.x, BlockDim * level,  p2.y );
-        t1.p2 = glm::vec3( p1.x, BlockDim * level,  p1.y );
-        t1.p3 = glm::vec3( p2.x, BlockDim * level,  p1.y );
+        t1.p1 = glm::vec3( p1.x, BlockDim * level, p2.y );
+        t1.p2 = glm::vec3( p1.x, BlockDim * level, p1.y );
+        t1.p3 = glm::vec3( p2.x, BlockDim * level, p1.y );
         t1.uv1 = glm::vec2( 0, 1 );
         t1.uv2 = glm::vec2( 0, 0 );
         t1.uv3 = glm::vec2( 1, 0 );
         t1.ComputeNormal();
 
         MapTriangle t2 = {};
-        t2.p1 = glm::vec3( p2.x, BlockDim * level,  p2.y );
-        t2.p2 = glm::vec3( p1.x, BlockDim * level,  p2.y );
-        t2.p3 = glm::vec3( p2.x, BlockDim * level,  p1.y );
+        t2.p1 = glm::vec3( p2.x, BlockDim * level, p2.y );
+        t2.p2 = glm::vec3( p1.x, BlockDim * level, p2.y );
+        t2.p3 = glm::vec3( p2.x, BlockDim * level, p1.y );
         t2.uv1 = glm::vec2( 1, 1 );
         t2.uv2 = glm::vec2( 0, 1 );
         t2.uv3 = glm::vec2( 1, 0 );
