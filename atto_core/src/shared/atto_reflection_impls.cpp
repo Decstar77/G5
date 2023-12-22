@@ -24,6 +24,7 @@ namespace atto {
         REFLECT_STRUCT_MEMBER( version )
         REFLECT_STRUCT_MEMBER( mapWidth )
         REFLECT_STRUCT_MEMBER( mapHeight )
+        REFLECT_STRUCT_MEMBER( playerStartPos )
         REFLECT_STRUCT_MEMBER( blocks )
         REFLECT_STRUCT_END()
 }

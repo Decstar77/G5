@@ -75,13 +75,13 @@ namespace atto {
     }
 
 
-    void WindowsCore::DEBUG_WriteTextFile( const char * path, const char * text ) {
+    void WindowsCore::WinBoyoWriteTextFile( const char * path, const char * text ) {
         std::ofstream file( path );
         file << text;
         file.close();
     }
 
-    void WindowsCore::DEBUG_ReadTextFile( const char * path, char * text, i32 maxLen ) {
+    void WindowsCore::WinBoyoReadTextFile( const char * path, char * text, i32 maxLen ) {
         std::ifstream file( path );
 
         if( file.is_open() ) {
@@ -103,4 +103,11 @@ namespace atto {
         }
     }
 
+    void WindowsCore::ResourceReadEntireFile( const char * path, char * data, i32 maxLen ) {
+        WinBoyoReadTextFile( path, data, maxLen );
+    }
+
+    void WindowsCore::ResourceWriteEntireFile( const char * path, const char * data ) {
+        WinBoyoWriteTextFile( path, data );
+    }
 }

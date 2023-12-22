@@ -25,7 +25,13 @@ namespace atto {
         void MainMenuBar( Core * core, Game * game );
         void Canvas( Core * core, Game * game );
 
-        bool showCanvas = false;
+        union {
+            struct {
+                bool canvas;
+            } show;
+            bool windowShows[ sizeof( show ) / sizeof( bool ) ];
+        };
+        
     };
 }
 

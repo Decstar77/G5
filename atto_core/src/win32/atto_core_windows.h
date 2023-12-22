@@ -101,12 +101,16 @@ namespace atto {
     public:
         void Run(int argc, char** argv) override;
         
-        virtual TextureResource *   ResourceGetAndLoadTexture( const char * name, bool genMips, bool genAnti ) override;
-        virtual AudioResource *     ResourceGetAndLoadAudio( const char * name ) override;
-        virtual FontHandle          ResourceGetFont( const char * name ) override;
+        virtual TextureResource *       ResourceGetAndLoadTexture( const char * name, bool genMips, bool genAnti ) override;
+        virtual AudioResource *         ResourceGetAndLoadAudio( const char * name ) override;
+        virtual StaticMeshResource *    ResourceGetAndLoadMesh( const char * name ) override;
+        virtual FontHandle              ResourceGetFont( const char * name ) override;
+        virtual void                    ResourceReadEntireFile( const char * path, char * data, i32 maxLen ) override;
+        virtual void                    ResourceWriteEntireFile( const char * path, const char * data ) override;
 
-        StaticMeshResource *        ResourceMeshCreate( const char * name, StaticMeshData & data );
-        StaticMeshResource *        ResourceMeshCreate( const char * name, i32 vertexCount );
+
+        StaticMeshResource *            ResourceMeshCreate( const char * name, StaticMeshData & data );
+        StaticMeshResource *            ResourceMeshCreate( const char * name, i32 vertexCount );
 
         virtual AudioSpeaker        AudioPlay(AudioResource* audioResource, f32 volume = 1.0f, bool looping = false) override;
 
@@ -121,8 +125,8 @@ namespace atto {
 
         void                        GLResetSurface(f32 w, f32 h);
 
-        static void                 DEBUG_WriteTextFile( const char * path, const char * text );
-        static void                 DEBUG_ReadTextFile( const char * path, char * text, i32 maxLen );
+        static void                 WinBoyoWriteTextFile( const char * path, const char * text );
+        static void                 WinBoyoReadTextFile( const char * path, char * text, i32 maxLen );
 
     public:
         ResourceRegistry            resources = {};

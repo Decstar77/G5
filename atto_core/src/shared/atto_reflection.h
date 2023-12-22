@@ -124,8 +124,10 @@ namespace atto {
 
         void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             for( const Member & member : members ) {
-                const nlohmann::json & jj = j[ member.name.GetCStr() ];
-                member.type->JSON_Read( jj, (char *)obj + member.offset );
+                if( j.contains( member.name.GetCStr() ) == true ) {
+                    const nlohmann::json & jj = j[ member.name.GetCStr() ];
+                    member.type->JSON_Read( jj, (char *)obj + member.offset );
+                }
             }
         }
     };

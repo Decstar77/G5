@@ -13,8 +13,11 @@ namespace atto {
     void GameModeGame::Init( Core * core ) {
         grid_Dark1 = core->ResourceGetAndLoadTexture( "kenney_prototype/dark/texture_01.png", true, true );
         grid_Dark8 = core->ResourceGetAndLoadTexture( "kenney_prototype/dark/texture_08.png", true, true );
+        mesh_Test = core->ResourceGetAndLoadMesh( "test.obj" );
 
-        localPlayer = SpawnPlayer( glm::vec3( 0, 0, 3 ) );
+        map.playerStartPos = glm::vec3( 0, 0, 3 );
+
+        localPlayer = SpawnPlayer( map.playerStartPos );
         localPlayer->pos.x = -2;
         f32 dim = 5.0f;
         MapTriangle t1 = {};
@@ -66,7 +69,6 @@ namespace atto {
             glm::vec3 c = t.GetCenter();
             //worldDraws->DrawLine( c, c + t.normal, 1.0f, glm::vec4( 1, 0, 0, 1 ) );
         }
-
 
         worldDraws->DrawSphere( localPlayer->pos, localPlayer->collisionCollider.sphere.r );
         //worldDraws->DrawRect( glm::vec2( 0 ), glm::vec2( 100 ), 0.0f, glm::vec4( 1, 0, 0, 1 ) );
@@ -335,7 +337,7 @@ namespace atto {
     bool Map::LoadFromMapFile( MapFile * mapFile ) {
         mapWidth = mapFile->mapWidth;
         mapHeight = mapFile->mapHeight;
-
+        playerStartPos = mapFile->playerStartPos;
         const i32 blockCount = mapFile->blocks.GetCount();
         for( i32 blockIndex = 0; blockIndex < blockCount; blockIndex++ ) {
             MapFileBlock & block = mapFile->blocks[ blockIndex ];
@@ -352,6 +354,7 @@ namespace atto {
         mapFile->version = 1;
         mapFile->mapWidth = mapWidth;
         mapFile->mapHeight = mapHeight;
+        mapFile->playerStartPos = playerStartPos;
         const i32 blockCount = blocks.GetCapcity();
         for( i32 blockIndex = 0; blockIndex < blockCount; blockIndex++ ) {
             MapBlock & block = blocks[ blockIndex ];
@@ -437,4 +440,28 @@ namespace atto {
         }
     }
 
+    void Map::DEBUG_SaveToFile( Core * core, const char * path ) {
+        MapFile * mapFile = core->MemoryAllocateTransient<MapFile>();
+        SaveToMapFile( mapFile );
+
+        TypeDescriptor * mapType = TypeResolver<MapFile>::get();
+        nlohmann::json j = mapType->JSON_Write( mapFile );
+        std::string json = j.dump( 4 );
+
+        core->ResourceWriteEntireFile( path, json.c_str() );
+    }
+
+    void Map::DEBUG_LoadFromFile( Core * core, const char * path ) {
+        MapFile * mapFile = core->MemoryAllocateTransient<MapFile>();
+        TypeDescriptor * mapType = TypeResolver<MapFile>::get();
+
+        char * mapText = (char *)core->MemoryAllocateTransient( Megabytes( 10 ) );
+        core->ResourceReadEntireFile( path, mapText, Megabytes( 10 ) );
+
+        nlohmann::json j = nlohmann::json::parse( mapText );
+
+        mapType->JSON_Read( j, mapFile );
+
+        LoadFromMapFile( mapFile );
+    }
 }

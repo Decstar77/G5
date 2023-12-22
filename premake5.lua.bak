@@ -2,12 +2,14 @@ local GLFW_DIR = "vendor/glfw"
 local GLAD_DIR = "vendor/glad"
 local GLM_DIR = "vendor/glm"
 local OPENAL_DIR = "vendor/openal"
+local ASSIMP_DIR = "vendor/assimp"
 local AUDIO_FILE_DIR = "vendor/audio"
 local STB_DIR = "vendor/stb"
 local JSON_DIR = "vendor/json"
 local ENET_DIR  = "vendor/enet"
 local FONTSTASH_DIR = "vendor/fontstash"
 local ABSOLUTE_SOL_PATH = path.getabsolute(".")
+local IMGUI_DIR = path.join(ABSOLUTE_SOL_PATH, "atto_core/src/editor/imgui")
 
 solution "Atto"
     location("")
@@ -61,16 +63,21 @@ project "atto_core"
         path.join(GLAD_DIR, "include"),
         path.join(OPENAL_DIR, "include"),
         path.join(ENET_DIR, "include"),
+        path.join(ASSIMP_DIR, "include"),
         JSON_DIR,
         STB_DIR,
+        TINYGLTF_DIR,
+		path.join(FONTSTASH_DIR, "src"),
         GLM_DIR,
         AUDIO_FILE_DIR,
-        "atto/src/"
+        "atto/src/",
+        IMGUI_DIR
     }
     
     libdirs
     {
         path.join(OPENAL_DIR, "lib"),
+        path.join(ASSIMP_DIR, "lib")
     }
     
     files {
@@ -81,7 +88,7 @@ project "atto_core"
         path.join(STB_DIR, "stb_vorbis/stb_vorbis.c")
     }
 
-    links { "opengl32", "glfw", "glad", "OpenAL32" }
+    links { "opengl32", "glfw", "glad", "OpenAL32", "assimp-vc143-mt" }
 
     filter "system:windows"
         links { "kernel32", "user32"  }
@@ -90,7 +97,6 @@ project "atto_core"
 
     prebuildcommands
     {
-        string.format("\"%s\"", path.join(ABSOLUTE_SOL_PATH, "bin/%{cfg.architecture}/atto_type_gen.exe"))
     }
 
 project "atto_server"
@@ -138,26 +144,6 @@ project "atto_server"
     }
 
     dependson { "AttoTypeGen", "atto_core" }
-
-project "atto_type_gen"
-    location("atto_type_gen")
-    kind "ConsoleApp"
-    language "C#"
-    dotnetframework "4.7.2"
-    
-    files {
-        "atto_type_gen/src/**.cs",
-    }
-    
-    links {
-        "System",
-        "System.Core",
-        "System.Data",
-        "System.Net.Http",
-    }
-
-    targetdir("bin/%{cfg.architecture}")
-    objdir("tmp/%{cfg.architecture}")
 
 project "glad"
     location(GLAD_DIR)

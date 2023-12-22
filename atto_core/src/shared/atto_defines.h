@@ -39,6 +39,7 @@
 #define SetABit(x) (1 << x)
 
 #define Stringify(x) #x
+#define ArrayCount(x) (sizeof(x) / sizeof(x[0]))
 
 #define LOG_WARN_ENABLED 1
 #define LOG_INFO_ENABLED 1

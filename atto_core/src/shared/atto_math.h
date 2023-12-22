@@ -15,6 +15,11 @@ namespace atto {
         return static_cast<i16>( v * 32767.0 );
     }
 
+    inline u16 SafeTruncateU32( u32 v ) {
+        Assert( v <= 0xFFFF );
+        return static_cast<u16>( v );
+    }
+
     inline i32 PosIndexToFlatIndex( i32 x, i32 y, i32 width ) {
         return y * width + x;
     }

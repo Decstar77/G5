@@ -553,7 +553,7 @@ namespace atto {
             }
         }
 
-        ContentTextureProcesor textureProcessor = {};
+        ContentTextureProcessor textureProcessor = {};
         textureProcessor.LoadFromFile( name );
         textureProcessor.MakeAlphaEdge();
         textureProcessor.FixAplhaEdges();
@@ -591,6 +591,25 @@ namespace atto {
         glBindTexture( GL_TEXTURE_2D, 0 );
 
         return resources.textures.Add( textureResource );
+    }
+
+    StaticMeshResource * WindowsCore::ResourceGetAndLoadMesh( const char * name ) {
+        const i32 meshResourceCount = resources.meshes.GetCount();
+        for( i32 i = 0; i < meshResourceCount; i++ ) {
+            StaticMeshResource & meshResource = resources.meshes[ i ];
+            if( meshResource.name == name ) {
+                return &meshResource;
+            }
+        }
+
+        ContentModelProcessor modelProcessor = {};
+        modelProcessor.LoadFromFile( this, name );
+        
+        Assert( modelProcessor.meshes.size() == 1 );
+
+        StaticMeshResource * mesh = ResourceMeshCreate( name, modelProcessor.meshes[ 0 ] );
+
+        return mesh;
     }
 
     void WindowsCore::InputDisableMouse() {

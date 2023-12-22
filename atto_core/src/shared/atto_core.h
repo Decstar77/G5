@@ -67,12 +67,18 @@ namespace atto {
     };
 
     struct StaticMeshData {
+        SmallString         name;
         i32                 vertexCount;
         StaticMeshVertex *  vertices;
         i32                 indexCount;
         u16 *               indices;
 
         void Free();
+    };
+
+    struct StaticModelResource {
+        SmallString                             name;
+        FixedList< StaticMeshResource *, 16>    meshes;
     };
 
     struct AudioSpeaker {
@@ -233,7 +239,10 @@ namespace atto {
         
         virtual TextureResource *           ResourceGetAndLoadTexture( const char * name, bool genMips, bool genAnti ) = 0;
         virtual AudioResource *             ResourceGetAndLoadAudio( const char * name ) = 0;
+        virtual StaticMeshResource *        ResourceGetAndLoadMesh( const char * name ) = 0;
         virtual FontHandle                  ResourceGetFont( const char * name ) = 0;
+        virtual void                        ResourceReadEntireFile( const char * path, char * data, i32 maxLen ) = 0;
+        virtual void                        ResourceWriteEntireFile( const char * path, const char * data ) = 0;
 
         DrawContext *                       RenderGetDrawContext( i32 index );
         virtual void                        RenderSubmit( DrawContext * dcxt, bool clearBackBuffers ) = 0;
@@ -276,7 +285,7 @@ namespace atto {
         //virtual void                        WindowSetCursorVisible(bool visible) = 0;
         //virtual void                        WindowSetCursorLocked(bool locked) = 0;
 
-        NetClient * GetNetClient();
+        NetClient *                         GetNetClient();
 
         virtual void                        Run( int argc, char ** argv ) = 0;
 

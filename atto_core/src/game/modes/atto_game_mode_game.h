@@ -98,6 +98,7 @@ namespace atto {
         i32 version;
         i32 mapWidth;
         i32 mapHeight;
+        glm::vec3 playerStartPos;
         FixedList<MapFileBlock, 1024> blocks;
 
         REFLECT();
@@ -108,6 +109,8 @@ namespace atto {
         inline static f32 BlockDim = 4.0f;
         i32                             mapWidth;
         i32                             mapHeight;
+
+        glm::vec3                       playerStartPos;
 
         FixedList<MapBlock, 1024>       blocks;
         FixedList<MapTriangle, 1024>    triangles;
@@ -120,6 +123,9 @@ namespace atto {
         bool                            LoadFromMapFile( MapFile * mapFile );
         bool                            SaveToMapFile( MapFile * mapFile );
         void                            Bake();
+
+        void                            DEBUG_SaveToFile( Core *core, const char * path );
+        void                            DEBUG_LoadFromFile( Core * core, const char * path );
     };
 
     class GameModeGame : public GameMode {
@@ -143,7 +149,7 @@ namespace atto {
 
         TextureResource *                       grid_Dark1 = nullptr;
         TextureResource *                       grid_Dark8 = nullptr;
-        
+        StaticMeshResource *                    mesh_Test = nullptr;
 
     };
 }

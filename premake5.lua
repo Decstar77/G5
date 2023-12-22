@@ -2,6 +2,7 @@ local GLFW_DIR = "vendor/glfw"
 local GLAD_DIR = "vendor/glad"
 local GLM_DIR = "vendor/glm"
 local OPENAL_DIR = "vendor/openal"
+local ASSIMP_DIR = "vendor/assimp"
 local AUDIO_FILE_DIR = "vendor/audio"
 local STB_DIR = "vendor/stb"
 local JSON_DIR = "vendor/json"
@@ -62,6 +63,7 @@ project "atto_core"
         path.join(GLAD_DIR, "include"),
         path.join(OPENAL_DIR, "include"),
         path.join(ENET_DIR, "include"),
+        path.join(ASSIMP_DIR, "include"),
         JSON_DIR,
         STB_DIR,
 		path.join(FONTSTASH_DIR, "src"),
@@ -74,6 +76,7 @@ project "atto_core"
     libdirs
     {
         path.join(OPENAL_DIR, "lib"),
+        path.join(ASSIMP_DIR, "lib")
     }
     
     files {
@@ -84,7 +87,7 @@ project "atto_core"
         path.join(STB_DIR, "stb_vorbis/stb_vorbis.c")
     }
 
-    links { "opengl32", "glfw", "glad", "OpenAL32" }
+    links { "opengl32", "glfw", "glad", "OpenAL32", "assimp-vc143-mt" }
 
     filter "system:windows"
         links { "kernel32", "user32"  }
