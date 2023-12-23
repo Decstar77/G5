@@ -12,6 +12,7 @@ using namespace atto;
 * TODO: Refactor the map + entity.
 * TODO: Make the editor override the local player
 * TODO: Load and draw a 3D model
+* TODO: Figure out why the meshes are being incorrectly backface culled, is it really the windiing order ?
 * TODO: 
 */
 

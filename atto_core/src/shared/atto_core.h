@@ -16,7 +16,7 @@ struct GGPOSession;
 
 namespace atto {
     class Core;
-    class Game;
+    class GameMode;
     class Editor;
     class NetClient;
 
@@ -252,7 +252,7 @@ namespace atto {
         virtual void                        ResourceReadEntireFile( const char * path, char * data, i32 maxLen ) = 0;
         virtual void                        ResourceWriteEntireFile( const char * path, const char * data ) = 0;
 
-        DrawContext *                       RenderGetDrawContext( i32 index );
+        DrawContext *                       RenderGetDrawContext( i32 index, bool clear = true );
         virtual void                        RenderSubmit( DrawContext * dcxt, bool clearBackBuffers ) = 0;
 
         virtual AudioSpeaker                AudioPlay( AudioResource * audioResource, f32 volume = 1.0f, bool looping = false ) = 0;
@@ -304,7 +304,7 @@ namespace atto {
         FrameInput                  input = {};
         UIState                     uiState = {};
 
-        Game *                      game = nullptr;
+        GameMode *                  game = nullptr;
         Editor *                    editor = nullptr;
 
         NetClient * client = nullptr;

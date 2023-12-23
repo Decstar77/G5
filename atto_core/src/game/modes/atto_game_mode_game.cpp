@@ -10,7 +10,11 @@ namespace atto {
         return GameModeType::IN_GAME;
     }
 
-    void GameModeGame::Init( Core * core ) {
+    bool GameModeGame::IsInitialized() {
+        return localPlayer != nullptr;
+    }
+
+    void GameModeGame::Initialize( Core * core ) {
         grid_Dark1 = core->ResourceGetAndLoadTexture( "kenney_prototype/dark/texture_01.png", true, true );
         grid_Dark8 = core->ResourceGetAndLoadTexture( "kenney_prototype/dark/texture_08.png", true, true );
         tex_PolygonScifi_01_C = core->ResourceGetAndLoadTexture( "PolygonScifi_01_C.png", false, false );
@@ -52,8 +56,10 @@ namespace atto {
         map.Bake();
     }
 
-    void GameModeGame::UpdateAndRender( Core * core, f32 dt ) {
-        EntityUpdatePlayer( core, localPlayer );
+    void GameModeGame::UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags ) {
+        if( ( flags & UPDATE_AND_RENDER_FLAG_NO_UPDATE ) == false ) {
+            EntityUpdatePlayer( core, localPlayer );
+        }
 
         DrawContext * worldDraws = core->RenderGetDrawContext( 0 );
         worldDraws->SetCamera( localPlayer->CameraGetViewMatrix(), localPlayer->camera.yfov, localPlayer->camera.zNear, localPlayer->camera.zFar );
@@ -72,7 +78,7 @@ namespace atto {
             //worldDraws->DrawLine( c, c + t.normal, 1.0f, glm::vec4( 1, 0, 0, 1 ) );
         }
 
-        //worldDraws->DrawSphere( localPlayer->pos, localPlayer->collisionCollider.sphere.r );
+        worldDraws->DrawSphere( localPlayer->pos, localPlayer->collisionCollider.sphere.r );
         worldDraws->DrawMesh( mesh_Test, localPlayer->Player_ComputeHeadTransformMatrix(), tex_PolygonScifi_01_C );
         //worldDraws->DrawRect( glm::vec2( 0 ), glm::vec2( 100 ), 0.0f, glm::vec4( 1, 0, 0, 1 ) );
         //worldDraws->DrawPlane( glm::vec3( 0, 0, 0 ), glm::vec3( 0, 0, 1 ), glm::vec2( 1 ), glm::vec4( 0, 1, 0, 1 ) );
@@ -80,7 +86,11 @@ namespace atto {
         //worldDraws->DrawSphere( glm::vec3( 0, 3, 0 ), 1.0f );
         //worldDraws->DrawTriangle( glm::vec3( 0, 0, 0 ), glm::vec3( 0, 1, 0 ), glm::vec3( 1, 0, 0 ), glm::vec4( 1, 0, 0, 1 ) );
         //worldDraws->DrawLine( glm::vec3( 0, 0, 0 ), glm::vec3( 1, 1, 1 ), 1 );
-        core->RenderSubmit( worldDraws, true );
+
+
+        if( ( flags & UPDATE_AND_RENDER_FLAG_DONT_SUBMIT_RENDER ) == false ) {
+            core->RenderSubmit( worldDraws, true );
+        }
     }
 
     void GameModeGame::Shutdown( Core * core ) {
@@ -100,20 +110,7 @@ namespace atto {
     Entity * GameModeGame::SpawnPlayer( glm::vec3 pos ) {
         Entity * ent = SpawnEntity( ENTITY_TYPE_PLAYER );
         if( ent != nullptr ) {
-            const f32 YAW = -90.0f;
-            const f32 PITCH = 0.0f;
-            const f32 SPEED = 2.5f;
-            const f32 SENSITIVITY = 0.1f;
-            const f32 ZOOM = 45.0f;
-            ent->camera.yaw = YAW;
-            ent->camera.pitch = PITCH;
-            ent->camera.movementSpeed = SPEED;
-            ent->camera.mouseSensitivity = SENSITIVITY;
-            ent->camera.yfov = ZOOM;
-            ent->camera.zNear = 0.1f;
-            ent->camera.zFar = 250.0f;
-            ent->camera.front = glm::vec3( 0.0f, 0.0f, -1.0f );
-            ent->camera.up = glm::vec3( 0.0f, 1.0f, 0.0f );
+            ent->camera = EntCamera::CreateDefault();
             ent->hasCollision = true;
             ent->collisionCollider.type = COLLIDER_TYPE_SHPERE;
             ent->collisionCollider.sphere.r = 0.5f;
@@ -292,6 +289,25 @@ namespace atto {
         orientation[ 1 ] = up;
         orientation[ 2 ] = front;
         return orientation;
+    }
+
+    EntCamera EntCamera::CreateDefault() {
+        const f32 YAW = -90.0f;
+        const f32 PITCH = 0.0f;
+        const f32 SPEED = 2.5f;
+        const f32 SENSITIVITY = 0.1f;
+        const f32 ZOOM = 45.0f;
+        EntCamera camera = {};
+        camera.yaw = YAW;
+        camera.pitch = PITCH;
+        camera.movementSpeed = SPEED;
+        camera.mouseSensitivity = SENSITIVITY;
+        camera.yfov = ZOOM;
+        camera.zNear = 0.1f;
+        camera.zFar = 250.0f;
+        camera.front = glm::vec3( 0.0f, 0.0f, -1.0f );
+        camera.up = glm::vec3( 0.0f, 1.0f, 0.0f );
+        return camera;
     }
 
     bool Map::AddBlock( i32 x, i32 y ) {

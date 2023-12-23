@@ -1,38 +1,62 @@
 #include "atto_editor.h"
 #include "../shared/atto_core.h"
-#include "../game/atto_game.h"
-#include "../game/modes/atto_game_mode_game.h"
+
 #include "imgui.h"
 
 namespace atto {
 
-    void Editor::UpdateAndRender( Core * core, Game * game, f32 dt ) {
-        GameModeGame * leGame = ( (GameModeGame *)game->gameMode );
+    Editor::Editor() {
+        editorCamera.pos = glm::vec3( 0.0f, 0.0f, 3.0f );
+        editorCamera.camera = EntCamera::CreateDefault();
+    }
+
+    void Editor::UpdateAndRender( Core * core, GameMode * game, f32 dt ) {
+        if( core->InputKeyDown( KEY_CODE_ESCAPE ) ) {
+            core->WindowClose();
+        }
+
+        if( game->IsInitialized() == false ) {
+            game->Initialize( core );
+        }
+
+        GameModeGame * leGame = ( (GameModeGame *)game );
         if( core->InputKeyJustPressed( KEY_CODE_F1 ) == true ) {
-            leGame->localPlayer->camera.noclip = !leGame->localPlayer->camera.noclip;
-            for( i32 i = 0; i < ArrayCount( windowShows ); i++ ) {
-                windowShows[ i ] = false;
+            editorActive = !editorActive;
+            if( editorActive == false ) {
+                for( i32 i = 0; i < ArrayCount( windowShows ); i++ ) {
+                    windowShows[ i ] = false;
+                }
+
+                EnumRemoveFlag( updateAndRenderFlags, UPDATE_AND_RENDER_FLAG_NO_UPDATE );
+                EnumRemoveFlag( updateAndRenderFlags, UPDATE_AND_RENDER_FLAG_DONT_SUBMIT_RENDER );
             }
-            
-            core->InputEnableMouse();
+            else {
+                EnumSetFlag( updateAndRenderFlags, UPDATE_AND_RENDER_FLAG_NO_UPDATE );
+                EnumSetFlag( updateAndRenderFlags, UPDATE_AND_RENDER_FLAG_DONT_SUBMIT_RENDER );
+                core->InputEnableMouse();
+            }
         }
 
-        MainMenuBar( core, game );
-        Canvas( core, game );
-
-        bool mouseForUI = ImGui::GetIO().WantCaptureMouse;
-        if( leGame != nullptr ) {
-            leGame->localPlayer->sleeping = mouseForUI;
+        if( editorActive == true ) {
+            MainMenuBar( core, game );
+            Canvas( core, game );
+            bool mouseForUI = ImGui::GetIO().WantCaptureMouse;
+            if( mouseForUI == false ) {
+                UpdateEditorCamera( core );
+            }
         }
-        game->UpdateAndRender( core, dt );
+
+        game->UpdateAndRender( core, dt, (UpdateAndRenderFlags)updateAndRenderFlags );
+
+        if( editorActive == true ) {
+            DrawContext * worldDraws = core->RenderGetDrawContext( 0, false );
+            worldDraws->SetCamera( editorCamera.GetViewMatrix(), editorCamera.camera.yfov, editorCamera.camera.zNear, editorCamera.camera.zFar );
+            core->RenderSubmit( worldDraws, true );
+        }
     }
 
-    void DEBUG_LoadMap( const char * path ) {
-        
-    }
-
-    void Editor::MainMenuBar( Core * core, Game * game ) {
-        GameModeGame * leGame = ( (GameModeGame *)game->gameMode );
+    void Editor::MainMenuBar( Core * core, GameMode * game ) {
+        GameModeGame * leGame = ( (GameModeGame *)game );
         if( ImGui::BeginMainMenuBar() ) {
 
             if( ImGui::MenuItem( "Canvas" ) ) {
@@ -51,9 +75,9 @@ namespace atto {
         }
     }
 
-    void Editor::Canvas( Core * core, Game * game ) {
+    void Editor::Canvas( Core * core, GameMode * game ) {
         if( show.canvas == true ) {
-            GameModeGame * leGame = ( (GameModeGame *)game->gameMode );
+            GameModeGame * leGame = ( (GameModeGame *)game );
             Map * map = &leGame->map;
             if( ImGui::Begin( "Canvas", &show.canvas ) ) {
                 static ImVec2 scrolling( 0.0f, 0.0f );
@@ -91,7 +115,7 @@ namespace atto {
                     else {
                         map->AddBlock( x, y );
                     }
-                    
+
                     map->Bake();
                 }
 
@@ -109,8 +133,8 @@ namespace atto {
                     ImGui::OpenPopupOnItemClick( "context", ImGuiPopupFlags_MouseButtonRight );
                 if( ImGui::BeginPopup( "context" ) ) {
                     addingLine = false;
-                    if( ImGui::MenuItem( "Remove one", NULL, false ) ) { }
-                    if( ImGui::MenuItem( "Remove all", NULL, false ) ) { }
+                    if( ImGui::MenuItem( "Remove one", NULL, false ) ) {}
+                    if( ImGui::MenuItem( "Remove all", NULL, false ) ) {}
                     ImGui::EndPopup();
                 }
 
@@ -143,7 +167,7 @@ namespace atto {
                     ImU32 c = core->InputKeyDown( KEY_CODE_LEFT_ALT ) ? IM_COL32( 200, 0, 0, 150 ) : IM_COL32( 200, 200, 0, 150 );
                     drawList->AddRectFilled( p1, p2, c );
                     SmallString t = StringFormat::Small( "(%d, %d)", (i32)( mousePosSnapped.x / GRID_STEP ), (i32)( mousePosSnapped.y / GRID_STEP ) );
-                    ImVec2 p3 = ImVec2( p1.x + GRID_STEP / 2, p1.y + GRID_STEP / 2);
+                    ImVec2 p3 = ImVec2( p1.x + GRID_STEP / 2, p1.y + GRID_STEP / 2 );
                     ImVec2 s = ImGui::CalcTextSize( t.GetCStr() );
                     p3.x -= s.x / 2;
                     p3.y -= s.y / 2;
@@ -156,4 +180,59 @@ namespace atto {
             ImGui::End();
         }
     }
+
+    void Editor::UpdateEditorCamera( Core * core ) {
+        if( core->InputMouseButtonJustPressed( MOUSE_BUTTON_2 ) == true ) {
+            core->InputDisableMouse();
+            return;
+        }
+
+        if( core->InputMouseButtonJustReleased( MOUSE_BUTTON_2 ) == true ) {
+            core->InputEnableMouse();
+            return;
+        }
+
+        if( core->InputMouseButtonDown( MOUSE_BUTTON_2 ) == true ) {
+            f32 v = editorCamera.camera.movementSpeed * core->GetDeltaTime();
+            if( core->InputKeyDown( KEY_CODE_W ) ) {
+                editorCamera.pos += editorCamera.camera.front * v;
+            }
+            if( core->InputKeyDown( KEY_CODE_S ) ) {
+                editorCamera.pos -= editorCamera.camera.front * v;
+            }
+            if( core->InputKeyDown( KEY_CODE_A ) ) {
+                editorCamera.pos -= editorCamera.camera.right * v;
+            }
+            if( core->InputKeyDown( KEY_CODE_D ) ) {
+                editorCamera.pos += editorCamera.camera.right * v;
+            }
+            if( core->InputKeyDown( KEY_CODE_SPACE ) ) {
+                editorCamera.pos.y += v;
+            }
+            if( core->InputKeyDown( KEY_CODE_LEFT_CONTROL ) ) {
+                editorCamera.pos.y -= v;
+            }
+
+            glm::vec2 mouseDelta = core->InputMouseDeltaPixels();
+            f32 xoffset = mouseDelta.x * editorCamera.camera.mouseSensitivity;
+            f32 yoffset = mouseDelta.y * editorCamera.camera.mouseSensitivity;
+            editorCamera.camera.yaw += xoffset;
+            editorCamera.camera.pitch += yoffset;
+            if( editorCamera.camera.pitch > 89.0f ) {
+                editorCamera.camera.pitch = 89.0f;
+            }
+            if( editorCamera.camera.pitch < -89.0f ) {
+                editorCamera.camera.pitch = -89.0f;
+            }
+
+            glm::vec3 front;
+            front.x = cos( glm::radians( editorCamera.camera.yaw ) ) * cos( glm::radians( editorCamera.camera.pitch ) );
+            front.y = sin( glm::radians( editorCamera.camera.pitch ) );
+            front.z = sin( glm::radians( editorCamera.camera.yaw ) ) * cos( glm::radians( editorCamera.camera.pitch ) );
+            editorCamera.camera.front = glm::normalize( front );
+            editorCamera.camera.right = glm::normalize( glm::cross( editorCamera.camera.front, glm::vec3( 0, 1, 0 ) ) );
+            editorCamera.camera.up = glm::normalize( glm::cross( editorCamera.camera.right, editorCamera.camera.front ) );
+        }
+    }
+
 }

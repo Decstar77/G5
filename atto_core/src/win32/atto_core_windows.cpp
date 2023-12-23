@@ -11,6 +11,7 @@
 
 #include <fstream>
 #include "../editor/atto_editor.h"
+#include "../game/modes/atto_game_mode_game.h"
 
 namespace atto {
 
@@ -166,8 +167,8 @@ namespace atto {
         EngineImgui::Initialize( window );
 
         client = new NetClient( this );
-
-        game = new Game();
+        
+        game = new GameModeGame();
 
     #if ATTO_EDITOR
         editor = new Editor();
@@ -562,7 +563,7 @@ namespace atto {
                         GLShaderProgramSetVec4( "color", cmd.color );
                     }
 
-                    glEnable( GL_CULL_FACE );
+                    glDisable( GL_CULL_FACE ); // HACK:
                     glEnable( GL_DEPTH_TEST );
 
                     glBindVertexArray( mesh->vao );

@@ -22,9 +22,11 @@ namespace atto {
         return camera;
     }
 
-    DrawContext * Core::RenderGetDrawContext( i32 index ) {
+    DrawContext * Core::RenderGetDrawContext( i32 index, bool clear ) {
         DrawContext * d = &drawContexts[ index ];
-        ZeroStructPtr( d );
+        if ( clear == true ) { 
+            ZeroStructPtr( d );
+        }
         d->screenProjection = screenProjection;
         d->mainSurfaceHeight = mainSurfaceHeight;
         d->mainSurfaceWidth = mainSurfaceWidth;

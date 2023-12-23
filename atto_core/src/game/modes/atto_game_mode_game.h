@@ -24,6 +24,7 @@ namespace atto {
         bool noclip;
 
         glm::mat3 GetOrientation() const;
+        static EntCamera CreateDefault();
     };
 
     struct Entity;
@@ -131,10 +132,11 @@ namespace atto {
 
     class GameModeGame : public GameMode {
     public:
-        GameModeType            GetGameModeType() override;
-        void                    Init( Core * core ) override;
-        void                    UpdateAndRender( Core * core, f32 dt ) override;
-        void                    Shutdown( Core * core ) override;
+        virtual GameModeType            GetGameModeType() override;
+        virtual bool                    IsInitialized() override;
+        virtual void                    Initialize( Core * core ) override;
+        virtual void                    UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags ) override;
+        virtual void                    Shutdown( Core * core ) override;
 
         Entity *                SpawnEntity( EntityType type );
         Entity *                SpawnPlayer( glm::vec3 pos );

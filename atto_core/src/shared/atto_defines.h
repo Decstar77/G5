@@ -37,6 +37,9 @@
 #define Gigabytes(val) (Megabytes(val) * 1024LL)
 
 #define SetABit(x) (1 << x)
+#define EnumContainsFlag(x, flag) ((x & flag) == flag)
+#define EnumSetFlag(x, flag) (x |= flag)
+#define EnumRemoveFlag(x, flag) (x &= ~flag)
 
 #define Stringify(x) #x
 #define ArrayCount(x) (sizeof(x) / sizeof(x[0]))
