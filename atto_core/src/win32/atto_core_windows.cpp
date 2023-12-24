@@ -23,6 +23,7 @@ namespace atto {
     static i32                         windowHeight = 0;
     static f32                         windowAspect = 0;
     static SmallString                 windowTitle = SmallString::FromLiteral( "Game" );
+    static bool                        windowVsync = true;
     static bool                        windowFullscreen = false;
     static bool                        shouldClose = false;
     static bool                        firstMouse = true;
@@ -46,9 +47,9 @@ namespace atto {
         }
 
         fi.mousePosPixels = glm::vec2( (f32)xpos, (f32)ypos );
-        fi.mouseDeltaPixels.x = fi.mousePosPixels.x - fi.lastMousePosPixels.x;
-        fi.mouseDeltaPixels.y = fi.lastMousePosPixels.y - fi.mousePosPixels.y;
-        std::cout << "Mouse position: " << fi.mouseDeltaPixels.x << ", " << fi.mouseDeltaPixels.y << std::endl;
+        // We need to += here because this callback can be called multiple times when calling glfwPollEvents. So we need to collect all the inputs.
+        fi.mouseDeltaPixels.x += fi.mousePosPixels.x - fi.lastMousePosPixels.x;
+        fi.mouseDeltaPixels.y += fi.lastMousePosPixels.y - fi.mousePosPixels.y;
     }
 
     static void MouseButtonCallback( GLFWwindow * window, int button, int action, int mods ) {
@@ -196,7 +197,9 @@ namespace atto {
             fi.mouseWheelDelta = glm::vec2( 0.0f, 0.0f );
             fi.mouseDeltaPixels = glm::vec2( 0.0f, 0.0f );
 
+            //std::cout << "Poll start " << std::endl;
             glfwPollEvents();
+            //std::cout << "Poll end " << std::endl;
 
             if( client->IsConnected() ) {
                 NetworkMessage msg = {};
@@ -697,6 +700,16 @@ namespace atto {
 
     void WindowsCore::WindowSetTitle( const char * title ) {
         glfwSetWindowTitle( window, title );
+    }
+
+
+    void WindowsCore::WindowSetVSync( bool value ) {
+        glfwSwapInterval( (i32)value );
+        windowVsync = value;
+    }
+
+    bool WindowsCore::WindowGetVSync() {
+        return windowVsync;
     }
 
     void WindowsCore::GLInitializeShapeRendering() {

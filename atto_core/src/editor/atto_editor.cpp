@@ -19,6 +19,10 @@ namespace atto {
             game->Initialize( core );
         }
 
+        if( core->InputKeyJustPressed( KEY_CODE_F6 ) == true ) {
+            core->WindowSetVSync( !core->WindowGetVSync() );
+        }
+
         GameModeGame * leGame = ( (GameModeGame *)game );
         if( core->InputKeyJustPressed( KEY_CODE_F1 ) == true ) {
             editorActive = !editorActive;

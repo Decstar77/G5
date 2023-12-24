@@ -299,6 +299,8 @@ namespace atto {
 
         virtual void                        WindowClose() = 0;
         virtual void                        WindowSetTitle( const char * title ) = 0;
+        virtual void                        WindowSetVSync( bool value ) = 0;
+        virtual bool                        WindowGetVSync() = 0;
         //virtual void                        WindowSetFullscreen(bool fullscreen) = 0;
         //virtual void                        WindowSetCursorVisible(bool visible) = 0;
         //virtual void                        WindowSetCursorLocked(bool locked) = 0;

@@ -112,16 +112,18 @@ namespace atto {
         StaticMeshResource *            ResourceMeshCreate( const char * name, StaticMeshData & data );
         StaticMeshResource *            ResourceMeshCreate( const char * name, i32 vertexCount );
 
-        virtual AudioSpeaker        AudioPlay(AudioResource* audioResource, f32 volume = 1.0f, bool looping = false) override;
+        virtual AudioSpeaker            AudioPlay(AudioResource* audioResource, f32 volume = 1.0f, bool looping = false) override;
 
-        void                        RenderSubmit( DrawContext * dcxt, bool clearBackBuffers ) override;
+        virtual void                    RenderSubmit( DrawContext * dcxt, bool clearBackBuffers ) override;
         
-        void                        InputDisableMouse() override;
-        void                        InputEnableMouse() override;
-        bool                        InputIsMouseDisabled() override;
+        virtual void                    InputDisableMouse() override;
+        virtual void                    InputEnableMouse() override;
+        virtual bool                    InputIsMouseDisabled() override;
 
-        void                        WindowClose() override;
-        void                        WindowSetTitle(const char* title) override;
+        virtual void                    WindowClose() override;
+        virtual void                    WindowSetTitle(const char* title) override;
+        virtual void                    WindowSetVSync( bool value ) override;
+        virtual bool                    WindowGetVSync() override;
 
         void                        GLResetSurface(f32 w, f32 h);
 
@@ -131,7 +133,7 @@ namespace atto {
     public:
         ResourceRegistry            resources = {};
 
-        ShaderProgram * boundProgram;
+        ShaderProgram *             boundProgram;
 
         ShaderProgram               shapeProgram;
         VertexBuffer                shapeVertexBuffer;
