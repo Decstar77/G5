@@ -46,6 +46,8 @@ namespace atto {
         f32                 fireRate;
         f32                 fireRateAccumulator;
         i32                 fireDamage;
+        glm::vec3           localStartGunPos;
+        glm::vec3           localGunPos;
 
         i32                 maxHealth;
         i32                 currentHealth;
@@ -154,6 +156,6 @@ namespace atto {
         TextureResource *                       grid_Dark8 = nullptr;
         TextureResource *                       tex_PolygonScifi_01_C = nullptr;
         StaticMeshResource *                    mesh_Test = nullptr;
-
+        AudioResource *                         snd_Gun_Pistol_Shot_01 = nullptr;
     };
 }

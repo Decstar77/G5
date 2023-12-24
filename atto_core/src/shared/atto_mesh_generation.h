@@ -3,6 +3,12 @@
 #include "atto_core.h"
 
 namespace atto {
+    // Handy dandy mesh generation functions
+    class GeometryFuncs {
+    public:
+        static void SortPointsIntoClockWiseOrder( glm::vec2 * points, i32 numPoints );
+    };
+
     class StaticMeshGeneration {
     public:
         static StaticMeshData CreateQuad( f32 xLeft, f32 yTop, f32 w, f32 h, f32 depth );

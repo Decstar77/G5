@@ -1,6 +1,7 @@
 
 #include "atto_core.h"
 #include "atto_client.h"
+#include "atto_mesh_generation.h"
 
 namespace atto {
 
@@ -85,28 +86,34 @@ namespace atto {
     }
 
     void DrawContext::DrawLine2D( glm::vec2 start, glm::vec2 end, f32 thicc, const glm::vec4 & color /*= glm::vec4(1)*/ ) {
-        //glm::vec2 direction = glm::normalize( end - start );
-        //glm::vec2 perpendicular( direction.y, -direction.x );
+        glm::vec2 direction = glm::normalize( end - start );
+        glm::vec2 perpendicular( direction.y, -direction.x );
 
-        //glm::vec2 points[] = {
-        //    start + perpendicular * ( thicc / 2.0f ),
-        //    start - perpendicular * ( thicc / 2.0f ),
-        //    end + perpendicular * ( thicc / 2.0f ),
-        //    end - perpendicular * ( thicc / 2.0f )
-        //};
+        glm::vec2 points[] = {
+            start + perpendicular * ( thicc / 2.0f ),
+            start - perpendicular * ( thicc / 2.0f ),
+            end + perpendicular * ( thicc / 2.0f ),
+            end - perpendicular * ( thicc / 2.0f )
+        };
 
-        //Geometry::SortPointsIntoClockWiseOrder( points, 4 );
+        GeometryFuncs::SortPointsIntoClockWiseOrder( points, 4 );
 
-        //DrawCommand cmd = {};
-        //cmd.type = DrawCommandType::LINE;
-        //cmd.color = color;
-        //cmd.p1 = points[ 0 ];
-        //cmd.p2 = points[ 1 ];
-        //cmd.p3 = points[ 2 ];
-        //cmd.p4 = points[ 3 ];
+        DrawCommand cmd = {};
+        cmd.type = DrawCommandType::LINE2D;
+        cmd.color = color;
+        cmd.line2D.p = screenProjection;
+        cmd.line2D.p1 = points[ 0 ];
+        cmd.line2D.p2 = points[ 1 ];
+        cmd.line2D.p3 = points[ 2 ];
+        cmd.line2D.p4 = points[ 3 ];
+
+        drawList.Add( cmd );
+    }
 
 
-        //drawCommands.drawList.Add( cmd );
+    void DrawContext::DrawLine2D_NDC( glm::vec2 start, glm::vec2 end, f32 thicc, const glm::vec4 & color /*= glm::vec4( 1 ) */ ) {
+        DrawLine2D( start, end, thicc, color );
+        drawList.Last().line2D.p = glm::mat4( 1 );
     }
 
     void DrawContext::DrawSprite( TextureResource * texture, glm::vec2 center, f32 rot, glm::vec2 size, glm::vec4 colour ) {

@@ -15,10 +15,10 @@
 
 namespace atto {
 
-    static GLFWmonitor *               monitor = nullptr;
+    static GLFWmonitor * monitor = nullptr;
     static LargeString                 monitorName = LargeString::FromLiteral( "" );
     static f64                         monitorRefreshRate = 0;
-    static GLFWwindow *                window = nullptr;
+    static GLFWwindow * window = nullptr;
     static i32                         windowWidth = 0;
     static i32                         windowHeight = 0;
     static f32                         windowAspect = 0;
@@ -48,6 +48,7 @@ namespace atto {
         fi.mousePosPixels = glm::vec2( (f32)xpos, (f32)ypos );
         fi.mouseDeltaPixels.x = fi.mousePosPixels.x - fi.lastMousePosPixels.x;
         fi.mouseDeltaPixels.y = fi.lastMousePosPixels.y - fi.mousePosPixels.y;
+        std::cout << "Mouse position: " << fi.mouseDeltaPixels.x << ", " << fi.mouseDeltaPixels.y << std::endl;
     }
 
     static void MouseButtonCallback( GLFWwindow * window, int button, int action, int mods ) {
@@ -69,8 +70,8 @@ namespace atto {
         windowAspect = (f32)w / (f32)h;
 
         core->GLResetSurface( (f32)w, (f32)h );
-#if 0
-        // Maintain aspect ratio with black bars
+    #if 0
+            // Maintain aspect ratio with black bars
         mainSurfaceWidth = (i32)( 1280.0 * 1.6f );
         mainSurfaceHeight = (i32)( 720.0 * 1.6f );
         //mainSurfaceWidth = 480;
@@ -87,7 +88,7 @@ namespace atto {
         i32 viewY = (i32)( ( h - mainSurfaceHeight * ratio ) / 2 );
 
         glViewport( viewX, viewY, viewWidth, viewHeight );
-#endif
+    #endif
     }
 
     void WindowsCore::Run( int argc, char ** argv ) {
@@ -104,9 +105,9 @@ namespace atto {
         glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 4 );
         glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 6 );
 
-#if ATTO_DEBUG_RENDERING
+    #if ATTO_DEBUG_RENDERING
         glfwWindowHint( GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE );
-#endif
+    #endif
 
         glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );
         glfwWindowHint( GLFW_RESIZABLE, GL_TRUE );
@@ -135,6 +136,13 @@ namespace atto {
         glfwSwapInterval( 1 );
 
         glfwSetWindowUserPointer( window, this );
+
+        if( glfwRawMouseMotionSupported() ) {
+            glfwSetInputMode( window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE );
+        }
+        else {
+            LogOutput( LogLevel::WARN, "Could not enable raw input" );
+        }
 
         glfwSetCursorPosCallback( window, MousePositionCallback );
         glfwSetKeyCallback( window, KeyCallback );
@@ -167,13 +175,13 @@ namespace atto {
         EngineImgui::Initialize( window );
 
         client = new NetClient( this );
-        
+
         game = new GameModeGame();
 
     #if ATTO_EDITOR
         editor = new Editor();
     #endif
-        
+
         bool showDemoWindow = true;
 
         f32 simTickRate = 1.0f / 30.0f;
@@ -250,7 +258,7 @@ namespace atto {
         meshResource.vertexStride = sizeof( StaticMeshVertex );
         meshResource.indexStride = sizeof( u16 );
         meshResource.indexCount = data.indexCount;
-        
+
         glGenVertexArrays( 1, &meshResource.vao );
         glGenBuffers( 1, &meshResource.vbo );
         glGenBuffers( 1, &meshResource.ibo );
@@ -292,10 +300,10 @@ namespace atto {
         meshResource.name = name;
         meshResource.vertexCount = vertexCount;
         meshResource.vertexStride = sizeof( StaticMeshVertex );
-        meshResource.indexStride = -1 ;
+        meshResource.indexStride = -1;
         meshResource.indexCount = -1;
         meshResource.updateable = true;
-        
+
         glGenVertexArrays( 1, &meshResource.vao );
         glGenBuffers( 1, &meshResource.vbo );
 
@@ -321,7 +329,7 @@ namespace atto {
     void WindowsCore::RenderSubmit( DrawContext * dcxt, bool clearBackBuffers ) {
         if( clearBackBuffers ) {
             //glClearColor(0.5f, 0.2f, 0.2f, 1.0f);
-            glClearColor(0.2f, 0.5f, 0.2f, 1.0f);
+            glClearColor( 0.2f, 0.5f, 0.2f, 1.0f );
             //glClearColor( 0.1f, 0.1f, 0.2f, 1.0f );
             //glClearColor( Colors::SILVER.x, Colors::SILVER.y, Colors::SILVER.z, 1.0f );
             glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
@@ -379,6 +387,30 @@ namespace atto {
                     GLEnableAlphaBlending();
                     GLShaderProgramBind( shapeProgram );
                     GLShaderProgramSetMat4( "p", screenProjection );
+                    GLShaderProgramSetInt( "mode", 0 );
+                    GLShaderProgramSetVec4( "color", cmd.color );
+
+                    glDisable( GL_CULL_FACE );
+                    glBindVertexArray( shapeVertexBuffer.vao );
+                    GLVertexBufferUpdate( shapeVertexBuffer, 0, sizeof( vertices ), vertices );
+                    glDrawArrays( GL_TRIANGLES, 0, 6 );
+                    glBindVertexArray( 0 );
+                } break;
+                case DrawCommandType::LINE2D:
+                {
+                    f32 vertices[ 6 ][ 2 ] = {
+                         { cmd.line2D.p1.x, cmd.line2D.p1.y, },
+                         { cmd.line2D.p2.x, cmd.line2D.p2.y, },
+                         { cmd.line2D.p3.x, cmd.line2D.p3.y, },
+
+                         { cmd.line2D.p3.x, cmd.line2D.p3.y, },
+                         { cmd.line2D.p4.x, cmd.line2D.p4.y, },
+                         { cmd.line2D.p1.x, cmd.line2D.p1.y, }
+                    };
+
+                    GLEnableAlphaBlending();
+                    GLShaderProgramBind( shapeProgram );
+                    GLShaderProgramSetMat4( "p", cmd.line2D.p );
                     GLShaderProgramSetInt( "mode", 0 );
                     GLShaderProgramSetVec4( "color", cmd.color );
 
@@ -551,7 +583,7 @@ namespace atto {
 
                     GLShaderProgramBind( staticMeshUnlitProgram );
                     GLShaderProgramSetMat4( "pvm", pvm );
-                    
+
                     if( cmd.mesh.albedo != nullptr ) {
                         GLShaderProgramSetInt( "hasTexture", 1 );
                         Win32TextureResource * texture = (Win32TextureResource *)cmd.mesh.albedo;
@@ -622,7 +654,7 @@ namespace atto {
             glGetFloatv( GL_MAX_TEXTURE_MAX_ANISOTROPY, &maxAnti );
             glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, maxAnti );
         }
-        
+
         glBindTexture( GL_TEXTURE_2D, 0 );
 
         return resources.textures.Add( textureResource );
@@ -639,7 +671,7 @@ namespace atto {
 
         ContentModelProcessor modelProcessor = {};
         modelProcessor.LoadFromFile( this, name );
-        
+
         Assert( modelProcessor.meshes.size() == 1 );
 
         StaticMeshResource * mesh = ResourceMeshCreate( name, modelProcessor.meshes[ 0 ] );
@@ -746,7 +778,7 @@ namespace atto {
             }
         )";
 
-#if 0
+    #if 0
         const char * fragmentShaderSource = R"(
             #version 330 core
             out vec4 FragColor;
@@ -829,7 +861,7 @@ namespace atto {
                 FragColor = sampled * color;
             }
         )";
-#else 
+    #else 
         const char * fragmentShaderSource = R"(
             #version 330 core
             out vec4 FragColor;
@@ -843,10 +875,10 @@ namespace atto {
                 FragColor = sampled;
             }
         )";
-#endif
+    #endif
 
         spriteProgram = GLCreateShaderProgram( vertexShaderSource, fragmentShaderSource );
-        
+
         VertexLayoutSprite sprite = {};
         spriteVertexBuffer = GLCreateVertexBuffer( &sprite, 6, nullptr, true );
     }
@@ -893,10 +925,10 @@ namespace atto {
         )";
 
         staticMeshUnlitProgram = GLCreateShaderProgram( vertexShaderSource, fragmentShaderSource );
-        staticMeshTriangle  = (Win32StaticMeshResource *)ResourceMeshCreate( "Triangle", 3 );
-        staticMeshPlane     = (Win32StaticMeshResource *)ResourceMeshCreate( "Plane",   StaticMeshGeneration::CreateQuad( -1, 1, 2.0f, 2.0f, 0.0f ) );
-        staticMeshCube      = (Win32StaticMeshResource *)ResourceMeshCreate( "Cube",    StaticMeshGeneration::CreateBox( 1, 1, 1, 0 ) );
-        staticMeshSphere    = (Win32StaticMeshResource *)ResourceMeshCreate( "Sphere",  StaticMeshGeneration::CreateSphere( 1, 8, 8 ) );
+        staticMeshTriangle = (Win32StaticMeshResource *)ResourceMeshCreate( "Triangle", 3 );
+        staticMeshPlane = (Win32StaticMeshResource *)ResourceMeshCreate( "Plane", StaticMeshGeneration::CreateQuad( -1, 1, 2.0f, 2.0f, 0.0f ) );
+        staticMeshCube = (Win32StaticMeshResource *)ResourceMeshCreate( "Cube", StaticMeshGeneration::CreateBox( 1, 1, 1, 0 ) );
+        staticMeshSphere = (Win32StaticMeshResource *)ResourceMeshCreate( "Sphere", StaticMeshGeneration::CreateSphere( 1, 8, 8 ) );
     }
 
     void WindowsCore::OsParseStartArgs( int argc, char ** argv ) {
@@ -1201,10 +1233,10 @@ namespace atto {
     void VertexLayoutStaticModel::Layout() {
         glEnableVertexAttribArray( 0 );
         glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, sizeof( StaticMeshVertex ), (void *)0 );
-        
+
         glEnableVertexAttribArray( 1 );
         glVertexAttribPointer( 1, 3, GL_FLOAT, GL_FALSE, sizeof( StaticMeshVertex ), (void *)offsetof( StaticMeshVertex, normal ) );
-        
+
         glEnableVertexAttribArray( 2 );
         glVertexAttribPointer( 2, 2, GL_FLOAT, GL_FALSE, sizeof( StaticMeshVertex ), (void *)offsetof( StaticMeshVertex, uv ) );
     }

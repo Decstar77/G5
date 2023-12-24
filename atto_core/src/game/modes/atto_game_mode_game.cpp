@@ -18,6 +18,7 @@ namespace atto {
         grid_Dark1 = core->ResourceGetAndLoadTexture( "kenney_prototype/dark/texture_01.png", true, true );
         grid_Dark8 = core->ResourceGetAndLoadTexture( "kenney_prototype/dark/texture_08.png", true, true );
         tex_PolygonScifi_01_C = core->ResourceGetAndLoadTexture( "PolygonScifi_01_C.png", false, false );
+        snd_Gun_Pistol_Shot_01 = core->ResourceGetAndLoadAudio( "gun_pistol_shot_02.wav" );
 
         mesh_Test = core->ResourceGetAndLoadMesh( "wep_pistol_bot.obj" );
 
@@ -86,7 +87,11 @@ namespace atto {
         //worldDraws->DrawSphere( glm::vec3( 0, 3, 0 ), 1.0f );
         //worldDraws->DrawTriangle( glm::vec3( 0, 0, 0 ), glm::vec3( 0, 1, 0 ), glm::vec3( 1, 0, 0 ), glm::vec4( 1, 0, 0, 1 ) );
         //worldDraws->DrawLine( glm::vec3( 0, 0, 0 ), glm::vec3( 1, 1, 1 ), 1 );
-
+        const f32 crossHairThicc = 0.0045f;
+        const f32 crossHairLength = 0.02f;
+        const f32 aspectRatio = worldDraws->GetMainAspectRatio();
+        worldDraws->DrawLine2D_NDC( glm::vec2( 0, -crossHairLength ), glm::vec2( 0, crossHairLength ), crossHairThicc, glm::vec4( 1, 0, 0, 1 ) );
+        worldDraws->DrawLine2D_NDC( glm::vec2( -crossHairLength / aspectRatio, 0 ), glm::vec2( crossHairLength /aspectRatio, 0 ), crossHairThicc * aspectRatio, glm::vec4( 1, 0, 0, 1 ) );
 
         if( ( flags & UPDATE_AND_RENDER_FLAG_DONT_SUBMIT_RENDER ) == false ) {
             core->RenderSubmit( worldDraws, true );
@@ -116,6 +121,9 @@ namespace atto {
             ent->collisionCollider.sphere.r = 0.5f;
             ent->collisionCollider.sphere.c = pos + glm::vec3( 0, ent->collisionCollider.sphere.r, 0 );
             ent->pos = ent->collisionCollider.sphere.c;
+            ent->fireRate = 0.25f;
+            ent->localStartGunPos = glm::vec3( 0.5, -0.4f, 1.2f );
+            ent->localGunPos = ent->localStartGunPos;
         }
 
         return ent;
@@ -264,6 +272,25 @@ namespace atto {
 
                 // @HACK: Lock the player to the ground
                 ent->pos.y = ent->collisionCollider.sphere.c.y;
+
+                ent->fireRateAccumulator -= tickTime;
+
+                if( ent->fireRateAccumulator <= 0.0f ) {
+                    ent->fireRateAccumulator = 0.0f;
+                    ent->localGunPos = ent->localStartGunPos;
+                }
+
+                if( core->InputMouseButtonJustPressed( MOUSE_BUTTON_1 ) ) {
+                    if( ent->fireRateAccumulator == 0.0f ) {
+                        ent->fireRateAccumulator = ent->fireRate;
+                        ent->localGunPos.z += 2.1f;
+                        core->AudioPlay( snd_Gun_Pistol_Shot_01, 0.5f );
+                    }
+                }
+            }
+
+            if( ent->fireRateAccumulator > 0.0f ) {
+                ent->localGunPos = glm::mix( ent->localStartGunPos, ent->localGunPos, ent->fireRateAccumulator );
             }
         }
     }
@@ -274,7 +301,6 @@ namespace atto {
     }
 
     glm::mat4 Entity::Player_ComputeGunTransformMatrix() const {
-        glm::vec3 localGunPos = glm::vec3( 0.5, -0.4f, 1.2f );
         glm::mat4 localGunTransform = glm::translate( glm::mat4( 1 ), localGunPos );
 
         glm::vec3 headPos = pos + glm::vec3( 0, 1.6f, 0 );

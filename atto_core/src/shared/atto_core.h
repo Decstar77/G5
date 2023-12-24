@@ -92,10 +92,10 @@ namespace atto {
         NONE = 0,
         CIRCLE,
         RECT,
+        LINE2D,
         SPRITE,
         TEXT,
-        LINE2D,
-        
+
         // 3D
         PLANE,
         SPHERE,
@@ -119,6 +119,13 @@ namespace atto {
                     glm::vec2 bl;
                     glm::vec2 tl;
                 } rect;
+                struct {
+                    glm::vec2 p1;
+                    glm::vec2 p2;
+                    glm::vec2 p3;
+                    glm::vec2 p4;
+                    glm::mat4 p;
+                } line2D;
                 struct {
                     glm::vec2 tr;
                     glm::vec2 br;
@@ -182,10 +189,10 @@ namespace atto {
         void DrawRect( glm::vec2 bl, glm::vec2 tr, glm::vec4 colour = glm::vec4( 1 ) );
         void DrawRect( glm::vec2 center, glm::vec2 dim, f32 rot, const glm::vec4 & color = glm::vec4( 1 ) );
         void DrawLine2D( glm::vec2 start, glm::vec2 end, f32 thicc, const glm::vec4 & color = glm::vec4( 1 ) );
+        void DrawLine2D_NDC( glm::vec2 start, glm::vec2 end, f32 thicc, const glm::vec4 & color = glm::vec4( 1 ) );
         void DrawSprite( TextureResource * texture, glm::vec2 center, f32 rot = 0.0f, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
         void DrawSpriteBL( TextureResource * texture, glm::vec2 bl, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
         void DrawText2D( FontHandle font, glm::vec2 tl, f32 fontSize, const char * text, glm::vec4 colour = glm::vec4( 1 ) );
-
         void DrawPlane( glm::vec3 center, glm::vec3 normal, glm::vec2 dim, glm::vec4 colour = glm::vec4( 1 ) );
         void DrawSphere( glm::vec3 center, f32 r, glm::vec4 colour = glm::vec4( 1 ) );
         void DrawLine( glm::vec3 p1, glm::vec3 p2, f32 thicc, glm::vec4 colour = glm::vec4( 1 ) );
@@ -193,6 +200,9 @@ namespace atto {
         void DrawTriangle( glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec2 uv1, glm::vec2 uv2, glm::vec2 uv3, TextureResource * texture );
 
         void DrawMesh( StaticMeshResource * mesh, glm::mat4 m, TextureResource * albedo = nullptr );
+
+        inline glm::vec2 GetMainSurfaceDims() const { return glm::vec2( mainSurfaceWidth, mainSurfaceHeight ); }
+        inline f32 GetMainAspectRatio() const { return mainAspect; }
 
     private:
         glm::mat4       cameraProj;
