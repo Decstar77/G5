@@ -79,7 +79,7 @@ namespace atto {
         }
 
         worldDraws->DrawSphere( localPlayer->pos, localPlayer->collisionCollider.sphere.r );
-        worldDraws->DrawMesh( mesh_Test, localPlayer->Player_ComputeHeadTransformMatrix(), tex_PolygonScifi_01_C );
+        worldDraws->DrawMesh( mesh_Test, localPlayer->Player_ComputeGunTransformMatrix(), tex_PolygonScifi_01_C );
         //worldDraws->DrawRect( glm::vec2( 0 ), glm::vec2( 100 ), 0.0f, glm::vec4( 1, 0, 0, 1 ) );
         //worldDraws->DrawPlane( glm::vec3( 0, 0, 0 ), glm::vec3( 0, 0, 1 ), glm::vec2( 1 ), glm::vec4( 0, 1, 0, 1 ) );
         //worldDraws->DrawPlane( glm::vec3( 0, 0, 0 ), glm::vec3( 0, 1, 0 ), glm::vec2( 10 ), glm::vec4( 0.4f, 0.4f, 0.2f, 1 ) );
@@ -273,14 +273,19 @@ namespace atto {
         return glm::lookAt( headPos, headPos + camera.front, camera.up );
     }
 
-    glm::mat4 Entity::Player_ComputeHeadTransformMatrix() const {
-        glm::vec3 headPos = pos + glm::vec3( 0, 1.6f, -2 );
+    glm::mat4 Entity::Player_ComputeGunTransformMatrix() const {
+        glm::vec3 localGunPos = glm::vec3( 0.5, -0.4f, 1.2f );
+        glm::mat4 localGunTransform = glm::translate( glm::mat4( 1 ), localGunPos );
+
+        glm::vec3 headPos = pos + glm::vec3( 0, 1.6f, 0 );
         glm::mat4 headTransform = glm::translate( glm::mat4( 1 ), headPos );
         headTransform[ 0 ] = glm::vec4( camera.right, 0 );
         headTransform[ 1 ] = glm::vec4( camera.up, 0 );
         headTransform[ 2 ] = glm::vec4( camera.front, 0 );
 
-        return headTransform;
+        glm::mat4 worldGunTransform = headTransform * localGunTransform;
+
+        return worldGunTransform;
     }
 
     glm::mat3 EntCamera::GetOrientation() const {

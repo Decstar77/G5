@@ -63,7 +63,7 @@ namespace atto {
         i32 teamNumber;
 
         glm::mat4   CameraGetViewMatrix() const;
-        glm::mat4   Player_ComputeHeadTransformMatrix() const;
+        glm::mat4   Player_ComputeGunTransformMatrix() const;
     };
 
     struct MapTriangle {
