@@ -155,7 +155,9 @@ namespace atto {
         TextureResource *                       grid_Dark1 = nullptr;
         TextureResource *                       grid_Dark8 = nullptr;
         TextureResource *                       tex_PolygonScifi_01_C = nullptr;
-        StaticMeshResource *                    mesh_Test = nullptr;
+        StaticMeshResource *                    mesh_Wep_Pistol_Bot = nullptr;
+        StaticMeshResource *                    mesh_Enemy_Drone_Quad_01 = nullptr;
+        
         AudioResource *                         snd_Gun_Pistol_Shot_01 = nullptr;
     };
 }

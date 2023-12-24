@@ -20,7 +20,8 @@ namespace atto {
         tex_PolygonScifi_01_C = core->ResourceGetAndLoadTexture( "PolygonScifi_01_C.png", false, false );
         snd_Gun_Pistol_Shot_01 = core->ResourceGetAndLoadAudio( "gun_pistol_shot_02.wav" );
 
-        mesh_Test = core->ResourceGetAndLoadMesh( "wep_pistol_bot.obj" );
+        mesh_Wep_Pistol_Bot = core->ResourceGetAndLoadMesh( "wep_pistol_bot.obj" );
+        mesh_Enemy_Drone_Quad_01 = core->ResourceGetAndLoadMesh( "enemy_Drone_Quad_01.obj" );
 
         map.playerStartPos = glm::vec3( 0, 0, 3 );
 
@@ -80,7 +81,8 @@ namespace atto {
         }
 
         worldDraws->DrawSphere( localPlayer->pos, localPlayer->collisionCollider.sphere.r );
-        worldDraws->DrawMesh( mesh_Test, localPlayer->Player_ComputeGunTransformMatrix(), tex_PolygonScifi_01_C );
+        worldDraws->DrawMesh( mesh_Wep_Pistol_Bot, localPlayer->Player_ComputeGunTransformMatrix(), tex_PolygonScifi_01_C );
+        worldDraws->DrawMesh( mesh_Enemy_Drone_Quad_01, glm::mat4( 1 ), tex_PolygonScifi_01_C );
         //worldDraws->DrawRect( glm::vec2( 0 ), glm::vec2( 100 ), 0.0f, glm::vec4( 1, 0, 0, 1 ) );
         //worldDraws->DrawPlane( glm::vec3( 0, 0, 0 ), glm::vec3( 0, 0, 1 ), glm::vec2( 1 ), glm::vec4( 0, 1, 0, 1 ) );
         //worldDraws->DrawPlane( glm::vec3( 0, 0, 0 ), glm::vec3( 0, 1, 0 ), glm::vec2( 10 ), glm::vec4( 0.4f, 0.4f, 0.2f, 1 ) );

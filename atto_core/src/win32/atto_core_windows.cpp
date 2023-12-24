@@ -602,7 +602,7 @@ namespace atto {
                     glEnable( GL_DEPTH_TEST );
 
                     glBindVertexArray( mesh->vao );
-                    glDrawElements( GL_TRIANGLES, staticMeshSphere->indexCount, GL_UNSIGNED_SHORT, 0 );
+                    glDrawElements( GL_TRIANGLES, mesh->indexCount, GL_UNSIGNED_SHORT, 0 );
                     glBindVertexArray( 0 );
 
                 } break;
