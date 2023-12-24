@@ -119,7 +119,20 @@ namespace atto {
         FixedList<MapBlock, 1024>       blocks;
         FixedList<MapTriangle, 1024>    triangles;
 
+        FixedObjectPool< Entity, MAX_ENTITIES > entityPool;
+        f32                                     dtAccumulator = 0.0f;
+
+        Entity *                                localPlayer = nullptr;
+
     public:
+        // @NOTE: "Map Live" functions 
+        void                            Start( Core * core );
+        void                            UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags );
+        Entity *                        SpawnEntity( EntityType type );
+        Entity *                        SpawnPlayer( glm::vec3 pos );
+        void                            EntityUpdatePlayer( Core * core, Entity * ent );
+
+        // @NOTE: "Map Build" functions 
         bool                            AddBlock( i32 x, i32 y );
         bool                            RemoveBlock( i32 x, i32 y );
         void                            AddFloor( glm::vec2 p1, glm::vec2 p2, i32 level, bool invertNormal );
@@ -130,6 +143,15 @@ namespace atto {
 
         void                            DEBUG_SaveToFile( Core *core, const char * path );
         void                            DEBUG_LoadFromFile( Core * core, const char * path );
+
+    private:
+        TextureResource *               grid_Dark1 = nullptr;
+        TextureResource *               grid_Dark8 = nullptr;
+        TextureResource *               tex_PolygonScifi_01_C = nullptr;
+        StaticMeshResource *            mesh_Wep_Pistol_Bot = nullptr;
+        StaticMeshResource *            mesh_Enemy_Drone_Quad_01 = nullptr;
+        AudioResource *                 snd_Gun_Pistol_Shot_01 = nullptr;
+
     };
 
     class GameModeGame : public GameMode {
@@ -140,24 +162,9 @@ namespace atto {
         virtual void                    UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags ) override;
         virtual void                    Shutdown( Core * core ) override;
 
-        Entity *                SpawnEntity( EntityType type );
-        Entity *                SpawnPlayer( glm::vec3 pos );
-
-        void                    EntityUpdatePlayer( Core * core, Entity * ent );
+     
     public:
-
         Map                                     map;
-        FixedObjectPool< Entity, MAX_ENTITIES > entityPool;
-        f32                                     dtAccumulator = 0.0f;
-
-        Entity *                                localPlayer = nullptr;
-
-        TextureResource *                       grid_Dark1 = nullptr;
-        TextureResource *                       grid_Dark8 = nullptr;
-        TextureResource *                       tex_PolygonScifi_01_C = nullptr;
-        StaticMeshResource *                    mesh_Wep_Pistol_Bot = nullptr;
-        StaticMeshResource *                    mesh_Enemy_Drone_Quad_01 = nullptr;
         
-        AudioResource *                         snd_Gun_Pistol_Shot_01 = nullptr;
     };
 }

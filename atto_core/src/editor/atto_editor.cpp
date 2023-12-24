@@ -19,7 +19,7 @@ namespace atto {
             game->Initialize( core );
             Map & map = ( (GameModeGame *)game )->map;
             map.DEBUG_LoadFromFile( core, "res/maps/map.json" );
-            ( (GameModeGame *)game )->localPlayer = ( (GameModeGame *)game )->SpawnPlayer( map.playerStartPos );
+            map.Start( core );
         }
 
         if( core->InputKeyJustPressed( KEY_CODE_F6 ) == true ) {

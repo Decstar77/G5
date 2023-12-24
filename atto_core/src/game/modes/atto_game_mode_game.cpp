@@ -11,20 +11,10 @@ namespace atto {
     }
 
     bool GameModeGame::IsInitialized() {
-        return localPlayer != nullptr;
+        return map.localPlayer != nullptr;
     }
 
     void GameModeGame::Initialize( Core * core ) {
-        grid_Dark1 = core->ResourceGetAndLoadTexture( "kenney_prototype/dark/texture_01.png", true, true );
-        grid_Dark8 = core->ResourceGetAndLoadTexture( "kenney_prototype/dark/texture_08.png", true, true );
-        tex_PolygonScifi_01_C = core->ResourceGetAndLoadTexture( "PolygonScifi_01_C.png", false, false );
-        snd_Gun_Pistol_Shot_01 = core->ResourceGetAndLoadAudio( "gun_pistol_shot_02.wav" );
-
-        mesh_Wep_Pistol_Bot = core->ResourceGetAndLoadMesh( "wep_pistol_bot.obj" );
-        mesh_Enemy_Drone_Quad_01 = core->ResourceGetAndLoadMesh( "enemy_Drone_Quad_01.obj" );
-
-        map.playerStartPos = glm::vec3( 0, 0, 3 );
-
     #if 0
         localPlayer = SpawnPlayer( map.playerStartPos );
         localPlayer->pos.x = -2;
@@ -60,8 +50,27 @@ namespace atto {
         map.Bake();
     #endif
     }
-
+    
     void GameModeGame::UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags ) {
+        map.UpdateAndRender( core, dt, flags );
+    }
+
+    void GameModeGame::Shutdown( Core * core ) {
+    }
+
+    void Map::Start( Core * core ) {
+        grid_Dark1 = core->ResourceGetAndLoadTexture( "kenney_prototype/dark/texture_01.png", true, true );
+        grid_Dark8 = core->ResourceGetAndLoadTexture( "kenney_prototype/dark/texture_08.png", true, true );
+        tex_PolygonScifi_01_C = core->ResourceGetAndLoadTexture( "PolygonScifi_01_C.png", false, false );
+        snd_Gun_Pistol_Shot_01 = core->ResourceGetAndLoadAudio( "gun_pistol_shot_02.wav" );
+
+        mesh_Wep_Pistol_Bot = core->ResourceGetAndLoadMesh( "wep_pistol_bot.obj" );
+        mesh_Enemy_Drone_Quad_01 = core->ResourceGetAndLoadMesh( "enemy_Drone_Quad_01.obj" );
+
+        localPlayer = SpawnPlayer( playerStartPos );
+    }
+
+    void Map::UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags ) {
         if( ( flags & UPDATE_AND_RENDER_FLAG_NO_UPDATE ) == false ) {
             EntityUpdatePlayer( core, localPlayer );
         }
@@ -69,9 +78,9 @@ namespace atto {
         DrawContext * worldDraws = core->RenderGetDrawContext( 0 );
         worldDraws->SetCamera( localPlayer->CameraGetViewMatrix(), localPlayer->camera.yfov, localPlayer->camera.zNear, localPlayer->camera.zFar );
 
-        const i32 mapTriangleCount = map.triangles.GetCount();
+        const i32 mapTriangleCount = triangles.GetCount();
         for( i32 i = 0; i < mapTriangleCount; ++i ) {
-            MapTriangle & t = map.triangles[ i ];
+            MapTriangle & t = triangles[ i ];
             if( glm::abs( glm::dot( t.normal, glm::vec3( 0, 1, 0 ) ) ) > 0.9f ) {
                 worldDraws->DrawTriangle( t.p1, t.p2, t.p3, t.uv1, t.uv2, t.uv3, grid_Dark8 );
             }
@@ -103,10 +112,7 @@ namespace atto {
         }
     }
 
-    void GameModeGame::Shutdown( Core * core ) {
-    }
-
-    Entity * GameModeGame::SpawnEntity( EntityType type ) {
+    Entity * Map::SpawnEntity( EntityType type ) {
         EntityHandle handle;
         Entity * ent = entityPool.Add( handle );
         if( ent != nullptr ) {
@@ -117,7 +123,7 @@ namespace atto {
         return ent;
     }
 
-    Entity * GameModeGame::SpawnPlayer( glm::vec3 pos ) {
+    Entity * Map::SpawnPlayer( glm::vec3 pos ) {
         Entity * ent = SpawnEntity( ENTITY_TYPE_PLAYER );
         if( ent != nullptr ) {
             ent->camera = EntCamera::CreateDefault();
@@ -134,7 +140,7 @@ namespace atto {
         return ent;
     }
 
-    void GameModeGame::EntityUpdatePlayer( Core * core, Entity * ent ) {
+    void Map::EntityUpdatePlayer( Core * core, Entity * ent ) {
         if( ent->sleeping == true ) {
             return;
         }
@@ -266,9 +272,9 @@ namespace atto {
                 ent->pos += ent->vel * tickTime;
 
                 ent->collisionCollider.sphere.c = ent->pos;
-                const i32 triCount = map.triangles.GetCount();
+                const i32 triCount = triangles.GetCount();
                 for( i32 triIndex = 0; triIndex < triCount; triIndex++ ) {
-                    MapTriangle & tri = map.triangles[ triIndex ];
+                    MapTriangle & tri = triangles[ triIndex ];
                     Manifold m = {};
                     if( CollisionCheck_SphereVsTri( ent->pos, ent->collisionCollider.sphere.r, tri.p1, tri.p2, tri.p3, tri.normal, m ) == true ) {
                         ent->pos += m.normal * m.penetration;
@@ -345,6 +351,7 @@ namespace atto {
         camera.up = glm::vec3( 0.0f, 1.0f, 0.0f );
         return camera;
     }
+
 
     bool Map::AddBlock( i32 x, i32 y ) {
         if( x < 0 || x >= mapWidth ) { return false; }
