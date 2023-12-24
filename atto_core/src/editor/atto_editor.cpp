@@ -17,6 +17,9 @@ namespace atto {
 
         if( game->IsInitialized() == false ) {
             game->Initialize( core );
+            Map & map = ( (GameModeGame *)game )->map;
+            map.DEBUG_LoadFromFile( core, "res/maps/map.json" );
+            ( (GameModeGame *)game )->localPlayer = ( (GameModeGame *)game )->SpawnPlayer( map.playerStartPos );
         }
 
         if( core->InputKeyJustPressed( KEY_CODE_F6 ) == true ) {
@@ -80,12 +83,28 @@ namespace atto {
     }
 
     void Editor::Canvas( Core * core, GameMode * game ) {
+        enum BrushType {
+            BRUSH_TYPE_BLOCK,
+            BRUSH_TYPE_PLAYER_START,
+            BRUSH_TYPE_COUNT,
+        };
+
         if( show.canvas == true ) {
             GameModeGame * leGame = ( (GameModeGame *)game );
             Map * map = &leGame->map;
             if( ImGui::Begin( "Canvas", &show.canvas ) ) {
                 static ImVec2 scrolling( 0.0f, 0.0f );
                 static bool addingLine = false;
+                static BrushType brushType = BRUSH_TYPE_BLOCK;
+
+            #define WorldMapToGrid(p) ImVec2( origin.x + p.x * GRID_STEP, origin.y + p.z * GRID_STEP )
+            #define WorldMapToGridTileCenter(p) ImVec2( origin.x + p.x * GRID_STEP + GRID_STEP / 2.0f, origin.y + p.z * GRID_STEP + GRID_STEP / 2.0f )
+
+                const char * brushTypeNames[ BRUSH_TYPE_COUNT ] = {
+                    "Block",
+                    "Player Start",
+                };
+                ImGui::Combo( "Brush Type", (int *)&brushType, brushTypeNames, BRUSH_TYPE_COUNT );
 
                 ImVec2 canvas_p0 = ImGui::GetCursorScreenPos();      // ImDrawList API uses screen coordinates!
                 ImVec2 canvas_sz = ImGui::GetContentRegionAvail();   // Resize canvas to what's available
@@ -113,14 +132,29 @@ namespace atto {
                 if( is_hovered && core->InputMouseButtonDown( MOUSE_BUTTON_1 ) ) {
                     i32 x = (i32)( mousePosSnapped.x / GRID_STEP );
                     i32 y = (i32)( mousePosSnapped.y / GRID_STEP );
-                    if( core->InputKeyDown( KEY_CODE_LEFT_ALT ) ) {
-                        map->RemoveBlock( x, y );
-                    }
-                    else {
-                        map->AddBlock( x, y );
-                    }
 
-                    map->Bake();
+                    switch( brushType ) {
+                        case BRUSH_TYPE_BLOCK:
+                        {
+                            if( core->InputKeyDown( KEY_CODE_LEFT_ALT ) ) {
+                                map->RemoveBlock( x, y );
+                            }
+                            else {
+                                map->AddBlock( x, y );
+                            }
+                            map->Bake();
+                        } break;
+
+                        case BRUSH_TYPE_PLAYER_START:
+                        {
+                            map->playerStartPos = glm::vec3( x, 0.0f, y );
+                        } break;
+
+                        default:
+                        {
+                            INVALID_CODE_PATH;
+                        } break;
+                    }
                 }
 
                 // Pan (we use a zero mouse threshold when there's no context menu)
@@ -165,13 +199,38 @@ namespace atto {
                 }
 
                 {
+                    ImVec2 p1 = WorldMapToGridTileCenter( map->playerStartPos );
+                    drawList->AddCircleFilled( p1, 15, IM_COL32( 20, 200, 200, 255 ) );
+                }
+
+
+                {
                     ImVec2 p1 = ImVec2( origin.x + mousePosSnapped.x, origin.y + mousePosSnapped.y );
                     ImVec2 p2 = ImVec2( p1.x + GRID_STEP, p1.y + GRID_STEP );
-                    drawList->AddCircleFilled( p1, 5, IM_COL32( 255, 255, 0, 255 ) );
-                    ImU32 c = core->InputKeyDown( KEY_CODE_LEFT_ALT ) ? IM_COL32( 200, 0, 0, 150 ) : IM_COL32( 200, 200, 0, 150 );
-                    drawList->AddRectFilled( p1, p2, c );
-                    SmallString t = StringFormat::Small( "(%d, %d)", (i32)( mousePosSnapped.x / GRID_STEP ), (i32)( mousePosSnapped.y / GRID_STEP ) );
                     ImVec2 p3 = ImVec2( p1.x + GRID_STEP / 2, p1.y + GRID_STEP / 2 );
+                    drawList->AddCircleFilled( p1, 5, IM_COL32( 255, 255, 0, 255 ) );
+
+                    switch( brushType ) {
+                        case BRUSH_TYPE_BLOCK:
+                        {
+                            ImU32 c = core->InputKeyDown( KEY_CODE_LEFT_ALT ) ? IM_COL32( 200, 0, 0, 150 ) : IM_COL32( 200, 200, 0, 150 );
+                            drawList->AddRectFilled( p1, p2, c );
+                        } break;
+
+                        case BRUSH_TYPE_PLAYER_START:
+                        {
+                            drawList->AddCircleFilled( p3, 15, IM_COL32( 20, 200, 200, 150 ) );
+                        } break;
+
+                        default:
+                        {
+                            INVALID_CODE_PATH;
+                        } break;
+                    }
+
+                  
+
+                    SmallString t = StringFormat::Small( "(%d, %d)", (i32)( mousePosSnapped.x / GRID_STEP ), (i32)( mousePosSnapped.y / GRID_STEP ) );
                     ImVec2 s = ImGui::CalcTextSize( t.GetCStr() );
                     p3.x -= s.x / 2;
                     p3.y -= s.y / 2;
@@ -179,6 +238,9 @@ namespace atto {
                 }
 
                 drawList->PopClipRect();
+
+            #undef WorldMapToGrid
+            #undef WorldMapToGridTileCenter
             }
 
             ImGui::End();

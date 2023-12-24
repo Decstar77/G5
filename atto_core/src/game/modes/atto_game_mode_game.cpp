@@ -25,9 +25,11 @@ namespace atto {
 
         map.playerStartPos = glm::vec3( 0, 0, 3 );
 
+    #if 0
         localPlayer = SpawnPlayer( map.playerStartPos );
         localPlayer->pos.x = -2;
         f32 dim = 5.0f;
+
         MapTriangle t1 = {};
         t1.p1 = glm::vec3( -1, 0, 1 ) * dim;
         t1.p2 = glm::vec3( -1, 0, -1 ) * dim;
@@ -56,6 +58,7 @@ namespace atto {
         map.AddBlock( 0, 0 );
 
         map.Bake();
+    #endif
     }
 
     void GameModeGame::UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags ) {
