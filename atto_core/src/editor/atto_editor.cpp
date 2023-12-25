@@ -137,12 +137,12 @@ namespace atto {
                         case BRUSH_TYPE_BLOCK:
                         {
                             if( core->InputKeyDown( KEY_CODE_LEFT_ALT ) ) {
-                                map->RemoveBlock( x, y );
+                                map->Edit_RemoveBlock( x, y );
                             }
                             else {
-                                map->AddBlock( x, y );
+                                map->Edit_AddBlock( x, y );
                             }
-                            map->Bake();
+                            map->Edit_Bake();
                         } break;
 
                         case BRUSH_TYPE_PLAYER_START:

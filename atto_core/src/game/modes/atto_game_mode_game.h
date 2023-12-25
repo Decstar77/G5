@@ -3,12 +3,47 @@
 #include "../atto_game.h"
 
 namespace atto {
+    constexpr static int    MAX_ENTITIES = 1024;
+
+    class Map;
+    struct Entity;
+    enum EntityType;
+    struct EntitySpawnInfo;
+    
+    typedef ObjectHandle<Entity> EntityHandle;
+    typedef FixedList<Entity *, MAX_ENTITIES> EntList;
+
+    typedef Entity * ( *EntityTypeFunc_Spawn ) ( Core * core, Map * map, EntitySpawnInfo & spawnInfo );
+    typedef void     ( *EntityTypeFunc_Update )( Core * core, Map * map, Entity * ent, f32 dt );
+
+    struct EntityTypeFuncInfo {
+        EntityTypeFunc_Spawn spawnFunc;
+        EntityTypeFunc_Update updateFunc;
+    };
+
+    struct EntitySpawnInfo {
+        EntityType          type;
+        glm::vec3           pos;
+        glm::vec3           ori;
+        EntityTypeFuncInfo  funcs;
+    };
+
     enum EntityType {
         ENTITY_TYPE_INVALID = 0,
         ENTITY_TYPE_PLAYER = 1,
+        ENTITY_TYPE_DRONE_01 = 2,
     };
 
-    constexpr static int    MAX_ENTITIES = 1024;
+    Entity * EntityTypeFunc_Spawn_Drone01( Core * core, Map * map, EntitySpawnInfo & spawnInfo );
+    void     EntityTypeFunc_Update_Drone01( Core * core, Map * map, Entity * ent, f32 dt );
+
+    // TODO: Remove std::vector and make fixed lists use initializer lists. Also I'm not sure if this should be global or apart of the map...
+    inline std::vector<EntityTypeFuncInfo> ENTITY_TYPE_FUNCS = {
+        { nullptr, nullptr },
+        { nullptr, nullptr },
+        { EntityTypeFunc_Spawn_Drone01, EntityTypeFunc_Update_Drone01 },
+    };
+
 
     struct EntCamera {
         f32 yaw;
@@ -17,7 +52,7 @@ namespace atto {
         f32 mouseSensitivity;
         f32 yfov;
         f32 zNear;
-        f32 zFar; 
+        f32 zFar;
         glm::vec3 front;
         glm::vec3 up;
         glm::vec3 right;
@@ -27,12 +62,10 @@ namespace atto {
         static EntCamera CreateDefault();
     };
 
-    struct Entity;
-    typedef ObjectHandle<Entity> EntityHandle;
-    typedef FixedList<Entity *, MAX_ENTITIES> EntList;
     struct Entity {
-        EntityHandle    handle;
-        EntityType      type;
+        EntityHandle        handle;
+        EntityType          type;
+        EntityTypeFuncInfo  funcs;
 
         bool            sleeping;
 
@@ -63,6 +96,10 @@ namespace atto {
         bool selected;
 
         i32 teamNumber;
+
+        bool                    wantsDraw;
+        StaticMeshResource *    drawMesh;
+        TextureResource *       drawTexture;
 
         glm::mat4   CameraGetViewMatrix() const;
         glm::mat4   Player_ComputeGunTransformMatrix() const;
@@ -98,12 +135,21 @@ namespace atto {
         REFLECT();
     };
 
+    struct MapFileEntity {
+        i32 type;
+        glm::vec3 pos;
+        glm::mat3 ori;
+
+        REFLECT();
+    };
+
     struct MapFile {
         i32 version;
         i32 mapWidth;
         i32 mapHeight;
         glm::vec3 playerStartPos;
-        FixedList<MapFileBlock, 1024> blocks;
+        FixedList<MapFileBlock, 1024>   blocks;
+        FixedList<MapFileEntity, 1024>  entities;
 
         REFLECT();
     };
@@ -122,7 +168,7 @@ namespace atto {
         FixedObjectPool< Entity, MAX_ENTITIES > entityPool;
         f32                                     dtAccumulator = 0.0f;
 
-        Entity *                                localPlayer = nullptr;
+        Entity * localPlayer = nullptr;
 
     public:
         // @NOTE: "Map Live" functions 
@@ -133,18 +179,18 @@ namespace atto {
         void                            EntityUpdatePlayer( Core * core, Entity * ent );
 
         // @NOTE: "Map Build" functions 
-        bool                            AddBlock( i32 x, i32 y );
-        bool                            RemoveBlock( i32 x, i32 y );
-        void                            AddFloor( glm::vec2 p1, glm::vec2 p2, i32 level, bool invertNormal );
-        void                            AddWall( glm::vec2 p1, glm::vec2 p2, bool invertNormal );
-        bool                            LoadFromMapFile( MapFile * mapFile );
-        bool                            SaveToMapFile( MapFile * mapFile );
-        void                            Bake();
+        bool                            Edit_AddBlock( i32 x, i32 y );
+        bool                            Edit_RemoveBlock( i32 x, i32 y );
+        void                            Edit_AddFloor( glm::vec2 p1, glm::vec2 p2, i32 level, bool invertNormal );
+        void                            Edit_AddWall( glm::vec2 p1, glm::vec2 p2, bool invertNormal );
+        bool                            Edit_LoadFromMapFile( MapFile * mapFile );
+        bool                            Edit_SaveToMapFile( MapFile * mapFile );
+        void                            Edit_Bake();
 
-        void                            DEBUG_SaveToFile( Core *core, const char * path );
+        void                            DEBUG_SaveToFile( Core * core, const char * path );
         void                            DEBUG_LoadFromFile( Core * core, const char * path );
 
-    private:
+    public:
         TextureResource *               grid_Dark1 = nullptr;
         TextureResource *               grid_Dark8 = nullptr;
         TextureResource *               tex_PolygonScifi_01_C = nullptr;
@@ -162,9 +208,8 @@ namespace atto {
         virtual void                    UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags ) override;
         virtual void                    Shutdown( Core * core ) override;
 
-     
     public:
         Map                                     map;
-        
+
     };
 }

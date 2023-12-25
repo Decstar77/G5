@@ -19,6 +19,12 @@ namespace atto {
         REFLECT_STRUCT_MEMBER( xIndex )
         REFLECT_STRUCT_MEMBER( yIndex )
         REFLECT_STRUCT_END()
+        
+        REFLECT_STRUCT_BEGIN( MapFileEntity )
+        REFLECT_STRUCT_MEMBER( type )
+        REFLECT_STRUCT_MEMBER( pos )
+        REFLECT_STRUCT_MEMBER( ori )
+        REFLECT_STRUCT_END()
 
         REFLECT_STRUCT_BEGIN( MapFile )
         REFLECT_STRUCT_MEMBER( version )
@@ -26,5 +32,6 @@ namespace atto {
         REFLECT_STRUCT_MEMBER( mapHeight )
         REFLECT_STRUCT_MEMBER( playerStartPos )
         REFLECT_STRUCT_MEMBER( blocks )
+        REFLECT_STRUCT_MEMBER( entities )
         REFLECT_STRUCT_END()
 }

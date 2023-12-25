@@ -68,6 +68,9 @@ namespace atto {
         mesh_Enemy_Drone_Quad_01 = core->ResourceGetAndLoadMesh( "enemy_Drone_Quad_01.obj" );
 
         localPlayer = SpawnPlayer( playerStartPos );
+        EntitySpawnInfo info = {};
+        info.pos = glm::vec3( 5, 2, 5 );
+        EntityTypeFunc_Spawn_Drone01( core, this, info);
     }
 
     void Map::UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags ) {
@@ -77,6 +80,8 @@ namespace atto {
 
         DrawContext * worldDraws = core->RenderGetDrawContext( 0 );
         worldDraws->SetCamera( localPlayer->CameraGetViewMatrix(), localPlayer->camera.yfov, localPlayer->camera.zNear, localPlayer->camera.zFar );
+
+        worldDraws->DrawMesh( mesh_Wep_Pistol_Bot, localPlayer->Player_ComputeGunTransformMatrix(), tex_PolygonScifi_01_C );
 
         const i32 mapTriangleCount = triangles.GetCount();
         for( i32 i = 0; i < mapTriangleCount; ++i ) {
@@ -93,8 +98,26 @@ namespace atto {
         }
 
         worldDraws->DrawSphere( localPlayer->pos, localPlayer->collisionCollider.sphere.r );
-        worldDraws->DrawMesh( mesh_Wep_Pistol_Bot, localPlayer->Player_ComputeGunTransformMatrix(), tex_PolygonScifi_01_C );
-        worldDraws->DrawMesh( mesh_Enemy_Drone_Quad_01, glm::mat4( 1 ), tex_PolygonScifi_01_C );
+
+
+        FixedList<Entity *, MAX_ENTITIES> & activeEntities = *core->MemoryAllocateTransient<FixedList<Entity *, MAX_ENTITIES>>();
+        entityPool.GatherActiveObjs( activeEntities );
+
+        const i32 activeEntityCount = activeEntities.GetCount();
+        for( i32 i = 0; i < activeEntityCount; ++i ) {
+            Entity * e = activeEntities[ i ];
+
+            if( e->funcs.updateFunc != nullptr ) {
+                e->funcs.updateFunc( core, this, e, dt );
+            }
+
+            if( e->wantsDraw == true ) {
+                glm::mat4 transform = glm::translate( e->pos ) * glm::mat4( e->ori );
+                worldDraws->DrawMesh( e->drawMesh, transform, e->drawTexture );
+            }
+        }
+
+        //worldDraws->DrawMesh( mesh_Enemy_Drone_Quad_01, glm::mat4( 1 ), tex_PolygonScifi_01_C );
         //worldDraws->DrawRect( glm::vec2( 0 ), glm::vec2( 100 ), 0.0f, glm::vec4( 1, 0, 0, 1 ) );
         //worldDraws->DrawPlane( glm::vec3( 0, 0, 0 ), glm::vec3( 0, 0, 1 ), glm::vec2( 1 ), glm::vec4( 0, 1, 0, 1 ) );
         //worldDraws->DrawPlane( glm::vec3( 0, 0, 0 ), glm::vec3( 0, 1, 0 ), glm::vec2( 10 ), glm::vec4( 0.4f, 0.4f, 0.2f, 1 ) );
@@ -118,6 +141,7 @@ namespace atto {
         if( ent != nullptr ) {
             ZeroStructPtr( ent );
             ent->handle = handle;
+            ent->ori = glm::mat3( 1 );
         }
 
         return ent;
@@ -353,7 +377,7 @@ namespace atto {
     }
 
 
-    bool Map::AddBlock( i32 x, i32 y ) {
+    bool Map::Edit_AddBlock( i32 x, i32 y ) {
         if( x < 0 || x >= mapWidth ) { return false; }
         if( y < 0 || y >= mapHeight ) { return false; }
 
@@ -369,7 +393,7 @@ namespace atto {
         return true;
     }
 
-    bool Map::RemoveBlock( i32 x, i32 y ) {
+    bool Map::Edit_RemoveBlock( i32 x, i32 y ) {
         if( x < 0 || x >= mapWidth ) { return false; }
         if( y < 0 || y >= mapHeight ) { return false; }
 
@@ -378,7 +402,7 @@ namespace atto {
         return true;
     }
 
-    void Map::AddWall( glm::vec2 p1, glm::vec2 p2, bool invertNormal ) {
+    void Map::Edit_AddWall( glm::vec2 p1, glm::vec2 p2, bool invertNormal ) {
         MapTriangle t1 = {};
         t1.p1 = glm::vec3( p1.x, BlockDim, p1.y );
         t1.p2 = glm::vec3( p1.x, 0, p1.y );
@@ -406,22 +430,22 @@ namespace atto {
         triangles.Add( t2 );
     }
 
-    bool Map::LoadFromMapFile( MapFile * mapFile ) {
+    bool Map::Edit_LoadFromMapFile( MapFile * mapFile ) {
         mapWidth = mapFile->mapWidth;
         mapHeight = mapFile->mapHeight;
         playerStartPos = mapFile->playerStartPos;
         const i32 blockCount = mapFile->blocks.GetCount();
         for( i32 blockIndex = 0; blockIndex < blockCount; blockIndex++ ) {
             MapFileBlock & block = mapFile->blocks[ blockIndex ];
-            AddBlock( block.xIndex, block.yIndex );
+            Edit_AddBlock( block.xIndex, block.yIndex );
         }
 
-        Bake();
+        Edit_Bake();
 
         return true;
     }
 
-    bool Map::SaveToMapFile( MapFile * mapFile ) {
+    bool Map::Edit_SaveToMapFile( MapFile * mapFile ) {
         ZeroStructPtr( mapFile ); // This may be overkill
         mapFile->version = 1;
         mapFile->mapWidth = mapWidth;
@@ -441,7 +465,7 @@ namespace atto {
         return true;
     }
 
-    void Map::AddFloor( glm::vec2 p1, glm::vec2 p2, i32 level, bool invertNormal ) {
+    void Map::Edit_AddFloor( glm::vec2 p1, glm::vec2 p2, i32 level, bool invertNormal ) {
         MapTriangle t1 = {};
         t1.p1 = glm::vec3( p1.x, BlockDim * level, p2.y );
         t1.p2 = glm::vec3( p1.x, BlockDim * level, p1.y );
@@ -469,7 +493,7 @@ namespace atto {
         triangles.Add( t2 );
     }
 
-    void Map::Bake() {
+    void Map::Edit_Bake() {
         triangles.Clear( true );
 
         const i32 mapBlockCount = blocks.GetCapcity();
@@ -491,30 +515,30 @@ namespace atto {
                 const i32 flatIndexUp = PosIndexToFlatIndex( xIndex, yIndexUp, mapWidth );
 
                 if( xIndexLeft < 0 || ( xIndexLeft >= 0 && blocks[ flatIndexLeft ].filled == false ) ) {
-                    AddWall( b.bottomLeftWS, b.bottomLeftWS + glm::vec2( 0, BlockDim ), true );
+                    Edit_AddWall( b.bottomLeftWS, b.bottomLeftWS + glm::vec2( 0, BlockDim ), true );
                 }
 
                 if( xIndexRight >= mapWidth || ( xIndexRight < mapWidth && blocks[ flatIndexRight ].filled == false ) ) {
-                    AddWall( b.bottomLeftWS + glm::vec2( BlockDim, 0 ), b.bottomLeftWS + glm::vec2( BlockDim, BlockDim ), false );
+                    Edit_AddWall( b.bottomLeftWS + glm::vec2( BlockDim, 0 ), b.bottomLeftWS + glm::vec2( BlockDim, BlockDim ), false );
                 }
 
                 if( yIndexDown < 0 || ( yIndexDown >= 0 && blocks[ flatIndexDown ].filled == false ) ) {
-                    AddWall( b.bottomLeftWS, b.bottomLeftWS + glm::vec2( BlockDim, 0 ), false );
+                    Edit_AddWall( b.bottomLeftWS, b.bottomLeftWS + glm::vec2( BlockDim, 0 ), false );
                 }
 
                 if( yIndexUp >= mapHeight || ( yIndexUp < mapHeight && blocks[ flatIndexUp ].filled == false ) ) {
-                    AddWall( b.bottomLeftWS + glm::vec2( 0, BlockDim ), b.bottomLeftWS + glm::vec2( BlockDim, BlockDim ), true );
+                    Edit_AddWall( b.bottomLeftWS + glm::vec2( 0, BlockDim ), b.bottomLeftWS + glm::vec2( BlockDim, BlockDim ), true );
                 }
 
-                AddFloor( b.bottomLeftWS, b.topRightWS, 0, true );
-                AddFloor( b.bottomLeftWS, b.topRightWS, 1, false );
+                Edit_AddFloor( b.bottomLeftWS, b.topRightWS, 0, true );
+                Edit_AddFloor( b.bottomLeftWS, b.topRightWS, 1, false );
             }
         }
     }
 
     void Map::DEBUG_SaveToFile( Core * core, const char * path ) {
         MapFile * mapFile = core->MemoryAllocateTransient<MapFile>();
-        SaveToMapFile( mapFile );
+        Edit_SaveToMapFile( mapFile );
 
         TypeDescriptor * mapType = TypeResolver<MapFile>::get();
         nlohmann::json j = mapType->JSON_Write( mapFile );
@@ -534,6 +558,43 @@ namespace atto {
 
         mapType->JSON_Read( j, mapFile );
 
-        LoadFromMapFile( mapFile );
+        Edit_LoadFromMapFile( mapFile );
     }
+
+    Entity * EntityTypeFunc_Spawn_Drone01( Core * core, Map * map, EntitySpawnInfo & spawnInfo ) {
+        Entity * ent = map->SpawnEntity( ENTITY_TYPE_DRONE_01 );
+        if( ent != nullptr ) {
+            ent->funcs = spawnInfo.funcs;
+            ent->funcs.updateFunc = EntityTypeFunc_Update_Drone01;
+            ent->hasCollision = true;
+            ent->collisionCollider.type = COLLIDER_TYPE_SHPERE;
+            ent->collisionCollider.sphere.r = 0.5f;
+            ent->collisionCollider.sphere.c = spawnInfo.pos + glm::vec3( 0, ent->collisionCollider.sphere.r, 0 );
+            ent->pos = ent->collisionCollider.sphere.c;
+            ent->wantsDraw = true;
+            ent->drawMesh = map->mesh_Enemy_Drone_Quad_01;
+            ent->drawTexture = map->tex_PolygonScifi_01_C;
+        }
+
+        return ent;
+    }
+
+    void EntityTypeFunc_Update_Drone01( Core * core, Map * map, Entity * ent, f32 dt ) {
+        glm::vec3 p = map->localPlayer->pos;
+        glm::vec3 forward = glm::normalize( p - ent->pos );
+
+        glm::vec3 up = glm::vec3( 0, 1, 0 );
+        f32 d = glm::dot( up, forward );
+        if( d > 0.999f || d < -0.999f ) {
+            up = glm::vec3( 0, 0, 1 );
+        }
+
+        glm::mat3 m;
+        m[ 0 ] = glm::cross( up, forward );
+        m[ 1 ] = glm::cross( m[ 0 ], forward );
+        m[ 2 ] = forward;
+
+        ent->ori = m;
+    }
+
 }
