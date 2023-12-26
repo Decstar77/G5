@@ -36,10 +36,12 @@ namespace atto {
         ~ContentModelProcessor();
 
         bool LoadFromFile( Core * core, const char * file );
+        void ComputeBoundingBox();
 
         LargeString                     filePath = {};
         SmallString                     name = {};
         std::vector< StaticMeshData  >  meshes;
+        BoxBounds                       boundingBox;
 
     private:
         void            ProcessNode( aiNode * node, const aiScene * scene );

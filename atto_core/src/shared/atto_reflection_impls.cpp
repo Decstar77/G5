@@ -24,6 +24,10 @@ namespace atto {
         REFLECT_STRUCT_MEMBER( type )
         REFLECT_STRUCT_MEMBER( pos )
         REFLECT_STRUCT_MEMBER( ori )
+        REFLECT_STRUCT_MEMBER( collisionCollider )
+        REFLECT_STRUCT_MEMBER( entityName )
+        REFLECT_STRUCT_MEMBER( meshName )
+        REFLECT_STRUCT_MEMBER( textureName )
         REFLECT_STRUCT_END()
 
         REFLECT_STRUCT_BEGIN( MapFile )

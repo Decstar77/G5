@@ -170,7 +170,7 @@ namespace atto {
         drawList.Add( cmd );
     }
 
-    void DrawContext::DrawSphere( glm::vec3 center, f32 r, glm::vec4 colour /*= glm::vec4( 1 ) */ ) {
+    void DrawContext::DrawSphere( glm::vec3 center, f32 r, glm::vec4 colour ) {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::SPHERE;
         cmd.color = colour;
@@ -180,7 +180,21 @@ namespace atto {
         drawList.Add( cmd );
     }
 
-    void DrawContext::DrawLine( glm::vec3 p1, glm::vec3 p2, f32 thicc, glm::vec4 colour /*= glm::vec4( 1 ) */ ) {
+    void DrawContext::DrawBox( glm::vec3 min, glm::vec3 max, glm::vec4 colour ) {
+        DrawCommand cmd = {};
+        cmd.type = DrawCommandType::BOX;
+        cmd.color = colour;
+
+        // We are a 1x1x1 box so compute the scale pos and rot
+        glm::mat4 scale = glm::scale( glm::mat4( 1 ), max - min );
+        glm::mat4 pos = glm::translate( glm::mat4( 1 ), ( max + min ) / 2.0f );
+        glm::mat4 rot = glm::mat4( 1 );
+        cmd.box.m = pos * rot * scale;
+
+        drawList.Add( cmd );
+    }
+
+    void DrawContext::DrawLine( glm::vec3 p1, glm::vec3 p2, f32 thicc, glm::vec4 colour ) {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::LINE;
         cmd.color = colour;

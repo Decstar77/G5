@@ -311,7 +311,7 @@ namespace atto {
             *(bool *)obj = j.get<bool>();
         }
     };
-    
+
     template <>
     TypeDescriptor * GetPrimitiveDescriptor<bool>() {
         static TypeDescriptor_Bool typeDesc;
@@ -332,7 +332,7 @@ namespace atto {
             atto::JSON_Read( j, *(glm::vec2 *)obj );
         }
     };
-    
+
     template <>
     TypeDescriptor * GetPrimitiveDescriptor<glm::vec2>() {
         static TypeDescriptor_Vec2 typeDesc;
@@ -374,7 +374,7 @@ namespace atto {
             atto::JSON_Read( j, *(glm::vec4 *)obj );
         }
     };
-    
+
     template <>
     TypeDescriptor * GetPrimitiveDescriptor<glm::vec4>() {
         static TypeDescriptor_Vec4 typeDesc;
@@ -395,13 +395,13 @@ namespace atto {
             atto::JSON_Read( j, *(glm::mat2 *)obj );
         }
     };
-    
+
     template <>
     TypeDescriptor * GetPrimitiveDescriptor<glm::mat2>() {
         static TypeDescriptor_Mat2 typeDesc;
         return &typeDesc;
     }
-    
+
     struct TypeDescriptor_Mat3 : TypeDescriptor {
         TypeDescriptor_Mat3() {
             name = "mat3";
@@ -416,7 +416,7 @@ namespace atto {
             atto::JSON_Read( j, *(glm::mat3 *)obj );
         }
     };
-    
+
     template <>
     TypeDescriptor * GetPrimitiveDescriptor<glm::mat3>() {
         static TypeDescriptor_Mat3 typeDesc;
@@ -437,7 +437,7 @@ namespace atto {
             atto::JSON_Read( j, *(glm::mat4 *)obj );
         }
     };
-    
+
     template <>
     TypeDescriptor * GetPrimitiveDescriptor<glm::mat4>() {
         static TypeDescriptor_Mat4 typeDesc;
@@ -451,14 +451,14 @@ namespace atto {
         }
 
         nlohmann::json JSON_Write( const void * obj ) override {
-            return atto::JSON_Write( *(SmallString*)obj );
+            return atto::JSON_Write( *(SmallString *)obj );
         }
 
         void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             atto::JSON_Read( j, *(SmallString *)obj );
         }
     };
-    
+
     template <>
     TypeDescriptor * GetPrimitiveDescriptor<SmallString>() {
         static TypeDescriptor_SmallString typeDesc;
@@ -483,6 +483,96 @@ namespace atto {
     template <>
     TypeDescriptor * GetPrimitiveDescriptor<LargeString>() {
         static TypeDescriptor_LargeString typeDesc;
+        return &typeDesc;
+    }
+
+    struct TypeDescriptor_Collider : TypeDescriptor {
+        TypeDescriptor_Collider() {
+            name = "Collider";
+            size = sizeof( Collider );
+        }
+
+        nlohmann::json JSON_Write( const void * obj ) override {
+            Collider * collider = (Collider *)obj;
+            nlohmann::json j;
+            j[ "type" ] = (i32)collider->type;
+            switch( collider->type ) {
+                case COLLIDER_TYPE_NONE:
+                {
+
+                } break;
+                case COLLIDER_TYPE_SPHERE:
+                {
+                    j[ "c" ] = atto::JSON_Write( collider->sphere.c );
+                    j[ "r" ] = collider->sphere.r;
+                } break;
+                case COLLIDER_TYPE_BOX:
+                {
+                    j[ "min" ] = atto::JSON_Write( collider->box.min );
+                    j[ "max" ] = atto::JSON_Write( collider->box.max );
+                } break;
+                case COLLIDER_TYPE_PLANE:
+                {
+                    j[ "c" ] = atto::JSON_Write( collider->plane.c );
+                    j[ "n" ] = atto::JSON_Write( collider->plane.n );
+                } break;
+                case COLLIDER_TYPE_TRIANGLE:
+                {
+                    j[ "p1" ] = atto::JSON_Write( collider->tri.p1 );
+                    j[ "p2" ] = atto::JSON_Write( collider->tri.p2 );
+                    j[ "p3" ] = atto::JSON_Write( collider->tri.p3 );
+                    j[ "n" ] = atto::JSON_Write( collider->tri.n );
+                } break;
+                default:
+                {
+                    INVALID_CODE_PATH;
+                } break;
+            }
+
+            return j;
+        }
+
+        void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+            Collider * collider = (Collider *)obj;
+            collider->type = j[ "type" ];
+            switch( collider->type ) {
+                case COLLIDER_TYPE_NONE:
+                {
+
+                } break;
+                case COLLIDER_TYPE_SPHERE:
+                {
+                    atto::JSON_Read( j[ "c" ], collider->sphere.c );
+                    atto::JSON_Read( j[ "r" ], collider->sphere.r );
+                } break;
+                case COLLIDER_TYPE_BOX:
+                {
+                    atto::JSON_Read( j[ "min" ], collider->box.min );
+                    atto::JSON_Read( j[ "max" ], collider->box.max );
+                } break;
+                case COLLIDER_TYPE_PLANE:
+                {
+                    atto::JSON_Read( j[ "c" ], collider->plane.c );
+                    atto::JSON_Read( j[ "n" ], collider->plane.n );
+                } break;
+                case COLLIDER_TYPE_TRIANGLE:
+                {
+                    atto::JSON_Read( j[ "p1" ], collider->tri.p1 );
+                    atto::JSON_Read( j[ "p2" ], collider->tri.p2 );
+                    atto::JSON_Read( j[ "p3" ], collider->tri.p3 );
+                    atto::JSON_Read( j[ "n" ], collider->tri.n );
+                } break;
+                default:
+                {
+                    INVALID_CODE_PATH;
+                } break;
+            }
+        }
+    };
+
+    template <>
+    TypeDescriptor * GetPrimitiveDescriptor<Collider>() {
+        static TypeDescriptor_Collider typeDesc;
         return &typeDesc;
     }
 }

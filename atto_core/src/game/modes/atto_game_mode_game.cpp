@@ -50,7 +50,7 @@ namespace atto {
         map.Bake();
     #endif
     }
-    
+
     void GameModeGame::UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags ) {
         map.UpdateAndRender( core, dt, flags );
     }
@@ -68,14 +68,29 @@ namespace atto {
         mesh_Enemy_Drone_Quad_01 = core->ResourceGetAndLoadMesh( "enemy_Drone_Quad_01.obj" );
 
         localPlayer = SpawnPlayer( playerStartPos );
-        EntitySpawnInfo info = {};
-        info.pos = glm::vec3( 5, 2, 5 );
-        EntityTypeFunc_Spawn_Drone01( core, this, info);
+        {
+            MapFileEntity info = {};
+            info.pos = glm::vec3( 5, 2, 5 );
+            EntityTypeFunc_Spawn_Drone01( core, this, info );
+        }
+
+        {
+            MapFileEntity info = {};
+            info.pos = glm::vec3( 3, 0, 3 );
+            info.ori = glm::mat3( 1 );
+            info.textureName = "PolygonScifi_01_C.png";
+            info.meshName = "prop_plant_vase_01.obj";
+            EntityTypeFunc_Spawn_Prop( core, this, info );
+        }
     }
 
     void Map::UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags ) {
+        EntList & activeEntities = *core->MemoryAllocateTransient<EntList>();
+        entityPool.GatherActiveObjs( activeEntities );
+        const i32 activeEntityCount = activeEntities.GetCount();
+
         if( ( flags & UPDATE_AND_RENDER_FLAG_NO_UPDATE ) == false ) {
-            EntityUpdatePlayer( core, localPlayer );
+            EntityUpdatePlayer( core, localPlayer, activeEntities );
         }
 
         DrawContext * worldDraws = core->RenderGetDrawContext( 0 );
@@ -99,21 +114,28 @@ namespace atto {
 
         worldDraws->DrawSphere( localPlayer->pos, localPlayer->collisionCollider.sphere.r );
 
-
-        FixedList<Entity *, MAX_ENTITIES> & activeEntities = *core->MemoryAllocateTransient<FixedList<Entity *, MAX_ENTITIES>>();
-        entityPool.GatherActiveObjs( activeEntities );
-
-        const i32 activeEntityCount = activeEntities.GetCount();
         for( i32 i = 0; i < activeEntityCount; ++i ) {
-            Entity * e = activeEntities[ i ];
+            Entity * ent = activeEntities[ i ];
 
-            if( e->funcs.updateFunc != nullptr ) {
-                e->funcs.updateFunc( core, this, e, dt );
+            if( ent->funcs.updateFunc != nullptr ) {
+                ent->funcs.updateFunc( core, this, ent, dt );
             }
 
-            if( e->wantsDraw == true ) {
-                glm::mat4 transform = glm::translate( e->pos ) * glm::mat4( e->ori );
-                worldDraws->DrawMesh( e->drawMesh, transform, e->drawTexture );
+            if( ent->wantsDraw == true ) {
+                glm::mat4 transform = glm::translate( ent->pos ) * glm::mat4( ent->ori );
+                if( ent->drawMesh != nullptr && ent->drawTexture != nullptr ) {
+                    worldDraws->DrawMesh( ent->drawMesh, transform, ent->drawTexture );
+                }
+            }
+
+            if( false ) {
+                Collider wsCollider = ent->CollisionCollider_GetWorldSpace();
+                switch( ent->collisionCollider.type ) {
+                    case COLLIDER_TYPE_NONE:                                                                        break;
+                    case COLLIDER_TYPE_SPHERE:  worldDraws->DrawSphere( wsCollider.sphere.c, wsCollider.sphere.r ); break;
+                    case COLLIDER_TYPE_BOX:     worldDraws->DrawBox( wsCollider.box.min, wsCollider.box.max );      break;
+                    default: INVALID_CODE_PATH; break;
+                }
             }
         }
 
@@ -124,11 +146,13 @@ namespace atto {
         //worldDraws->DrawSphere( glm::vec3( 0, 3, 0 ), 1.0f );
         //worldDraws->DrawTriangle( glm::vec3( 0, 0, 0 ), glm::vec3( 0, 1, 0 ), glm::vec3( 1, 0, 0 ), glm::vec4( 1, 0, 0, 1 ) );
         //worldDraws->DrawLine( glm::vec3( 0, 0, 0 ), glm::vec3( 1, 1, 1 ), 1 );
+        //worldDraws->DrawLine( glm::vec3( 0, 1, 0 ), glm::vec3( 1, 0, 0 ), 1, glm::vec4(1, 0,0,1) );
+        //worldDraws->DrawBox( glm::vec3( 0, 0, 0 ), glm::vec3( 1, 1, 1 ) );
         const f32 crossHairThicc = 0.0045f;
         const f32 crossHairLength = 0.02f;
         const f32 aspectRatio = worldDraws->GetMainAspectRatio();
         worldDraws->DrawLine2D_NDC( glm::vec2( 0, -crossHairLength ), glm::vec2( 0, crossHairLength ), crossHairThicc, glm::vec4( 1, 0, 0, 1 ) );
-        worldDraws->DrawLine2D_NDC( glm::vec2( -crossHairLength / aspectRatio, 0 ), glm::vec2( crossHairLength /aspectRatio, 0 ), crossHairThicc * aspectRatio, glm::vec4( 1, 0, 0, 1 ) );
+        worldDraws->DrawLine2D_NDC( glm::vec2( -crossHairLength / aspectRatio, 0 ), glm::vec2( crossHairLength / aspectRatio, 0 ), crossHairThicc * aspectRatio, glm::vec4( 1, 0, 0, 1 ) );
 
         if( ( flags & UPDATE_AND_RENDER_FLAG_DONT_SUBMIT_RENDER ) == false ) {
             core->RenderSubmit( worldDraws, true );
@@ -151,8 +175,7 @@ namespace atto {
         Entity * ent = SpawnEntity( ENTITY_TYPE_PLAYER );
         if( ent != nullptr ) {
             ent->camera = EntCamera::CreateDefault();
-            ent->hasCollision = true;
-            ent->collisionCollider.type = COLLIDER_TYPE_SHPERE;
+            ent->collisionCollider.type = COLLIDER_TYPE_SPHERE;
             ent->collisionCollider.sphere.r = 0.5f;
             ent->collisionCollider.sphere.c = pos + glm::vec3( 0, ent->collisionCollider.sphere.r, 0 );
             ent->pos = ent->collisionCollider.sphere.c;
@@ -164,7 +187,7 @@ namespace atto {
         return ent;
     }
 
-    void Map::EntityUpdatePlayer( Core * core, Entity * ent ) {
+    void Map::EntityUpdatePlayer( Core * core, Entity * ent, EntList & activeEnts ) {
         if( ent->sleeping == true ) {
             return;
         }
@@ -305,6 +328,46 @@ namespace atto {
                     }
                 }
 
+                const i32 activeEntCount = activeEnts.GetCount();
+                for( i32 entIndex = 0; entIndex < activeEntCount; entIndex++ ) {
+                    Entity * activeEnt = activeEnts[ entIndex ];
+                    if( activeEnt == ent ) {
+                        continue;
+                    }
+
+                    switch( activeEnt->collisionCollider.type ) {
+                        case COLLIDER_TYPE_NONE:                                                                        break;
+                        case COLLIDER_TYPE_SPHERE:
+                        {
+                            Manifold m = {};
+                            Collider wsCollider = activeEnt->collisionCollider;;
+                            bool res = CollisionCheck_SphereVsSphere( ent->collisionCollider.sphere.c,
+                                                                   ent->collisionCollider.sphere.r,
+                                                                   wsCollider.sphere.c,
+                                                                   wsCollider.sphere.r,
+                                                                   m );
+                            if( res == true ) {
+                                ent->pos += m.normal * m.penetration;
+                            }
+                        } break;
+                        case COLLIDER_TYPE_BOX:
+                        {
+                            Manifold m = {};
+                            Collider wsCollider = activeEnt->CollisionCollider_GetWorldSpace();
+                            bool res = CollisionCheck_SphereVsBox( ent->collisionCollider.sphere.c,
+                                                        ent->collisionCollider.sphere.r,
+                                                        wsCollider.box.min,
+                                                        wsCollider.box.max,
+                                                        m );
+                            if( res == true ) {
+                                ent->pos += m.normal * m.penetration;
+                            }
+
+                        } break;
+                        default: INVALID_CODE_PATH; break;
+                    }
+                }
+
                 // @HACK: Lock the player to the ground
                 ent->pos.y = ent->collisionCollider.sphere.c.y;
 
@@ -328,6 +391,12 @@ namespace atto {
                 ent->localGunPos = glm::mix( ent->localStartGunPos, ent->localGunPos, ent->fireRateAccumulator );
             }
         }
+    }
+
+    Collider Entity::CollisionCollider_GetWorldSpace() const {
+        Collider ws = collisionCollider;
+        ws.Translate( pos );
+        return ws;
     }
 
     glm::mat4 Entity::CameraGetViewMatrix() const {
@@ -561,16 +630,14 @@ namespace atto {
         Edit_LoadFromMapFile( mapFile );
     }
 
-    Entity * EntityTypeFunc_Spawn_Drone01( Core * core, Map * map, EntitySpawnInfo & spawnInfo ) {
+    Entity * EntityTypeFunc_Spawn_Drone01( Core * core, Map * map, MapFileEntity & mapFileEntity ) {
         Entity * ent = map->SpawnEntity( ENTITY_TYPE_DRONE_01 );
         if( ent != nullptr ) {
-            ent->funcs = spawnInfo.funcs;
             ent->funcs.updateFunc = EntityTypeFunc_Update_Drone01;
-            ent->hasCollision = true;
-            ent->collisionCollider.type = COLLIDER_TYPE_SHPERE;
+            ent->collisionCollider.type = COLLIDER_TYPE_SPHERE;
             ent->collisionCollider.sphere.r = 0.5f;
-            ent->collisionCollider.sphere.c = spawnInfo.pos + glm::vec3( 0, ent->collisionCollider.sphere.r, 0 );
-            ent->pos = ent->collisionCollider.sphere.c;
+            ent->collisionCollider.sphere.c = glm::vec3( 0, 0, 0 );
+            ent->pos = mapFileEntity.pos;
             ent->wantsDraw = true;
             ent->drawMesh = map->mesh_Enemy_Drone_Quad_01;
             ent->drawTexture = map->tex_PolygonScifi_01_C;
@@ -590,11 +657,39 @@ namespace atto {
         }
 
         glm::mat3 m;
-        m[ 0 ] = glm::cross( up, forward );
-        m[ 1 ] = glm::cross( m[ 0 ], forward );
+        m[ 0 ] = glm::normalize( glm::cross( forward, up ) );
+        m[ 1 ] = glm::normalize( glm::cross( m[ 0 ], forward ) );
         m[ 2 ] = forward;
 
         ent->ori = m;
+    }
+
+    Entity * EntityTypeFunc_Spawn_Prop( Core * core, Map * map, MapFileEntity & fileEntity ) {
+        Entity * ent = map->SpawnEntity( ENTITY_TYPE_PROP );
+        if( ent != nullptr ) {
+            ent->pos = fileEntity.pos;
+            ent->ori = fileEntity.ori;
+            Assert( ent->ori != glm::mat3( 0 ) ); // You probably forgot to set this !
+            ent->collisionCollider = fileEntity.collisionCollider;
+            ent->wantsDraw = true;
+            ent->drawMesh = core->ResourceGetAndLoadMesh( fileEntity.meshName.GetCStr() );
+            ent->drawTexture = core->ResourceGetAndLoadTexture( fileEntity.textureName.GetCStr(), false, false );
+
+            if( ent->drawMesh == nullptr ) {
+                core->LogOutput( LogLevel::ERR, "Could not find mesh %s for entity %s", fileEntity.meshName.GetCStr(), fileEntity.entityName.GetCStr() );
+            }
+
+            if( ent->drawTexture == nullptr ) {
+                core->LogOutput( LogLevel::ERR, "Could not find texture %s for entity %s", fileEntity.textureName.GetCStr(), fileEntity.entityName.GetCStr() );
+            }
+
+            // @HACK:
+            ent->collisionCollider.type = COLLIDER_TYPE_BOX;
+            ent->collisionCollider.box.min = ent->drawMesh->boundingBox.min;
+            ent->collisionCollider.box.max = ent->drawMesh->boundingBox.max;
+         }
+
+        return ent;
     }
 
 }

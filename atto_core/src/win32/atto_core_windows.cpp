@@ -284,6 +284,12 @@ namespace atto {
 
         glBindVertexArray( 0 );
 
+        meshResource.boundingBox = {};
+        for( i32 vertexIndex = 0; vertexIndex < data.vertexCount; vertexIndex++ ) {
+            const StaticMeshVertex & v = data.vertices[ vertexIndex ];
+            meshResource.boundingBox .Expand( v.position );
+        }
+
         data.Free();
 
         return resources.meshes.Add( meshResource );
@@ -513,6 +519,24 @@ namespace atto {
                     glDrawElements( GL_TRIANGLES, staticMeshSphere->indexCount, GL_UNSIGNED_SHORT, 0 );
                     glBindVertexArray( 0 );
                 } break;
+                case DrawCommandType::BOX:
+                {
+                    glm::mat4 v = dcxt->cameraView;
+                    glm::mat4 p = dcxt->cameraProj;
+                    glm::mat4 pvm = p * v * cmd.box.m;
+
+                    GLShaderProgramBind( staticMeshUnlitProgram );
+                    GLShaderProgramSetVec4( "color", cmd.color );
+                    GLShaderProgramSetInt( "hasTexture", 0 );
+                    GLShaderProgramSetMat4( "pvm", pvm );
+
+                    glDisable( GL_CULL_FACE );
+                    glEnable( GL_DEPTH_TEST );
+
+                    glBindVertexArray( staticMeshBox->vao );
+                    glDrawElements( GL_TRIANGLES, staticMeshBox->indexCount, GL_UNSIGNED_SHORT, 0 );
+                    glBindVertexArray( 0 );
+                } break;
                 case DrawCommandType::LINE:
                 {
                     StaticMeshVertex vertices[ 3 ] = {
@@ -673,7 +697,11 @@ namespace atto {
         }
 
         ContentModelProcessor modelProcessor = {};
-        modelProcessor.LoadFromFile( this, name );
+        bool res = modelProcessor.LoadFromFile( this, name );
+        if( res == false ) {
+            return nullptr;
+        }
+        modelProcessor.ComputeBoundingBox();
 
         Assert( modelProcessor.meshes.size() == 1 );
 
@@ -940,7 +968,7 @@ namespace atto {
         staticMeshUnlitProgram = GLCreateShaderProgram( vertexShaderSource, fragmentShaderSource );
         staticMeshTriangle = (Win32StaticMeshResource *)ResourceMeshCreate( "Triangle", 3 );
         staticMeshPlane = (Win32StaticMeshResource *)ResourceMeshCreate( "Plane", StaticMeshGeneration::CreateQuad( -1, 1, 2.0f, 2.0f, 0.0f ) );
-        staticMeshCube = (Win32StaticMeshResource *)ResourceMeshCreate( "Cube", StaticMeshGeneration::CreateBox( 1, 1, 1, 0 ) );
+        staticMeshBox = (Win32StaticMeshResource *)ResourceMeshCreate( "Box", StaticMeshGeneration::CreateBox( 1, 1, 1, 0 ) );
         staticMeshSphere = (Win32StaticMeshResource *)ResourceMeshCreate( "Sphere", StaticMeshGeneration::CreateSphere( 1, 8, 8 ) );
     }
 

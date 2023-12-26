@@ -8,12 +8,12 @@ namespace atto {
     class Map;
     struct Entity;
     enum EntityType;
-    struct EntitySpawnInfo;
-    
+    struct MapFileEntity;
+
     typedef ObjectHandle<Entity> EntityHandle;
     typedef FixedList<Entity *, MAX_ENTITIES> EntList;
 
-    typedef Entity * ( *EntityTypeFunc_Spawn ) ( Core * core, Map * map, EntitySpawnInfo & spawnInfo );
+    typedef Entity * ( *EntityTypeFunc_Spawn ) ( Core * core, Map * map, MapFileEntity & fileEntity );
     typedef void     ( *EntityTypeFunc_Update )( Core * core, Map * map, Entity * ent, f32 dt );
 
     struct EntityTypeFuncInfo {
@@ -21,27 +21,25 @@ namespace atto {
         EntityTypeFunc_Update updateFunc;
     };
 
-    struct EntitySpawnInfo {
-        EntityType          type;
-        glm::vec3           pos;
-        glm::vec3           ori;
-        EntityTypeFuncInfo  funcs;
-    };
-
     enum EntityType {
         ENTITY_TYPE_INVALID = 0,
         ENTITY_TYPE_PLAYER = 1,
         ENTITY_TYPE_DRONE_01 = 2,
+        ENTITY_TYPE_PROP = 3,
     };
 
-    Entity * EntityTypeFunc_Spawn_Drone01( Core * core, Map * map, EntitySpawnInfo & spawnInfo );
+    Entity * EntityTypeFunc_Spawn_Drone01( Core * core, Map * map, MapFileEntity & fileEntity );
     void     EntityTypeFunc_Update_Drone01( Core * core, Map * map, Entity * ent, f32 dt );
+
+    Entity * EntityTypeFunc_Spawn_Prop( Core * core, Map * map, MapFileEntity & fileEntity );
+    //void     EntityTypeFunc_Update_Prop( Core * core, Map * map, Entity * ent, f32 dt );
 
     // TODO: Remove std::vector and make fixed lists use initializer lists. Also I'm not sure if this should be global or apart of the map...
     inline std::vector<EntityTypeFuncInfo> ENTITY_TYPE_FUNCS = {
         { nullptr, nullptr },
         { nullptr, nullptr },
         { EntityTypeFunc_Spawn_Drone01, EntityTypeFunc_Update_Drone01 },
+        { EntityTypeFunc_Spawn_Prop, nullptr },
     };
 
 
@@ -67,12 +65,14 @@ namespace atto {
         EntityType          type;
         EntityTypeFuncInfo  funcs;
 
-        bool            sleeping;
+        SmallString         name;
 
-        glm::vec3       pos;
-        glm::mat3       ori;
+        bool                sleeping;
 
-        glm::vec3       vel;
+        glm::vec3           pos;
+        glm::mat3           ori;
+
+        glm::vec3           vel;
 
         EntCamera           camera;
 
@@ -86,12 +86,14 @@ namespace atto {
         i32                 currentHealth;
 
         // Make these flags
-        bool hasCollision;
+        bool hasHitCollision;
         bool isCollisionStatic;
         bool isSelectable;
 
-        Collider    selectionCollider;
-        Collider    collisionCollider;
+        Collider                selectionCollider;
+        Collider                collisionCollider;  // @NOTE: Used for movement | In Local Space
+        FixedList<Collider, 8>  hitColliders;       // @NOTE: Used for shooting and stuff | In Local Space
+        
 
         bool selected;
 
@@ -100,6 +102,8 @@ namespace atto {
         bool                    wantsDraw;
         StaticMeshResource *    drawMesh;
         TextureResource *       drawTexture;
+
+        Collider    CollisionCollider_GetWorldSpace() const;
 
         glm::mat4   CameraGetViewMatrix() const;
         glm::mat4   Player_ComputeGunTransformMatrix() const;
@@ -136,9 +140,13 @@ namespace atto {
     };
 
     struct MapFileEntity {
-        i32 type;
-        glm::vec3 pos;
-        glm::mat3 ori;
+        i32         type;
+        glm::vec3   pos;
+        glm::mat3   ori;
+        Collider    collisionCollider;
+        SmallString entityName;
+        SmallString meshName;
+        SmallString textureName;
 
         REFLECT();
     };
@@ -176,7 +184,7 @@ namespace atto {
         void                            UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags );
         Entity *                        SpawnEntity( EntityType type );
         Entity *                        SpawnPlayer( glm::vec3 pos );
-        void                            EntityUpdatePlayer( Core * core, Entity * ent );
+        void                            EntityUpdatePlayer( Core * core, Entity * ent, EntList & activeEnts );
 
         // @NOTE: "Map Build" functions 
         bool                            Edit_AddBlock( i32 x, i32 y );

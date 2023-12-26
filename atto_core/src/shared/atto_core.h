@@ -53,6 +53,7 @@ namespace atto {
 
     struct StaticMeshResource {
         SmallString name;
+        BoxBounds boundingBox;
         i32 vertexCount;
         i32 indexCount;
         i32 vertexStride;
@@ -99,6 +100,7 @@ namespace atto {
         // 3D
         PLANE,
         SPHERE,
+        BOX,
         LINE,
         TRIANGLE,
         MESH,
@@ -150,6 +152,9 @@ namespace atto {
                     f32 r;
                 } sphere;
                 struct {
+                    glm::mat4 m;
+                } box;
+                struct {
                     glm::vec3 p1;
                     glm::vec3 p2;
                 } line;
@@ -195,6 +200,7 @@ namespace atto {
         void DrawText2D( FontHandle font, glm::vec2 tl, f32 fontSize, const char * text, glm::vec4 colour = glm::vec4( 1 ) );
         void DrawPlane( glm::vec3 center, glm::vec3 normal, glm::vec2 dim, glm::vec4 colour = glm::vec4( 1 ) );
         void DrawSphere( glm::vec3 center, f32 r, glm::vec4 colour = glm::vec4( 1 ) );
+        void DrawBox( glm::vec3 min, glm::vec3 max, glm::vec4 colour = glm::vec4( 1 ) );
         void DrawLine( glm::vec3 p1, glm::vec3 p2, f32 thicc, glm::vec4 colour = glm::vec4( 1 ) );
         void DrawTriangle( glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec4 colour = glm::vec4( 1 ) );
         void DrawTriangle( glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec2 uv1, glm::vec2 uv2, glm::vec2 uv3, TextureResource * texture );

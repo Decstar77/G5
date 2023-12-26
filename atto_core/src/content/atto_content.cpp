@@ -181,13 +181,25 @@ namespace atto {
         const aiScene * scene = importer.ReadFile( filePath.GetCStr(), aiProcess_Triangulate | aiProcess_FlipUVs );
 
         if( !scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode ) {
-            core->LogOutput( LogLevel::ERR, "%s\n", importer.GetErrorString() );
+            core->LogOutput( LogLevel::ERR, "%s", importer.GetErrorString() );
             return false;
         }
 
         ProcessNode( scene->mRootNode, scene );
 
         return true;
+    }
+
+    void ContentModelProcessor::ComputeBoundingBox() {
+        const i32 meshCount = (i32)meshes.size();
+        boundingBox = {};
+        for( i32 meshIndex = 0; meshIndex < meshCount; meshIndex++ ) {
+            const StaticMeshData & mesh = meshes[ meshIndex ];
+            for( i32 vertexIndex = 0; vertexIndex < mesh.vertexCount; vertexIndex++ ) {
+                const StaticMeshVertex & v = mesh.vertices[ vertexIndex ];
+                boundingBox.Expand( v.position );
+            }
+        }
     }
 
     void ContentModelProcessor::ProcessNode( aiNode * node, const aiScene * scene ) {

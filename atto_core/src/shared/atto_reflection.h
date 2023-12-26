@@ -190,7 +190,6 @@ namespace atto {
             return &typeDesc;
         }
     };
-
 }
 
 #endif

@@ -1,5 +1,7 @@
 #include "atto_math.h"
 
+#include "atto_reflection.h"
+
 namespace atto {
     bool Circle::Intersects( const Circle & circle ) const {
         f32 distSqrd = glm::distance2( pos, circle.pos );
@@ -37,28 +39,28 @@ namespace atto {
         return c;
     }
 
-    f32 BoxBounds::GetWidth() const {
+    f32 BoxBounds2D::GetWidth() const {
         return max.x - min.x;
     }
 
-    f32 BoxBounds::GetHeight() const {
+    f32 BoxBounds2D::GetHeight() const {
         return max.y - min.y;
     }
 
-    glm::vec2 BoxBounds::GetCenter() const {
+    glm::vec2 BoxBounds2D::GetCenter() const {
         return ( min + max ) * 0.5f;
     }
 
-    glm::vec2 BoxBounds::GetSize() const {
+    glm::vec2 BoxBounds2D::GetSize() const {
         return max - min;
     }
 
-    void BoxBounds::Translate( const glm::vec2 & translation ) {
+    void BoxBounds2D::Translate( const glm::vec2 & translation ) {
         min += translation;
         max += translation;
     }
 
-    void BoxBounds::CreateFromCenterSize( const glm::vec2 & center, const glm::vec2 & size ) {
+    void BoxBounds2D::CreateFromCenterSize( const glm::vec2 & center, const glm::vec2 & size ) {
         max = center + size * 0.5f;
         min = center - size * 0.5f;
     }
@@ -81,18 +83,18 @@ namespace atto {
     //    return tmax >= tmin;
     //}
 
-    bool BoxBounds::Intersects( const BoxBounds & other ) const {
+    bool BoxBounds2D::Intersects( const BoxBounds2D & other ) const {
         return ( max.x >= other.min.x && min.x <= other.max.x ) &&
             ( max.y >= other.min.y && min.y <= other.max.y );
     }
 
-    bool BoxBounds::Intersects( const Circle & other ) const {
+    bool BoxBounds2D::Intersects( const Circle & other ) const {
         glm::vec2 closestPoint = glm::clamp( other.pos, min, max );
         f32 distSqrd = glm::distance2( other.pos, closestPoint );
         return distSqrd < other.rad * other.rad;
     }
 
-    bool BoxBounds::Collision( const BoxBounds & other, Manifold2D & manifold ) const {
+    bool BoxBounds2D::Collision( const BoxBounds2D & other, Manifold2D & manifold ) const {
         if( Intersects( other ) ) {
             f32 xOverlap = glm::min( max.x, other.max.x ) - glm::max( min.x, other.min.x );
             f32 yOverlap = glm::min( max.y, other.max.y ) - glm::max( min.y, other.min.y );
@@ -124,7 +126,7 @@ namespace atto {
         return false;
     }
 
-    bool BoxBounds::Collision( const Circle & circle, Manifold2D & manifold ) const {
+    bool BoxBounds2D::Collision( const Circle & circle, Manifold2D & manifold ) const {
           // Calculate the closest point on the box to the circle
         glm::vec2 closestPoint = glm::clamp( circle.pos, min, max );
 
@@ -152,12 +154,12 @@ namespace atto {
         return false; // No collision
     }
 
-    bool BoxBounds::Contains( const glm::vec2 & point ) const {
+    bool BoxBounds2D::Contains( const glm::vec2 & point ) const {
         return ( point.x >= min.x && point.x <= max.x ) &&
             ( point.y >= min.y && point.y <= max.y );
     }
 
-    void BoxBounds::Expand( f32 mul ) {
+    void BoxBounds2D::Expand( f32 mul ) {
         glm::vec2 center = GetCenter();
         glm::vec2 size = GetSize();
         size *= mul;
@@ -255,6 +257,64 @@ namespace atto {
         return false;
     }
 
+    f32 BoxBounds::GetWidth() const {
+        return max.x - min.x;
+    }
+
+    f32 BoxBounds::GetHeight() const {
+        return max.y - min.y;
+    }
+
+    f32 BoxBounds::GetDepth() const {
+        return max.z - min.z;
+    }
+
+    glm::vec3 BoxBounds::GetCenter() const {
+        return ( min + max ) * 0.5f;
+    }
+
+    glm::vec3 BoxBounds::GetSize() const {
+        return max - min;
+    }
+
+    bool BoxBounds::Contains( glm::vec3 point ) const {
+        return ( point.x >= min.x && point.x <= max.x ) &&
+            ( point.y >= min.y && point.y <= max.y ) &&
+            ( point.z >= min.z && point.z <= max.z );
+    }
+
+    void BoxBounds::Translate( glm::vec3 translation ) {
+        min += translation;
+        max += translation;
+    }
+
+    void BoxBounds::Expand( glm::vec3 p ) {
+        if( p.x < min.x ) {
+            min.x = p.x;
+        }
+        if( p.y < min.y ) {
+            min.y = p.y;
+        }
+        if( p.z < min.z ) {
+            min.z = p.z;
+        }
+
+        if( p.x > max.x ) {
+            max.x = p.x;
+        }
+        if( p.y > max.y ) {
+            max.y = p.y;
+        }
+        if( p.z > max.z ) {
+            max.z = p.z;
+        }
+    }
+
+    void BoxBounds::CreateFromCenterSize( glm::vec3 center, glm::vec3 size ) {
+        max = center + size * 0.5f;
+        min = center - size * 0.5f;
+    }
+
     inline bool IsPointInsideTriangle( glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec3 point ) {
         // Compute barycentric coordinates
         glm::vec3 v0 = p2 - p1;
@@ -279,6 +339,14 @@ namespace atto {
     glm::vec3 ClosestPoint_Sphere( glm::vec3 c, f32 r, glm::vec3 p ) {
         glm::vec3 d = p - c;
         glm::vec3 result = c + ( glm::normalize( d ) * r );
+        return result;
+    }
+
+    glm::vec3 ClosestPoint_Box( glm::vec3 min, glm::vec3 max, glm::vec3 p ) {
+        glm::vec3 result = p;
+        result.x = glm::clamp( result.x, min.x, max.x );
+        result.y = glm::clamp( result.y, min.y, max.y );
+        result.z = glm::clamp( result.z, min.z, max.z );
         return result;
     }
 
@@ -330,6 +398,33 @@ namespace atto {
         return ClosestPoint_Triangle( tri.tri.p1, tri.tri.p2, tri.tri.p3, tri.tri.n, p );
     }
 
+    bool CollisionCheck_SphereVsSphere( glm::vec3 c1, f32 r1, glm::vec3 c2, f32 r2, Manifold & manifold ) {
+        glm::vec3 d = c2 - c1;
+        f32 d2 = glm::length2( d );
+        f32 r = r1 + r2;
+        bool result = d2 <= r * r;
+        if( result ) {
+            manifold.pointA = c1 + ( glm::normalize( d ) * r1 );
+            manifold.pointB = c2 - ( glm::normalize( d ) * r2 );
+            manifold.normal = glm::normalize( manifold.pointB - manifold.pointA );
+            manifold.penetration = glm::distance( manifold.pointA, manifold.pointB );
+        }
+        return result;
+    }
+
+    bool CollisionCheck_SphereVsBox( glm::vec3 c, f32 r, glm::vec3 min, glm::vec3 max, Manifold & manifold ) {
+        glm::vec3 close = ClosestPoint_Box( min, max, c );
+        f32 d2 = glm::distance2( close, c );
+        bool result = d2 <= r * r;
+        if( result ) {
+            manifold.pointB = close;
+            manifold.normal = glm::normalize( c - close );
+            manifold.pointA = c - manifold.normal * r;
+            manifold.penetration = glm::distance( manifold.pointA, manifold.pointB );
+        }
+        return result;
+    }
+
     bool CollisionCheck_SphereVsTri( glm::vec3 c, f32 r, glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec3 n, Manifold & manifold ) {
         glm::vec3 close = ClosestPoint_Triangle( p1, p2, p3, n, c );
         f32 d2 = glm::distance2( close, c );
@@ -344,7 +439,7 @@ namespace atto {
     }
 
     bool CollisionCheck_SphereVsPlane( Collider s, Collider p, Manifold & manifold ) {
-        Assert( s.type == COLLIDER_TYPE_SHPERE );
+        Assert( s.type == COLLIDER_TYPE_SPHERE );
         Assert( p.type == COLLIDER_TYPE_PLANE );
         glm::vec3 close = ClosestPoint_Plane( p.plane.c, p.plane.n, s.sphere.c );
         f32 d2 = glm::distance2( close, s.sphere.c );
@@ -360,12 +455,37 @@ namespace atto {
     }
 
     bool CollisionCheck_SphereVsTri( Collider s, Collider t, Manifold & manifold ) {
-        Assert( s.type == COLLIDER_TYPE_SHPERE );
+        Assert( s.type == COLLIDER_TYPE_SPHERE );
         Assert( t.type == COLLIDER_TYPE_TRIANGLE );
         return CollisionCheck_SphereVsTri( s.sphere.c, s.sphere.r, t.tri.p1, t.tri.p2, t.tri.p3, t.tri.n, manifold );
     }
 
-
-    
+    void Collider::Translate( glm::vec3 p ) {
+        switch( type ) {
+            case COLLIDER_TYPE_NONE:
+            {
+            } break;
+            case COLLIDER_TYPE_SPHERE:
+            {
+                sphere.c += p;
+            } break;
+            case COLLIDER_TYPE_BOX:
+            {
+                box.min += p;
+                box.max += p;
+            }break;
+            case COLLIDER_TYPE_PLANE: 
+            {
+                plane.c += p;
+            } break;
+            case COLLIDER_TYPE_TRIANGLE:
+            {
+                tri.p1 += p;
+                tri.p2 += p;
+                tri.p3 += p;
+            } break;
+            default: INVALID_CODE_PATH; break;
+        }
+    }
 
 }

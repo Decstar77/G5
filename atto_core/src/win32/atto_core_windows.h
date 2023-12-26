@@ -143,7 +143,7 @@ namespace atto {
         ShaderProgram                     staticMeshUnlitProgram;
         Win32StaticMeshResource *         staticMeshTriangle;
         Win32StaticMeshResource *         staticMeshPlane;
-        Win32StaticMeshResource *         staticMeshCube;
+        Win32StaticMeshResource *         staticMeshBox;
         Win32StaticMeshResource *         staticMeshSphere;
         Win32StaticMeshResource *         staticMeshCylinder;
 
