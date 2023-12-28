@@ -8,6 +8,7 @@
 struct GLFWwindow;
 
 namespace atto {
+
     class EngineImgui {
     public:
         static void Initialize( GLFWwindow * window );

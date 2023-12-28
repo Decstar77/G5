@@ -15,6 +15,9 @@ namespace atto {
             core->WindowClose();
         }
 
+    #if 1
+
+    #else 
         if( game->IsInitialized() == false ) {
             game->Initialize( core );
             Map & map = ( (GameModeGame *)game )->map;
@@ -60,6 +63,7 @@ namespace atto {
             worldDraws->SetCamera( editorCamera.GetViewMatrix(), editorCamera.camera.yfov, editorCamera.camera.zNear, editorCamera.camera.zFar );
             core->RenderSubmit( worldDraws, true );
         }
+    #endif
     }
 
     void Editor::MainMenuBar( Core * core, GameMode * game ) {

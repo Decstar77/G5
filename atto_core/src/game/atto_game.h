@@ -6,6 +6,7 @@ namespace atto {
         MAIN_MENU = 0,
         IN_GAME,
         OPTIONS,
+        PIXY,
     };
 
     enum UpdateAndRenderFlags {
