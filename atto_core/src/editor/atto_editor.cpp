@@ -15,7 +15,7 @@ namespace atto {
             core->WindowClose();
         }
 
-    #if 1
+    #if 0
 
     #else 
         if( game->IsInitialized() == false ) {

@@ -15,40 +15,6 @@ namespace atto {
     }
 
     void GameModeGame::Initialize( Core * core ) {
-    #if 0
-        localPlayer = SpawnPlayer( map.playerStartPos );
-        localPlayer->pos.x = -2;
-        f32 dim = 5.0f;
-
-        MapTriangle t1 = {};
-        t1.p1 = glm::vec3( -1, 0, 1 ) * dim;
-        t1.p2 = glm::vec3( -1, 0, -1 ) * dim;
-        t1.p3 = glm::vec3( 1, 0, -1 ) * dim;
-        t1.uv1 = glm::vec2( 0, 1 );
-        t1.uv2 = glm::vec2( 0, 0 );
-        t1.uv3 = glm::vec2( 1, 0 );
-        t1.ComputeNormal();
-        t1.InvertNormal();
-
-        MapTriangle t2 = {};
-        t2.p1 = glm::vec3( 1, 0, 1 ) * dim;
-        t2.p2 = glm::vec3( -1, 0, 1 ) * dim;
-        t2.p3 = glm::vec3( 1, 0, -1 ) * dim;
-        t2.uv1 = glm::vec2( 1, 1 );
-        t2.uv2 = glm::vec2( 0, 1 );
-        t2.uv3 = glm::vec2( 1, 0 );
-        t2.ComputeNormal();
-        t2.InvertNormal();
-
-        map.triangles.Add( t1 );
-        map.triangles.Add( t2 );
-
-        map.mapWidth = 10;
-        map.mapHeight = 10;
-        map.AddBlock( 0, 0 );
-
-        map.Bake();
-    #endif
     }
 
     void GameModeGame::UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags ) {
