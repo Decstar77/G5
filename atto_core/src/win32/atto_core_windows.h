@@ -94,6 +94,7 @@ namespace atto {
         FixedList<Win32TextureResource, 1024>       textures;
         FixedList<Win32AudioResource, 1024>         audios;
         FixedList<Win32StaticMeshResource, 1024>    meshes;
+        FixedList<SpriteResource, 1024>             sprites;
         FontContext                                 fontContext;
     };
 
@@ -102,18 +103,19 @@ namespace atto {
         void Run(int argc, char** argv) override;
         
         virtual TextureResource *       ResourceGetAndLoadTexture( const char * name, bool genMips, bool genAnti ) override;
+        virtual SpriteResource *        ResourceGetAndCreateSprite( const char * spriteName, const char * textureName, i32 frameCount, i32 frameWidth, i32 frameHeight ) override;
         virtual AudioResource *         ResourceGetAndLoadAudio( const char * name ) override;
         virtual StaticMeshResource *    ResourceGetAndLoadMesh( const char * name ) override;
         virtual FontHandle              ResourceGetFont( const char * name ) override;
         virtual void                    ResourceReadEntireFile( const char * path, char * data, i32 maxLen ) override;
         virtual void                    ResourceWriteEntireFile( const char * path, const char * data ) override;
 
-
         StaticMeshResource *            ResourceMeshCreate( const char * name, StaticMeshData & data );
         StaticMeshResource *            ResourceMeshCreate( const char * name, i32 vertexCount );
 
-        virtual AudioSpeaker            AudioPlay(AudioResource* audioResource, f32 volume = 1.0f, bool looping = false) override;
+        virtual AudioSpeaker            AudioPlay( AudioResource * audioResource, f32 volume = 1.0f, bool looping = false ) override;
 
+        virtual float                   FontGetTextBounds( FontHandle font, f32 fontSize, const char * text, glm::vec2 pos, BoxBounds2D & bounds ) override;
         virtual void                    RenderSubmit( DrawContext * dcxt, bool clearBackBuffers ) override;
         
         virtual void                    InputDisableMouse() override;
@@ -160,6 +162,7 @@ namespace atto {
         i32                         kenFontHandle;
 
         void            RenderDrawCommandText( DrawCommand & cmd );
+        void            RenderSetCamera( f32 width, f32 height );
 
         u64             OsGetFileLastWriteTime( const char * fileName ) override;
         void            OsLogMessage( const char * message, u8 colour ) override;

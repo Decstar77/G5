@@ -12,6 +12,7 @@
 #include <fstream>
 #include "../editor/atto_editor.h"
 #include "../game/modes/atto_game_mode_game.h"
+#include "../game/modes/atto_game_mode_main_menu.h"
 
 namespace atto {
 
@@ -158,13 +159,9 @@ namespace atto {
         gladLoadGLLoader( (GLADloadproc)glfwGetProcAddress );
         LogOutput( LogLevel::INFO, "OpenGL %s, GLSL %s", glGetString( GL_VERSION ), glGetString( GL_SHADING_LANGUAGE_VERSION ) );
 
-        i32 w = 0;
-        i32 h = 0;
-        glfwGetFramebufferSize( window, &w, &h );
-
         //RenderSetCamera( 320, 180 );
+        RenderSetCamera( 320 * 1.5f, 180 * 1.5f );
         //RenderSetCamera( 640, 360 );
-        GLResetSurface( (f32)w, (f32)h );
         GLCheckCapablities();
         GLInitializeShapeRendering();
         GLInitializeSpriteRendering();
@@ -177,7 +174,9 @@ namespace atto {
 
         client = new NetClient( this );
 
-        game = new GameModeGame();
+        //game = new GameModeGame();
+        currentGameMode = new GameMode_MainMenu();
+        currentGameMode->Initialize( this );
 
     #if ATTO_EDITOR
         editor = new Editor();
@@ -201,33 +200,24 @@ namespace atto {
             glfwPollEvents();
             //std::cout << "Poll end " << std::endl;
 
-            if( client->IsConnected() ) {
-                NetworkMessage msg = {};
-                while( client->Recieve( msg ) ) {
-                    switch( msg.type ) {
-                        case NetworkMessageType::NONE:
-                            INVALID_CODE_PATH;
-                            break;
-                        case NetworkMessageType::GAME_START:
-                        {
-
-                        } break;
-                        case NetworkMessageType::GGPO_MESSAGE:
-                        {
-                        } break;
-                        default:
-                            INVALID_CODE_PATH;
-                            break;
-                    }
-                }
+            bool skipFrame = false;
+            if( nextGameMode != nullptr ) {
+                currentGameMode->Shutdown( this );
+                delete currentGameMode;
+                currentGameMode = nextGameMode;
+                nextGameMode = nullptr;
+                currentGameMode->Initialize( this );
+                skipFrame = true;
             }
 
         #if ATTO_EDITOR
             EngineImgui::NewFrame();
-            editor->UpdateAndRender( this, game, deltaTime );
+            editor->UpdateAndRender( this, currentGameMode, deltaTime );
             EngineImgui::EndFrame();
         #else 
-            game->UpdateAndRender( this, this->deltaTime );
+            if( skipFrame == false ) {
+                currentGameMode->UpdateAndRender( this, this->deltaTime );
+            }
         #endif
 
             glfwSwapBuffers( window );
@@ -243,6 +233,15 @@ namespace atto {
         EngineImgui::Shutdown();
 
         delete client;
+    }
+
+    void WindowsCore::RenderSetCamera( f32 width, f32 height ) {
+        cameraWidth = width;
+        cameraHeight = height;
+        i32 w = 0;
+        i32 h = 0;
+        glfwGetFramebufferSize( window, &w, &h );
+        GLResetSurface( (f32)w, (f32)h );
     }
 
     StaticMeshResource * WindowsCore::ResourceMeshCreate( const char * name, StaticMeshData & data ) {
@@ -372,7 +371,7 @@ namespace atto {
                     GLShaderProgramSetMat4( "p", screenProjection );
                     GLShaderProgramSetInt( "mode", 1 );
                     GLShaderProgramSetVec4( "color", cmd.color );
-                    //GLShaderProgramSetVec4( "shapePosAndSize", glm::vec4( cmd.circle.c.x, (f32)viewport.w - cmd.circle.c.y, cmd.circle.r, cmd.circle.r ) );
+                    GLShaderProgramSetVec4( "shapePosAndSize", glm::vec4( cmd.circle.c.x, (f32)viewport.w - cmd.circle.c.y, cmd.circle.r, cmd.circle.r ) );
                     GLShaderProgramSetVec4( "shapeRadius", glm::vec4( cmd.circle.r - 2, 0, 0, 0 ) ); // The 4 here is to stop the circle from being cut of from the edges
 
                     glDisable( GL_CULL_FACE );
@@ -395,7 +394,7 @@ namespace atto {
 
                     GLEnableAlphaBlending();
                     GLShaderProgramBind( shapeProgram );
-                    GLShaderProgramSetMat4( "p", screenProjection );
+                    GLShaderProgramSetMat4( "p", cmd.proj );
                     GLShaderProgramSetInt( "mode", 0 );
                     GLShaderProgramSetVec4( "color", cmd.color );
 
@@ -429,9 +428,9 @@ namespace atto {
                     glDrawArrays( GL_TRIANGLES, 0, 6 );
                     glBindVertexArray( 0 );
                 } break;
-                case DrawCommandType::SPRITE:
+                case DrawCommandType::TEXTURE:
                 {
-                    Win32TextureResource * texture = (Win32TextureResource *)cmd.sprite.textureRes;
+                    Win32TextureResource * texture = (Win32TextureResource *)cmd.texture.textureRes;
                     AssertMsg( texture != nullptr, "Texture resource is null" );
                     /*
                         tl(0,1)  tr(1, 1)
@@ -439,12 +438,12 @@ namespace atto {
                     */
 
                     f32 vertices[ 6 ][ 4 ] = {
-                        { cmd.sprite.tl.x, cmd.sprite.tl.y, 0.0f ,0.0f },
-                        { cmd.sprite.bl.x, cmd.sprite.bl.y, 0.0f, 1.0f },
-                        { cmd.sprite.br.x, cmd.sprite.br.y, 1.0f, 1.0f },
-                        { cmd.sprite.tl.x, cmd.sprite.tl.y, 0.0f, 0.0f },
-                        { cmd.sprite.br.x, cmd.sprite.br.y, 1.0f, 1.0f },
-                        { cmd.sprite.tr.x, cmd.sprite.tr.y, 1.0f, 0.0f }
+                        { cmd.texture.tl.x, cmd.texture.tl.y, 0.0f ,0.0f },
+                        { cmd.texture.bl.x, cmd.texture.bl.y, 0.0f, 1.0f },
+                        { cmd.texture.br.x, cmd.texture.br.y, 1.0f, 1.0f },
+                        { cmd.texture.tl.x, cmd.texture.tl.y, 0.0f, 0.0f },
+                        { cmd.texture.br.x, cmd.texture.br.y, 1.0f, 1.0f },
+                        { cmd.texture.tr.x, cmd.texture.tr.y, 1.0f, 0.0f }
                     };
 
                     //GLEnablePreMultipliedAlphaBlending();
@@ -453,7 +452,7 @@ namespace atto {
                     GLShaderProgramSetSampler( "texture0", 0 );
                     GLShaderProgramSetVec4( "color", cmd.color );
                     GLShaderProgramSetTexture( 0, texture->handle );
-                    GLShaderProgramSetMat4( "p", screenProjection );
+                    GLShaderProgramSetMat4( "p", cameraProjection );
 
                     glDisable( GL_CULL_FACE );
                     glBindVertexArray( spriteVertexBuffer.vao );
@@ -461,6 +460,36 @@ namespace atto {
                     glDrawArrays( GL_TRIANGLES, 0, 6 );
                     glBindVertexArray( 0 );
 
+                } break;
+                case DrawCommandType::SPRITE:
+                {
+                    SpriteResource * spriteRes = cmd.sprite.spriteRes;
+                    AssertMsg( spriteRes != nullptr, "Texture resource is null" );
+                    Win32TextureResource * texture = (Win32TextureResource *)cmd.sprite.spriteRes->textureResource;
+                    AssertMsg( texture != nullptr, "Texture resource is null" );
+               
+                    f32 vertices[ 6 ][ 4 ] = {
+                       { cmd.sprite.tl.x, cmd.sprite.tl.y, cmd.sprite.tlUV.x ,cmd.sprite.tlUV.y },
+                       { cmd.sprite.bl.x, cmd.sprite.bl.y, cmd.sprite.blUV.x, cmd.sprite.blUV.y },
+                       { cmd.sprite.br.x, cmd.sprite.br.y, cmd.sprite.brUV.x, cmd.sprite.brUV.y },
+                       { cmd.sprite.tl.x, cmd.sprite.tl.y, cmd.sprite.tlUV.x, cmd.sprite.tlUV.y },
+                       { cmd.sprite.br.x, cmd.sprite.br.y, cmd.sprite.brUV.x, cmd.sprite.brUV.y },
+                       { cmd.sprite.tr.x, cmd.sprite.tr.y, cmd.sprite.trUV.x, cmd.sprite.trUV.y }
+                    };
+
+                    //GLEnablePreMultipliedAlphaBlending();
+                    GLEnableAlphaBlending();
+                    GLShaderProgramBind( spriteProgram );
+                    GLShaderProgramSetSampler( "texture0", 0 );
+                    GLShaderProgramSetVec4( "color", cmd.color );
+                    GLShaderProgramSetTexture( 0, texture->handle );
+                    GLShaderProgramSetMat4( "p", cameraProjection );
+
+                    glDisable( GL_CULL_FACE );
+                    glBindVertexArray( spriteVertexBuffer.vao );
+                    GLVertexBufferUpdate( spriteVertexBuffer, 0, sizeof( vertices ), vertices );
+                    glDrawArrays( GL_TRIANGLES, 0, 6 );
+                    glBindVertexArray( 0 );
                 } break;
                 case DrawCommandType::TEXT:
                 {
@@ -649,8 +678,8 @@ namespace atto {
 
         ContentTextureProcessor textureProcessor = {};
         textureProcessor.LoadFromFile( name );
-        textureProcessor.MakeAlphaEdge();
-        textureProcessor.FixAplhaEdges();
+        //textureProcessor.MakeAlphaEdge();
+        //textureProcessor.FixAplhaEdges();
 
         Win32TextureResource textureResource = {};
         textureResource.name = name;
@@ -659,8 +688,8 @@ namespace atto {
         textureResource.height = textureProcessor.height;
         textureResource.hasMips = genMips;
         textureResource.hasAnti = genAnti;
-
-        //glPixelStorei( GL_UNPACK_ALIGNMENT, 1 ); // @TODO: Remove this pack the textures
+        
+        glPixelStorei( GL_UNPACK_ALIGNMENT, 1 ); // @TODO: Remove this pack the textures
 
         glGenTextures( 1, &textureResource.handle );
         glBindTexture( GL_TEXTURE_2D, textureResource.handle );
@@ -685,6 +714,31 @@ namespace atto {
         glBindTexture( GL_TEXTURE_2D, 0 );
 
         return resources.textures.Add( textureResource );
+    }
+
+    SpriteResource * WindowsCore::ResourceGetAndCreateSprite( const char * spriteName, const char * textureName, i32 frameCount, i32 frameWidth, i32 frameHeight ) {
+        const i32 spriteResourceCount = resources.sprites.GetCount();
+        for( i32 spriteIndex = 0; spriteIndex < spriteResourceCount; spriteIndex++ ) {
+            SpriteResource & sprite = resources.sprites[ spriteIndex ];
+            if( sprite.name == spriteName ) {
+                return &sprite;
+            }
+        }
+
+        TextureResource * textureResource = ResourceGetAndLoadTexture( textureName, false, false );
+        if( textureResource == nullptr ) {
+            return nullptr;
+        }
+
+        SpriteResource spriteResource = {};
+        spriteResource.name = spriteName;
+        spriteResource.textureName = textureName;
+        spriteResource.textureResource = textureResource;
+        spriteResource.frameCount = frameCount;
+        spriteResource.frameWidth = frameWidth;
+        spriteResource.frameHeight = frameHeight;
+
+        return resources.sprites.Add( spriteResource );
     }
 
     StaticMeshResource * WindowsCore::ResourceGetAndLoadMesh( const char * name ) {
@@ -729,7 +783,6 @@ namespace atto {
     void WindowsCore::WindowSetTitle( const char * title ) {
         glfwSetWindowTitle( window, title );
     }
-
 
     void WindowsCore::WindowSetVSync( bool value ) {
         glfwSwapInterval( (i32)value );
@@ -819,7 +872,7 @@ namespace atto {
             }
         )";
 
-    #if 0
+    #if 1
         const char * fragmentShaderSource = R"(
             #version 330 core
             out vec4 FragColor;
@@ -973,12 +1026,22 @@ namespace atto {
     }
 
     void WindowsCore::OsParseStartArgs( int argc, char ** argv ) {
+       
         if( argc > 1 ) {
+            LogOutput( LogLevel::TRACE, "Parsing start up settings" );
+
+            // TODO(DECLAN): Don't do this...
+            static char buffer[ 2048 ] = {};
+            ResourceReadEntireFile( argv[ 1 ], buffer, sizeof( buffer ) );
+            
+            nlohmann::json j = nlohmann::json::parse( buffer );
             GameSettings settings = {};
-            //REFL_READ_JSON( argv[ 1 ], GameSettings, settings );
+            TypeDescriptor * settingsType = TypeResolver<GameSettings>::get();
+            settingsType->JSON_Read( j, &settings );
             theGameSettings = settings;
         }
         else {
+
             GameSettings settings = {};
             settings.basePath = "assets/";
             settings.windowStartPosX = -1;
@@ -1218,25 +1281,22 @@ namespace atto {
     }
 
     void WindowsCore::GLResetSurface( f32 w, f32 h ) {
-        // Maintain aspect ratio with black bars
-        //f32 ratioX = (f32)w / (f32)cameraWidth;
-        //f32 ratioY = (f32)h / (f32)cameraHeight;
-        //f32 ratio = ratioX < ratioY ? ratioX : ratioY;
-        //
-        //i32 viewWidth = (i32)( cameraWidth * ratio );
-        //i32 viewHeight = (i32)( cameraHeight * ratio );
-        //
-        //i32 viewX = (i32)( ( w - cameraWidth * ratio ) / 2 );
-        //i32 viewY = (i32)( ( h - cameraHeight * ratio ) / 2 );
-        //
-        //glViewport( viewX, viewY, viewWidth, viewHeight );
-        //
+        f32 ratioX = (f32)w / (f32)cameraWidth;
+        f32 ratioY = (f32)h / (f32)cameraHeight;
+        f32 ratio = ratioX < ratioY ? ratioX : ratioY;
+
+        i32 viewWidth = (i32)( cameraWidth * ratio );
+        i32 viewHeight = (i32)( cameraHeight * ratio );
+
+        i32 viewX = (i32)( ( w - cameraWidth * ratio ) / 2 );
+        i32 viewY = (i32)( ( h - cameraHeight * ratio ) / 2 );
+
+        glViewport( viewX, viewY, viewWidth, viewHeight );
+
         mainSurfaceWidth = w;
         mainSurfaceHeight = h;
-        //viewport = glm::vec4( viewX, viewY, viewWidth, viewHeight );
-        //cameraProjection = glm::ortho( 0.0f, (f32)cameraWidth, 0.0f, (f32)cameraHeight, -1.0f, 1.0f );
-
-        glViewport( 0, 0, (i32)w, (i32)h );
+        viewport = glm::vec4( viewX, viewY, viewWidth, viewHeight );
+        cameraProjection = glm::ortho( 0.0f, (f32)cameraWidth, 0.0f, (f32)cameraHeight, -1.0f, 1.0f );
         screenProjection = glm::ortho( 0.0f, (f32)w, (f32)h, 0.0f, -1.0f, 1.0f );
     }
 

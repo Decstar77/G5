@@ -117,6 +117,7 @@ namespace atto {
 
         void                    Translate( const glm::vec2 & translation );
         bool                    Contains( const glm::vec2 & point ) const;
+        bool                    Intersects( const BoxBounds2D & bounds ) const;
         bool                    Intersects( const Collider2D & other ) const;
         bool                    Collision( const Collider2D & other, Manifold2D & manifold ) const;
     };

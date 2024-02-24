@@ -1,14 +1,11 @@
 #pragma once
 
 #include "../atto_game.h"
+#include "../../shared/atto_ui.h"
 
-namespace atto::pixy {
+namespace atto {
     
-    struct PixyEntity {
-
-    };
-
-    class PixyGameMode : public GameMode {
+    class GameMode_MainMenu : public GameMode {
 
     public:
         GameModeType GetGameModeType() override;
@@ -16,6 +13,8 @@ namespace atto::pixy {
         void Initialize( Core * core ) override;
         void UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags = UPDATE_AND_RENDER_FLAG_NONE ) override;
         void Shutdown( Core * core ) override;
+
+        UIContext ui;
     };
     
 }

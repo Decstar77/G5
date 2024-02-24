@@ -43,6 +43,16 @@ namespace atto {
         bool hasAnti;
     };
 
+    struct SpriteResource {
+        SmallString         name;
+        SmallString         textureName;
+        TextureResource *   textureResource;
+        i32                 frameCount;
+        i32                 frameWidth;
+        i32                 frameHeight;
+        glm::vec2           origin;
+    };
+
     struct AudioResource {
         SmallString name;
         i32 channels;
@@ -94,6 +104,7 @@ namespace atto {
         CIRCLE,
         RECT,
         LINE2D,
+        TEXTURE,
         SPRITE,
         TEXT,
 
@@ -109,6 +120,7 @@ namespace atto {
     struct DrawCommand {
         DrawCommandType type;
         glm::vec4 color;
+        glm::mat4 proj;
         struct {
             union {
                 struct {
@@ -133,7 +145,19 @@ namespace atto {
                     glm::vec2 br;
                     glm::vec2 bl;
                     glm::vec2 tl;
-                    TextureResource * textureRes;
+                    TextureResource *   textureRes;
+                } texture;
+                struct {
+                    glm::vec2 tr;
+                    glm::vec2 br;
+                    glm::vec2 bl;
+                    glm::vec2 tl;
+                    glm::vec2 blUV;
+                    glm::vec2 trUV;
+                    glm::vec2 tlUV;
+                    glm::vec2 brUV;
+                    SpriteResource * spriteRes;
+                    i32                 frame;
                 } sprite;
                 struct {
                     glm::vec2 bl;
@@ -188,15 +212,16 @@ namespace atto {
         friend class Core;
         friend class WindowsCore;
     public:
-        void SetCamera( glm::mat4 view, f32 yfov, f32 zNear, f32 zFar );
-
+        void SetCameraPos( glm::vec2 pos );
         void DrawCircle( glm::vec2 pos, f32 radius, glm::vec4 colour = glm::vec4( 1 ) );
         void DrawRect( glm::vec2 bl, glm::vec2 tr, glm::vec4 colour = glm::vec4( 1 ) );
+        void DrawRectScreen( glm::vec2 bl, glm::vec2 tr, glm::vec4 colour = glm::vec4( 1 ) );
         void DrawRect( glm::vec2 center, glm::vec2 dim, f32 rot, const glm::vec4 & color = glm::vec4( 1 ) );
         void DrawLine2D( glm::vec2 start, glm::vec2 end, f32 thicc, const glm::vec4 & color = glm::vec4( 1 ) );
         void DrawLine2D_NDC( glm::vec2 start, glm::vec2 end, f32 thicc, const glm::vec4 & color = glm::vec4( 1 ) );
-        void DrawSprite( TextureResource * texture, glm::vec2 center, f32 rot = 0.0f, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
-        void DrawSpriteBL( TextureResource * texture, glm::vec2 bl, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
+        void DrawTexture( TextureResource * texture, glm::vec2 center, f32 rot = 0.0f, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
+        void DrawTextureBL( TextureResource * texture, glm::vec2 bl, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
+        void DrawSprite( SpriteResource * sprite, i32 frameIndex, glm::vec2 center, f32 rot = 0.0f, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
         void DrawText2D( FontHandle font, glm::vec2 tl, f32 fontSize, const char * text, glm::vec4 colour = glm::vec4( 1 ) );
         void DrawPlane( glm::vec3 center, glm::vec3 normal, glm::vec2 dim, glm::vec4 colour = glm::vec4( 1 ) );
         void DrawSphere( glm::vec3 center, f32 r, glm::vec4 colour = glm::vec4( 1 ) );
@@ -207,16 +232,22 @@ namespace atto {
 
         void DrawMesh( StaticMeshResource * mesh, glm::mat4 m, TextureResource * albedo = nullptr );
 
-        inline glm::vec2 GetMainSurfaceDims() const { return glm::vec2( mainSurfaceWidth, mainSurfaceHeight ); }
-        inline f32 GetMainAspectRatio() const { return mainAspect; }
+        glm::vec2 ScreenPosToWorldPos( glm::vec2 screenPos );
+
+        inline glm::vec2    GetMainSurfaceDims() const { return glm::vec2( mainSurfaceWidth, mainSurfaceHeight ); }
+        inline f32          GetMainAspectRatio() const { return mainAspect; }
 
     private:
         glm::mat4       cameraProj;
-        glm::mat4       cameraView;
+        glm::mat4       cameraView; // For 3D stuffies
+        glm::vec2       cameraPos;
 
         f32             mainSurfaceWidth;
         f32             mainSurfaceHeight;
         f32             mainAspect;
+        glm::vec4       viewport;
+        f32             cameraWidth;
+        f32             cameraHeight;
         glm::mat4       screenProjection;
         FixedList<DrawCommand, 1024> drawList;
     };
@@ -261,17 +292,26 @@ namespace atto {
         f64                                 GetLastTime() const;
         Camera                              CreateDefaultCamera() const;
         
+        void                                MoveToGameMode( GameMode * gameMode );
+        
         virtual TextureResource *           ResourceGetAndLoadTexture( const char * name, bool genMips, bool genAnti ) = 0;
+        virtual SpriteResource *            ResourceGetAndCreateSprite( const char * spriteName, const char * textureName, i32 frameCount, i32 frameWidth, i32 frameHeight ) = 0;
         virtual AudioResource *             ResourceGetAndLoadAudio( const char * name ) = 0;
         virtual StaticMeshResource *        ResourceGetAndLoadMesh( const char * name ) = 0;
         virtual FontHandle                  ResourceGetFont( const char * name ) = 0;
         virtual void                        ResourceReadEntireFile( const char * path, char * data, i32 maxLen ) = 0;
         virtual void                        ResourceWriteEntireFile( const char * path, const char * data ) = 0;
 
+        virtual float                       FontGetTextBounds( FontHandle font, f32 fontSize, const char * text, glm::vec2 pos, BoxBounds2D & bounds ) = 0;
+
         DrawContext *                       RenderGetDrawContext( i32 index, bool clear = true );
+        f32                                 RenderGetMainSurfaceWidth() const { return mainSurfaceWidth; }
+        f32                                 RenderGetMainSurfaceHeight() const { return mainSurfaceHeight; }
         virtual void                        RenderSubmit( DrawContext * dcxt, bool clearBackBuffers ) = 0;
 
         virtual AudioSpeaker                AudioPlay( AudioResource * audioResource, f32 volume = 1.0f, bool looping = false ) = 0;
+        template<typename... args>
+        AudioSpeaker                        AudioPlayRandom( f32 volume, bool looping, args... audioResources );
 
         void                                NetConnect();
         bool                                NetIsConnected();
@@ -312,6 +352,13 @@ namespace atto {
         //virtual void                        WindowSetCursorLocked(bool locked) = 0;
 
         NetClient *                         GetNetClient();
+        void                                NetworkConnect();
+        bool                                NetworkIsConnected();
+        void                                NetworkDisconnect();
+        SmallString                         NetworkGetStatusText();
+        void                                NetworkSend( const NetworkMessage & msg );
+        bool                                NetworkRecieve( NetworkMessage & msg );
+        u32                                 NetworkGetPing();
 
         virtual void                        Run( int argc, char ** argv ) = 0;
 
@@ -322,10 +369,10 @@ namespace atto {
         FrameInput                  input = {};
         UIState                     uiState = {};
 
-        GameMode *                  game = nullptr;
+        GameMode *                  currentGameMode = nullptr;
+        GameMode *                  nextGameMode = nullptr;
         Editor *                    editor = nullptr;
-
-        NetClient * client = nullptr;
+        NetClient *                 client = nullptr;
 
         f64                 currentTime = 0.0f;
         f32                 deltaTime = 0.0f;
@@ -333,6 +380,10 @@ namespace atto {
         f32                 mainSurfaceWidth;
         f32                 mainSurfaceHeight;
         glm::mat4           screenProjection;
+        f32                 cameraWidth;
+        f32                 cameraHeight;
+        glm::mat4           cameraProjection;
+        glm::vec4           viewport;
 
         u8 * thePermanentMemory = nullptr;
         u64 thePermanentMemorySize = 0;
@@ -355,26 +406,32 @@ namespace atto {
     };
 
     template<typename _type_>
-    _type_ * atto::Core::MemoryAllocatePermanent() {
+    _type_ * Core::MemoryAllocatePermanent() {
         return (_type_ *)MemoryAllocatePermanent( sizeof( _type_ ) );
     }
 
     template<typename _type_>
-    _type_ * atto::Core::MemoryAllocatePermanentCPP() {
+    _type_ * Core::MemoryAllocatePermanentCPP() {
         void * mem = MemoryAllocatePermanent( sizeof( _type_ ) );
         return new ( mem ) _type_;
     }
 
     template<typename _type_>
-    _type_ * atto::Core::MemoryAllocateTransient() {
+    _type_ * Core::MemoryAllocateTransient() {
         return (_type_ *)MemoryAllocateTransient( sizeof( _type_ ) );
     }
 
     template<typename _type_>
-    _type_ * atto::Core::MemoryAllocateTransientCPP() {
+    _type_ * Core::MemoryAllocateTransientCPP() {
         void * mem = MemoryAllocateTransient( sizeof( _type_ ) );
         return new ( mem ) _type_;
     }
 
+    template<typename... args>
+    AudioSpeaker Core::AudioPlayRandom( f32 volume, bool looping, args... audioResources ) {
+        AudioResource * audioResourceArray[] = { audioResources... };
+        i32 index = Random::Int( sizeof...( audioResources ) - 1 );
+        return AudioPlay( audioResourceArray[ index ], volume, looping );
+    }
 
 }

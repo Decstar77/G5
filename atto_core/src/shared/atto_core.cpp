@@ -23,21 +23,28 @@ namespace atto {
         return camera;
     }
 
+    void Core::MoveToGameMode( GameMode * gameMode ) {
+        nextGameMode = gameMode;
+    }
+
     DrawContext * Core::RenderGetDrawContext( i32 index, bool clear ) {
         DrawContext * d = &drawContexts[ index ];
-        if ( clear == true ) { 
+        if( clear == true ) {
             ZeroStructPtr( d );
         }
+        d->cameraProj = cameraProjection;
         d->screenProjection = screenProjection;
         d->mainSurfaceHeight = mainSurfaceHeight;
         d->mainSurfaceWidth = mainSurfaceWidth;
         d->mainAspect = mainSurfaceWidth / mainSurfaceHeight;
+        d->cameraWidth = cameraWidth;
+        d->cameraHeight = cameraHeight;
+        d->viewport = viewport;
         return d;
     }
 
-    void DrawContext::SetCamera( glm::mat4 v, f32 yfov, f32 zNear, f32 zFar ) {
-        cameraView = v;
-        cameraProj = glm::perspective( glm::radians( yfov ), mainAspect, zNear, zFar );
+    void DrawContext::SetCameraPos( glm::vec2 pos ) {
+        cameraPos = pos;
     }
 
     void DrawContext::DrawCircle( glm::vec2 pos, f32 radius, glm::vec4 colour /*= glm::vec4(1)*/ ) {
@@ -53,6 +60,7 @@ namespace atto {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::RECT;
         cmd.color = colour;
+        cmd.proj = cameraProj;
         cmd.rect.bl = bl;
         cmd.rect.br = glm::vec2( tr.x, bl.y );
         cmd.rect.tr = tr;
@@ -65,6 +73,7 @@ namespace atto {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::RECT;
         cmd.color = color;
+        cmd.proj = cameraProj;
 
         cmd.rect.bl = -dim / 2.0f;
         cmd.rect.tr = dim / 2.0f;
@@ -81,6 +90,19 @@ namespace atto {
         cmd.rect.tr += center;
         cmd.rect.br += center;
         cmd.rect.tl += center;
+
+        drawList.Add( cmd );
+    }
+
+    void DrawContext::DrawRectScreen( glm::vec2 bl, glm::vec2 tr, glm::vec4 colour /*= glm::vec4( 1 ) */ ) {
+        DrawCommand cmd = {};
+        cmd.type = DrawCommandType::RECT;
+        cmd.color = colour;
+        cmd.proj = screenProjection;
+        cmd.rect.bl = bl;
+        cmd.rect.br = glm::vec2( tr.x, bl.y );
+        cmd.rect.tr = tr;
+        cmd.rect.tl = glm::vec2( bl.x, tr.y );
 
         drawList.Add( cmd );
     }
@@ -116,35 +138,70 @@ namespace atto {
         drawList.Last().line2D.p = glm::mat4( 1 );
     }
 
-    void DrawContext::DrawSprite( TextureResource * texture, glm::vec2 center, f32 rot, glm::vec2 size, glm::vec4 colour ) {
+    void DrawContext::DrawTexture( TextureResource * texture, glm::vec2 center, f32 rot, glm::vec2 size, glm::vec4 colour ) {
         DrawCommand cmd = {};
-        cmd.type = DrawCommandType::SPRITE;
+        cmd.type = DrawCommandType::TEXTURE;
         cmd.color = colour;
-        cmd.sprite.textureRes = texture;
+        cmd.texture.textureRes = texture;
 
         glm::vec2 dim = glm::vec2( texture->width, texture->height ) * size;
-        cmd.rect.bl = -dim / 2.0f;
-        cmd.rect.tr = dim / 2.0f;
-        cmd.rect.br = glm::vec2( cmd.rect.tr.x, cmd.rect.bl.y );
-        cmd.rect.tl = glm::vec2( cmd.rect.bl.x, cmd.rect.tr.y );
+        cmd.sprite.bl = -dim / 2.0f;
+        cmd.sprite.tr = dim / 2.0f;
+        cmd.sprite.br = glm::vec2( cmd.sprite.tr.x, cmd.sprite.bl.y );
+        cmd.sprite.tl = glm::vec2( cmd.sprite.bl.x, cmd.sprite.tr.y );
 
         glm::mat2 rotationMatrix = glm::mat2( cos( rot ), -sin( rot ), sin( rot ), cos( rot ) );
-        cmd.rect.bl = rotationMatrix * cmd.rect.bl;
-        cmd.rect.tr = rotationMatrix * cmd.rect.tr;
-        cmd.rect.br = rotationMatrix * cmd.rect.br;
-        cmd.rect.tl = rotationMatrix * cmd.rect.tl;
+        cmd.sprite.bl = rotationMatrix * cmd.sprite.bl;
+        cmd.sprite.tr = rotationMatrix * cmd.sprite.tr;
+        cmd.sprite.br = rotationMatrix * cmd.sprite.br;
+        cmd.sprite.tl = rotationMatrix * cmd.sprite.tl;
 
-        cmd.rect.bl += center;
-        cmd.rect.tr += center;
-        cmd.rect.br += center;
-        cmd.rect.tl += center;
+        cmd.sprite.bl += center;
+        cmd.sprite.tr += center;
+        cmd.sprite.br += center;
+        cmd.sprite.tl += center;
 
         drawList.Add( cmd );
     }
 
-    void DrawContext::DrawSpriteBL( TextureResource * texture, glm::vec2 bl, glm::vec2 size /*= glm::vec2( 1 )*/, glm::vec4 colour /*= glm::vec4( 1 ) */ ) {
+    void DrawContext::DrawSprite( SpriteResource * sprite, i32 frameIndex, glm::vec2 center, f32 rot /*= 0.0f*/, glm::vec2 size /*= glm::vec2( 1 )*/, glm::vec4 colour /*= glm::vec4( 1 ) */ ) {
+        DrawCommand cmd = {};
+        cmd.type = DrawCommandType::SPRITE;
+        cmd.color = colour;
+        cmd.sprite.spriteRes = sprite;
+        cmd.sprite.frame = frameIndex;
+
+        glm::vec2 dim = glm::vec2( sprite->frameWidth, sprite->frameHeight ) * size;
+        cmd.sprite.bl = -dim / 2.0f;
+        cmd.sprite.tr = dim / 2.0f;
+        cmd.sprite.br = glm::vec2( cmd.sprite.tr.x, cmd.sprite.bl.y );
+        cmd.sprite.tl = glm::vec2( cmd.sprite.bl.x, cmd.sprite.tr.y );
+
+        glm::mat2 rotationMatrix = glm::mat2( cos( rot ), -sin( rot ), sin( rot ), cos( rot ) );
+        cmd.sprite.bl = rotationMatrix * cmd.sprite.bl;
+        cmd.sprite.tr = rotationMatrix * cmd.sprite.tr;
+        cmd.sprite.br = rotationMatrix * cmd.sprite.br;
+        cmd.sprite.tl = rotationMatrix * cmd.sprite.tl;
+
+        cmd.sprite.bl += center;
+        cmd.sprite.tr += center;
+        cmd.sprite.br += center;
+        cmd.sprite.tl += center;
+
+        const f32 textureWidth = (f32)sprite->textureResource->width; // @TODO(DECLAN): This '2' is a hack, we need to make an alpha border for each frame of animation, not the entire texture...
+        const f32 frameWidth = (f32)sprite->frameWidth;
+
+        cmd.sprite.blUV = glm::vec2( ( ( frameIndex * frameWidth ) / textureWidth ), 1.0f );
+        cmd.sprite.trUV = glm::vec2( ( ( ( frameIndex + 1.0f ) * frameWidth ) / textureWidth ), 0.0f );
+        cmd.sprite.tlUV = glm::vec2( cmd.sprite.blUV.x, cmd.sprite.trUV.y );
+        cmd.sprite.brUV = glm::vec2( cmd.sprite.trUV.x, cmd.sprite.blUV.y );
+
+        drawList.Add( cmd );
+    }
+
+    void DrawContext::DrawTextureBL( TextureResource * texture, glm::vec2 bl, glm::vec2 size /*= glm::vec2( 1 )*/, glm::vec4 colour /*= glm::vec4( 1 ) */ ) {
         glm::vec2 dim = glm::vec2( texture->width, texture->height );
-        DrawSprite( texture, bl + dim / 2.0f * size, 0.0f, size, colour );
+        DrawTexture( texture, bl + dim / 2.0f * size, 0.0f, size, colour );
     }
 
     void DrawContext::DrawText2D( FontHandle font, glm::vec2 bl, f32 fontSize, const char * text, glm::vec4 colour /*= glm::vec4( 1 ) */ ) {
@@ -237,6 +294,27 @@ namespace atto {
         cmd.mesh.albedo = albedo;
 
         drawList.Add( cmd );
+    }
+
+    glm::vec2 DrawContext::ScreenPosToWorldPos( glm::vec2 screenPos ) {
+        screenPos.y = mainSurfaceHeight - screenPos.y;
+
+     // @NOTE: Convert to [ 0, 1] not NDC[-1, 1] because 
+     // @NOTE: we're doing a small optimization here by not doing the inverse of the camera matrix
+     // @NOTE: but instead just using the camera width and height
+
+        f32 l = viewport.x;
+        f32 r = viewport.x + viewport.z;
+        f32 nx = ( screenPos.x - l ) / ( r - l );
+
+        f32 b = viewport.y;
+        f32 t = viewport.y + viewport.w;
+        f32 ny = ( screenPos.y - b ) / ( t - b );
+
+        f32 wx = nx * cameraWidth;
+        f32 wy = ny * cameraHeight;
+
+        return glm::vec2( wx, wy );
     }
 
     void Core::NetConnect() {
@@ -343,6 +421,34 @@ namespace atto {
 
     NetClient * Core::GetNetClient() {
         return client;
+    }
+
+    void Core::NetworkConnect() {
+        client->Connect();
+    }
+    
+    bool Core::NetworkIsConnected() {
+        return client->IsConnected();
+    }
+
+    void Core::NetworkDisconnect() {
+        client->Disconnect();
+    }
+
+    SmallString Core::NetworkGetStatusText() {
+        return client->StatusText();
+    }
+
+    void Core::NetworkSend( const NetworkMessage & msg ) {
+        client->Send( msg );
+    }
+
+    bool Core::NetworkRecieve( NetworkMessage & msg ) {
+        return client->Recieve( msg );
+    }
+
+    u32 Core::NetworkGetPing() {
+        return client->GetPing();
     }
 
     void * Core::MemoryAllocateTransient( u64 bytes ) {

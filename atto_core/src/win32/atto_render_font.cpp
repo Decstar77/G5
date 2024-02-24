@@ -36,6 +36,35 @@ namespace atto {
         core->GLFontsRenderDelete();
     }
 
+    float WindowsCore::FontGetTextBounds( FontHandle font, f32 fontSize, const char * text, glm::vec2 pos, BoxBounds2D & bounds ) {
+        FontContext fs = resources.fontContext;
+        float fbounds[ 4 ] = {};
+        fonsSetFont( fs, font.idx );
+        fonsSetSize( fs, fontSize );
+        fonsSetAlign( fs, FONS_ALIGN_CENTER | FONS_ALIGN_BASELINE );
+        float r = fonsTextBounds( fs, pos.x, pos.y, text, NULL, fbounds );
+        bounds.min.x = fbounds[ 0 ];
+        bounds.min.y = fbounds[ 1 ];
+        bounds.max.x = fbounds[ 2 ];
+        bounds.max.y = fbounds[ 3 ];
+        return r;
+    }
+
+    void WindowsCore::RenderDrawCommandText( DrawCommand & cmd ) {
+        FontContext fs = resources.fontContext;
+        GLEnableAlphaBlending();
+        GLShaderProgramBind( fontProgram );
+        GLShaderProgramSetSampler( "TextureSampler", 0 );
+        GLShaderProgramSetMat4( "p", screenProjection );
+
+        u32 color = Colors::VecToU32( cmd.color );
+        fonsSetFont( fs, cmd.text.font.idx );
+        fonsSetSize( fs, cmd.text.fontSize );
+        fonsSetAlign( fs, FONS_ALIGN_CENTER | FONS_ALIGN_BASELINE );
+        fonsSetColor( fs, color );
+        fonsDrawText( fs, cmd.text.bl.x, cmd.text.bl.y, cmd.text.text.GetCStr(), NULL );
+    }
+
     void WindowsCore::GLInitializeTextRendering() {
         i32 textureWidth = 512;
         i32 textureHeight = 512;
@@ -93,20 +122,6 @@ namespace atto {
         VertexLayoutFont text = {};
         fontProgram = GLCreateShaderProgram( vertexShaderSource, fragmentShaderSource );
         fontVertexBuffer = GLCreateVertexBuffer( &text, FONS_VERTEX_COUNT, nullptr, true );
-    }
-
-    void WindowsCore::RenderDrawCommandText( DrawCommand & cmd ) {
-        FontContext fs = resources.fontContext;
-        GLEnableAlphaBlending();
-        GLShaderProgramBind( fontProgram );
-        GLShaderProgramSetSampler( "TextureSampler", 0 );
-        GLShaderProgramSetMat4( "p", screenProjection );
-
-        u32 color = Colors::VecToU32( cmd.color );
-        fonsSetFont( fs, cmd.text.font.idx );
-        fonsSetSize( fs, cmd.text.fontSize );
-        fonsSetColor( fs, color );
-        fonsDrawText( fs, cmd.text.bl.x, cmd.text.bl.x, cmd.text.text.GetCStr(), NULL);
     }
 
     FontHandle WindowsCore::ResourceGetFont( const char * name ) {

@@ -220,6 +220,23 @@ namespace atto {
         return false;
     }
 
+    bool Collider2D::Intersects( const BoxBounds2D & bounds ) const {
+        switch( type ) {
+            case COLLIDER_TYPE_CIRCLE:
+            {
+                return bounds.Intersects( circle );
+            }
+
+            case COLLIDER_TYPE_BOX:
+            {
+                return bounds.Intersects( box );
+            }
+        }
+
+        Assert( false );
+        return false;
+    }
+
     bool Collider2D::Collision( const Collider2D & other, Manifold2D & manifold ) const {
         switch( type ) {
             case COLLIDER_TYPE_CIRCLE:

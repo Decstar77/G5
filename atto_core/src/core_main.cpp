@@ -13,13 +13,13 @@ using namespace atto;
 * TODO: Make the editor override the local player
 * TODO: Load and draw a 3D model
 * TODO: Figure out why the meshes are being incorrectly backface culled, is it really the windiing order ?
-* TODO: 
+* TODO:
 */
 
 
-int main(int argc, char** argv) {
-    WindowsCore* core = new WindowsCore();
-    core->Run(argc, argv);
+int main( int argc, char ** argv ) {
+    WindowsCore * core = new WindowsCore();
+    core->Run( argc, argv );
     return 0;
 }
 

@@ -14,28 +14,5 @@ namespace atto {
         REFLECT_STRUCT_MEMBER( basePath )
         REFLECT_STRUCT_END()
 
-        // @NOTE: Probably should have all game types in seperate file but eeehhh.
-        REFLECT_STRUCT_BEGIN( MapFileBlock )
-        REFLECT_STRUCT_MEMBER( xIndex )
-        REFLECT_STRUCT_MEMBER( yIndex )
-        REFLECT_STRUCT_END()
-        
-        REFLECT_STRUCT_BEGIN( MapFileEntity )
-        REFLECT_STRUCT_MEMBER( type )
-        REFLECT_STRUCT_MEMBER( pos )
-        REFLECT_STRUCT_MEMBER( ori )
-        REFLECT_STRUCT_MEMBER( collisionCollider )
-        REFLECT_STRUCT_MEMBER( entityName )
-        REFLECT_STRUCT_MEMBER( meshName )
-        REFLECT_STRUCT_MEMBER( textureName )
-        REFLECT_STRUCT_END()
-
-        REFLECT_STRUCT_BEGIN( MapFile )
-        REFLECT_STRUCT_MEMBER( version )
-        REFLECT_STRUCT_MEMBER( mapWidth )
-        REFLECT_STRUCT_MEMBER( mapHeight )
-        REFLECT_STRUCT_MEMBER( playerStartPos )
-        REFLECT_STRUCT_MEMBER( blocks )
-        REFLECT_STRUCT_MEMBER( entities )
-        REFLECT_STRUCT_END()
+   
 }
