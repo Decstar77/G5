@@ -8,7 +8,8 @@ namespace atto {
     enum class NetworkMessageType {
         NONE,
         GAME_START,
-        GGPO_MESSAGE,
+
+        ENTITY_POS_UPDATE,
     };
 
 #define NETWORK_MESSAGE_MAX_BYTES 512

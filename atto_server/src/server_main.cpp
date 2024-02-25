@@ -108,6 +108,8 @@ int main( int argc, char * argv[] ) {
             } break;
             case ENET_EVENT_TYPE_RECEIVE:
             {
+                //logger.Info( "ENET_EVENT_TYPE_RECEIVE.\n", event.peer->address.host, event.peer->address.port );
+                
                 u64 sid =( (PeerData *)( event.peer->data ) )->sessionId;
                 Session & session = sessions[ sid ];
 

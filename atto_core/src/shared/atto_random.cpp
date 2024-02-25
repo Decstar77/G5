@@ -2,7 +2,7 @@
 
 namespace atto {
 
-    static i32 RandomNumbers[] = {
+    static constexpr i32 RandomNumbers[] = {
         72	,75	,35	,23 , 62,
         53	,99	,34	,26 , 69,
         84	,85	,75	,80 , 30,
@@ -223,6 +223,8 @@ namespace atto {
     }
 
     i32 Random::Int( i32 min, i32 max ) {
+        max = max - 1;
+        if( min == max ) return min;
         Assert( min < max );
         i32 range = max - min + 1;
         i32 randomInt = static_cast<i32>( Float() * range );
@@ -236,5 +238,18 @@ namespace atto {
     glm::vec2 Random::Vec2( glm::vec2 min, glm::vec2 max ) {
         return glm::vec2( Random::Float( min.x, max.x ), Random::Float( min.y, max.y ) );
     }
+
+    constexpr bool TesterMester() {
+        constexpr int c = ArrayCount( RandomNumbers );
+        for( i32 i = 0; i < c; i++ ) {
+            if( RandomNumbers[ i ] < 1 || RandomNumbers[ i ] > 100 ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    static_assert( TesterMester(), "Random number array is not valid" );
 
 }

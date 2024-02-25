@@ -29,8 +29,10 @@ namespace atto {
                         i32 otherPlayerNumber = NetworkMessagePop<i32>( msg, offset );
 
                         GameStartParams parms = {};
-                        parms.isMutliplayer = false;
+                        parms.isMutliplayer = true;
                         parms.localPlayerNumber = localPlayerNumber;
+                        parms.otherPlayerNumber = otherPlayerNumber;
+                        
                         core->MoveToGameMode( new GameMode_Game( parms ) );
                     } break;
                     default:

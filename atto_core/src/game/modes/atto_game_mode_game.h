@@ -76,6 +76,7 @@ namespace atto {
     struct UnitStuff {
         UnitState state;
         f32       takingDamageTimer;
+        bool      playedDeathSound;
     };
 
     struct SpriteAnimator {
@@ -84,6 +85,7 @@ namespace atto {
         f32                 frameTimer;
         f32                 frameDuration;
         i32                 loopCount;
+        i32                 frameDelaySkip;
 
         inline void SetFrameRate( f32 fps ) { frameDuration = 1.0f / fps; }
         inline void SetSpriteIfDifferent( SpriteResource * sprite ) { 
@@ -126,20 +128,21 @@ namespace atto {
         EntityHandle        handle;
         EntityType          type;
 
-        EntityHandle        targetEntity;
-
         SmallString         name;
-
-        bool                sleeping;
+        i32                 playerNumber;
 
         glm::vec2           pos;
         glm::vec2           vel;
         f32                 ori;
-
         f32                 facingDir; // 1.0f -> right | -1.0f -> left
 
         i32                 maxHealth;
         i32                 currentHealth;
+
+        glm::vec2           netDesiredPos;
+        glm::vec2           netDesiredVel;
+        bool                netStreamPos;
+
 
         // Make these flags
         bool                hasHitCollision;
@@ -150,13 +153,8 @@ namespace atto {
         Collider2D                collisionCollider;  // @NOTE: Used for movement | In Local Space
         FixedList<Collider2D, 8>  hitColliders;       // @NOTE: Used for shooting and stuff | In Local Space
 
-        bool selected;
-
-        i32 teamNumber;
-
         bool                    wantsDraw;
         SpriteAnimator          spriteAnimator;
-
         ParticleSystem          particleSystem;
 
         // The stuffs
@@ -169,32 +167,35 @@ namespace atto {
         inline Collider2D GetWorldSelectionCollider() const;
     };
 
-    class Map {
-    public:
-        inline static f32 BlockDim = 4.0f;
-        i32                                     mapWidth;
-        i32                                     mapHeight;
-
-        glm::vec3                               playerStartPos;
-
-        FixedObjectPool< Entity, MAX_ENTITIES > entityPool = {};
-        f32                                     dtAccumulator = 0.0f;
-
-        Entity *                                localPlayer = nullptr;
-
-    public:
-        // @NOTE: "Map Live" functions 
-        void                            Start( Core * core );
-        void                            UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags );
-        Entity *                        SpawnEntity( EntityType type );
-        Entity *                        SpawnDrone( glm::vec2 pos );
-        void                            EntityUpdatePlayer( Core * core, Entity * ent, EntList & activeEnts );
-    };
-
     struct GameStartParams {
         SmallString mapName;
         bool        isMutliplayer;
         i32         localPlayerNumber;
+        i32         otherPlayerNumber;
+    };
+    
+    class Map {
+    public:
+        inline static f32 BlockDim = 4.0f;
+        i32                                     mapWidth = 0;
+        i32                                     mapHeight = 0;
+
+        glm::vec3                               playerStartPos = {};
+
+        FixedObjectPool< Entity, MAX_ENTITIES > entityPool = {};
+        f32                                     dtAccumulator = 0.0f;
+
+        bool                                    isMp = false;
+        i32                                     localPlayerNumber = -1;
+        Entity *                                localPlayer = nullptr;
+
+    public:
+        // @NOTE: "Map Live" functions 
+        void                            Start( Core * core, const GameStartParams & parms );
+        void                            UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags );
+        Entity *                        SpawnEntity( EntityType type );
+        Entity *                        SpawnDrone( glm::vec2 pos );
+        void                            EntityUpdatePlayer( Core * core, Entity * ent, EntList & activeEnts );
     };
 
     class GameMode_Game : public GameMode {

@@ -440,6 +440,7 @@ namespace atto {
     }
 
     void Core::NetworkSend( const NetworkMessage & msg ) {
+        Assert( msg.type != NetworkMessageType::NONE );
         client->Send( msg );
     }
 
