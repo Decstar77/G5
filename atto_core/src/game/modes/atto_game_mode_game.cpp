@@ -30,12 +30,18 @@ namespace atto {
         localPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "temp", "asset_pack_01/player_idle/player_idle.png", 10, 48, 48 );
         
         SpawnDrone( glm::vec2( 200, 100 ) );
+        SpawnDrone( glm::vec2( 220, 100 ) );
+        SpawnDrone( glm::vec2( 240, 100 ) );
+        SpawnDrone( glm::vec2( 260, 100 ) );
+        SpawnDrone( glm::vec2( 280, 100 ) );
+        SpawnDrone( glm::vec2( 300, 100 ) );
     }
 
     void Map::UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags ) {
         static TextureResource * tile = core->ResourceGetAndLoadTexture( "tile_dark_metal_1.png", false, false );
         static TextureResource * sprUiPanel = core->ResourceGetAndLoadTexture( "ui_ability_panel.png", false, false );
-        static TextureResource * sprCharDrone = core->ResourceGetAndLoadTexture( "char_drone_01.png", false, false );
+                            
+        
         static TextureResource * sprCharDroneSelection = core->ResourceGetAndLoadTexture( "char_drone_selection.png", false, false );
         static TextureResource * sprParticleSingleWhite = core->ResourceGetAndLoadTexture( "particle_single_white_1x1.png", false, false );
 
@@ -44,6 +50,9 @@ namespace atto {
         static SpriteResource * sprWarriorStab = core->ResourceGetAndCreateSprite( "stab", "asset_pack_01/player_sword_stab/player_sword_stab.png", 7, 96, 48 );
         static SpriteResource * sprWarriorStrike = core->ResourceGetAndCreateSprite( "strike", "asset_pack_01/basic_sword_attack/basic_sword_attack.png", 6, 64, 64 );
         static SpriteResource * sprWarriorCharge = core->ResourceGetAndCreateSprite( "charge", "asset_pack_01/player_katana_continuous_attack/player_katana_continuous_attack.png", 9, 80, 64 );
+
+        static SpriteResource * sprCharDrone = core->ResourceGetAndCreateSprite( "drone", "char_drone_01.png", 1, 32, 32 );
+        static SpriteResource * sprVFX_SmallExplody= core->ResourceGetAndCreateSprite( "vfx_small_explody", "vfx_small_explody.png", 3, 32, 32 );
 
         static AudioResource * sndWarriorStrike1 = core->ResourceGetAndLoadAudio( "not_legal/lightsaber_quick_1.wav" );
         static AudioResource * sndWarriorStrike2 = core->ResourceGetAndLoadAudio( "not_legal/lightsaber_quick_3.wav" );
@@ -279,9 +288,9 @@ namespace atto {
                                                         if( c.Intersects( bb ) == true ) {
                                                             player.currentAbility->hits.Add( enemy->handle );
 
-                                                            enemy->unitStuff.state = UNIT_STATE_TAKING_DAMAGE;
+                                                            //enemy->unitStuff.state = UNIT_STATE_TAKING_DAMAGE;
+                                                            enemy->unitStuff.state = UNIT_STATE_EXPLODING;
                                                             enemy->unitStuff.takingDamageTimer = 0.1f;
-
 
                                                             ZeroStruct( enemy->particleSystem );
                                                             enemy->particleSystem.count = 10;
@@ -348,8 +357,35 @@ namespace atto {
 
                     glm::vec4 colorMultiplier = glm::vec4( 1, 1, 1, 1 );
 
+                    if( ent->spriteAnimator.sprite == nullptr ) {
+                        ent->spriteAnimator.SetSpriteIfDifferent( sprCharDrone );
+                    }
+
+                    ent->spriteAnimator.SetFrameRate( 7 );
+                    if( ent->spriteAnimator.sprite != nullptr && ent->spriteAnimator.sprite->frameCount > 1 ) {
+                        ent->spriteAnimator.frameTimer += dt;
+                        if( ent->spriteAnimator.frameTimer >= ent->spriteAnimator.frameDuration ) {
+                            ent->spriteAnimator.frameTimer -= ent->spriteAnimator.frameDuration;
+                            ent->spriteAnimator.frameIndex++;
+                            if( ent->spriteAnimator.frameIndex >= ent->spriteAnimator.sprite->frameCount ) {
+                                ent->spriteAnimator.frameIndex = 0;
+                                ent->spriteAnimator.loopCount++;
+                            }
+                        }
+                    }
+
+                    const f32 entVel = glm::length( ent->vel );
+                    if( entVel > 50.0f ) {
+                        ent->facingDir = glm::sign( ent->vel.x );
+                    }
+
+                    if( ent->facingDir == 0.0 ) {
+                        ent->facingDir = 1.0f;
+                    }
+
                     switch( unit.state ) {
-                        case UNIT_STATE_TAKING_DAMAGE: {
+                        case UNIT_STATE_TAKING_DAMAGE:
+                        {
                             unit.takingDamageTimer -= dt;
                             if( unit.takingDamageTimer <= 0.0f ) {
                                 unit.takingDamageTimer = 0.0f;
@@ -358,11 +394,19 @@ namespace atto {
                             else {
                                 colorMultiplier = glm::vec4( 100, 100, 100, 1 );
                             }
-                            
+
+                        } break;
+
+                        case UNIT_STATE_EXPLODING:
+                        {
+                            ent->spriteAnimator.SetSpriteIfDifferent( sprVFX_SmallExplody );
+                            if( ent->spriteAnimator.loopCount > 0 ) {
+                                entityPool.Remove( ent->handle );
+                            }
                         } break;
                     }
 
-                    spriteDrawContext->DrawTexture( sprCharDrone, ent->pos, 0.0f, glm::vec2( 1, 1 ), colorMultiplier );
+                    spriteDrawContext->DrawSprite( ent->spriteAnimator.sprite, ent->spriteAnimator.frameIndex, ent->pos, ent->ori, glm::vec2( ent->facingDir, 1.0f ) );
 
                     if( ent->particleSystem.emitting == true ) {
                         ParticleSystem & part = ent->particleSystem;

@@ -69,6 +69,7 @@ namespace atto {
         UNIT_STATE_MOVING = 1,
         UNIT_STATE_ATTACKING = 2,
         UNIT_STATE_TAKING_DAMAGE = 3,
+        UNIT_STATE_EXPLODING = 4,
         
     };
 

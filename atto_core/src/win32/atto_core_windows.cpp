@@ -677,7 +677,12 @@ namespace atto {
         }
 
         ContentTextureProcessor textureProcessor = {};
-        textureProcessor.LoadFromFile( name );
+        bool loaded = textureProcessor.LoadFromFile( name );
+        if( loaded == false ) {
+            LogOutput( LogLevel::ERR, "Failed to load texture asset \t %s", name );
+            return nullptr;
+        }
+
         //textureProcessor.MakeAlphaEdge();
         //textureProcessor.FixAplhaEdges();
 

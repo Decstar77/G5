@@ -26,7 +26,6 @@ namespace atto {
         pixelData = stbi_load( filePath.GetCStr(), &width, &height, &channels, 4 );
 
         if( pixelData == nullptr ) {
-            //LogOutput( LogLevel::ERR, "Failed to load texture asset \t %s", name );
             return false;
         }
 

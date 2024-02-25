@@ -209,8 +209,8 @@ namespace atto {
     static i32 size = 1000;
 
     f32 Random::Float() {
-        i32 r = RandomNumbers[ index ] - 1; // 0 - 99
-        f32 f = ( (f32)r ) / 99.0f;
+        i32 r = RandomNumbers[ index ] - 1; // 0 - 100
+        f32 f = ( (f32)r ) / 101.0f;
         index = ( index + 1 ) % size;
         return f;
     }
