@@ -431,6 +431,10 @@ namespace atto {
     AudioSpeaker Core::AudioPlayRandom( f32 volume, bool looping, args... audioResources ) {
         AudioResource * audioResourceArray[] = { audioResources... };
         i32 index = Random::Int( sizeof...( audioResources ) - 1 );
+        if( index == 2 ) {
+            int a = 2;
+            Assert( false );
+        }
         return AudioPlay( audioResourceArray[ index ], volume, looping );
     }
 

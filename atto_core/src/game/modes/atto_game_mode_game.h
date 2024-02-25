@@ -36,6 +36,8 @@ namespace atto {
         f32 cooldownTimer;
         bool stopsMovement;
         SpriteResource * sprite;
+
+        FixedList< EntityHandle, 32 > hits;
     };
 
 #define MAX_ABILITIES 12
@@ -62,6 +64,19 @@ namespace atto {
         };
     };
 
+    enum UnitState {
+        UNIT_STATE_IDLE = 0,
+        UNIT_STATE_MOVING = 1,
+        UNIT_STATE_ATTACKING = 2,
+        UNIT_STATE_TAKING_DAMAGE = 3,
+        
+    };
+
+    struct UnitStuff {
+        UnitState state;
+        f32       takingDamageTimer;
+    };
+
     struct SpriteAnimator {
         SpriteResource *    sprite;
         i32                 frameIndex;
@@ -78,6 +93,32 @@ namespace atto {
                 loopCount = 0;
             }
         }
+    };
+
+    struct Particle {
+        glm::vec2   pos;
+        glm::vec2   vel;
+        f32         lifeTime;
+        f32         scale;
+    };
+
+    struct ParticleSystem {
+        // Settings
+        bool                    oneShot;
+        i32                     count;
+        f32                     lifeTime;
+        f32                     spawnRate;
+        f32                     scaleMin;
+        f32                     scaleMax;
+        glm::vec2               velMin;
+        glm::vec2               velMax;
+        TextureResource *       texture;
+
+        // State
+        bool                      emitting;
+        f32                       spawnTimer;
+        i32                       spawnedCount;
+        FixedList<Particle, 128>  particles;
     };
 
     struct Entity {
@@ -115,9 +156,12 @@ namespace atto {
         bool                    wantsDraw;
         SpriteAnimator          spriteAnimator;
 
+        ParticleSystem          particleSystem;
+
         // The stuffs
         union {
             PlayerStuff         playerStuff;
+            UnitStuff           unitStuff;
         };
 
         inline Collider2D GetWorldCollisionCollider() const;

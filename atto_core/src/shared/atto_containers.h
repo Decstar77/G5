@@ -43,6 +43,8 @@ namespace atto {
         T *             AddUnique( const T & value );
         b8              AddIfPossible( const T & t );
 
+        bool            Contains( const T & value ) const;
+
         void            RemoveIndex( const i32 & index );
         void            Remove( const T * ptr );
         void            RemoveValue( const T & value );
@@ -172,6 +174,17 @@ namespace atto {
             count++;
 
             return true;
+        }
+
+        return false;
+    }
+
+    template<typename T, i32 capcity>
+    bool FixedList<T, capcity>::Contains( const T & value ) const {
+        for( i32 index = 0; index < count; index++ ) {
+            if( data[ index ] == value ) {
+                return true;
+            }
         }
 
         return false;

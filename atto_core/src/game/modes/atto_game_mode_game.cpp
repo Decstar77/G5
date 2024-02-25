@@ -37,6 +37,7 @@ namespace atto {
         static TextureResource * sprUiPanel = core->ResourceGetAndLoadTexture( "ui_ability_panel.png", false, false );
         static TextureResource * sprCharDrone = core->ResourceGetAndLoadTexture( "char_drone_01.png", false, false );
         static TextureResource * sprCharDroneSelection = core->ResourceGetAndLoadTexture( "char_drone_selection.png", false, false );
+        static TextureResource * sprParticleSingleWhite = core->ResourceGetAndLoadTexture( "particle_single_white_1x1.png", false, false );
 
         static SpriteResource * sprWarriorIdle = core->ResourceGetAndCreateSprite( "idle", "asset_pack_01/player_idle/player_idle.png", 10, 48, 48 );
         static SpriteResource * sprWarriorRun = core->ResourceGetAndCreateSprite( "run", "asset_pack_01/player_run/player_run.png", 8, 48, 48 );
@@ -75,9 +76,9 @@ namespace atto {
             Entity * ent = entities[ entityIndexA ];
             switch( ent->type ) {
                 case ENTITY_TYPE_PLAYER: {
-                    const f32 tickTime = 0.01f; // 100Hz
+                    const f32 tickTime = 0.016f; // 60z
                     const i32 maxTickIterations = 3;
-                    
+
                     PlayerStuff & player = ent->playerStuff;
 
                     static f32 dtAccumulator = 0.0f;
@@ -194,7 +195,7 @@ namespace atto {
                             player.state = PLAYER_STATE_ATTACKING;
                             
                             glm::vec2 dir = glm::normalize( mousePosWorld - ent->pos );
-                            ent->vel += dir * 1000.0f;
+                            ent->vel += dir * 2500.0f;
 
                             core->AudioPlayRandom( 1.0f, false, sndWarriorCharge1, sndWarriorCharge2 );
                         }
@@ -203,6 +204,7 @@ namespace atto {
                     bool stateDone = false;
                     while( stateDone == false ) {
                         stateDone = true;
+
                         switch( player.state ) {
                             case PLAYER_STATE_IDLE:
                             {
@@ -226,53 +228,91 @@ namespace atto {
                                     ent->spriteAnimator.SetSpriteIfDifferent( player.currentAbility->sprite );
                                     ent->spriteAnimator.SetFrameRate( 16 );
 
+                                    BoxBounds2D bb = {};
+                                    
                                     switch( player.currentAbility->type ) {
                                         case ABILITY_TYPE_WARRIOR_STRIKE:
                                         {
-                                            if( ent->spriteAnimator.frameIndex == 2 ||
-                                                ent->spriteAnimator.frameIndex == 3 ) {
-                                                glm::vec2 t1 = ent->pos + glm::vec2( ent->facingDir * 5, -30 ); // bl
+                                            if( ent->spriteAnimator.frameIndex == 2 || ent->spriteAnimator.frameIndex == 3 ) {
+                                                glm::vec2 t1 = ent->pos + glm::vec2( ent->facingDir * 5, -20 ); // bl
                                                 glm::vec2 t2 = ent->pos + glm::vec2( ent->facingDir * 35, 30 ); // tr
                                                 glm::vec2 bl = glm::min( t1, t2 );
                                                 glm::vec2 tr = glm::max( t1, t2 );
-
-                                                BoxBounds2D bb = {};
                                                 bb.min = bl;
                                                 bb.max = tr;
-
-                                                for( i32 entityIndexB = 0; entityIndexB < entityCount; entityIndexB++ ) {
-                                                    if( entityIndexB == entityIndexA ) {
-                                                        continue;
-                                                    }
-
-                                                    Entity * ent = entities[ entityIndexB ];
-                                                    switch( ent->type ) {
-                                                        case ENTITY_TYPE_ENEMY_DRONE_01:
-                                                        {
-                                                            Collider2D c = ent->GetWorldCollisionCollider();
-                                                            if( c.Intersects( bb ) == true ) {
-                                                                core->LogOutput( LogLevel::INFO, "hit" );
-                                                            }
-                                                            
-                                                        } break;
-                                                    }
-                                                }
-
-                                                debugDrawContext->DrawRect( bl, tr, glm::vec4( 0.8f, 0.2f, 0.2f, 0.5f ) );
                                             }
                                         } break;
                                         case ABILITY_TYPE_WARRIOR_STAB:
                                         {
-
+                                            if( ent->spriteAnimator.frameIndex == 2 || ent->spriteAnimator.frameIndex == 3 ) {
+                                                glm::vec2 t1 = ent->pos + glm::vec2( ent->facingDir * 0, -10 ); // bl
+                                                glm::vec2 t2 = ent->pos + glm::vec2( ent->facingDir * 40, 5 ); // tr
+                                                glm::vec2 bl = glm::min( t1, t2 );
+                                                glm::vec2 tr = glm::max( t1, t2 );
+                                                bb.min = bl;
+                                                bb.max = tr;
+                                            }
                                         } break;
                                         case ABILITY_TYPE_WARRIOR_CHARGE:
                                         {
-
+                                            glm::vec2 t1 = ent->pos + glm::vec2( ent->facingDir * -8, -20 ); // bl
+                                            glm::vec2 t2 = ent->pos + glm::vec2( ent->facingDir * 20, 20 ); // tr
+                                            glm::vec2 bl = glm::min( t1, t2 );
+                                            glm::vec2 tr = glm::max( t1, t2 );
+                                            bb.min = bl;
+                                            bb.max = tr;
                                         } break;
+                                    }
+
+                                    if( bb.min != bb.max ) {
+                                        for( i32 entityIndexB = 0; entityIndexB < entityCount; entityIndexB++ ) {
+                                            if( entityIndexB == entityIndexA ) {
+                                                continue;
+                                            }
+
+                                            Entity * enemy = entities[ entityIndexB ];
+                                            switch( enemy->type ) {
+                                                case ENTITY_TYPE_ENEMY_DRONE_01:
+                                                {
+                                                    if( player.currentAbility->hits.Contains( enemy->handle ) == false ) {
+                                                        Collider2D c = enemy->GetWorldCollisionCollider();
+                                                        if( c.Intersects( bb ) == true ) {
+                                                            player.currentAbility->hits.Add( enemy->handle );
+
+                                                            enemy->unitStuff.state = UNIT_STATE_TAKING_DAMAGE;
+                                                            enemy->unitStuff.takingDamageTimer = 0.1f;
+
+
+                                                            ZeroStruct( enemy->particleSystem );
+                                                            enemy->particleSystem.count = 10;
+                                                            enemy->particleSystem.texture = sprParticleSingleWhite;
+                                                            enemy->particleSystem.lifeTime = 0.5f;
+                                                            enemy->particleSystem.scaleMin = 1;
+                                                            enemy->particleSystem.scaleMax = 2;
+                                                            enemy->particleSystem.velMin = glm::vec2( -100.0f );
+                                                            enemy->particleSystem.velMax = glm::vec2( 100.0f );
+                                                            enemy->particleSystem.oneShot = true;
+
+                                                            ParticleSystem & part = enemy->particleSystem;
+                                                            enemy->particleSystem.emitting = true;
+                                                            for( i32 partIndex = 0; partIndex < enemy->particleSystem.count; partIndex++ ) {
+                                                                Particle & p = part.particles[ partIndex ];
+                                                                p.pos = enemy->pos;
+                                                                p.lifeTime = part.lifeTime;
+                                                                p.scale = Random::Float( part.scaleMin, part.scaleMax );
+                                                                p.vel = Random::Vec2( part.velMin, part.velMax );
+                                                            }
+                                                        }
+                                                    }
+                                                } break;
+                                            }
+                                        }
+                                        //debugDrawContext->DrawRect( bb.min, bb.max, glm::vec4( 0.8f, 0.2f, 0.2f, 0.5f ) );
                                     }
 
                                     if( ent->spriteAnimator.loopCount >= 1 ) {
                                         stateDone = false;
+                                        ent->playerStuff.currentAbility->hits.Clear();
                                         ent->playerStuff.currentAbility = NULL;
                                         if( playerVel > 50.0f ) {
                                             player.state = PLAYER_STATE_MOVING;
@@ -304,23 +344,54 @@ namespace atto {
                 } break;
                 case ENTITY_TYPE_ENEMY_DRONE_01:
                 {
-                    if( core->InputMouseButtonJustPressed( MOUSE_BUTTON_1 ) == true ) {
-                        Collider2D selectionColliderWorld = ent->GetWorldSelectionCollider();
-                        if( selectionColliderWorld.Contains( mousePosWorld ) == true ) {
-                            ent->isSelectable = true;
-                            localPlayer->targetEntity = ent->handle;
-                        }
-                        else {
-                            ent->isSelectable = false;
-                            localPlayer->targetEntity = EntityHandle::INVALID;
-                        }
+                    UnitStuff & unit = ent->unitStuff;
+
+                    glm::vec4 colorMultiplier = glm::vec4( 1, 1, 1, 1 );
+
+                    switch( unit.state ) {
+                        case UNIT_STATE_TAKING_DAMAGE: {
+                            unit.takingDamageTimer -= dt;
+                            if( unit.takingDamageTimer <= 0.0f ) {
+                                unit.takingDamageTimer = 0.0f;
+                                unit.state = UNIT_STATE_IDLE;
+                            }
+                            else {
+                                colorMultiplier = glm::vec4( 100, 100, 100, 1 );
+                            }
+                            
+                        } break;
                     }
 
-                    spriteDrawContext->DrawTexture( sprCharDrone, ent->pos, 0.0f );
+                    spriteDrawContext->DrawTexture( sprCharDrone, ent->pos, 0.0f, glm::vec2( 1, 1 ), colorMultiplier );
 
-                    if( ent->isSelectable == true ) {
-                        spriteDrawContext->DrawTexture( sprCharDroneSelection, ent->pos, 0.0f );
+                    if( ent->particleSystem.emitting == true ) {
+                        ParticleSystem & part = ent->particleSystem;
+                        part.spawnTimer += dt;
+
+                        for( i32 partIndex = 0; partIndex < part.count; partIndex++ ) {
+                            Particle & p = part.particles[ partIndex ];
+                            p.lifeTime -= dt;
+                            if( p.lifeTime < 0 ) {
+                                p.lifeTime = 0.0f;
+                            }
+
+                            f32 l = p.lifeTime / part.lifeTime;
+                            p.scale = glm::mix( part.scaleMin, part.scaleMax, l );
+                            p.pos += p.vel * dt;
+                        }
+
+                        bool allDead = true;
+                        for( i32 partIndex = 0; partIndex < part.count; partIndex++ ) {
+                            Particle & p = part.particles[ partIndex ];
+                            if( p.lifeTime != 0.0f ) {
+                                allDead = false;
+                                spriteDrawContext->DrawTexture( part.texture, p.pos, 0.0f, glm::vec2( p.scale ) );
+                            }
+                        }
+
                     }
+
+
                 } break;
             }
         }

@@ -216,6 +216,7 @@ namespace atto {
     }
 
     f32 Random::Float( f32 min, f32 max ) {
+        if( min == max ) return min;
         Assert( min < max );
         f32 f = Float();
         return min + f * ( max - min );
@@ -230,6 +231,10 @@ namespace atto {
 
     i32 Random::Int( i32 max ) {
         return Int( 0, max );
+    }
+
+    glm::vec2 Random::Vec2( glm::vec2 min, glm::vec2 max ) {
+        return glm::vec2( Random::Float( min.x, max.x ), Random::Float( min.y, max.y ) );
     }
 
 }
