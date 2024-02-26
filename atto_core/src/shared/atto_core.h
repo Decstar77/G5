@@ -50,6 +50,7 @@ namespace atto {
         i32                 frameCount;
         i32                 frameWidth;
         i32                 frameHeight;
+        i32                 frameRate;
         glm::vec2           origin;
     };
 
@@ -295,7 +296,7 @@ namespace atto {
         void                                MoveToGameMode( GameMode * gameMode );
         
         virtual TextureResource *           ResourceGetAndLoadTexture( const char * name, bool genMips, bool genAnti ) = 0;
-        virtual SpriteResource *            ResourceGetAndCreateSprite( const char * spriteName, const char * textureName, i32 frameCount, i32 frameWidth, i32 frameHeight ) = 0;
+        virtual SpriteResource *            ResourceGetAndCreateSprite( const char * spriteName, const char * textureName, i32 frameCount, i32 frameWidth, i32 frameHeight, i32 frameRate ) = 0;
         virtual AudioResource *             ResourceGetAndLoadAudio( const char * name ) = 0;
         virtual StaticMeshResource *        ResourceGetAndLoadMesh( const char * name ) = 0;
         virtual FontHandle                  ResourceGetFont( const char * name ) = 0;

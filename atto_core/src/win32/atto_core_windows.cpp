@@ -211,9 +211,7 @@ namespace atto {
             }
 
         #if ATTO_EDITOR
-            EngineImgui::NewFrame();
             editor->UpdateAndRender( this, currentGameMode, deltaTime );
-            EngineImgui::EndFrame();
         #else 
             if( skipFrame == false ) {
                 currentGameMode->UpdateAndRender( this, this->deltaTime );
@@ -721,7 +719,7 @@ namespace atto {
         return resources.textures.Add( textureResource );
     }
 
-    SpriteResource * WindowsCore::ResourceGetAndCreateSprite( const char * spriteName, const char * textureName, i32 frameCount, i32 frameWidth, i32 frameHeight ) {
+    SpriteResource * WindowsCore::ResourceGetAndCreateSprite( const char * spriteName, const char * textureName, i32 frameCount, i32 frameWidth, i32 frameHeight, i32 frameRate ) {
         const i32 spriteResourceCount = resources.sprites.GetCount();
         for( i32 spriteIndex = 0; spriteIndex < spriteResourceCount; spriteIndex++ ) {
             SpriteResource & sprite = resources.sprites[ spriteIndex ];
@@ -742,6 +740,7 @@ namespace atto {
         spriteResource.frameCount = frameCount;
         spriteResource.frameWidth = frameWidth;
         spriteResource.frameHeight = frameHeight;
+        spriteResource.frameRate = frameRate;
 
         return resources.sprites.Add( spriteResource );
     }

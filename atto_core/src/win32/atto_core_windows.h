@@ -103,7 +103,7 @@ namespace atto {
         void Run(int argc, char** argv) override;
         
         virtual TextureResource *       ResourceGetAndLoadTexture( const char * name, bool genMips, bool genAnti ) override;
-        virtual SpriteResource *        ResourceGetAndCreateSprite( const char * spriteName, const char * textureName, i32 frameCount, i32 frameWidth, i32 frameHeight ) override;
+        virtual SpriteResource *        ResourceGetAndCreateSprite( const char * spriteName, const char * textureName, i32 frameCount, i32 frameWidth, i32 frameHeight, i32 frameRate ) override;
         virtual AudioResource *         ResourceGetAndLoadAudio( const char * name ) override;
         virtual StaticMeshResource *    ResourceGetAndLoadMesh( const char * name ) override;
         virtual FontHandle              ResourceGetFont( const char * name ) override;

@@ -32,35 +32,36 @@ namespace atto {
         if( isMp ) {
             if( localPlayerNumber == 1 ) {
                 localPlayer = SpawnEntity( ENTITY_TYPE_PLAYER );
-                localPlayer->netStreamPos = true;
                 localPlayer->playerNumber = localPlayerNumber;
                 localPlayer->pos = glm::vec2( 200, 230 );
-                localPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "temp", "asset_pack_01/player_idle/player_idle.png", 10, 48, 48 );
+                localPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "temp", "asset_pack_01/player_idle/player_idle.png", 10, 48, 48, 16 );
 
                 Entity * otherPlayer = SpawnEntity( ENTITY_TYPE_PLAYER );
                 otherPlayer->playerNumber = parms.otherPlayerNumber;
+                otherPlayer->netStreamed = true;
                 otherPlayer->pos = glm::vec2( 100, 230 );
-                otherPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "temp", "asset_pack_01/player_idle/player_idle.png", 10, 48, 48 );
+                otherPlayer->netDesiredPos = otherPlayer->pos;
+                otherPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "temp", "asset_pack_01/player_idle/player_idle.png", 10, 48, 48, 16 );
             }
             else {
                 Entity * otherPlayer = SpawnEntity( ENTITY_TYPE_PLAYER );
                 otherPlayer->playerNumber = parms.otherPlayerNumber;
                 otherPlayer->pos = glm::vec2( 200, 230 );
-                otherPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "temp", "asset_pack_01/player_idle/player_idle.png", 10, 48, 48 );
+                otherPlayer->netDesiredPos = otherPlayer->pos;
+                otherPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "temp", "asset_pack_01/player_idle/player_idle.png", 10, 48, 48, 16 );
+                otherPlayer->netStreamed = true;
 
                 localPlayer = SpawnEntity( ENTITY_TYPE_PLAYER );
-                localPlayer->netStreamPos = true;
                 localPlayer->playerNumber = localPlayerNumber;
                 localPlayer->pos = glm::vec2( 100, 230 );
-                localPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "temp", "asset_pack_01/player_idle/player_idle.png", 10, 48, 48 );
+                localPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "temp", "asset_pack_01/player_idle/player_idle.png", 10, 48, 48, 16 );
             }
         }
         else {
             localPlayer = SpawnEntity( ENTITY_TYPE_PLAYER );
-            localPlayer->netStreamPos = true;
             localPlayer->playerNumber = localPlayerNumber;
             localPlayer->pos = glm::vec2( 200, 230 );
-            localPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "temp", "asset_pack_01/player_idle/player_idle.png", 10, 48, 48 );
+            localPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "temp", "asset_pack_01/player_idle/player_idle.png", 10, 48, 48, 16 );
         }
 
         SpawnDrone( glm::vec2( 200, 100 ) );
@@ -79,14 +80,14 @@ namespace atto {
         static TextureResource * sprCharDroneSelection = core->ResourceGetAndLoadTexture( "char_drone_selection.png", false, false );
         static TextureResource * sprParticleSingleWhite = core->ResourceGetAndLoadTexture( "particle_single_white_1x1.png", false, false );
 
-        static SpriteResource * sprWarriorIdle = core->ResourceGetAndCreateSprite( "idle", "asset_pack_01/player_idle/player_idle.png", 10, 48, 48 );
-        static SpriteResource * sprWarriorRun = core->ResourceGetAndCreateSprite( "run", "asset_pack_01/player_run/player_run.png", 8, 48, 48 );
-        static SpriteResource * sprWarriorStab = core->ResourceGetAndCreateSprite( "stab", "asset_pack_01/player_sword_stab/player_sword_stab.png", 7, 96, 48 );
-        static SpriteResource * sprWarriorStrike = core->ResourceGetAndCreateSprite( "strike", "asset_pack_01/basic_sword_attack/basic_sword_attack.png", 6, 64, 64 );
-        static SpriteResource * sprWarriorCharge = core->ResourceGetAndCreateSprite( "charge", "asset_pack_01/player_katana_continuous_attack/player_katana_continuous_attack.png", 9, 80, 64 );
+        static SpriteResource * sprWarriorIdle = core->ResourceGetAndCreateSprite( "idle", "asset_pack_01/player_idle/player_idle.png", 10, 48, 48, 16 );
+        static SpriteResource * sprWarriorRun = core->ResourceGetAndCreateSprite( "run", "asset_pack_01/player_run/player_run.png", 8, 48, 48, 16 );
+        static SpriteResource * sprWarriorStab = core->ResourceGetAndCreateSprite( "stab", "asset_pack_01/player_sword_stab/player_sword_stab.png", 7, 96, 48, 16 );
+        static SpriteResource * sprWarriorStrike = core->ResourceGetAndCreateSprite( "strike", "asset_pack_01/basic_sword_attack/basic_sword_attack.png", 6, 64, 64, 16 );
+        static SpriteResource * sprWarriorCharge = core->ResourceGetAndCreateSprite( "charge", "asset_pack_01/player_katana_continuous_attack/player_katana_continuous_attack.png", 9, 80, 64, 16 );
 
-        static SpriteResource * sprCharDrone = core->ResourceGetAndCreateSprite( "drone", "char_drone_01.png", 1, 32, 32 );
-        static SpriteResource * sprVFX_SmallExplody= core->ResourceGetAndCreateSprite( "vfx_small_explody", "vfx_small_explody.png", 3, 32, 32 );
+        static SpriteResource * sprCharDrone = core->ResourceGetAndCreateSprite( "drone", "char_drone_01.png", 1, 32, 32, 1 );
+        static SpriteResource * sprVFX_SmallExplody= core->ResourceGetAndCreateSprite( "vfx_small_explody", "vfx_small_explody.png", 3, 32, 32, 10 );
 
         static AudioResource * sndWarriorStrike1 = core->ResourceGetAndLoadAudio( "not_legal/lightsaber_quick_1.wav" );
         static AudioResource * sndWarriorStrike2 = core->ResourceGetAndLoadAudio( "not_legal/lightsaber_quick_3.wav" );
@@ -153,6 +154,38 @@ namespace atto {
         const i32 entityCount = entities.GetCount();
         for( i32 entityIndexA = 0; entityIndexA < entityCount; entityIndexA++ ) {
             Entity * ent = entities[ entityIndexA ];
+
+            if( ent->netStreamed ) {
+                //f32 extrapoFactor = 0.025f;
+                ent->pos = glm::mix( ent->pos, ent->netDesiredPos, 0.25f );
+            }
+
+            if( ent->spriteAnimator.sprite != nullptr && ent->spriteAnimator.sprite->frameCount > 1 ) {
+                ent->spriteAnimator.frameTimer += dt;
+                if( ent->spriteAnimator.frameTimer >= ent->spriteAnimator.frameDuration ) {
+                    ent->spriteAnimator.frameTimer -= ent->spriteAnimator.frameDuration;
+                    if( ent->spriteAnimator.frameDelaySkip == 0 ) {
+                        ent->spriteAnimator.frameIndex++;
+                        if( ent->spriteAnimator.frameIndex >= ent->spriteAnimator.sprite->frameCount ) {
+                            ent->spriteAnimator.frameIndex = 0;
+                            ent->spriteAnimator.loopCount++;
+                        }
+                    }
+                    else {
+                        ent->spriteAnimator.frameDelaySkip--;
+                    }
+                }
+            }
+
+            const f32 entVel = glm::length( ent->vel );
+            if( entVel > 50.0f ) {
+                ent->facingDir = glm::sign( ent->vel.x );
+            }
+
+            if( ent->facingDir == 0.0 ) {
+                ent->facingDir = 1.0f;
+            }
+
             switch( ent->type ) {
                 case ENTITY_TYPE_PLAYER: {
                     if( ent->playerNumber == localPlayerNumber ) {
@@ -218,25 +251,7 @@ namespace atto {
                             }
                         }
 
-                        const f32 spriteFrameRate = 10.0f;
-                        ent->spriteAnimator.frameTimer += dt;
-                        if( ent->spriteAnimator.frameTimer >= ent->spriteAnimator.frameDuration ) {
-                            ent->spriteAnimator.frameTimer -= ent->spriteAnimator.frameDuration;
-                            ent->spriteAnimator.frameIndex++;
-                            if( ent->spriteAnimator.frameIndex >= ent->spriteAnimator.sprite->frameCount ) {
-                                ent->spriteAnimator.frameIndex = 0;
-                                ent->spriteAnimator.loopCount++;
-                            }
-                        }
-
                         const f32 playerVel = glm::length( ent->vel );
-                        if( playerVel > 50.0f ) {
-                            ent->facingDir = glm::sign( ent->vel.x );
-                        }
-
-                        if( ent->facingDir == 0.0 ) {
-                            ent->facingDir = 1.0f;
-                        }
 
                         if( core->InputMouseButtonJustPressed( MOUSE_BUTTON_1 ) == true ) {
                             Ability & ab = ent->playerStuff.abilities[ 0 ];
@@ -420,7 +435,7 @@ namespace atto {
                         }
                     }
                     else {
-                        ent->pos = glm::mix( ent->pos, ent->netDesiredPos, 0.25f );
+                       
                     }
 
                     spriteDrawContext->DrawSprite( ent->spriteAnimator.sprite, ent->spriteAnimator.frameIndex, ent->pos, ent->ori, glm::vec2( ent->facingDir, 1.0f ) );
@@ -442,6 +457,7 @@ namespace atto {
                 case ENTITY_TYPE_ENEMY_DRONE_01:
                 {
                     UnitStuff & unit = ent->unitStuff;
+                    Navigator & nav = ent->navigator;
 
                     glm::vec4 colorMultiplier = glm::vec4( 1, 1, 1, 1 );
 
@@ -449,47 +465,25 @@ namespace atto {
                         ent->spriteAnimator.SetSpriteIfDifferent( sprCharDrone );
                     }
 
-                    ent->spriteAnimator.SetFrameRate( 10 );
-                    if( ent->spriteAnimator.sprite != nullptr && ent->spriteAnimator.sprite->frameCount > 1 ) {
-                        ent->spriteAnimator.frameTimer += dt;
-                        if( ent->spriteAnimator.frameTimer >= ent->spriteAnimator.frameDuration ) {
-                            ent->spriteAnimator.frameTimer -= ent->spriteAnimator.frameDuration;
-                            if( ent->spriteAnimator.frameDelaySkip == 0 ) {
-                                ent->spriteAnimator.frameIndex++;
-                                if( ent->spriteAnimator.frameIndex >= ent->spriteAnimator.sprite->frameCount ) {
-                                    ent->spriteAnimator.frameIndex = 0;
-                                    ent->spriteAnimator.loopCount++;
-                                }
-                            }
-                            else {
-                                ent->spriteAnimator.frameDelaySkip--;
-                            }
-                        }
-                    }
-
-                    const f32 entVel = glm::length( ent->vel );
-                    if( entVel > 50.0f ) {
-                        ent->facingDir = glm::sign( ent->vel.x );
-                    }
-
-                    if( ent->facingDir == 0.0 ) {
-                        ent->facingDir = 1.0f;
-                    }
-
                     switch( unit.state ) {
+                        case UNIT_STATE_IDLE:
+                        {
+                            const f32 r = 25.0f;
+                            nav.dest = localPlayer->pos +  glm::vec2( Random::Float( -r, r ), Random::Float( -r, r ) );
+                            unit.state = UNIT_STATE_WANDERING;
+                        } break;
                         case UNIT_STATE_TAKING_DAMAGE:
                         {
                             unit.takingDamageTimer -= dt;
                             if( unit.takingDamageTimer <= 0.0f ) {
                                 unit.takingDamageTimer = 0.0f;
-                                unit.state = UNIT_STATE_IDLE;
+                                unit.state = UNIT_STATE_WANDERING;
                             }
                             else {
                                 colorMultiplier = glm::vec4( 100, 100, 100, 1 );
                             }
 
                         } break;
-
                         case UNIT_STATE_EXPLODING:
                         {
                             ent->spriteAnimator.SetSpriteIfDifferent( sprVFX_SmallExplody );
@@ -501,6 +495,33 @@ namespace atto {
                             if( ent->spriteAnimator.loopCount > 0 ) {
                                 entityPool.Remove( ent->handle );
                             }
+                        } break;
+                        case UNIT_STATE_WANDERING:
+                        {
+
+                        } break;
+                        case UNIT_STATE_SWARM:
+                        {
+                            // @SPEED
+                            f32 dist = glm::distance( nav.dest, ent->pos );
+                            if( dist < 5.0f ) {
+                                unit.state = UNIT_STATE_IDLE;
+                            }
+                            else {
+
+                                const f32 speed = 1500.0f;
+                                const f32 resistance = 5.0f;
+
+                                glm::vec2 acc = glm::normalize( nav.dest - ent->pos ) * speed;
+
+                                acc.x -= ent->vel.x * resistance;
+                                acc.y -= ent->vel.y * resistance;
+
+                                ent->vel += acc * dt;
+                            }
+
+                            ent->pos += ent->vel * dt;
+
                         } break;
                     }
 
@@ -532,8 +553,6 @@ namespace atto {
                         }
 
                     }
-
-
                 } break;
             }
         }
@@ -638,6 +657,20 @@ namespace atto {
 
     Collider2D Entity::GetWorldSelectionCollider() const {
         return ColliderForSpace( selectionCollider, pos );
+    }
+
+    void SpriteAnimator::SetFrameRate( f32 fps ) {
+        frameDuration = 1.0f / fps;
+    }
+
+    void SpriteAnimator::SetSpriteIfDifferent( SpriteResource * sprite ) {
+        if( this->sprite != sprite ) {
+            this->sprite = sprite;
+            SetFrameRate( (f32)sprite->frameRate );
+            frameIndex = 0;
+            frameTimer = 0;
+            loopCount = 0;
+        }
     }
 
 }

@@ -19,10 +19,13 @@ namespace atto {
         }
 
         game->UpdateAndRender( core, dt );
+
+        //EngineImgui::NewFrame();
+        //MainMenuBar( core );
+        //EngineImgui::EndFrame();
     }
 
-    void Editor::MainMenuBar( Core * core, GameMode * game ) {
-        GameMode_Game * leGame = ( (GameMode_Game *)game );
+    void Editor::MainMenuBar( Core * core ) {
         if( ImGui::BeginMainMenuBar() ) {
 
             if( ImGui::MenuItem( "Canvas" ) ) {

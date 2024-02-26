@@ -33,12 +33,8 @@ namespace atto {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-        //bool showDemoWindow = false;
+        bool showDemoWindow = false;
         //ImGui::ShowDemoWindow( &showDemoWindow );
-    }
-
-    void EngineImgui::DoFrame() {
-
     }
 
     void EngineImgui::EndFrame() {

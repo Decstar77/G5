@@ -65,12 +65,12 @@ namespace atto {
     };
 
     enum UnitState {
-        UNIT_STATE_IDLE = 0,
-        UNIT_STATE_MOVING = 1,
-        UNIT_STATE_ATTACKING = 2,
-        UNIT_STATE_TAKING_DAMAGE = 3,
-        UNIT_STATE_EXPLODING = 4,
-        
+        UNIT_STATE_IDLE,
+        UNIT_STATE_ATTACKING,
+        UNIT_STATE_TAKING_DAMAGE,
+        UNIT_STATE_EXPLODING,
+        UNIT_STATE_WANDERING,
+        UNIT_STATE_SWARM,
     };
 
     struct UnitStuff {
@@ -87,15 +87,8 @@ namespace atto {
         i32                 loopCount;
         i32                 frameDelaySkip;
 
-        inline void SetFrameRate( f32 fps ) { frameDuration = 1.0f / fps; }
-        inline void SetSpriteIfDifferent( SpriteResource * sprite ) { 
-            if( this->sprite != sprite ) {
-                this->sprite = sprite;
-                frameIndex = 0;
-                frameTimer = 0;
-                loopCount = 0;
-            }
-        }
+        void                SetFrameRate( f32 fps );
+        void                SetSpriteIfDifferent( SpriteResource * sprite );
     };
 
     struct Particle {
@@ -124,6 +117,11 @@ namespace atto {
         FixedList<Particle, 128>  particles;
     };
 
+    struct Navigator {
+        bool                active;
+        glm::vec2           dest;
+    };
+
     struct Entity {
         EntityHandle        handle;
         EntityType          type;
@@ -139,9 +137,9 @@ namespace atto {
         i32                 maxHealth;
         i32                 currentHealth;
 
+        bool                netStreamed;
         glm::vec2           netDesiredPos;
         glm::vec2           netDesiredVel;
-        bool                netStreamPos;
 
 
         // Make these flags
@@ -156,6 +154,7 @@ namespace atto {
         bool                    wantsDraw;
         SpriteAnimator          spriteAnimator;
         ParticleSystem          particleSystem;
+        Navigator               navigator;
 
         // The stuffs
         union {
