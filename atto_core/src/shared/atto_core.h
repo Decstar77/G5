@@ -44,6 +44,7 @@ namespace atto {
     };
 
     struct SpriteResource {
+        i64                 spriteId; // Deduced from the name and texture name
         SmallString         name;
         SmallString         textureName;
         TextureResource *   textureResource;
@@ -238,6 +239,10 @@ namespace atto {
         inline glm::vec2    GetMainSurfaceDims() const { return glm::vec2( mainSurfaceWidth, mainSurfaceHeight ); }
         inline f32          GetMainAspectRatio() const { return mainAspect; }
 
+        inline f32          GetCameraWidth() const { return cameraWidth; }
+        inline f32          GetCameraHeight() const { return cameraHeight; }
+        inline glm::vec2    GetCameraDims() const { return glm::vec2( cameraWidth, cameraHeight ); }
+
     private:
         glm::mat4       cameraProj;
         glm::mat4       cameraView; // For 3D stuffies
@@ -297,6 +302,7 @@ namespace atto {
         
         virtual TextureResource *           ResourceGetAndLoadTexture( const char * name, bool genMips, bool genAnti ) = 0;
         virtual SpriteResource *            ResourceGetAndCreateSprite( const char * spriteName, const char * textureName, i32 frameCount, i32 frameWidth, i32 frameHeight, i32 frameRate ) = 0;
+        virtual SpriteResource *            ResourceGetLoadedSprite( i64 spriteId ) = 0; 
         virtual AudioResource *             ResourceGetAndLoadAudio( const char * name ) = 0;
         virtual StaticMeshResource *        ResourceGetAndLoadMesh( const char * name ) = 0;
         virtual FontHandle                  ResourceGetFont( const char * name ) = 0;

@@ -51,6 +51,7 @@ namespace atto {
     struct PlayerStuff {
         PlayerState state;
         Ability *   currentAbility;
+        Ability *   primingAbility;
 
         f32 speed;
 
@@ -86,9 +87,10 @@ namespace atto {
         f32                 frameDuration;
         i32                 loopCount;
         i32                 frameDelaySkip;
+        bool                loops;
 
         void                SetFrameRate( f32 fps );
-        void                SetSpriteIfDifferent( SpriteResource * sprite );
+        void                SetSpriteIfDifferent( SpriteResource * sprite, bool loops );
     };
 
     struct Particle {
@@ -187,7 +189,8 @@ namespace atto {
         bool                                    isMp = false;
         i32                                     localPlayerNumber = -1;
         Entity *                                localPlayer = nullptr;
-
+        glm::vec2                               localCameraPos = glm::vec2( 0.0f );
+        
     public:
         // @NOTE: "Map Live" functions 
         void                            Start( Core * core, const GameStartParams & parms );

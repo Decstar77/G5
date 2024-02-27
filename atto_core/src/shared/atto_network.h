@@ -10,6 +10,7 @@ namespace atto {
         GAME_START,
 
         ENTITY_POS_UPDATE,
+        ENTITY_ANIM_UPDATE,
     };
 
 #define NETWORK_MESSAGE_MAX_BYTES 512

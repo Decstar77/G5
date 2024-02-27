@@ -65,11 +65,11 @@ namespace atto {
         }
 
         SpawnDrone( glm::vec2( 200, 100 ) );
-        SpawnDrone( glm::vec2( 220, 100 ) );
-        SpawnDrone( glm::vec2( 240, 100 ) );
-        SpawnDrone( glm::vec2( 260, 100 ) );
-        SpawnDrone( glm::vec2( 280, 100 ) );
-        SpawnDrone( glm::vec2( 300, 100 ) );
+       // SpawnDrone( glm::vec2( 220, 100 ) );
+       // SpawnDrone( glm::vec2( 240, 100 ) );
+       // SpawnDrone( glm::vec2( 260, 100 ) );
+       // SpawnDrone( glm::vec2( 280, 100 ) );
+       // SpawnDrone( glm::vec2( 300, 100 ) );
     }
 
     void Map::UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags ) {
@@ -113,7 +113,20 @@ namespace atto {
                             Entity * ent = entityPool.Get( handle );
                             if( ent != nullptr ) {
                                 ent->netDesiredPos = NetworkMessagePop<glm::vec2>( msg, offset );
-                                ent->netDesiredVel = NetworkMessagePop<glm::vec2>( msg, offset );
+                                ent->vel = NetworkMessagePop<glm::vec2>( msg, offset );
+                                
+                            }
+                        } break;
+                        case NetworkMessageType::ENTITY_ANIM_UPDATE:
+                        {
+                            i32 offset = 0;
+                            EntityHandle handle = NetworkMessagePop<EntityHandle>( msg, offset );
+                            Entity * ent = entityPool.Get( handle );
+                            if( ent != nullptr ) {
+                                i64 spriteId = NetworkMessagePop<i64>( msg, offset );
+                                bool isLooping = NetworkMessagePop<bool>( msg, offset );
+                                SpriteResource * sprite = core->ResourceGetLoadedSprite( spriteId );
+                                ent->spriteAnimator.SetSpriteIfDifferent( sprite, isLooping );
                             }
                         } break;
                     }
@@ -131,6 +144,13 @@ namespace atto {
                 NetworkMessagePush( msg, localPlayer->pos );
                 NetworkMessagePush( msg, localPlayer->vel );
                 core->NetworkSend( msg );
+
+                ZeroStruct( msg );
+                msg.type = NetworkMessageType::ENTITY_ANIM_UPDATE;
+                NetworkMessagePush( msg, localPlayer->handle );
+                NetworkMessagePush( msg, localPlayer->spriteAnimator.sprite->spriteId );
+                NetworkMessagePush( msg, localPlayer->spriteAnimator.loops );
+                core->NetworkSend( msg );
             }
         }
 
@@ -140,18 +160,24 @@ namespace atto {
 
         EntList & entities = * core->MemoryAllocateTransient<EntList>();
         entityPool.GatherActiveObjs( entities );
+        spriteDrawContext->SetCameraPos( localCameraPos - spriteDrawContext->GetCameraDims() / 2.0f );
 
         const glm::vec2 mousePosPix = core->InputMousePosPixels();
         const glm::vec2 mousePosWorld = spriteDrawContext->ScreenPosToWorldPos( mousePosPix );
 
-        spriteDrawContext->SetCameraPos( glm::vec2( 0, 0 ) );
         for( int y = 0; y < 10; y++ ) {
             for( int x = 0; x < 10; x++ ) {
                 spriteDrawContext->DrawTexture( tile, glm::vec2( x * 32, y * 32 ) );
             }
         }
 
-        const i32 entityCount = entities.GetCount();
+
+        // @HACK:
+        if( dt > 0.5f ) {
+            dt = 0.016f;
+        }
+
+        const i32 entityCount =  entities.GetCount();
         for( i32 entityIndexA = 0; entityIndexA < entityCount; entityIndexA++ ) {
             Entity * ent = entities[ entityIndexA ];
 
@@ -166,9 +192,18 @@ namespace atto {
                     ent->spriteAnimator.frameTimer -= ent->spriteAnimator.frameDuration;
                     if( ent->spriteAnimator.frameDelaySkip == 0 ) {
                         ent->spriteAnimator.frameIndex++;
+
                         if( ent->spriteAnimator.frameIndex >= ent->spriteAnimator.sprite->frameCount ) {
-                            ent->spriteAnimator.frameIndex = 0;
-                            ent->spriteAnimator.loopCount++;
+                            if( ent->spriteAnimator.loops == true ) {
+                                ent->spriteAnimator.frameIndex = 0;
+                                ent->spriteAnimator.loopCount++;
+                            }
+                            else {
+                                if( ent->spriteAnimator.frameIndex >= ent->spriteAnimator.sprite->frameCount ) {
+                                    ent->spriteAnimator.frameIndex = ent->spriteAnimator.sprite->frameCount - 1;
+                                    ent->spriteAnimator.loopCount = 1;
+                                }
+                            }
                         }
                     }
                     else {
@@ -186,108 +221,82 @@ namespace atto {
                 ent->facingDir = 1.0f;
             }
 
+            glm::vec4 colorMultiplier = glm::vec4( 1, 1, 1, 1 );
+
             switch( ent->type ) {
                 case ENTITY_TYPE_PLAYER: {
                     if( ent->playerNumber == localPlayerNumber ) {
-                        const f32 tickTime = 0.016f; // 60z
-                        const i32 maxTickIterations = 3;
-
                         PlayerStuff & player = ent->playerStuff;
 
-                        static f32 dtAccumulator = 0.0f;
-                        dtAccumulator += dt;
-                        i32 tickIteration = 0;
-                        while( dtAccumulator >= tickTime && tickIteration < maxTickIterations ) {
-                            dtAccumulator -= tickTime;
-                            tickIteration++;
+                        const f32 playerSpeed = 2500.0f;
+                        const f32 resistance = 14.0f;
 
-                            // @HACK: This is is what happens with the game freezes or drags window. I'm not sure if this is correct, probably not.
-                            //      : Maybe a better idea is to check if there is a large time jump, do all the calc expect for movement. This will stop the player from jumping to a new location
-                            if( tickIteration == maxTickIterations ) {
-                                dtAccumulator = 0.0f;
+                        bool getInput = true;
+                        if( player.currentAbility != NULL ) {
+                            getInput = !player.currentAbility->stopsMovement;
+                        }
+
+                        glm::vec2 acc = glm::vec2( 0 );
+
+                        if( getInput == true ) {
+                            if( core->InputKeyDown( KeyCode::KEY_CODE_W ) ) {
+                                acc.y += 1;
+                            }
+                            if( core->InputKeyDown( KeyCode::KEY_CODE_S ) ) {
+                                acc.y -= 1;
+                            }
+                            if( core->InputKeyDown( KeyCode::KEY_CODE_A ) ) {
+                                acc.x -= 1;
+                            }
+                            if( core->InputKeyDown( KeyCode::KEY_CODE_D ) ) {
+                                acc.x += 1;
                             }
 
-                            const f32 playerSpeed = 2500.0f;
-                            const f32 resistance = 14.0f;
-
-                            bool getInput = true;
-                            if( player.currentAbility != NULL ) {
-                                getInput = !player.currentAbility->stopsMovement;
-                            }
-
-                            glm::vec2 acc = glm::vec2( 0 );
-
-                            if( getInput == true ) {
-                                if( core->InputKeyDown( KeyCode::KEY_CODE_W ) ) {
-                                    acc.y += 1;
-                                }
-                                if( core->InputKeyDown( KeyCode::KEY_CODE_S ) ) {
-                                    acc.y -= 1;
-                                }
-                                if( core->InputKeyDown( KeyCode::KEY_CODE_A ) ) {
-                                    acc.x -= 1;
-                                }
-                                if( core->InputKeyDown( KeyCode::KEY_CODE_D ) ) {
-                                    acc.x += 1;
-                                }
-
-                                if( acc != glm::vec2( 0, 0 ) ) {
-                                    acc = glm::normalize( acc ) * playerSpeed;
-                                }
-                            }
-
-                            acc.x -= ent->vel.x * resistance;
-                            acc.y -= ent->vel.y * resistance;
-
-                            ent->vel += acc * tickTime;
-                            ent->pos += ent->vel * tickTime;
-
-                            for( int abilityIndex = 0; abilityIndex < MAX_ABILITIES; abilityIndex++ ) {
-                                Ability & ab = ent->playerStuff.abilities[ abilityIndex ];
-                                ab.cooldownTimer -= tickTime;
-                                if( ab.cooldownTimer < 0.0f ) {
-                                    ab.cooldownTimer = 0.0f;
-                                }
+                            if( acc != glm::vec2( 0, 0 ) ) {
+                                acc = glm::normalize( acc ) * playerSpeed;
                             }
                         }
+
+                        acc.x -= ent->vel.x * resistance;
+                        acc.y -= ent->vel.y * resistance;
+
+                        ent->vel += acc * dt;
+                        ent->pos += ent->vel * dt;
+
+
+                        for( int abilityIndex = 0; abilityIndex < MAX_ABILITIES; abilityIndex++ ) {
+                            Ability & ab = ent->playerStuff.abilities[ abilityIndex ];
+                            ab.cooldownTimer -= dt;
+                            if( ab.cooldownTimer < 0.0f ) {
+                                ab.cooldownTimer = 0.0f;
+                            }
+                        }
+
+                        localCameraPos = glm::mix( localCameraPos, ent->pos, dt );
 
                         const f32 playerVel = glm::length( ent->vel );
 
+                        if( player.primingAbility != nullptr ) {
+                            spriteDrawContext->DrawTexture( sprCharDroneSelection, mousePosWorld, 0.0f );
+                        }
+
                         if( core->InputMouseButtonJustPressed( MOUSE_BUTTON_1 ) == true ) {
-                            Ability & ab = ent->playerStuff.abilities[ 0 ];
-                            if( ab.cooldownTimer == 0.0f ) {
-                                ab.cooldown = 0.5f;
-                                ab.type = ABILITY_TYPE_WARRIOR_STRIKE;
+                            if( player.primingAbility == nullptr ) {
+                                Ability & ab = ent->playerStuff.abilities[ 0 ];
+                                if( ab.cooldownTimer == 0.0f ) {
+                                    // @HACK(SETTINGS):
+                                    ab.cooldown = 0.5f;
+                                    ab.type = ABILITY_TYPE_WARRIOR_STRIKE;
 
-                                ab.cooldownTimer = ab.cooldown;
-                                ab.sprite = sprWarriorStrike;
-                                player.state = PLAYER_STATE_ATTACKING;
-                                player.currentAbility = &ab;
-                                core->AudioPlayRandom( 1.0f, false, sndWarriorStrike1, sndWarriorStrike2 );
+                                    ab.cooldownTimer = ab.cooldown;
+                                    ab.sprite = sprWarriorStrike;
+                                    player.state = PLAYER_STATE_ATTACKING;
+                                    player.currentAbility = &ab;
+                                    core->AudioPlayRandom( 1.0f, false, sndWarriorStrike1, sndWarriorStrike2 );
+                                }
                             }
-                        }
-
-                        if( core->InputMouseButtonJustPressed( MOUSE_BUTTON_2 ) == true ) {
-                            Ability & ab = ent->playerStuff.abilities[ 1 ];
-                            if( ab.cooldownTimer == 0.0f ) {
-                                ab.cooldown = 1.0f;
-                                ab.type = ABILITY_TYPE_WARRIOR_STAB;
-
-                                ab.cooldownTimer = ab.cooldown;
-                                ab.sprite = sprWarriorStab;
-                                player.currentAbility = &ab;
-                                player.state = PLAYER_STATE_ATTACKING;
-                                core->AudioPlayRandom( 1.0f, false, sndWarriorStab1, sndWarriorStab2 );
-                            }
-                        }
-
-                        if( core->InputKeyDown( KeyCode::KEY_CODE_F ) == true ) {
-                            Ability & ab = ent->playerStuff.abilities[ 2 ];
-                            if( ab.cooldownTimer == 0.0f ) {
-                                ab.cooldown = 6.0f;
-                                ab.type = ABILITY_TYPE_WARRIOR_CHARGE;
-                                ab.stopsMovement = true;
-
+                            else {
+                                Ability & ab = *player.primingAbility;
                                 ab.cooldownTimer = ab.cooldown;
                                 ab.sprite = sprWarriorCharge;
                                 player.currentAbility = &ab;
@@ -295,8 +304,49 @@ namespace atto {
 
                                 glm::vec2 dir = glm::normalize( mousePosWorld - ent->pos );
                                 ent->vel += dir * 2500.0f;
-
                                 core->AudioPlayRandom( 1.0f, false, sndWarriorCharge1, sndWarriorCharge2 );
+
+                                player.primingAbility = nullptr;
+                            }
+                        }
+
+                        if( core->InputMouseButtonJustPressed( MOUSE_BUTTON_2 ) == true ) {
+                            if( player.primingAbility == nullptr ) {
+                                Ability & ab = ent->playerStuff.abilities[ 1 ];
+                                if( ab.cooldownTimer == 0.0f ) {
+                                    // @HACK(SETTINGS):
+                                    ab.cooldown = 1.0f;
+                                    ab.type = ABILITY_TYPE_WARRIOR_STAB;
+
+                                    ab.cooldownTimer = ab.cooldown;
+                                    ab.sprite = sprWarriorStab;
+                                    player.currentAbility = &ab;
+                                    player.state = PLAYER_STATE_ATTACKING;
+                                    core->AudioPlayRandom( 1.0f, false, sndWarriorStab1, sndWarriorStab2 );
+                                }
+                            }
+                            else {
+                                player.primingAbility = nullptr;
+                            }
+                        }
+
+                        if( core->InputKeyDown( KeyCode::KEY_CODE_F ) == true ) {
+                            Ability & ab = ent->playerStuff.abilities[ 2 ];
+                            if( ab.cooldownTimer == 0.0f ) {
+                                // @HACK(SETTINGS):
+                                ab.cooldown = 6.0f;
+                                ab.type = ABILITY_TYPE_WARRIOR_CHARGE;
+                                ab.stopsMovement = true;
+                                player.primingAbility = &ab;
+
+                                //ab.cooldownTimer = ab.cooldown;
+                                //ab.sprite = sprWarriorCharge;
+                                //player.currentAbility = &ab;
+                                //player.state = PLAYER_STATE_ATTACKING;
+                                //
+                                //glm::vec2 dir = glm::normalize( mousePosWorld - ent->pos );
+                                //ent->vel += dir * 2500.0f;
+                                //core->AudioPlayRandom( 1.0f, false, sndWarriorCharge1, sndWarriorCharge2 );
                             }
                         }
 
@@ -306,7 +356,7 @@ namespace atto {
                             switch( player.state ) {
                                 case PLAYER_STATE_IDLE:
                                 {
-                                    ent->spriteAnimator.SetSpriteIfDifferent( sprWarriorIdle );
+                                    ent->spriteAnimator.SetSpriteIfDifferent( sprWarriorIdle, true );
                                     ent->spriteAnimator.SetFrameRate( 10 );
                                     if( playerVel > 50.0f ) {
                                         player.state = PLAYER_STATE_MOVING;
@@ -314,7 +364,7 @@ namespace atto {
                                 } break;
                                 case PLAYER_STATE_MOVING:
                                 {
-                                    ent->spriteAnimator.SetSpriteIfDifferent( sprWarriorRun );
+                                    ent->spriteAnimator.SetSpriteIfDifferent( sprWarriorRun, true );
                                     ent->spriteAnimator.SetFrameRate( 10 );
                                     if( playerVel <= 50.0f ) {
                                         player.state = PLAYER_STATE_IDLE;
@@ -323,7 +373,7 @@ namespace atto {
                                 case PLAYER_STATE_ATTACKING:
                                 {
                                     if( player.currentAbility != NULL ) {
-                                        ent->spriteAnimator.SetSpriteIfDifferent( player.currentAbility->sprite );
+                                        ent->spriteAnimator.SetSpriteIfDifferent( player.currentAbility->sprite, false );
                                         ent->spriteAnimator.SetFrameRate( 16 );
 
                                         i32 appliedDamged = 0;
@@ -434,12 +484,7 @@ namespace atto {
                             }
                         }
                     }
-                    else {
-                       
-                    }
-
-                    spriteDrawContext->DrawSprite( ent->spriteAnimator.sprite, ent->spriteAnimator.frameIndex, ent->pos, ent->ori, glm::vec2( ent->facingDir, 1.0f ) );
-
+              
                     //{
                     //    ent->spriteAnimator.sprite = sprWarriorStab;
                     //    static int frameIndex = 0;
@@ -454,23 +499,29 @@ namespace atto {
                     //spriteDrawContext->DrawText2D( fontHandle, glm::vec2( 200 ), 32, vv.GetCStr() );
 
                 } break;
-                case ENTITY_TYPE_ENEMY_DRONE_01:
-                {
+                case ENTITY_TYPE_ENEMY_DRONE_01: {
                     UnitStuff & unit = ent->unitStuff;
                     Navigator & nav = ent->navigator;
 
-                    glm::vec4 colorMultiplier = glm::vec4( 1, 1, 1, 1 );
-
                     if( ent->spriteAnimator.sprite == nullptr ) {
-                        ent->spriteAnimator.SetSpriteIfDifferent( sprCharDrone );
+                        ent->spriteAnimator.SetSpriteIfDifferent( sprCharDrone, false );
                     }
+
+                    const f32 alertRad = 55.0f;
+                    const f32 distToPlayer = glm::distance( localPlayer->pos, ent->pos );
 
                     switch( unit.state ) {
                         case UNIT_STATE_IDLE:
                         {
-                            const f32 r = 25.0f;
-                            nav.dest = localPlayer->pos +  glm::vec2( Random::Float( -r, r ), Random::Float( -r, r ) );
-                            unit.state = UNIT_STATE_WANDERING;
+                            if( distToPlayer < 50.0f ) {
+                                const f32 r = alertRad;
+                                nav.dest = localPlayer->pos + glm::vec2( Random::Float( -r, r ), Random::Float( -r, r ) );
+                            }
+                            else {
+                                const f32 r = 55.0f;
+                                nav.dest = ent->pos + glm::vec2( Random::Float( -r, r ), Random::Float( -r, r ) );
+                                unit.state = UNIT_STATE_WANDERING;
+                            }
                         } break;
                         case UNIT_STATE_TAKING_DAMAGE:
                         {
@@ -486,7 +537,7 @@ namespace atto {
                         } break;
                         case UNIT_STATE_EXPLODING:
                         {
-                            ent->spriteAnimator.SetSpriteIfDifferent( sprVFX_SmallExplody );
+                            ent->spriteAnimator.SetSpriteIfDifferent( sprVFX_SmallExplody, false );
                             if( unit.playedDeathSound == false && ent->spriteAnimator.frameIndex == 1 ) {
                                 unit.playedDeathSound = true;
                                 core->AudioPlayRandom( 1.0f, false, sndCloseExplody1, sndCloseExplody2 );
@@ -498,14 +549,41 @@ namespace atto {
                         } break;
                         case UNIT_STATE_WANDERING:
                         {
+                            if( distToPlayer < 50.0f ) {
+                                const f32 r = 25.0f;
+                                nav.dest = localPlayer->pos + glm::vec2( Random::Float( -r, r ), Random::Float( -r, r ) );
+                                unit.state = UNIT_STATE_SWARM;
+                                break;
+                            }
 
+                            // @SPEED   
+                            //debugDrawContext->DrawRect( nav.dest, glm::vec2( 5 ), 0.0f );
+                            f32 dist = glm::distance( nav.dest, ent->pos );
+                            if( dist < 5.0f ) {
+                                unit.state = UNIT_STATE_IDLE;
+                            }
+                            else {
+
+                                const f32 speed = 150.0f;
+                                const f32 resistance = 5.0f;
+
+                                glm::vec2 acc = glm::normalize( nav.dest - ent->pos ) * speed;
+
+                                acc.x -= ent->vel.x * resistance;
+                                acc.y -= ent->vel.y * resistance;
+
+                                ent->vel += acc * dt;
+                            }
+
+                            ent->pos += ent->vel * dt;
                         } break;
                         case UNIT_STATE_SWARM:
                         {
                             // @SPEED
                             f32 dist = glm::distance( nav.dest, ent->pos );
                             if( dist < 5.0f ) {
-                                unit.state = UNIT_STATE_IDLE;
+                                const f32 r = alertRad;
+                                nav.dest = localPlayer->pos + glm::vec2( Random::Float( -r, r ), Random::Float( -r, r ) );
                             }
                             else {
 
@@ -524,8 +602,6 @@ namespace atto {
 
                         } break;
                     }
-
-                    spriteDrawContext->DrawSprite( ent->spriteAnimator.sprite, ent->spriteAnimator.frameIndex, ent->pos, ent->ori, glm::vec2( ent->facingDir, 1.0f ), colorMultiplier );
 
                     if( ent->particleSystem.emitting == true ) {
                         ParticleSystem & part = ent->particleSystem;
@@ -555,10 +631,8 @@ namespace atto {
                     }
                 } break;
             }
-        }
 
-        for( int i = 0; i < 12; i++ ) {
-            spriteDrawContext->DrawTexture( sprUiPanel, glm::vec2( 50 + i * 19, 10 ) );
+            spriteDrawContext->DrawSprite( ent->spriteAnimator.sprite, ent->spriteAnimator.frameIndex, ent->pos, ent->ori, glm::vec2( ent->facingDir, 1.0f ), colorMultiplier );
         }
 
         if ( false )
@@ -587,6 +661,14 @@ namespace atto {
         }
 
         //spriteDrawContext->DrawSprite( sprCharge, 1, mousePosWorld );
+
+        //SmallString s =StringFormat::Small( "d=%d", (i32)core->InputKeyDown( KeyCode::KEY_CODE_D ) );
+        //spriteDrawContext->DrawText2D( fontHandle, glm::vec2( 128, 128 ), 32, s.GetCStr() );
+        //SmallString ss = StringFormat::Small( "a=%d", (i32)core->InputKeyDown( KeyCode::KEY_CODE_A ) );
+        //spriteDrawContext->DrawText2D( fontHandle, glm::vec2( 128, 168 ), 32, ss.GetCStr() );
+
+        SmallString s = StringFormat::Small( "d=%d", (i32)core->NetworkGetPing() );
+        spriteDrawContext->DrawText2D( fontHandle, glm::vec2( 128, 128 ), 32, s.GetCStr() );
 
         core->RenderSubmit( spriteDrawContext, true );
         core->RenderSubmit( debugDrawContext, false );
@@ -663,13 +745,14 @@ namespace atto {
         frameDuration = 1.0f / fps;
     }
 
-    void SpriteAnimator::SetSpriteIfDifferent( SpriteResource * sprite ) {
+    void SpriteAnimator::SetSpriteIfDifferent( SpriteResource * sprite, bool loops ) {
         if( this->sprite != sprite ) {
             this->sprite = sprite;
             SetFrameRate( (f32)sprite->frameRate );
             frameIndex = 0;
             frameTimer = 0;
             loopCount = 0;
+            this->loops = loops;
         }
     }
 

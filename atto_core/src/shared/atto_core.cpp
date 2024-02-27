@@ -40,6 +40,7 @@ namespace atto {
         d->cameraWidth = cameraWidth;
         d->cameraHeight = cameraHeight;
         d->viewport = viewport;
+
         return d;
     }
 
@@ -90,6 +91,11 @@ namespace atto {
         cmd.rect.tr += center;
         cmd.rect.br += center;
         cmd.rect.tl += center;
+
+        cmd.rect.bl -= cameraPos;
+        cmd.rect.tr -= cameraPos;
+        cmd.rect.br -= cameraPos;
+        cmd.rect.tl -= cameraPos;
 
         drawList.Add( cmd );
     }
@@ -145,21 +151,26 @@ namespace atto {
         cmd.texture.textureRes = texture;
 
         glm::vec2 dim = glm::vec2( texture->width, texture->height ) * size;
-        cmd.sprite.bl = -dim / 2.0f;
-        cmd.sprite.tr = dim / 2.0f;
-        cmd.sprite.br = glm::vec2( cmd.sprite.tr.x, cmd.sprite.bl.y );
-        cmd.sprite.tl = glm::vec2( cmd.sprite.bl.x, cmd.sprite.tr.y );
+        cmd.texture.bl = -dim / 2.0f;
+        cmd.texture.tr = dim / 2.0f;
+        cmd.texture.br = glm::vec2( cmd.sprite.tr.x, cmd.sprite.bl.y );
+        cmd.texture.tl = glm::vec2( cmd.sprite.bl.x, cmd.sprite.tr.y );
 
         glm::mat2 rotationMatrix = glm::mat2( cos( rot ), -sin( rot ), sin( rot ), cos( rot ) );
-        cmd.sprite.bl = rotationMatrix * cmd.sprite.bl;
-        cmd.sprite.tr = rotationMatrix * cmd.sprite.tr;
-        cmd.sprite.br = rotationMatrix * cmd.sprite.br;
-        cmd.sprite.tl = rotationMatrix * cmd.sprite.tl;
+        cmd.texture.bl = rotationMatrix * cmd.sprite.bl;
+        cmd.texture.tr = rotationMatrix * cmd.sprite.tr;
+        cmd.texture.br = rotationMatrix * cmd.sprite.br;
+        cmd.texture.tl = rotationMatrix * cmd.sprite.tl;
 
-        cmd.sprite.bl += center;
-        cmd.sprite.tr += center;
-        cmd.sprite.br += center;
-        cmd.sprite.tl += center;
+        cmd.texture.bl += center;
+        cmd.texture.tr += center;
+        cmd.texture.br += center;
+        cmd.texture.tl += center;
+
+        cmd.texture.bl -= cameraPos;
+        cmd.texture.tr -= cameraPos;
+        cmd.texture.br -= cameraPos;
+        cmd.texture.tl -= cameraPos;
 
         drawList.Add( cmd );
     }
@@ -187,6 +198,11 @@ namespace atto {
         cmd.sprite.tr += center;
         cmd.sprite.br += center;
         cmd.sprite.tl += center;
+
+        cmd.sprite.bl -= cameraPos;
+        cmd.sprite.tr -= cameraPos;
+        cmd.sprite.br -= cameraPos;
+        cmd.sprite.tl -= cameraPos;
 
         const f32 textureWidth = (f32)sprite->textureResource->width; // @TODO(DECLAN): This '2' is a hack, we need to make an alpha border for each frame of animation, not the entire texture...
         const f32 frameWidth = (f32)sprite->frameWidth;
@@ -299,9 +315,9 @@ namespace atto {
     glm::vec2 DrawContext::ScreenPosToWorldPos( glm::vec2 screenPos ) {
         screenPos.y = mainSurfaceHeight - screenPos.y;
 
-     // @NOTE: Convert to [ 0, 1] not NDC[-1, 1] because 
-     // @NOTE: we're doing a small optimization here by not doing the inverse of the camera matrix
-     // @NOTE: but instead just using the camera width and height
+        // @NOTE: Convert to [ 0, 1] not NDC[-1, 1] because 
+        // @NOTE: we're doing a small optimization here by not doing the inverse of the camera matrix
+        // @NOTE: but instead just using the camera width and height
 
         f32 l = viewport.x;
         f32 r = viewport.x + viewport.z;
@@ -314,7 +330,7 @@ namespace atto {
         f32 wx = nx * cameraWidth;
         f32 wy = ny * cameraHeight;
 
-        return glm::vec2( wx, wy );
+        return glm::vec2( wx, wy ) + cameraPos;
     }
 
     void Core::NetConnect() {

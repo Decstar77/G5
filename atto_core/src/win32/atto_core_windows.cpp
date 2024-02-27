@@ -114,7 +114,7 @@ namespace atto {
         glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );
         glfwWindowHint( GLFW_RESIZABLE, GL_TRUE );
         glfwWindowHint( GLFW_SCALE_TO_MONITOR, GLFW_FALSE );
-        //glfwWindowHint(GLFW_SAMPLES, 4);
+        glfwWindowHint(GLFW_SAMPLES, 4);
 
         monitor = glfwGetPrimaryMonitor();
         if( monitor != nullptr ) {
@@ -126,7 +126,7 @@ namespace atto {
 
         windowWidth = theGameSettings.windowWidth;
         windowHeight = theGameSettings.windowHeight;
-
+        //windowFullscreen = true;
         window = glfwCreateWindow( windowWidth, windowHeight, windowTitle.GetCStr(), windowFullscreen ? monitor : nullptr, 0 );
 
         if( window == nullptr ) {
@@ -160,8 +160,9 @@ namespace atto {
         LogOutput( LogLevel::INFO, "OpenGL %s, GLSL %s", glGetString( GL_VERSION ), glGetString( GL_SHADING_LANGUAGE_VERSION ) );
 
         //RenderSetCamera( 320, 180 );
-        RenderSetCamera( 320 * 1.5f, 180 * 1.5f );
-        //RenderSetCamera( 640, 360 );
+        //RenderSetCamera( 320 * 1.5f, 180 * 1.5f );
+        RenderSetCamera( 640, 360 );
+        //RenderSetCamera( 1280, 720 );
         GLCheckCapablities();
         GLInitializeShapeRendering();
         GLInitializeSpriteRendering();
@@ -682,7 +683,7 @@ namespace atto {
         }
 
         //textureProcessor.MakeAlphaEdge();
-        //textureProcessor.FixAplhaEdges();
+        textureProcessor.FixAplhaEdges();
 
         Win32TextureResource textureResource = {};
         textureResource.name = name;
@@ -733,7 +734,12 @@ namespace atto {
             return nullptr;
         }
 
+        u32 spritePart = StringHash::Hash( spriteName );
+        u32 texturePart = StringHash::Hash( textureName );
+        i64 spriteHash = ( (i64)spritePart << 32 ) | (i64)texturePart;
+
         SpriteResource spriteResource = {};
+        spriteResource.spriteId = spriteHash;
         spriteResource.name = spriteName;
         spriteResource.textureName = textureName;
         spriteResource.textureResource = textureResource;
@@ -743,6 +749,20 @@ namespace atto {
         spriteResource.frameRate = frameRate;
 
         return resources.sprites.Add( spriteResource );
+    }
+
+    SpriteResource * WindowsCore::ResourceGetLoadedSprite( i64 spriteId ) {
+        const i32 spriteResourceCount = resources.sprites.GetCount();
+        for( i32 spriteIndex = 0; spriteIndex < spriteResourceCount; spriteIndex++ ) {
+            SpriteResource & sprite = resources.sprites[ spriteIndex ];
+            if( sprite.spriteId == spriteId ) {
+                return &sprite;
+            }
+        }
+
+        INVALID_CODE_PATH;
+
+        return nullptr;
     }
 
     StaticMeshResource * WindowsCore::ResourceGetAndLoadMesh( const char * name ) {
@@ -948,9 +968,9 @@ namespace atto {
 
             void main() {
                 ivec2 tSize = textureSize(texture0, 0);
-                //vec2 uv = uv_cstantos(vertexTexCoord, vec2(tSize.x, tSize.y));
+                vec2 uv = uv_cstantos(vertexTexCoord, vec2(tSize.x, tSize.y));
                 //vec2 uv = uv_iq(vertexTexCoord, tSize);
-                vec2 uv = uv_fat_pixel(vertexTexCoord, tSize);
+                //vec2 uv = uv_fat_pixel(vertexTexCoord, tSize);
                 //vec2 uv = uv_aa_smoothstep(vertexTexCoord, vec2(tSize.x, tSize.y), 1);
                 vec4 sampled = texture(texture0, uv);
                 //vec4 sampled = texture(texture0, vertexTexCoord);
