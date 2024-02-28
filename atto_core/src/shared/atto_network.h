@@ -11,6 +11,12 @@ namespace atto {
 
         ENTITY_POS_UPDATE,
         ENTITY_ANIM_UPDATE,
+        ENTITY_AUDIO_PLAY,
+        ENTITY_DESTROY,
+        ENTITY_SPAWN,
+        ENTITY_RPC_UNIT_TAKE_DAMAGE,
+        ENTITY_RPC_UNIT_DIE,
+        ENTITY_RPC_UNIT_TARGET_ACQUIRED,
     };
 
 #define NETWORK_MESSAGE_MAX_BYTES 512
@@ -28,26 +34,27 @@ namespace atto {
     }
 
     inline void NetworkMessagePush( NetworkMessage & msg, void *data, i32 len ) {
-        AssertMsg( msg.dataLen + len < NETWORK_MESSAGE_MAX_BYTES, "Network stuffies to big" );
+        AssertMsg( msg.dataLen + len < NETWORK_MESSAGE_MAX_BYTES, "NetworkMessagePush :: Network stuffies to big" );
         memcpy( msg.data + msg.dataLen, data, len );
         msg.dataLen += len;
     }
 
     template<typename _type_>
     inline void NetworkMessagePush( NetworkMessage & msg, const _type_ & data ) {
+        static_assert( std::is_pointer_v<_type_> == false, "NetworkMessagePush :: Can't push pointers" );
         NetworkMessagePush( msg, (void *)&data, sizeof( _type_ ) );
     }
 
     template<typename _type_>
     inline _type_ NetworkMessagePop( NetworkMessage & msg, i32 & offset ) {
-        AssertMsg( offset + sizeof( _type_ ) <= msg.dataLen, "Network stuffies to big" );
+        AssertMsg( offset + sizeof( _type_ ) <= msg.dataLen, "NetworkMessagePop :: Network stuffies to big" );
         _type_ * data = (_type_ *)( msg.data + offset );
         offset += sizeof( _type_ );
         return *data;
     }
 
     inline void NetworkMessageReadTillEnd( NetworkMessage & msg, i32 & offset, void ** buffer, i32 & len ) {
-        AssertMsg( offset < msg.dataLen, "Network stuffies to big" );
+        AssertMsg( offset < msg.dataLen, "NetworkMessageReadTillEnd :: Network stuffies to big" );
         *buffer = (void *)( msg.data + offset );
         len = msg.dataLen - offset;
         offset = msg.dataLen;

@@ -180,10 +180,6 @@ namespace atto {
     }
 
     AudioResource * WindowsCore::ResourceGetAndLoadAudio( const char * name ) {
-        if( theGameSettings.noAudio ) {
-            return nullptr;
-        }
-
         const i32 audioCount = resources.audios.GetCount();
         for( i32 i = 0; i < audioCount; ++i ) {
             if( resources.audios[ i ].name == name ) {

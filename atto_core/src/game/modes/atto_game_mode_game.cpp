@@ -28,26 +28,28 @@ namespace atto {
     void Map::Start( Core * core, const GameStartParams & parms ) {
         isMp = parms.isMutliplayer;
         localPlayerNumber = parms.localPlayerNumber;
+        otherPlayerNumber = parms.otherPlayerNumber;
 
         if( isMp ) {
             if( localPlayerNumber == 1 ) {
+                hasAuthority = true;
                 localPlayer = SpawnEntity( ENTITY_TYPE_PLAYER );
                 localPlayer->playerNumber = localPlayerNumber;
                 localPlayer->pos = glm::vec2( 200, 230 );
                 localPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "temp", "asset_pack_01/player_idle/player_idle.png", 10, 48, 48, 16 );
 
-                Entity * otherPlayer = SpawnEntity( ENTITY_TYPE_PLAYER );
+                otherPlayer = SpawnEntity( ENTITY_TYPE_PLAYER );
                 otherPlayer->playerNumber = parms.otherPlayerNumber;
                 otherPlayer->netStreamed = true;
                 otherPlayer->pos = glm::vec2( 100, 230 );
-                otherPlayer->netDesiredPos = otherPlayer->pos;
+                otherPlayer->netVisualPos = otherPlayer->pos;
                 otherPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "temp", "asset_pack_01/player_idle/player_idle.png", 10, 48, 48, 16 );
             }
             else {
-                Entity * otherPlayer = SpawnEntity( ENTITY_TYPE_PLAYER );
+                otherPlayer = SpawnEntity( ENTITY_TYPE_PLAYER );
                 otherPlayer->playerNumber = parms.otherPlayerNumber;
                 otherPlayer->pos = glm::vec2( 200, 230 );
-                otherPlayer->netDesiredPos = otherPlayer->pos;
+                otherPlayer->netVisualPos = otherPlayer->pos;
                 otherPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "temp", "asset_pack_01/player_idle/player_idle.png", 10, 48, 48, 16 );
                 otherPlayer->netStreamed = true;
 
@@ -58,18 +60,22 @@ namespace atto {
             }
         }
         else {
+            hasAuthority = true;
             localPlayer = SpawnEntity( ENTITY_TYPE_PLAYER );
             localPlayer->playerNumber = localPlayerNumber;
             localPlayer->pos = glm::vec2( 200, 230 );
             localPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "temp", "asset_pack_01/player_idle/player_idle.png", 10, 48, 48, 16 );
         }
 
+        players.Add( localPlayer );
+        players.Add( otherPlayer );
+
         SpawnDrone( glm::vec2( 200, 100 ) );
-       // SpawnDrone( glm::vec2( 220, 100 ) );
-       // SpawnDrone( glm::vec2( 240, 100 ) );
-       // SpawnDrone( glm::vec2( 260, 100 ) );
-       // SpawnDrone( glm::vec2( 280, 100 ) );
-       // SpawnDrone( glm::vec2( 300, 100 ) );
+        SpawnDrone( glm::vec2( 220, 100 ) );
+        SpawnDrone( glm::vec2( 240, 100 ) );
+        SpawnDrone( glm::vec2( 260, 100 ) );
+        SpawnDrone( glm::vec2( 280, 100 ) );
+        SpawnDrone( glm::vec2( 300, 100 ) );
     }
 
     void Map::UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags ) {
@@ -112,9 +118,8 @@ namespace atto {
                             EntityHandle handle = NetworkMessagePop<EntityHandle>( msg, offset );
                             Entity * ent = entityPool.Get( handle );
                             if( ent != nullptr ) {
-                                ent->netDesiredPos = NetworkMessagePop<glm::vec2>( msg, offset );
+                                ent->pos = NetworkMessagePop<glm::vec2>( msg, offset );
                                 ent->vel = NetworkMessagePop<glm::vec2>( msg, offset );
-                                
                             }
                         } break;
                         case NetworkMessageType::ENTITY_ANIM_UPDATE:
@@ -124,9 +129,46 @@ namespace atto {
                             Entity * ent = entityPool.Get( handle );
                             if( ent != nullptr ) {
                                 i64 spriteId = NetworkMessagePop<i64>( msg, offset );
+                                f32 framDuration = NetworkMessagePop<f32>( msg, offset );
                                 bool isLooping = NetworkMessagePop<bool>( msg, offset );
                                 SpriteResource * sprite = core->ResourceGetLoadedSprite( spriteId );
+                                ent->spriteAnimator.frameDuration = framDuration;
                                 ent->spriteAnimator.SetSpriteIfDifferent( sprite, isLooping );
+                            }
+                        } break;
+                        case NetworkMessageType::ENTITY_AUDIO_PLAY:
+                        {
+                            i32 offset = 0;
+                            SmallString id = NetworkMessagePop<SmallString>( msg, offset );
+                            AudioResource * r = core->ResourceGetAndLoadAudio( id.GetCStr() );
+                            if( r != nullptr ) {
+                                core->AudioPlay( r );
+                            }
+
+                        } break;
+                        case NetworkMessageType::ENTITY_DESTROY:
+                        {
+                            i32 offset = 0;
+                            EntityHandle handle = NetworkMessagePop<EntityHandle>( msg, offset );
+                            entityPool.Remove( handle );
+                        } break;
+                        case NetworkMessageType::ENTITY_RPC_UNIT_TAKE_DAMAGE:
+                        {
+                            i32 offset = 0;
+                            EntityHandle handle = NetworkMessagePop<EntityHandle>( msg, offset );
+                            Entity * ent = entityPool.Get( handle );
+                            if( ent != nullptr ) {
+                                i32 damage= NetworkMessagePop<i32>( msg, offset );
+                                ent->Unit_TakeDamage( core, false, damage );
+                            }
+                        } break;
+                        case NetworkMessageType::ENTITY_RPC_UNIT_DIE:
+                        {
+                            i32 offset = 0;
+                            EntityHandle handle = NetworkMessagePop<EntityHandle>( msg, offset );
+                            Entity * ent = entityPool.Get( handle );
+                            if( ent != nullptr ) {
+                                ent->Unit_Die( core, false );
                             }
                         } break;
                     }
@@ -149,7 +191,8 @@ namespace atto {
                 msg.type = NetworkMessageType::ENTITY_ANIM_UPDATE;
                 NetworkMessagePush( msg, localPlayer->handle );
                 NetworkMessagePush( msg, localPlayer->spriteAnimator.sprite->spriteId );
-                NetworkMessagePush( msg, localPlayer->spriteAnimator.loops );
+                NetworkMessagePush( msg, localPlayer->spriteAnimator.frameDuration ); // This is temporary
+                NetworkMessagePush( msg, localPlayer->spriteAnimator.loops );// This is temporary
                 core->NetworkSend( msg );
             }
         }
@@ -181,9 +224,14 @@ namespace atto {
         for( i32 entityIndexA = 0; entityIndexA < entityCount; entityIndexA++ ) {
             Entity * ent = entities[ entityIndexA ];
 
+            if( ent->active == false ) {
+                continue;
+            }
+
             if( ent->netStreamed ) {
                 //f32 extrapoFactor = 0.025f;
-                ent->pos = glm::mix( ent->pos, ent->netDesiredPos, 0.25f );
+                ent->netVisualPos = glm::mix( ent->netVisualPos, ent->pos, 0.25f );
+                //ent->pos = ent->netDesiredPos;
             }
 
             if( ent->spriteAnimator.sprite != nullptr && ent->spriteAnimator.sprite->frameCount > 1 ) {
@@ -292,21 +340,35 @@ namespace atto {
                                     ab.sprite = sprWarriorStrike;
                                     player.state = PLAYER_STATE_ATTACKING;
                                     player.currentAbility = &ab;
-                                    core->AudioPlayRandom( 1.0f, false, sndWarriorStrike1, sndWarriorStrike2 );
+                                    AudioResource * playedSound = core->AudioPlayRandom( 1.0f, false, sndWarriorStrike1, sndWarriorStrike2 );
+
+                                    if( isMp ) {
+                                        NetworkMessage & msg = *core->MemoryAllocateTransient< NetworkMessage >();
+                                        msg.type = NetworkMessageType::ENTITY_AUDIO_PLAY;
+                                        NetworkMessagePush( msg, playedSound->name );
+                                        core->NetworkSend( msg );
+                                    }
                                 }
                             }
                             else {
                                 Ability & ab = *player.primingAbility;
                                 ab.cooldownTimer = ab.cooldown;
                                 ab.sprite = sprWarriorCharge;
+
+                                player.primingAbility = nullptr;
                                 player.currentAbility = &ab;
                                 player.state = PLAYER_STATE_ATTACKING;
 
                                 glm::vec2 dir = glm::normalize( mousePosWorld - ent->pos );
                                 ent->vel += dir * 2500.0f;
-                                core->AudioPlayRandom( 1.0f, false, sndWarriorCharge1, sndWarriorCharge2 );
+                                AudioResource * playedSound = core->AudioPlayRandom( 1.0f, false, sndWarriorCharge1, sndWarriorCharge2 );
 
-                                player.primingAbility = nullptr;
+                                if( isMp ) {
+                                    NetworkMessage & msg = *core->MemoryAllocateTransient< NetworkMessage >();
+                                    msg.type = NetworkMessageType::ENTITY_AUDIO_PLAY;
+                                    NetworkMessagePush( msg, playedSound->name );
+                                    core->NetworkSend( msg );
+                                }
                             }
                         }
 
@@ -322,7 +384,14 @@ namespace atto {
                                     ab.sprite = sprWarriorStab;
                                     player.currentAbility = &ab;
                                     player.state = PLAYER_STATE_ATTACKING;
-                                    core->AudioPlayRandom( 1.0f, false, sndWarriorStab1, sndWarriorStab2 );
+                                    AudioResource * playedSound = core->AudioPlayRandom( 1.0f, false, sndWarriorStab1, sndWarriorStab2 );
+
+                                    if( isMp ) {
+                                        NetworkMessage & msg = *core->MemoryAllocateTransient< NetworkMessage >();
+                                        msg.type = NetworkMessageType::ENTITY_AUDIO_PLAY;
+                                        NetworkMessagePush( msg, playedSound->name );
+                                        core->NetworkSend( msg );
+                                    }
                                 }
                             }
                             else {
@@ -430,35 +499,11 @@ namespace atto {
                                                             if( c.Intersects( bb ) == true ) {
                                                                 player.currentAbility->hits.Add( enemy->handle );
 
-                                                                enemy->currentHealth -= appliedDamged;
-                                                                if( enemy->currentHealth <= 0 ) {
-                                                                    enemy->currentHealth = 0;
-                                                                    enemy->unitStuff.state = UNIT_STATE_EXPLODING;
-                                                                    enemy->spriteAnimator.frameDelaySkip = Random::Int( 3 );
+                                                                if( enemy->currentHealth - appliedDamged <= 0 ) {
+                                                                    enemy->Unit_Die( core, isMp );
                                                                 }
                                                                 else {
-                                                                    enemy->unitStuff.state = UNIT_STATE_TAKING_DAMAGE;
-                                                                    enemy->unitStuff.takingDamageTimer = 0.1f;
-                                                                }
-
-                                                                ZeroStruct( enemy->particleSystem );
-                                                                enemy->particleSystem.count = 10;
-                                                                enemy->particleSystem.texture = sprParticleSingleWhite;
-                                                                enemy->particleSystem.lifeTime = 0.5f;
-                                                                enemy->particleSystem.scaleMin = 1;
-                                                                enemy->particleSystem.scaleMax = 2;
-                                                                enemy->particleSystem.velMin = glm::vec2( -100.0f );
-                                                                enemy->particleSystem.velMax = glm::vec2( 100.0f );
-                                                                enemy->particleSystem.oneShot = true;
-
-                                                                ParticleSystem & part = enemy->particleSystem;
-                                                                enemy->particleSystem.emitting = true;
-                                                                for( i32 partIndex = 0; partIndex < enemy->particleSystem.count; partIndex++ ) {
-                                                                    Particle & p = part.particles[ partIndex ];
-                                                                    p.pos = enemy->pos;
-                                                                    p.lifeTime = part.lifeTime;
-                                                                    p.scale = Random::Float( part.scaleMin, part.scaleMax );
-                                                                    p.vel = Random::Vec2( part.velMin, part.velMax );
+                                                                    enemy->Unit_TakeDamage( core, isMp, appliedDamged );
                                                                 }
                                                             }
                                                         }
@@ -484,7 +529,7 @@ namespace atto {
                             }
                         }
                     }
-              
+
                     //{
                     //    ent->spriteAnimator.sprite = sprWarriorStab;
                     //    static int frameIndex = 0;
@@ -508,20 +553,13 @@ namespace atto {
                     }
 
                     const f32 alertRad = 55.0f;
-                    const f32 distToPlayer = glm::distance( localPlayer->pos, ent->pos );
+                    
 
                     switch( unit.state ) {
                         case UNIT_STATE_IDLE:
                         {
-                            if( distToPlayer < 50.0f ) {
-                                const f32 r = alertRad;
-                                nav.dest = localPlayer->pos + glm::vec2( Random::Float( -r, r ), Random::Float( -r, r ) );
-                            }
-                            else {
-                                const f32 r = 55.0f;
-                                nav.dest = ent->pos + glm::vec2( Random::Float( -r, r ), Random::Float( -r, r ) );
-                                unit.state = UNIT_STATE_WANDERING;
-                            }
+                            nav.dest = ent->pos + glm::vec2( Random::Float( -alertRad, alertRad ), Random::Float( -alertRad, alertRad ) );
+                            unit.state = UNIT_STATE_WANDERING;
                         } break;
                         case UNIT_STATE_TAKING_DAMAGE:
                         {
@@ -533,7 +571,6 @@ namespace atto {
                             else {
                                 colorMultiplier = glm::vec4( 100, 100, 100, 1 );
                             }
-
                         } break;
                         case UNIT_STATE_EXPLODING:
                         {
@@ -544,26 +581,42 @@ namespace atto {
                             }
 
                             if( ent->spriteAnimator.loopCount > 0 ) {
-                                entityPool.Remove( ent->handle );
+                                ent->active = false; // Trick to hide the entity in laggy mp enviroments. We need to wait for the destroy entity rpc...
+
+                                if( isMp == true && hasAuthority == true ) {
+                                    entityPool.Remove( ent->handle );
+
+                                    NetworkMessage & msg = *core->MemoryAllocateTransient< NetworkMessage >();
+                                    msg.type = NetworkMessageType::ENTITY_DESTROY;
+                                    NetworkMessagePush( msg, ent->handle );
+                                    core->NetworkSend( msg );
+                                }
                             }
                         } break;
                         case UNIT_STATE_WANDERING:
                         {
+                            if( hasAuthority == false ) {
+                                break;
+                            }
+
+                            f32 distToPlayer = 0.0f;
+                            Entity * closePlayer = ClosestPlayerTo( ent->pos, distToPlayer );
+
                             if( distToPlayer < 50.0f ) {
                                 const f32 r = 25.0f;
-                                nav.dest = localPlayer->pos + glm::vec2( Random::Float( -r, r ), Random::Float( -r, r ) );
+                                nav.dest = closePlayer->pos + glm::vec2( Random::Float( -r, r ), Random::Float( -r, r ) );
                                 unit.state = UNIT_STATE_SWARM;
                                 break;
                             }
 
-                            // @SPEED   
+                            // @SPEED
                             //debugDrawContext->DrawRect( nav.dest, glm::vec2( 5 ), 0.0f );
                             f32 dist = glm::distance( nav.dest, ent->pos );
                             if( dist < 5.0f ) {
-                                unit.state = UNIT_STATE_IDLE;
+                                nav.dest = ent->pos + glm::vec2( Random::Float( -alertRad, alertRad ), Random::Float( -alertRad, alertRad ) );
+                                unit.state = UNIT_STATE_WANDERING;
                             }
                             else {
-
                                 const f32 speed = 150.0f;
                                 const f32 resistance = 5.0f;
 
@@ -579,14 +632,19 @@ namespace atto {
                         } break;
                         case UNIT_STATE_SWARM:
                         {
+                            if( hasAuthority == false ) {
+                                break;
+                            }
+                            
                             // @SPEED
                             f32 dist = glm::distance( nav.dest, ent->pos );
                             if( dist < 5.0f ) {
                                 const f32 r = alertRad;
-                                nav.dest = localPlayer->pos + glm::vec2( Random::Float( -r, r ), Random::Float( -r, r ) );
+                                f32 distToPlayer = 0.0f;
+                                Entity * closePlayer = ClosestPlayerTo( ent->pos, distToPlayer );
+                                nav.dest = closePlayer->pos + glm::vec2( Random::Float( -r, r ), Random::Float( -r, r ) );
                             }
                             else {
-
                                 const f32 speed = 1500.0f;
                                 const f32 resistance = 5.0f;
 
@@ -627,12 +685,25 @@ namespace atto {
                                 spriteDrawContext->DrawTexture( part.texture, p.pos, 0.0f, glm::vec2( p.scale ) );
                             }
                         }
-
                     }
+
+                    if( isMp == true && hasAuthority == true ) {
+                        NetworkMessage & msg = *core->MemoryAllocateTransient< NetworkMessage >();
+                        msg.type = NetworkMessageType::ENTITY_POS_UPDATE;
+                        NetworkMessagePush( msg, ent->handle );
+                        NetworkMessagePush( msg, ent->pos );
+                        NetworkMessagePush( msg, ent->vel );
+                        core->NetworkSend( msg );
+                    }
+                    
+                    // Debug
+                    spriteDrawContext->DrawRect( ent->pos, glm::vec2( alertRad ), 0.0f, glm::vec4( 0.2f, 0.2f, 0.75f, 0.76f ) );
+
                 } break;
             }
 
-            spriteDrawContext->DrawSprite( ent->spriteAnimator.sprite, ent->spriteAnimator.frameIndex, ent->pos, ent->ori, glm::vec2( ent->facingDir, 1.0f ), colorMultiplier );
+            glm::vec2 drawPos = ent->netStreamed ? ent->netVisualPos : ent->pos;
+            spriteDrawContext->DrawSprite( ent->spriteAnimator.sprite, ent->spriteAnimator.frameIndex, drawPos, ent->ori, glm::vec2( ent->facingDir, 1.0f ), colorMultiplier );
         }
 
         if ( false )
@@ -684,6 +755,7 @@ namespace atto {
         AssertMsg( entity != nullptr, "Spawn Entity is nullptr" );
         if( entity != nullptr ) {
             ZeroStructPtr( entity );
+            entity->active = true;
             entity->handle = handle;
             entity->type = type;
             entity->facingDir = 1.0f;
@@ -697,7 +769,7 @@ namespace atto {
         Entity * entity = SpawnEntity( ENTITY_TYPE_ENEMY_DRONE_01 );
         if( entity != nullptr ) {
             entity->pos = pos;
-
+            entity->netStreamed = !hasAuthority;
             entity->selectionCollider.type = COLLIDER_TYPE_CIRCLE;
             entity->selectionCollider.circle.pos = glm::vec2( -0.5f, -0.5f );
             entity->selectionCollider.circle.rad = 5.0f;
@@ -711,6 +783,24 @@ namespace atto {
 
     void Map::EntityUpdatePlayer( Core * core, Entity * ent, EntList & activeEnts ) {
         
+    }
+
+    Entity * Map::ClosestPlayerTo( glm::vec2 p, f32 & dist ) {
+        dist = FLT_MAX;
+        Entity * closePlayer = nullptr;
+        const int playerCount = players.GetCount();
+        for( i32 playerIndex = 0; playerIndex < playerCount; playerIndex++ ) {
+            Entity * ent = players[ playerIndex ];
+            if( ent != nullptr ) {
+                f32 d = glm::distance( ent->pos, p );
+                if( d < dist ) {
+                    dist = d;
+                    closePlayer = ent;
+                }
+            }
+        }
+
+        return closePlayer;
     }
 
     inline static Collider2D ColliderForSpace( const Collider2D & base, glm::vec2 p ) {
@@ -731,6 +821,55 @@ namespace atto {
         }
 
         return c;
+    }
+
+
+    void Entity::Unit_TakeDamage( Core * core, bool sendPacket, i32 damage ) {
+        currentHealth -= damage;
+
+        unitStuff.state = UNIT_STATE_TAKING_DAMAGE;
+        unitStuff.takingDamageTimer = 0.1f;
+
+        ZeroStruct( particleSystem );
+        particleSystem.count = 10;
+        particleSystem.texture = core->ResourceGetAndLoadTexture( "particle_single_white_1x1.png", false, false );;
+        particleSystem.lifeTime = 0.5f;
+        particleSystem.scaleMin = 1;
+        particleSystem.scaleMax = 2;
+        particleSystem.velMin = glm::vec2( -100.0f );
+        particleSystem.velMax = glm::vec2( 100.0f );
+        particleSystem.oneShot = true;
+
+        ParticleSystem & part = particleSystem;
+        particleSystem.emitting = true;
+        for( i32 partIndex = 0; partIndex < particleSystem.count; partIndex++ ) {
+            Particle & p = part.particles[ partIndex ];
+            p.pos = pos;
+            p.lifeTime = part.lifeTime;
+            p.scale = Random::Float( part.scaleMin, part.scaleMax );
+            p.vel = Random::Vec2( part.velMin, part.velMax );
+        }
+
+        if( sendPacket == true ) {
+            NetworkMessage & msg = *core->MemoryAllocateTransient< NetworkMessage >();
+            msg.type = NetworkMessageType::ENTITY_RPC_UNIT_TAKE_DAMAGE;
+            NetworkMessagePush( msg, handle );
+            NetworkMessagePush( msg, damage );
+            core->NetworkSend( msg );
+        }
+    }
+
+    void Entity::Unit_Die( Core * core, bool sendPacket ) {
+        currentHealth = 0;
+        unitStuff.state = UNIT_STATE_EXPLODING;
+        spriteAnimator.frameDelaySkip = Random::Int( 3 );
+
+        if( sendPacket == true ) {
+            NetworkMessage & msg = *core->MemoryAllocateTransient< NetworkMessage >();
+            msg.type = NetworkMessageType::ENTITY_RPC_UNIT_DIE;
+            NetworkMessagePush( msg, handle );
+            core->NetworkSend( msg );
+        }
     }
 
     Collider2D Entity::GetWorldCollisionCollider() const {

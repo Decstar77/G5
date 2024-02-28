@@ -131,6 +131,8 @@ namespace atto {
         SmallString         name;
         i32                 playerNumber;
 
+        bool                active;
+
         glm::vec2           pos;
         glm::vec2           vel;
         f32                 ori;
@@ -140,7 +142,7 @@ namespace atto {
         i32                 currentHealth;
 
         bool                netStreamed;
-        glm::vec2           netDesiredPos;
+        glm::vec2           netVisualPos;
         glm::vec2           netDesiredVel;
 
 
@@ -153,10 +155,12 @@ namespace atto {
         Collider2D                collisionCollider;  // @NOTE: Used for movement | In Local Space
         FixedList<Collider2D, 8>  hitColliders;       // @NOTE: Used for shooting and stuff | In Local Space
 
-        bool                    wantsDraw;
         SpriteAnimator          spriteAnimator;
         ParticleSystem          particleSystem;
         Navigator               navigator;
+
+        void                    Unit_TakeDamage( Core * core, bool sendPacket, i32 damage );
+        void                    Unit_Die( Core * core, bool sendPacket );
 
         // The stuffs
         union {
@@ -186,11 +190,20 @@ namespace atto {
         FixedObjectPool< Entity, MAX_ENTITIES > entityPool = {};
         f32                                     dtAccumulator = 0.0f;
 
-        bool                                    isMp = false;
-        i32                                     localPlayerNumber = -1;
-        Entity *                                localPlayer = nullptr;
         glm::vec2                               localCameraPos = glm::vec2( 0.0f );
+
+        bool                                    isMp = false;
+        bool                                    hasAuthority = false;
         
+        i32                                     localPlayerNumber = -1;
+        i32                                     otherPlayerNumber = -1;
+
+        Entity *                                localPlayer = nullptr;
+        Entity *                                otherPlayer = nullptr;
+        
+        FixedList< Entity *, 2 >                players = {};
+
+
     public:
         // @NOTE: "Map Live" functions 
         void                            Start( Core * core, const GameStartParams & parms );
@@ -198,6 +211,8 @@ namespace atto {
         Entity *                        SpawnEntity( EntityType type );
         Entity *                        SpawnDrone( glm::vec2 pos );
         void                            EntityUpdatePlayer( Core * core, Entity * ent, EntList & activeEnts );
+        
+        Entity *                        ClosestPlayerTo( glm::vec2 p, f32 & dist );
     };
 
     class GameMode_Game : public GameMode {

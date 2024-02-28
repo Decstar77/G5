@@ -318,7 +318,7 @@ namespace atto {
 
         virtual AudioSpeaker                AudioPlay( AudioResource * audioResource, f32 volume = 1.0f, bool looping = false ) = 0;
         template<typename... args>
-        AudioSpeaker                        AudioPlayRandom( f32 volume, bool looping, args... audioResources );
+        AudioResource *                     AudioPlayRandom( f32 volume, bool looping, args... audioResources );
 
         void                                NetConnect();
         bool                                NetIsConnected();
@@ -435,10 +435,11 @@ namespace atto {
     }
 
     template<typename... args>
-    AudioSpeaker Core::AudioPlayRandom( f32 volume, bool looping, args... audioResources ) {
+    AudioResource * Core::AudioPlayRandom( f32 volume, bool looping, args... audioResources ) {
         AudioResource * audioResourceArray[] = { audioResources... };
         i32 index = Random::Int( sizeof...( audioResources ) );
-        return AudioPlay( audioResourceArray[ index ], volume, looping );
+        AudioPlay( audioResourceArray[ index ], volume, looping );
+        return audioResourceArray[ index ];
     }
 
 }

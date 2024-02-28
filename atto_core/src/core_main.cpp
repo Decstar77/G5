@@ -7,7 +7,7 @@ using namespace atto;
 /*
 * @TODO: Fix circle rendering
 * @TODO: Fix alpha padding issue
-* 
+* @TODO: Live resource reloading.
 */
 
 int main( int argc, char ** argv ) {
