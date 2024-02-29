@@ -473,6 +473,12 @@ namespace atto {
 
     template<u64 SizeBytes>
     FixedStringBase<SizeBytes> constexpr FixedStringBase<SizeBytes>::FromLiteral( const char * str ) {
+        const u64 len = StringHash::ConstStrLen( str );
+        if( len > CAPCITY ) {
+            INVALID_CODE_PATH;
+            return FixedStringBase<SizeBytes>();
+        }
+
         FixedStringBase<SizeBytes> result = {};
         result.Add( str );
         return result;

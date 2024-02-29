@@ -103,13 +103,15 @@ namespace atto {
         void Run(int argc, char** argv) override;
         
         virtual TextureResource *       ResourceGetAndLoadTexture( const char * name, bool genMips, bool genAnti ) override;
-        virtual SpriteResource *        ResourceGetAndCreateSprite( const char * spriteName, const char * textureName, i32 frameCount, i32 frameWidth, i32 frameHeight, i32 frameRate ) override;
+        virtual SpriteResource *        ResourceGetAndCreateSprite( const char * spriteName, i32 frameCount, i32 frameWidth, i32 frameHeight, i32 frameRate ) override;
+        virtual SpriteResource *        ResourceGetAndLoadSprite( const char * spriteName ) override;
         virtual SpriteResource *        ResourceGetLoadedSprite( i64 spriteId );
         virtual AudioResource *         ResourceGetAndLoadAudio( const char * name ) override;
         virtual StaticMeshResource *    ResourceGetAndLoadMesh( const char * name ) override;
         virtual FontHandle              ResourceGetFont( const char * name ) override;
         virtual void                    ResourceReadEntireFile( const char * path, char * data, i32 maxLen ) override;
         virtual void                    ResourceWriteEntireFile( const char * path, const char * data ) override;
+        virtual i64                     ResourceGetFileSize( const char * path ) override;
 
         StaticMeshResource *            ResourceMeshCreate( const char * name, StaticMeshData & data );
         StaticMeshResource *            ResourceMeshCreate( const char * name, i32 vertexCount );
@@ -128,10 +130,10 @@ namespace atto {
         virtual void                    WindowSetVSync( bool value ) override;
         virtual bool                    WindowGetVSync() override;
 
-        void                        GLResetSurface(f32 w, f32 h);
+        void                            GLResetSurface(f32 w, f32 h);
 
-        static void                 WinBoyoWriteTextFile( const char * path, const char * text );
-        static void                 WinBoyoReadTextFile( const char * path, char * text, i32 maxLen );
+        static void                     WinBoyoWriteTextFile( const char * path, const char * text );
+        static void                     WinBoyoReadTextFile( const char * path, char * text, i32 maxLen );
 
     public:
         ResourceRegistry            resources = {};

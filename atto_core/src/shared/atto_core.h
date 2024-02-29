@@ -35,7 +35,7 @@ namespace atto {
     };
 
     struct TextureResource {
-        SmallString name;
+        LargeString name;
         i32 width;
         i32 height;
         i32 channels;
@@ -45,14 +45,15 @@ namespace atto {
 
     struct SpriteResource {
         i64                 spriteId; // Deduced from the name and texture name
-        SmallString         name;
-        SmallString         textureName;
+        LargeString         name;
         TextureResource *   textureResource;
         i32                 frameCount;
         i32                 frameWidth;
         i32                 frameHeight;
         i32                 frameRate;
         glm::vec2           origin;
+
+        REFLECT();
     };
 
     struct AudioResource {
@@ -301,13 +302,17 @@ namespace atto {
         void                                MoveToGameMode( GameMode * gameMode );
         
         virtual TextureResource *           ResourceGetAndLoadTexture( const char * name, bool genMips, bool genAnti ) = 0;
-        virtual SpriteResource *            ResourceGetAndCreateSprite( const char * spriteName, const char * textureName, i32 frameCount, i32 frameWidth, i32 frameHeight, i32 frameRate ) = 0;
+        virtual SpriteResource *            ResourceGetAndCreateSprite( const char * spriteName, i32 frameCount, i32 frameWidth, i32 frameHeight, i32 frameRate ) = 0;
+        virtual SpriteResource *            ResourceGetAndLoadSprite( const char * spriteName ) = 0;
         virtual SpriteResource *            ResourceGetLoadedSprite( i64 spriteId ) = 0; 
         virtual AudioResource *             ResourceGetAndLoadAudio( const char * name ) = 0;
         virtual StaticMeshResource *        ResourceGetAndLoadMesh( const char * name ) = 0;
         virtual FontHandle                  ResourceGetFont( const char * name ) = 0;
         virtual void                        ResourceReadEntireFile( const char * path, char * data, i32 maxLen ) = 0;
         virtual void                        ResourceWriteEntireFile( const char * path, const char * data ) = 0;
+        virtual i64                         ResourceGetFileSize( const char * path ) = 0;
+        char *                              ResourceReadEntireFileIntoTransientMemory( const char * path, i64 * size );
+
 
         virtual float                       FontGetTextBounds( FontHandle font, f32 fontSize, const char * text, glm::vec2 pos, BoxBounds2D & bounds ) = 0;
 

@@ -10,7 +10,7 @@ namespace atto
     }
 
     SmallString StringFormat::Small(const char* format, ...) {
-        SmallString result;
+        SmallString result = {};
 
         va_list arg_ptr;
         va_start(arg_ptr, format);
@@ -23,7 +23,7 @@ namespace atto
     }
 
     LargeString StringFormat::Large(const char* format, ...) {
-        LargeString result;
+        LargeString result = {};
 
         va_list arg_ptr;
         va_start(arg_ptr, format);

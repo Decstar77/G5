@@ -93,6 +93,27 @@ namespace atto {
     #endif
     }
 
+    template<typename _type_>
+    bool ResourceLoadFromFile( Core * core, _type_ * t, const char * path ) {
+        i64 fileSize;
+        char * data = core->ResourceReadEntireFileIntoTransientMemory( path, &fileSize );
+        if( data != nullptr ) {
+            nlohmann::json j = nlohmann::json::parse( data );
+            TypeDescriptor * settingsType = TypeResolver<_type_>::get();
+            settingsType->JSON_Read( j, t );
+            return true;
+        }
+
+        return false;
+    }
+
+    template<typename _type_>
+    void ResourceSaveToFile( Core * core, _type_ * t, const char * path ) {
+        TypeDescriptor * settingsType = TypeResolver<_type_>::get();
+        nlohmann::json j = settingsType->JSON_Write( t );
+        core->ResourceWriteEntireFile( path, j.dump().c_str() );
+    }
+
     void WindowsCore::Run( int argc, char ** argv ) {
         OsParseStartArgs( argc, argv );
 
@@ -720,7 +741,7 @@ namespace atto {
         return resources.textures.Add( textureResource );
     }
 
-    SpriteResource * WindowsCore::ResourceGetAndCreateSprite( const char * spriteName, const char * textureName, i32 frameCount, i32 frameWidth, i32 frameHeight, i32 frameRate ) {
+    SpriteResource * WindowsCore::ResourceGetAndCreateSprite( const char * spriteName, i32 frameCount, i32 frameWidth, i32 frameHeight, i32 frameRate ) {
         const i32 spriteResourceCount = resources.sprites.GetCount();
         for( i32 spriteIndex = 0; spriteIndex < spriteResourceCount; spriteIndex++ ) {
             SpriteResource & sprite = resources.sprites[ spriteIndex ];
@@ -729,26 +750,54 @@ namespace atto {
             }
         }
 
-        TextureResource * textureResource = ResourceGetAndLoadTexture( textureName, false, false );
+        LargeString textureName = StringFormat::Large( "%s.png", spriteName );
+        TextureResource * textureResource = ResourceGetAndLoadTexture( textureName.GetCStr(), false, false );
         if( textureResource == nullptr ) {
             return nullptr;
         }
 
-        u32 spritePart = StringHash::Hash( spriteName );
-        u32 texturePart = StringHash::Hash( textureName );
-        i64 spriteHash = ( (i64)spritePart << 32 ) | (i64)texturePart;
-
         SpriteResource spriteResource = {};
-        spriteResource.spriteId = spriteHash;
+        spriteResource.spriteId = (i64)StringHash::Hash( spriteName );
         spriteResource.name = spriteName;
-        spriteResource.textureName = textureName;
         spriteResource.textureResource = textureResource;
         spriteResource.frameCount = frameCount;
         spriteResource.frameWidth = frameWidth;
         spriteResource.frameHeight = frameHeight;
         spriteResource.frameRate = frameRate;
 
+    #if 0
+        LargeString tname = StringFormat::Large( "res/sprites/%s", textureName.GetCStr() );
+        tname.StripFileExtension();
+        tname.Add( ".json" );
+        ResourceSaveToFile( this, &spriteResource, tname.GetCStr() );
+    #endif
+
         return resources.sprites.Add( spriteResource );
+    }
+
+    SpriteResource * WindowsCore::ResourceGetAndLoadSprite( const char * spriteName ) {
+        const i32 spriteResourceCount = resources.sprites.GetCount();
+        for( i32 spriteIndex = 0; spriteIndex < spriteResourceCount; spriteIndex++ ) {
+            SpriteResource & sprite = resources.sprites[ spriteIndex ];
+            if( sprite.name == spriteName ) {
+                return &sprite;
+            }
+        }
+
+        LargeString resPath = StringFormat::Large( "res/sprites/%s.json", spriteName );
+
+        SpriteResource  spriteResource = {};
+        if( ResourceLoadFromFile( this, &spriteResource, resPath.GetCStr() ) == true ) {
+            resPath = StringFormat::Large( "%s.png", spriteName );
+            spriteResource.textureResource = ResourceGetAndLoadTexture( resPath.GetCStr(), false, false );
+            if( spriteResource.textureResource == nullptr ) {
+                return nullptr;
+            }
+
+            return resources.sprites.Add( spriteResource );
+        }
+
+        return nullptr;
     }
 
     SpriteResource * WindowsCore::ResourceGetLoadedSprite( i64 spriteId ) {

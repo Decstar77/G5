@@ -36,27 +36,27 @@ namespace atto {
                 localPlayer = SpawnEntity( ENTITY_TYPE_PLAYER );
                 localPlayer->playerNumber = localPlayerNumber;
                 localPlayer->pos = glm::vec2( 200, 230 );
-                localPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "temp", "asset_pack_01/player_idle/player_idle.png", 10, 48, 48, 16 );
+                localPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "asset_pack_01/player_idle/player_idle", 10, 48, 48, 16 );
 
                 otherPlayer = SpawnEntity( ENTITY_TYPE_PLAYER );
                 otherPlayer->playerNumber = parms.otherPlayerNumber;
                 otherPlayer->netStreamed = true;
                 otherPlayer->pos = glm::vec2( 100, 230 );
                 otherPlayer->netVisualPos = otherPlayer->pos;
-                otherPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "temp", "asset_pack_01/player_idle/player_idle.png", 10, 48, 48, 16 );
+                otherPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "asset_pack_01/player_idle/player_idle", 10, 48, 48, 16 );
             }
             else {
                 otherPlayer = SpawnEntity( ENTITY_TYPE_PLAYER );
                 otherPlayer->playerNumber = parms.otherPlayerNumber;
                 otherPlayer->pos = glm::vec2( 200, 230 );
                 otherPlayer->netVisualPos = otherPlayer->pos;
-                otherPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "temp", "asset_pack_01/player_idle/player_idle.png", 10, 48, 48, 16 );
+                otherPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "asset_pack_01/player_idle/player_idle", 10, 48, 48, 16 );
                 otherPlayer->netStreamed = true;
 
                 localPlayer = SpawnEntity( ENTITY_TYPE_PLAYER );
                 localPlayer->playerNumber = localPlayerNumber;
                 localPlayer->pos = glm::vec2( 100, 230 );
-                localPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "temp", "asset_pack_01/player_idle/player_idle.png", 10, 48, 48, 16 );
+                localPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "asset_pack_01/player_idle/player_idle", 10, 48, 48, 16 );
             }
         }
         else {
@@ -64,7 +64,7 @@ namespace atto {
             localPlayer = SpawnEntity( ENTITY_TYPE_PLAYER );
             localPlayer->playerNumber = localPlayerNumber;
             localPlayer->pos = glm::vec2( 200, 230 );
-            localPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "temp", "asset_pack_01/player_idle/player_idle.png", 10, 48, 48, 16 );
+            localPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "asset_pack_01/player_idle/player_idle", 10, 48, 48, 16 );
         }
 
         players.Add( localPlayer );
@@ -81,19 +81,19 @@ namespace atto {
     void Map::UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags ) {
         static TextureResource * tile = core->ResourceGetAndLoadTexture( "tile_dark_metal_1.png", false, false );
         static TextureResource * sprUiPanel = core->ResourceGetAndLoadTexture( "ui_ability_panel.png", false, false );
-                            
-        
+
         static TextureResource * sprCharDroneSelection = core->ResourceGetAndLoadTexture( "char_drone_selection.png", false, false );
         static TextureResource * sprParticleSingleWhite = core->ResourceGetAndLoadTexture( "particle_single_white_1x1.png", false, false );
 
-        static SpriteResource * sprWarriorIdle = core->ResourceGetAndCreateSprite( "idle", "asset_pack_01/player_idle/player_idle.png", 10, 48, 48, 16 );
-        static SpriteResource * sprWarriorRun = core->ResourceGetAndCreateSprite( "run", "asset_pack_01/player_run/player_run.png", 8, 48, 48, 16 );
-        static SpriteResource * sprWarriorStab = core->ResourceGetAndCreateSprite( "stab", "asset_pack_01/player_sword_stab/player_sword_stab.png", 7, 96, 48, 16 );
-        static SpriteResource * sprWarriorStrike = core->ResourceGetAndCreateSprite( "strike", "asset_pack_01/basic_sword_attack/basic_sword_attack.png", 6, 64, 64, 16 );
-        static SpriteResource * sprWarriorCharge = core->ResourceGetAndCreateSprite( "charge", "asset_pack_01/player_katana_continuous_attack/player_katana_continuous_attack.png", 9, 80, 64, 16 );
+        static SpriteResource * sprWarriorIdle = core->ResourceGetAndCreateSprite( "asset_pack_01/player_idle/player_idle", 10, 48, 48, 16 );
+        static SpriteResource * sprWarriorRun = core->ResourceGetAndCreateSprite( "asset_pack_01/player_run/player_run", 8, 48, 48, 16 );
+        static SpriteResource * sprWarriorStab = core->ResourceGetAndCreateSprite( "asset_pack_01/player_sword_stab/player_sword_stab", 7, 96, 48, 16 );
+        static SpriteResource * sprWarriorStrike = core->ResourceGetAndCreateSprite( "asset_pack_01/basic_sword_attack/basic_sword_attack", 6, 64, 64, 16 );
+        //static SpriteResource * sprWarriorCharge = core->ResourceGetAndCreateSprite( "asset_pack_01/player_katana_continuous_attack/player_katana_continuous_attack", 9, 80, 64, 16 );
+        static SpriteResource * sprWarriorCharge = core->ResourceGetAndLoadSprite( "asset_pack_01/player_katana_continuous_attack/player_katana_continuous_attack" );
 
-        static SpriteResource * sprCharDrone = core->ResourceGetAndCreateSprite( "drone", "char_drone_01.png", 1, 32, 32, 1 );
-        static SpriteResource * sprVFX_SmallExplody= core->ResourceGetAndCreateSprite( "vfx_small_explody", "vfx_small_explody.png", 3, 32, 32, 10 );
+        static SpriteResource * sprCharDrone = core->ResourceGetAndCreateSprite( "char_drone_01", 1, 32, 32, 1 );
+        static SpriteResource * sprVFX_SmallExplody= core->ResourceGetAndCreateSprite( "vfx_small_explody", 3, 32, 32, 10 );
 
         static AudioResource * sndWarriorStrike1 = core->ResourceGetAndLoadAudio( "not_legal/lightsaber_quick_1.wav" );
         static AudioResource * sndWarriorStrike2 = core->ResourceGetAndLoadAudio( "not_legal/lightsaber_quick_3.wav" );

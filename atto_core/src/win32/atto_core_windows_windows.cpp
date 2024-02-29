@@ -77,8 +77,10 @@ namespace atto {
 
     void WindowsCore::WinBoyoWriteTextFile( const char * path, const char * text ) {
         std::ofstream file( path );
-        file << text;
-        file.close();
+        if( file.is_open() ) {
+            file << text;
+            file.close();
+        }
     }
 
     void WindowsCore::WinBoyoReadTextFile( const char * path, char * text, i32 maxLen ) {
@@ -101,6 +103,19 @@ namespace atto {
 
             file.close();
         }
+    }
+
+    i64 WindowsCore::ResourceGetFileSize( const char * path ) {
+        std::ifstream file( path );
+
+        if( file.is_open() ) {
+            file.seekg( 0, std::ios::end );
+            std::streampos fileSize = file.tellg();
+            file.close();
+            return static_cast<i64>( fileSize );
+        }
+
+        return -1;
     }
 
     void WindowsCore::ResourceReadEntireFile( const char * path, char * data, i32 maxLen ) {

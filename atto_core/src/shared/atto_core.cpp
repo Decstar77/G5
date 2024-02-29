@@ -27,6 +27,22 @@ namespace atto {
         nextGameMode = gameMode;
     }
 
+    char * Core::ResourceReadEntireFileIntoTransientMemory( const char * path, i64 * size ) {
+        *size = ResourceGetFileSize( path );
+        if( *size == -1 ) {
+            return nullptr;
+        }
+
+        char * data = (char *)MemoryAllocateTransient( *size );
+        if( data == nullptr ) {
+            return nullptr;
+        }
+
+        ResourceReadEntireFile( path, data, (i32)( *size ) );
+
+        return data;
+    }
+
     DrawContext * Core::RenderGetDrawContext( i32 index, bool clear ) {
         DrawContext * d = &drawContexts[ index ];
         if( clear == true ) {
