@@ -14,13 +14,18 @@ namespace atto {
         REFLECT_STRUCT_MEMBER( basePath )
         REFLECT_STRUCT_END()
 
+        REFLECT_STRUCT_BEGIN( SpriteActuation )
+        REFLECT_STRUCT_MEMBER( frameIndex )
+        REFLECT_STRUCT_MEMBER( audioIds )
+        REFLECT_STRUCT_END()
+
         REFLECT_STRUCT_BEGIN( SpriteResource )
         REFLECT_STRUCT_MEMBER( spriteId )
-        REFLECT_STRUCT_MEMBER( name )
         REFLECT_STRUCT_MEMBER( frameCount )
         REFLECT_STRUCT_MEMBER( frameWidth )
         REFLECT_STRUCT_MEMBER( frameHeight )
         REFLECT_STRUCT_MEMBER( frameRate )
         REFLECT_STRUCT_MEMBER( origin )
+        REFLECT_STRUCT_MEMBER( frameActuations )
         REFLECT_STRUCT_END()
 }

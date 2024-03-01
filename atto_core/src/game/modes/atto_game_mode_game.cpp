@@ -36,27 +36,27 @@ namespace atto {
                 localPlayer = SpawnEntity( ENTITY_TYPE_PLAYER );
                 localPlayer->playerNumber = localPlayerNumber;
                 localPlayer->pos = glm::vec2( 200, 230 );
-                localPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "asset_pack_01/player_idle/player_idle", 10, 48, 48, 16 );
+                localPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "asset_pack_01/player_idle", 10, 48, 48, 16 );
 
                 otherPlayer = SpawnEntity( ENTITY_TYPE_PLAYER );
                 otherPlayer->playerNumber = parms.otherPlayerNumber;
                 otherPlayer->netStreamed = true;
                 otherPlayer->pos = glm::vec2( 100, 230 );
                 otherPlayer->netVisualPos = otherPlayer->pos;
-                otherPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "asset_pack_01/player_idle/player_idle", 10, 48, 48, 16 );
+                otherPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "asset_pack_01/player_idle", 10, 48, 48, 16 );
             }
             else {
                 otherPlayer = SpawnEntity( ENTITY_TYPE_PLAYER );
                 otherPlayer->playerNumber = parms.otherPlayerNumber;
                 otherPlayer->pos = glm::vec2( 200, 230 );
                 otherPlayer->netVisualPos = otherPlayer->pos;
-                otherPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "asset_pack_01/player_idle/player_idle", 10, 48, 48, 16 );
+                otherPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "asset_pack_01/player_idle", 10, 48, 48, 16 );
                 otherPlayer->netStreamed = true;
 
                 localPlayer = SpawnEntity( ENTITY_TYPE_PLAYER );
                 localPlayer->playerNumber = localPlayerNumber;
                 localPlayer->pos = glm::vec2( 100, 230 );
-                localPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "asset_pack_01/player_idle/player_idle", 10, 48, 48, 16 );
+                localPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "asset_pack_01/player_idle", 10, 48, 48, 16 );
             }
         }
         else {
@@ -64,7 +64,7 @@ namespace atto {
             localPlayer = SpawnEntity( ENTITY_TYPE_PLAYER );
             localPlayer->playerNumber = localPlayerNumber;
             localPlayer->pos = glm::vec2( 200, 230 );
-            localPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "asset_pack_01/player_idle/player_idle", 10, 48, 48, 16 );
+            localPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "asset_pack_01/player_idle", 10, 48, 48, 16 );
         }
 
         players.Add( localPlayer );
@@ -85,22 +85,22 @@ namespace atto {
         static TextureResource * sprCharDroneSelection = core->ResourceGetAndLoadTexture( "char_drone_selection.png", false, false );
         static TextureResource * sprParticleSingleWhite = core->ResourceGetAndLoadTexture( "particle_single_white_1x1.png", false, false );
 
-        static SpriteResource * sprWarriorIdle = core->ResourceGetAndCreateSprite( "asset_pack_01/player_idle/player_idle", 10, 48, 48, 16 );
-        static SpriteResource * sprWarriorRun = core->ResourceGetAndCreateSprite( "asset_pack_01/player_run/player_run", 8, 48, 48, 16 );
-        static SpriteResource * sprWarriorStab = core->ResourceGetAndCreateSprite( "asset_pack_01/player_sword_stab/player_sword_stab", 7, 96, 48, 16 );
-        static SpriteResource * sprWarriorStrike = core->ResourceGetAndCreateSprite( "asset_pack_01/basic_sword_attack/basic_sword_attack", 6, 64, 64, 16 );
-        //static SpriteResource * sprWarriorCharge = core->ResourceGetAndCreateSprite( "asset_pack_01/player_katana_continuous_attack/player_katana_continuous_attack", 9, 80, 64, 16 );
-        static SpriteResource * sprWarriorCharge = core->ResourceGetAndLoadSprite( "asset_pack_01/player_katana_continuous_attack/player_katana_continuous_attack" );
+        static SpriteResource * sprWarriorIdle = core->ResourceGetAndCreateSprite( "asset_pack_01/player_idle", 10, 48, 48, 16 );
+        static SpriteResource * sprWarriorRun = core->ResourceGetAndCreateSprite( "asset_pack_01/player_run", 8, 48, 48, 16 );
+        static SpriteResource * sprWarriorStab = core->ResourceGetAndCreateSprite( "asset_pack_01/player_sword_stab", 7, 96, 48, 16 );
+        static SpriteResource * sprWarriorStrike = core->ResourceGetAndCreateSprite( "asset_pack_01/basic_sword_attack", 6, 64, 64, 16 );
+        //static SpriteResource * sprWarriorCharge = core->ResourceGetAndCreateSprite( "asset_pack_01/player_katana_continuous_attack", 9, 80, 64, 16 );
+        static SpriteResource * sprWarriorCharge = core->ResourceGetAndLoadSprite( "asset_pack_01/player_katana_continuous_attack" );
 
         static SpriteResource * sprCharDrone = core->ResourceGetAndCreateSprite( "char_drone_01", 1, 32, 32, 1 );
         static SpriteResource * sprVFX_SmallExplody= core->ResourceGetAndCreateSprite( "vfx_small_explody", 3, 32, 32, 10 );
 
-        static AudioResource * sndWarriorStrike1 = core->ResourceGetAndLoadAudio( "not_legal/lightsaber_quick_1.wav" );
-        static AudioResource * sndWarriorStrike2 = core->ResourceGetAndLoadAudio( "not_legal/lightsaber_quick_3.wav" );
-        static AudioResource * sndWarriorStab1 = core->ResourceGetAndLoadAudio( "not_legal/lightsaber_quick_2.wav" );
-        static AudioResource * sndWarriorStab2 = core->ResourceGetAndLoadAudio( "not_legal/lightsaber_quick_4.wav" );
-        static AudioResource * sndWarriorCharge1 = core->ResourceGetAndLoadAudio( "not_legal/lightsaber_clash_1.wav" );
-        static AudioResource * sndWarriorCharge2 = core->ResourceGetAndLoadAudio( "not_legal/lightsaber_clash_2.wav" );
+        static AudioResource * sndWarriorStrike1 = core->ResourceGetAndLoadAudio( "res/sounds/not_legal/lightsaber_quick_1.wav" );
+        static AudioResource * sndWarriorStrike2 = core->ResourceGetAndLoadAudio( "res/sounds/not_legal/lightsaber_quick_3.wav" );
+        static AudioResource * sndWarriorStab1 = core->ResourceGetAndLoadAudio( "res/sounds/not_legal/lightsaber_quick_2.wav" );
+        static AudioResource * sndWarriorStab2 = core->ResourceGetAndLoadAudio( "res/sounds/not_legal/lightsaber_quick_4.wav" );
+        static AudioResource * sndWarriorCharge1 = core->ResourceGetAndLoadAudio( "res/sounds/not_legal/lightsaber_clash_1.wav" );
+        static AudioResource * sndWarriorCharge2 = core->ResourceGetAndLoadAudio( "res/sounds/not_legal/lightsaber_clash_2.wav" );
 
         static AudioResource * sndCloseExplody1 = core->ResourceGetAndLoadAudio( "tomwinandysfx_explosions_volume_i_closeexplosion_01.wav" );
         static AudioResource * sndCloseExplody2 = core->ResourceGetAndLoadAudio( "tomwinandysfx_explosions_volume_i_closeexplosion_01.wav" );
@@ -133,7 +133,7 @@ namespace atto {
                                 bool isLooping = NetworkMessagePop<bool>( msg, offset );
                                 SpriteResource * sprite = core->ResourceGetLoadedSprite( spriteId );
                                 ent->spriteAnimator.frameDuration = framDuration;
-                                ent->spriteAnimator.SetSpriteIfDifferent( sprite, isLooping );
+                                ent->spriteAnimator.SetSpriteIfDifferent( core, sprite, isLooping );
                             }
                         } break;
                         case NetworkMessageType::ENTITY_AUDIO_PLAY:
@@ -234,31 +234,7 @@ namespace atto {
                 //ent->pos = ent->netDesiredPos;
             }
 
-            if( ent->spriteAnimator.sprite != nullptr && ent->spriteAnimator.sprite->frameCount > 1 ) {
-                ent->spriteAnimator.frameTimer += dt;
-                if( ent->spriteAnimator.frameTimer >= ent->spriteAnimator.frameDuration ) {
-                    ent->spriteAnimator.frameTimer -= ent->spriteAnimator.frameDuration;
-                    if( ent->spriteAnimator.frameDelaySkip == 0 ) {
-                        ent->spriteAnimator.frameIndex++;
-
-                        if( ent->spriteAnimator.frameIndex >= ent->spriteAnimator.sprite->frameCount ) {
-                            if( ent->spriteAnimator.loops == true ) {
-                                ent->spriteAnimator.frameIndex = 0;
-                                ent->spriteAnimator.loopCount++;
-                            }
-                            else {
-                                if( ent->spriteAnimator.frameIndex >= ent->spriteAnimator.sprite->frameCount ) {
-                                    ent->spriteAnimator.frameIndex = ent->spriteAnimator.sprite->frameCount - 1;
-                                    ent->spriteAnimator.loopCount = 1;
-                                }
-                            }
-                        }
-                    }
-                    else {
-                        ent->spriteAnimator.frameDelaySkip--;
-                    }
-                }
-            }
+            ent->spriteAnimator.Update( core, dt );
 
             const f32 entVel = glm::length( ent->vel );
             if( entVel > 50.0f ) {
@@ -361,14 +337,6 @@ namespace atto {
 
                                 glm::vec2 dir = glm::normalize( mousePosWorld - ent->pos );
                                 ent->vel += dir * 2500.0f;
-                                AudioResource * playedSound = core->AudioPlayRandom( 1.0f, false, sndWarriorCharge1, sndWarriorCharge2 );
-
-                                if( isMp ) {
-                                    NetworkMessage & msg = *core->MemoryAllocateTransient< NetworkMessage >();
-                                    msg.type = NetworkMessageType::ENTITY_AUDIO_PLAY;
-                                    NetworkMessagePush( msg, playedSound->name );
-                                    core->NetworkSend( msg );
-                                }
                             }
                         }
 
@@ -425,7 +393,7 @@ namespace atto {
                             switch( player.state ) {
                                 case PLAYER_STATE_IDLE:
                                 {
-                                    ent->spriteAnimator.SetSpriteIfDifferent( sprWarriorIdle, true );
+                                    ent->spriteAnimator.SetSpriteIfDifferent( core, sprWarriorIdle, true );
                                     ent->spriteAnimator.SetFrameRate( 10 );
                                     if( playerVel > 50.0f ) {
                                         player.state = PLAYER_STATE_MOVING;
@@ -433,7 +401,7 @@ namespace atto {
                                 } break;
                                 case PLAYER_STATE_MOVING:
                                 {
-                                    ent->spriteAnimator.SetSpriteIfDifferent( sprWarriorRun, true );
+                                    ent->spriteAnimator.SetSpriteIfDifferent( core, sprWarriorRun, true );
                                     ent->spriteAnimator.SetFrameRate( 10 );
                                     if( playerVel <= 50.0f ) {
                                         player.state = PLAYER_STATE_IDLE;
@@ -442,8 +410,7 @@ namespace atto {
                                 case PLAYER_STATE_ATTACKING:
                                 {
                                     if( player.currentAbility != NULL ) {
-                                        ent->spriteAnimator.SetSpriteIfDifferent( player.currentAbility->sprite, false );
-                                        ent->spriteAnimator.SetFrameRate( 16 );
+                                        ent->spriteAnimator.SetSpriteIfDifferent( core, player.currentAbility->sprite, false );
 
                                         i32 appliedDamged = 0;
                                         BoxBounds2D bb = {};
@@ -549,7 +516,7 @@ namespace atto {
                     Navigator & nav = ent->navigator;
 
                     if( ent->spriteAnimator.sprite == nullptr ) {
-                        ent->spriteAnimator.SetSpriteIfDifferent( sprCharDrone, false );
+                        ent->spriteAnimator.SetSpriteIfDifferent( core, sprCharDrone, false );
                     }
 
                     const f32 alertRad = 55.0f;
@@ -574,7 +541,7 @@ namespace atto {
                         } break;
                         case UNIT_STATE_EXPLODING:
                         {
-                            ent->spriteAnimator.SetSpriteIfDifferent( sprVFX_SmallExplody, false );
+                            ent->spriteAnimator.SetSpriteIfDifferent( core, sprVFX_SmallExplody, false );
                             if( unit.playedDeathSound == false && ent->spriteAnimator.frameIndex == 1 ) {
                                 unit.playedDeathSound = true;
                                 core->AudioPlayRandom( 1.0f, false, sndCloseExplody1, sndCloseExplody2 );
@@ -884,7 +851,7 @@ namespace atto {
         frameDuration = 1.0f / fps;
     }
 
-    void SpriteAnimator::SetSpriteIfDifferent( SpriteResource * sprite, bool loops ) {
+    void SpriteAnimator::SetSpriteIfDifferent( Core * core, SpriteResource * sprite, bool loops ) {
         if( this->sprite != sprite ) {
             this->sprite = sprite;
             SetFrameRate( (f32)sprite->frameRate );
@@ -892,6 +859,49 @@ namespace atto {
             frameTimer = 0;
             loopCount = 0;
             this->loops = loops;
+            TestFrameActuations( core );
+        }
+    }
+
+    void SpriteAnimator::Update( Core * core, f32 dt ) {
+        if( sprite != nullptr && sprite->frameCount > 1 ) {
+            frameTimer += dt;
+            if( frameTimer >= frameDuration ) {
+                frameTimer -= frameDuration;
+                if( frameDelaySkip == 0 ) {
+                    frameIndex++;
+
+                    TestFrameActuations( core );
+
+                    if( frameIndex >= sprite->frameCount ) {
+                        if( loops == true ) {
+                            frameIndex = 0;
+                            loopCount++;
+                        }
+                        else {
+                            if( frameIndex >= sprite->frameCount ) {
+                                frameIndex = sprite->frameCount - 1;
+                                loopCount = 1;
+                            }
+                        }
+                    }
+                }
+                else {
+                    frameDelaySkip--;
+                }
+            }
+        }
+    }
+
+    void SpriteAnimator::TestFrameActuations( Core * core ) {
+        const i32 frameActuationCount = sprite->frameActuations.GetCount();
+        for( i32 frameActuationIndex = 0; frameActuationIndex < frameActuationCount; frameActuationIndex++ ) {
+            SpriteActuation & frameActuation = sprite->frameActuations[ frameActuationIndex ];
+            if( frameActuation.frameIndex == frameIndex ) {
+                if( frameActuation.audioResources.GetCount() > 0 ) {
+                    core->AudioPlayRandom( frameActuation.audioResources );
+                }
+            }
         }
     }
 

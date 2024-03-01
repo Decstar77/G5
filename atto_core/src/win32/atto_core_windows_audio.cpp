@@ -190,7 +190,7 @@ namespace atto {
         Win32AudioResource audio = {};
         audio.name = name;
 
-        LargeString filePath = StringFormat::Large( "res/sounds/%s", name );
+        LargeString filePath = StringFormat::Large( "%s", name );
         if( audio.name.EndsWith( ".wav" ) ) {
             if( ALLoadWAV( filePath.GetCStr(), audio ) == false ) {
                 LogOutput( LogLevel::ERR, "AUDIO :: Could not load %s", name );

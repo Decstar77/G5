@@ -43,25 +43,35 @@ namespace atto {
         bool hasAnti;
     };
 
-    struct SpriteResource {
-        i64                 spriteId; // Deduced from the name and texture name
-        LargeString         name;
-        TextureResource *   textureResource;
-        i32                 frameCount;
-        i32                 frameWidth;
-        i32                 frameHeight;
-        i32                 frameRate;
-        glm::vec2           origin;
-
-        REFLECT();
-    };
-
     struct AudioResource {
-        SmallString name;
+        LargeString name;
         i32 channels;
         i32 sampleRate;
         i32 sizeBytes;
         i32 bitDepth;
+    };
+
+    struct SpriteActuation {
+        i32                              frameIndex;
+        FixedList< SmallString,     4 >  audioIds;
+        FixedList< AudioResource *, 4 >  audioResources;
+
+        REFLECT();
+    };
+
+    class SpriteResource {
+    public:
+        i64                             spriteId; // Deduced from the name and texture name
+        LargeString                     spriteName;
+        TextureResource *               textureResource;
+        i32                             frameCount;
+        i32                             frameWidth;
+        i32                             frameHeight;
+        i32                             frameRate;
+        glm::vec2                       origin;
+        FixedList< SpriteActuation, 4 > frameActuations;
+
+        REFLECT();
     };
 
     struct StaticMeshResource {
@@ -313,6 +323,10 @@ namespace atto {
         virtual i64                         ResourceGetFileSize( const char * path ) = 0;
         char *                              ResourceReadEntireFileIntoTransientMemory( const char * path, i64 * size );
 
+        template< typename _type_ >
+        void                                ResourceSaveRefl( const _type_ * obj, const char * path );
+        template< typename _type_>
+        bool                                ResourceLoadRefl( _type_ * obj, const char * path );
 
         virtual float                       FontGetTextBounds( FontHandle font, f32 fontSize, const char * text, glm::vec2 pos, BoxBounds2D & bounds ) = 0;
 
@@ -322,6 +336,9 @@ namespace atto {
         virtual void                        RenderSubmit( DrawContext * dcxt, bool clearBackBuffers ) = 0;
 
         virtual AudioSpeaker                AudioPlay( AudioResource * audioResource, f32 volume = 1.0f, bool looping = false ) = 0;
+        
+        template<i32 capcity>
+        AudioResource *                     AudioPlayRandom( const FixedList<AudioResource *, capcity> & audioResources, f32 volume = 1.0f, bool looping = false );
         template<typename... args>
         AudioResource *                     AudioPlayRandom( f32 volume, bool looping, args... audioResources );
 
@@ -439,12 +456,40 @@ namespace atto {
         return new ( mem ) _type_;
     }
 
+    template< typename _type_ >
+    void Core::ResourceSaveRefl( const _type_ * obj, const char * path ) {
+        TypeDescriptor * settingsType = TypeResolver<_type_>::get();
+        nlohmann::json j = settingsType->JSON_Write( obj );
+        ResourceWriteEntireFile( path, j.dump().c_str() );
+    }
+
+    template< typename _type_>
+    bool Core::ResourceLoadRefl( _type_ * obj, const char * path ) {
+        i64 fileSize;
+        char * data = ResourceReadEntireFileIntoTransientMemory( path, &fileSize );
+        if( data != nullptr ) {
+            nlohmann::json j = nlohmann::json::parse( data );
+            TypeDescriptor * settingsType = TypeResolver<_type_>::get();
+            settingsType->JSON_Read( j, obj );
+            return true;
+        }
+
+        return false;
+    }
+
     template<typename... args>
     AudioResource * Core::AudioPlayRandom( f32 volume, bool looping, args... audioResources ) {
         AudioResource * audioResourceArray[] = { audioResources... };
         i32 index = Random::Int( sizeof...( audioResources ) );
         AudioPlay( audioResourceArray[ index ], volume, looping );
         return audioResourceArray[ index ];
+    }
+
+    template<i32 capcity>
+    AudioResource * Core::AudioPlayRandom( const FixedList<AudioResource *, capcity> & audioResources, f32 volume /*= 1.0f*/, bool looping /*= false */ ) {
+        i32 index = Random::Int( audioResources.GetCount() );
+        AudioPlay( audioResources[ index ], volume, looping );
+        return audioResources[ index ];
     }
 
 }

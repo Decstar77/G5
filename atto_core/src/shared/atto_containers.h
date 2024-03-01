@@ -39,6 +39,7 @@ namespace atto {
         T &             Last();
 
         T *             Add( const T & value );
+        T *             Add_MemCpyPtr( const T * value );
         T &             AddEmpty();
         T *             AddUnique( const T & value );
         b8              AddIfPossible( const T & t );
@@ -141,6 +142,16 @@ namespace atto {
         AssertMsg( index >= 0 && index < capcity, "Array, add to many items" );
 
         data[ index ] = value;
+
+        return &data[ index ];
+    }
+
+    template<typename T, i32 capcity>
+    T * FixedList<T, capcity>::Add_MemCpyPtr( const T * value ) {
+        i32 index = count; count++;
+        AssertMsg( index >= 0 && index < capcity, "Array, add to many items" );
+
+        memcpy( &data[ index ], (const void *)value, sizeof( T ) );
 
         return &data[ index ];
     }
@@ -263,6 +274,247 @@ namespace atto {
 
     template<typename T, i32 capcity>
     T & FixedList<T, capcity>::operator[]( const i32 & index ) {
+        AssertMsg( index >= 0 && index < capcity, "Array, invalid index" );
+
+        return data[ index ];
+    }
+
+    template<typename T>
+    class GrowableList {
+    public:
+        typedef         i32( *SortFunc )( T & a, T & b );
+
+        T *             GetData();
+        const T *       GetData() const;
+        i32             GetCapcity() const;
+        i32             GetCount() const;
+        bool            IsFull() const;
+        bool            IsEmpty() const;
+        void            Clear( bool zeroMemory = false );
+
+        T *             Add( const T & value );
+        T &             AddEmpty();
+        T *             AddUnique( const T & value );
+        b8              AddIfPossible( const T & t );
+
+        bool            Contains( const T & value ) const;
+
+        void            RemoveIndex( const i32 & index );
+        void            Remove( const T * ptr );
+        void            RemoveValue( const T & value );
+        void            Reverse();
+
+        T *             Get( const i32 & index );
+        const T *       Get( const i32 & index ) const;
+
+        void            Sort( SortFunc f );
+
+        T &             operator[]( const i32 & index );
+        T               operator[]( const i32 & index ) const;
+
+    private:
+
+        void           Grow( i32 minCapcity );
+
+        T * data;
+        i32 count;
+        i32 capcity;
+    };
+
+    template<typename T>
+    void GrowableList<T>::Grow( i32 minCapcity ) {
+        if( minCapcity <= capcity ) {
+            return;
+        }
+        
+        T * newData = new T[ minCapcity ];
+        if( data != nullptr ) {
+            // @TODO: Check for trivially copiable.
+            for( i32 i = 0; i < count; i++ ) {
+                newData[ i ] = data[ i ];
+            }
+
+            delete data;
+        }
+
+        data = newData;
+        capcity = minCapcity;
+    }
+
+    template<typename T>
+    T * GrowableList<T>::GetData() {
+        return data;
+    }
+    
+    template<typename T>
+    const T * GrowableList<T>::GetData() const {
+        return data;
+    }
+
+    template<typename T>
+    i32 GrowableList<T>::GetCapcity() const {
+        return capcity;
+    }
+
+    template<typename T>
+    i32 GrowableList<T>::GetCount() const {
+        return count;
+    }
+
+    template<typename T>
+    bool GrowableList<T>::IsFull() const {
+        return count == capcity;
+    }
+
+    template<typename T>
+    bool GrowableList<T>::IsEmpty() const {
+        return count == 0;
+    }
+
+    template<typename T>
+    void GrowableList<T>::Clear( bool zeroMemory /*= false */ ) {
+        if( zeroMemory ) {
+            memset( data, 0, count );
+        }
+        count = 0;
+    }
+
+    template<typename T>
+    T * GrowableList<T>::Add( const T & value ) {
+        if( count + 1 >= capcity ) {
+            Grow( capcity * 2 );
+        }
+
+        i32 index = count; count++;
+        AssertMsg( index >= 0 && index < capcity, "GrowableList, add to many items" );
+
+        data[ index ] = value;
+
+        return &data[ index ];
+    }
+
+    template<typename T>
+    T & GrowableList<T>::AddEmpty() {
+        if( count + 1 >= capcity ) {
+            Grow( capcity * 2 );
+        }
+        
+        i32 index = count; count++;
+        AssertMsg( index >= 0 && index < capcity, "Array, add to many items" );
+
+        ZeroStruct( data[ index ] );
+
+        return data[ index ];
+    }
+
+    template<typename T>
+    T * GrowableList<T>::AddUnique( const T & value ) {
+        for( i32 index = 0; index < count; index++ ) {
+            if( data[ index ] == value ) {
+                return &data[ index ];
+            }
+        }
+
+        return Add( value );
+    }
+
+    template<typename T>
+    b8 GrowableList<T>::AddIfPossible( const T & t ) {
+        i32 index = count;
+        if( index < capcity ) {
+            data[ index ] = t;
+            count++;
+
+            return true;
+        }
+
+        return false;
+    }
+
+    template<typename T>
+    bool GrowableList<T>::Contains( const T & value ) const {
+        for( i32 index = 0; index < count; index++ ) {
+            if( data[ index ] == value ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    template<typename T>
+    void GrowableList<T>::RemoveIndex( const i32 & index ) {
+        AssertMsg( index >= 0 && index < count, "Array invalid remove index " );
+        for( i32 i = index; i < count - 1; i++ ) {
+            data[ i ] = data[ i + 1 ];
+        }
+        count--;
+    }
+
+    template<typename T>
+    void GrowableList<T>::Remove( const T * ptr ) {
+        for( i32 i = 0; i < count; i++ ) {
+            if( ptr == &data[ i ] ) {
+                RemoveIndex( i );
+                return;
+            }
+        }
+    }
+
+    template<typename T>
+    void GrowableList<T>::RemoveValue( const T & value ) {
+        for( i32 i = 0; i < count; i++ ) {
+            if( value == data[ i ] ) {
+                RemoveIndex( i );
+                return;
+            }
+        }
+    }
+
+    template<typename T>
+    void GrowableList<T>::Reverse() {
+        i32 start = 0;
+        i32 end = count - 1;
+        while( start < end ) {
+            Swap( data[ start ], data[ end ] );
+            start++;
+            end--;
+        }
+    }
+    
+    template<typename T>
+    T * GrowableList<T>::Get( const i32 & index ) {
+        AssertMsg( index >= 0 && index < capcity, "Array, invalid index" );
+        return &data[ index ];
+    }
+
+    template<typename T>
+    const T * GrowableList<T>::Get( const i32 & index ) const {
+        AssertMsg( index >= 0 && index < capcity, "Array, invalid index" );
+        return &data[ index ];
+    }
+
+    template<typename T>
+    void GrowableList<T>::Sort( SortFunc f ) {
+        // This is a bubble sort, it's not very good but it's simple and it works
+        for( i32 i = 0; i < count; i++ ) {
+            for( i32 j = i + 1; j < count; j++ ) {
+                if( f( data[ i ], data[ j ] ) > 0 ) {
+                    Swap( data[ i ], data[ j ] );
+                }
+            }
+        }
+    }
+
+    template<typename T>
+    T & GrowableList<T>::operator[]( const i32 & index ) {
+        AssertMsg( index >= 0 && index < capcity, "Array, invalid index" );
+
+        return data[ index ];
+    }
+
+    template<typename T>
+    T GrowableList<T>::operator[]( const i32 & index ) const {
         AssertMsg( index >= 0 && index < capcity, "Array, invalid index" );
 
         return data[ index ];
@@ -434,9 +686,9 @@ namespace atto {
         char * GetCStr();
         void                                CalculateLength();
         void                                Clear();
-        FixedStringBase<SizeBytes> & Add( const char & c );
-        FixedStringBase<SizeBytes> & Add( const char * c );
-        FixedStringBase<SizeBytes> & Add( const FixedStringBase<SizeBytes> & c );
+        FixedStringBase<SizeBytes> &        Add( const char & c );
+        FixedStringBase<SizeBytes> &        Add( const char * c );
+        FixedStringBase<SizeBytes> &        Add( const FixedStringBase<SizeBytes> & c );
         i32                                 FindFirstOf( const char & c ) const;
         i32                                 FindLastOf( const char & c ) const;
         i32                                 NumOf( const char & c ) const;
@@ -872,6 +1124,10 @@ namespace atto {
         i32 index = 0;
         const i32 l = length;
         const i32 o = static_cast<i32>( StringHash::ConstStrLen( other ) );
+
+        if( l != o ) {
+            return false;
+        }
 
         while( index < l ) {
             if( index >= o || data[ index ] != other[ index ] ) {

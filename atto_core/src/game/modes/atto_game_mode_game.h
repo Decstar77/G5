@@ -90,7 +90,9 @@ namespace atto {
         bool                loops;
 
         void                SetFrameRate( f32 fps );
-        void                SetSpriteIfDifferent( SpriteResource * sprite, bool loops );
+        void                SetSpriteIfDifferent( Core * core, SpriteResource * sprite, bool loops );
+        void                Update( Core * core, f32 dt );
+        void                TestFrameActuations( Core * core );
     };
 
     struct Particle {
