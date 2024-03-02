@@ -1,5 +1,7 @@
 #include "atto_core_windows.h"
 
+#include "native_file_dialog/nfd.h"
+
 #include <string>
 #include <fstream>
 #include <iostream>
@@ -114,6 +116,8 @@ namespace atto {
             file.close();
             return static_cast<i64>( fileSize );
         }
+        else {
+        }
 
         return -1;
     }
@@ -125,4 +129,42 @@ namespace atto {
     void WindowsCore::ResourceWriteEntireFile( const char * path, const char * data ) {
         WinBoyoWriteTextFile( path, data );
     }
+  
+    bool WindowsCore::WindowOpenNativeFileDialog( const char * basePath, LargeString & res ) {
+        nfdchar_t * outPath = NULL;
+        nfdresult_t result = NFD_OpenDialog( NULL, basePath, &outPath );
+
+        if( result == NFD_OKAY ) {
+            res.Clear();
+            res.Add( outPath );
+            res.BackSlashesToSlashes();
+            free( outPath );
+            return true;
+        }
+        else {
+            LogOutput( LogLevel::ERR, "Error: %s\n", NFD_GetError() );
+        }
+
+        return false;
+    }
+
+    bool WindowsCore::WindowOpenNativeFolderDialog( const char * basePath, LargeString & res ) {
+        nfdchar_t * outPath = NULL;
+        nfdresult_t result = NFD_PickFolder( basePath, &outPath );
+
+        if( result == NFD_OKAY ) {
+            res.Clear();
+            res.Add( outPath );
+            res.BackSlashesToSlashes();
+            free( outPath );
+            return true;
+        }
+        else {
+            LogOutput( LogLevel::ERR, "Error: %s\n", NFD_GetError() );
+        }
+
+        return false;
+    }
+
+    
 }

@@ -64,12 +64,17 @@ namespace atto {
         i64                             spriteId; // Deduced from the name and texture name
         LargeString                     spriteName;
         TextureResource *               textureResource;
+        bool                            isTileMap;
+        i32                             tileWidth;
+        i32                             tileHeight;
         i32                             frameCount;
         i32                             frameWidth;
         i32                             frameHeight;
         i32                             frameRate;
         glm::vec2                       origin;
         FixedList< SpriteActuation, 4 > frameActuations;
+
+        LargeString                     GetResourcePath() const;
 
         REFLECT();
     };
@@ -379,6 +384,8 @@ namespace atto {
         //virtual void                        WindowSetFullscreen(bool fullscreen) = 0;
         //virtual void                        WindowSetCursorVisible(bool visible) = 0;
         //virtual void                        WindowSetCursorLocked(bool locked) = 0;
+        virtual bool                        WindowOpenNativeFileDialog( const char * basePath, LargeString & res ) = 0;
+        virtual bool                        WindowOpenNativeFolderDialog( const char * basePath, LargeString & res ) = 0;
 
         NetClient *                         GetNetClient();
         void                                NetworkConnect();

@@ -11,6 +11,7 @@
 #ifndef ATTO_SERVER
 
 #include "json/json.hpp"
+#include "imgui.h"
 
 namespace atto {
 
@@ -52,12 +53,15 @@ namespace atto {
     void JSON_Read( const nlohmann::json & j, glm::mat3 & o );
     void JSON_Read( const nlohmann::json & j, glm::mat4 & o );
 
+
+
     struct TypeDescriptor {
         i32         size;
         SmallString name;
         virtual ~TypeDescriptor() {}
         virtual nlohmann::json      JSON_Write( const void * obj ) = 0;
         virtual void                JSON_Read( const nlohmann::json & j, const void * obj ) = 0;
+        virtual void                Imgui_Draw( const void * obj, const char * memberName ) = 0;
     };
 
     template <typename T>
@@ -95,9 +99,9 @@ namespace atto {
         struct Member {
             i32 offset;
             SmallString name;
-            TypeDescriptor * type;
+            struct TypeDescriptor * type;
         };
-
+        
         std::vector<Member> members;
 
         TypeDescriptor_Struct( void ( *init )( TypeDescriptor_Struct * ) ) {
@@ -128,6 +132,17 @@ namespace atto {
                     const nlohmann::json & jj = j[ member.name.GetCStr() ];
                     member.type->JSON_Read( jj, (char *)obj + member.offset );
                 }
+            }
+        }
+
+        virtual void Imgui_Draw( const void * obj, const char * memberName ) {
+            nlohmann::json j;
+            if ( ImGui::TreeNode( memberName ) ) {
+                for( const Member & member : members ) {
+                    member.type->Imgui_Draw( (char *)obj + member.offset, member.name.GetCStr() );
+                }
+
+                ImGui::TreePop();
             }
         }
     };
@@ -179,6 +194,27 @@ namespace atto {
                 itemType->JSON_Read( jj, &item );
                 list->Add( item );
             }
+        }
+
+        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
+            FixedList< _type_, cap > * list = ( FixedList< _type_, cap > * )obj;
+        #if 1
+            if( ImGui::TreeNode( memberName ) ) {
+                for( i32 i = 0; i < list->GetCount(); i++ ) {
+                    SmallString n = StringFormat::Small( "Index:%d", i );
+                    itemType->Imgui_Draw( list->Get( i ), n.GetCStr() );
+                }
+                ImGui::TreePop();
+            }
+        #else 
+            if( ImGui::BeginListBox( memberName ) ) {
+                for( i32 i = 0; i < list->GetCount(); i++ ) {
+                    SmallString n = StringFormat::Small( "Index:%d", i );
+                    itemType->Imgui_Draw( list->Get( i ), n.GetCStr() );
+                }
+                ImGui::EndListBox();
+            }
+        #endif
         }
     };
 

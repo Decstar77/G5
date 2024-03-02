@@ -690,6 +690,7 @@ namespace atto {
         FixedStringBase<SizeBytes> &        Add( const char * c );
         FixedStringBase<SizeBytes> &        Add( const FixedStringBase<SizeBytes> & c );
         i32                                 FindFirstOf( const char & c ) const;
+        i32                                 FindFirstOf( const char * c ) const;
         i32                                 FindLastOf( const char & c ) const;
         i32                                 NumOf( const char & c ) const;
         FixedStringBase<SizeBytes>          SubStr( i32 fromIndex ) const;
@@ -707,6 +708,8 @@ namespace atto {
         void                                ToUpperCase();
         void                                StripFileExtension();
         void                                StripFilePath();
+        void                                StripFile();
+        FixedStringBase<SizeBytes>          GetFilePart() const;
         void                                BackSlashesToSlashes();
         //TransientList<FixedStringBase>      Split(char delim) const;
 
@@ -824,6 +827,32 @@ namespace atto {
     }
 
     template<u64 SizeBytes>
+    i32 FixedStringBase<SizeBytes>::FindFirstOf( const char * c ) const {
+        const i32 otherLength = static_cast<i32>( StringHash::ConstStrLen( c ) );
+        const i32 ourLength = length;
+
+        i32 result = -1;
+        for( i32 i = 0; i < ourLength; i++ ) {
+            result = i;
+            for( i32 j = 0; j < otherLength; j++ ) {
+                if( data[ i ] != c[ j ] ) {
+                    result = -1;
+                    break;
+                }
+                else {
+                    i++;
+                }
+            }
+            
+            if( result != -1 ) {
+                return result;
+            }
+        }
+
+        return result;
+    }
+
+    template<u64 SizeBytes>
     i32 FixedStringBase<SizeBytes>::FindLastOf( const char & c ) const {
         const i32 l = length;
         for( i32 i = l; i >= 0; i-- ) {
@@ -852,7 +881,7 @@ namespace atto {
         const i32 l = length;
         AssertMsg( fromIndex >= 0 && fromIndex < l, "SubStr range invalid" );
 
-        FixedStringBase<SizeBytes> result = "";
+        FixedStringBase<SizeBytes> result = {};
         for( i32 i = fromIndex; i < l; i++ ) {
             result.Add( data[ i ] );
         }
@@ -1070,6 +1099,36 @@ namespace atto {
 
             length = (i32)StringHash::ConstStrLen( (char *)data );
         }
+    }
+
+    template<u64 SizeBytes>
+    void FixedStringBase<SizeBytes>::StripFile() {
+        i32 index = FindLastOf( '/' );
+        if( index != -1 ) {
+            for( i32 i = index; i < length; i++ ) {
+                data[ i ] = '\0';
+            }
+            CalculateLength();
+        }
+    }
+
+    template<u64 SizeBytes>
+    FixedStringBase<SizeBytes> atto::FixedStringBase<SizeBytes>::GetFilePart() const {
+        FixedStringBase<SizeBytes> result = {};
+        i32 index = FindLastOf( '/' );
+        if( index != -1 ) {
+            i32 cur = 0;
+            for( i32 i = index + 1; i < length; i++ ) {
+                result.data[ cur ] = data[ i ];
+                cur++;
+            }
+            result.CalculateLength();
+        }
+        else {
+            result = *this;
+        }
+
+        return result;
     }
 
     template<u64 SizeBytes>

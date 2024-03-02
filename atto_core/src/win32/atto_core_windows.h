@@ -129,6 +129,8 @@ namespace atto {
         virtual void                    WindowSetTitle(const char* title) override;
         virtual void                    WindowSetVSync( bool value ) override;
         virtual bool                    WindowGetVSync() override;
+        virtual bool                    WindowOpenNativeFileDialog( const char * basePath, LargeString & res ) override;
+        virtual bool                    WindowOpenNativeFolderDialog( const char * basePath, LargeString & res ) override;
 
         void                            GLResetSurface(f32 w, f32 h);
 

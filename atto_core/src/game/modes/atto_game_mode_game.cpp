@@ -93,8 +93,9 @@ namespace atto {
         static SpriteResource * sprWarriorCharge = core->ResourceGetAndLoadSprite( "asset_pack_01/player_katana_continuous_attack" );
 
         static SpriteResource * sprCharDrone = core->ResourceGetAndCreateSprite( "char_drone_01", 1, 32, 32, 1 );
-        static SpriteResource * sprVFX_SmallExplody= core->ResourceGetAndCreateSprite( "vfx_small_explody", 3, 32, 32, 10 );
-
+        //static SpriteResource * sprVFX_SmallExplody= core->ResourceGetAndCreateSprite( "vfx_small_explody", 3, 32, 32, 10 );
+        static SpriteResource * sprVFX_SmallExplody = core->ResourceGetAndLoadSprite( "vfx_small_explody" );
+        
         static AudioResource * sndWarriorStrike1 = core->ResourceGetAndLoadAudio( "res/sounds/not_legal/lightsaber_quick_1.wav" );
         static AudioResource * sndWarriorStrike2 = core->ResourceGetAndLoadAudio( "res/sounds/not_legal/lightsaber_quick_3.wav" );
         static AudioResource * sndWarriorStab1 = core->ResourceGetAndLoadAudio( "res/sounds/not_legal/lightsaber_quick_2.wav" );
@@ -102,8 +103,8 @@ namespace atto {
         static AudioResource * sndWarriorCharge1 = core->ResourceGetAndLoadAudio( "res/sounds/not_legal/lightsaber_clash_1.wav" );
         static AudioResource * sndWarriorCharge2 = core->ResourceGetAndLoadAudio( "res/sounds/not_legal/lightsaber_clash_2.wav" );
 
-        static AudioResource * sndCloseExplody1 = core->ResourceGetAndLoadAudio( "tomwinandysfx_explosions_volume_i_closeexplosion_01.wav" );
-        static AudioResource * sndCloseExplody2 = core->ResourceGetAndLoadAudio( "tomwinandysfx_explosions_volume_i_closeexplosion_01.wav" );
+        static AudioResource * sndCloseExplody1 = core->ResourceGetAndLoadAudio( "res/sounds/tomwinandysfx_explosions_volume_i_closeexplosion_01.wav" );
+        static AudioResource * sndCloseExplody2 = core->ResourceGetAndLoadAudio( "res/sounds/tomwinandysfx_explosions_volume_i_closeexplosion_01.wav" );
 
         static FontHandle fontHandle = core->ResourceGetFont( "default" );
 

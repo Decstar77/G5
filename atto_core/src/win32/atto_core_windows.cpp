@@ -752,7 +752,7 @@ namespace atto {
         LargeString textureName = StringFormat::Large( "%s/%s.png", spriteName, shortName.GetCStr() );
         TextureResource * textureResource = ResourceGetAndLoadTexture( textureName.GetCStr(), false, false );
         if( textureResource == nullptr ) {
-            return nullptr;
+            LogOutput( LogLevel::ERR, "Could not find texture for sprite '%s'", spriteName );
         }
 
         SpriteResource * spriteResource = MemoryAllocateTransient<SpriteResource>();
@@ -785,8 +785,9 @@ namespace atto {
         LargeString resPath = StringFormat::Large( "res/sprites/%s/%s.json", spriteName, folder.GetCStr() );
 
         SpriteResource * spriteResource = MemoryAllocateTransient<SpriteResource>();
-        if( ResourceLoadRefl( spriteResource, resPath.GetCStr() ) == true ) {
+        spriteResource->spriteName = spriteName;
 
+        if( ResourceLoadRefl( spriteResource, resPath.GetCStr() ) == true ) {
             resPath = StringFormat::Large( "%s/%s.png", spriteName, folder.GetCStr() );
             spriteResource->textureResource = ResourceGetAndLoadTexture( resPath.GetCStr(), false, false );
             if( spriteResource->textureResource == nullptr ) {

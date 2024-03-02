@@ -184,6 +184,10 @@ namespace atto {
         void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             *(i32 *)obj = j.get<i32>();
         }
+
+        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
+            ImGui::InputInt( memberName, (i32 *)obj );
+        }
     };
 
     template <>
@@ -204,6 +208,10 @@ namespace atto {
 
         void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             *(u32 *)obj = j.get<u32>();
+        }
+
+        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
+            throw std::logic_error( "The method or operation is not implemented." );
         }
     };
 
@@ -226,6 +234,10 @@ namespace atto {
         void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             *(i64 *)obj = j.get<i64>();
         }
+
+        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
+            ImGui::InputScalar( memberName, ImGuiDataType_S64, (i64 *)obj );
+        }
     };
 
     template <>
@@ -246,6 +258,10 @@ namespace atto {
 
         void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             *(u64 *)obj = j.get<u64>();
+        }
+
+        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
+            throw std::logic_error( "The method or operation is not implemented." );
         }
     };
 
@@ -268,6 +284,10 @@ namespace atto {
         void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             *(f32 *)obj = j.get<f32>();
         }
+
+        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
+            ImGui::InputFloat( memberName, (float *)obj );
+        }
     };
 
     template <>
@@ -288,6 +308,10 @@ namespace atto {
 
         void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             *(f64 *)obj = j.get<f64>();
+        }
+
+        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
+            ImGui::InputDouble( memberName, (double *)obj );
         }
     };
 
@@ -310,6 +334,10 @@ namespace atto {
         void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             *(bool *)obj = j.get<bool>();
         }
+
+        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
+            ImGui::Checkbox( memberName, (bool *)obj );
+        }
     };
 
     template <>
@@ -330,6 +358,10 @@ namespace atto {
 
         void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             atto::JSON_Read( j, *(glm::vec2 *)obj );
+        }
+
+        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
+            ImGui::InputFloat2( memberName, (float *)obj );
         }
     };
 
@@ -352,6 +384,10 @@ namespace atto {
         void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             atto::JSON_Read( j, *(glm::vec3 *)obj );
         }
+
+        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
+            ImGui::InputFloat3( memberName, (float *)obj );
+        }
     };
 
     template <>
@@ -372,6 +408,10 @@ namespace atto {
 
         void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             atto::JSON_Read( j, *(glm::vec4 *)obj );
+        }
+
+        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
+            ImGui::InputFloat4( memberName, (float *)obj );
         }
     };
 
@@ -394,6 +434,10 @@ namespace atto {
         void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             atto::JSON_Read( j, *(glm::mat2 *)obj );
         }
+
+        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
+            throw std::logic_error( "The method or operation is not implemented." );
+        }
     };
 
     template <>
@@ -414,6 +458,10 @@ namespace atto {
 
         void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             atto::JSON_Read( j, *(glm::mat3 *)obj );
+        }
+        
+        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
+            throw std::logic_error( "The method or operation is not implemented." );
         }
     };
 
@@ -436,6 +484,10 @@ namespace atto {
         void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             atto::JSON_Read( j, *(glm::mat4 *)obj );
         }
+
+        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
+            throw std::logic_error( "The method or operation is not implemented." );
+        }
     };
 
     template <>
@@ -457,6 +509,13 @@ namespace atto {
         void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             atto::JSON_Read( j, *(SmallString *)obj );
         }
+
+        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
+            SmallString * s = (SmallString *)obj;
+            if( ImGui::InputText( memberName, s->GetCStr(), SmallString::CAPCITY ) ) {
+                s->CalculateLength();
+            }
+        }
     };
 
     template <>
@@ -477,6 +536,13 @@ namespace atto {
 
         void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             atto::JSON_Read( j, *(LargeString *)obj );
+        }
+
+        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
+            LargeString * s = (LargeString *)obj;
+            if( ImGui::InputText( memberName, s->GetCStr(), LargeString::CAPCITY ) ) {
+                s->CalculateLength();
+            }
         }
     };
 
@@ -568,6 +634,11 @@ namespace atto {
                 } break;
             }
         }
+
+        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
+            throw std::logic_error( "The method or operation is not implemented." );
+        }
+
     };
 
     template <>

@@ -18,22 +18,27 @@ namespace atto {
         static void EndFrame();
     };
 
+    struct Editor_ResourceWidget {
+        SpriteResource * spriteResource;
+    };
+
     class Editor {
     public:
         Editor();
 
         void        UpdateAndRender( Core * core, GameMode * game, f32 dt );
         void        MainMenuBar( Core * core );
-        
-        bool            editorActive = false;
-        i32             updateAndRenderFlags = UPDATE_AND_RENDER_FLAG_NONE; // UpdateAndRenderFlags
+        void        ResourceEditor( Core * core );
 
         union {
             struct {
                 bool canvas;
+                bool resourceEditor;
             } show;
             bool windowShows[ sizeof( show ) / sizeof( bool ) ];
         };
+
+        Editor_ResourceWidget resourceWidget;
         
     };
 }

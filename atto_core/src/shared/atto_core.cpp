@@ -567,6 +567,16 @@ namespace atto {
         }
     }
 
+    LargeString SpriteResource::GetResourcePath() const {
+        LargeString result = {};
+        result.Add( "res/sprites/" );
+        result.Add( spriteName );
+        result.Add( '/' );
+        result.Add( spriteName.GetFilePart() );
+        result.Add( ".json" );
+        return result;
+    }
+
 }
 
 

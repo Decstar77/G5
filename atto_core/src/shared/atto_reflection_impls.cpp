@@ -21,6 +21,9 @@ namespace atto {
 
         REFLECT_STRUCT_BEGIN( SpriteResource )
         REFLECT_STRUCT_MEMBER( spriteId )
+        REFLECT_STRUCT_MEMBER( isTileMap )
+        REFLECT_STRUCT_MEMBER( tileWidth )
+        REFLECT_STRUCT_MEMBER( tileHeight )
         REFLECT_STRUCT_MEMBER( frameCount )
         REFLECT_STRUCT_MEMBER( frameWidth )
         REFLECT_STRUCT_MEMBER( frameHeight )
