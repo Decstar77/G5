@@ -1,7 +1,7 @@
 #pragma once
 
 #define ATTO_DEBUG 1
-#define ATTO_DEBUG_RENDERING 1
+#define ATTO_DEBUG_RENDERING 0
 #define ATTO_EDITOR 1
 
 
@@ -37,6 +37,7 @@
 #define Gigabytes(val) (Megabytes(val) * 1024LL)
 
 #define SetABit(x) (1 << x)
+#define EnumHasFlag(x, flag) ((x & flag) == flag)
 #define EnumContainsFlag(x, flag) ((x & flag) == flag)
 #define EnumSetFlag(x, flag) (x |= flag)
 #define EnumRemoveFlag(x, flag) (x &= ~flag)

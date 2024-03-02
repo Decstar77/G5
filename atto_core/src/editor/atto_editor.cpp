@@ -124,6 +124,10 @@ namespace atto {
             if( resourceWidget.spriteResource != nullptr ) {
                 TypeDescriptor * settingsType = TypeResolver<SpriteResource>::get();
                 settingsType->Imgui_Draw( resourceWidget.spriteResource, resourceWidget.spriteResource->spriteName.GetCStr() );
+                ImGui::SeparatorText( "Image" );
+                if( resourceWidget.spriteResource->textureResource != nullptr ) {
+                    ImGui::Image( (void *)(intptr_t)resourceWidget.spriteResource->textureResource->handle, ImVec2( (f32)resourceWidget.spriteResource->textureResource->width, (f32)resourceWidget.spriteResource->textureResource->height ) );
+                }
             }
 
             ImGui::End();

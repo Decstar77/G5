@@ -10,7 +10,7 @@ namespace atto {
     class UIContext {
     public:
         void Initialize( Core * core );
-        void StartBox( float startX, float starY, bool horizontal );
+        void BeginBox( float startX, float starY, bool horizontal );
         void EndBox();
         bool AddButton( const char * text );
 

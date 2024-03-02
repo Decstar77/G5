@@ -36,6 +36,7 @@ namespace atto {
         f32 cooldownTimer;
         bool stopsMovement;
         SpriteResource * sprite;
+        TextureResource * icon;
 
         FixedList< EntityHandle, 32 > hits;
     };
@@ -90,7 +91,7 @@ namespace atto {
         bool                loops;
 
         void                SetFrameRate( f32 fps );
-        void                SetSpriteIfDifferent( Core * core, SpriteResource * sprite, bool loops );
+        bool                SetSpriteIfDifferent( Core * core, SpriteResource * sprite, bool loops );
         void                Update( Core * core, f32 dt );
         void                TestFrameActuations( Core * core );
     };
@@ -181,6 +182,41 @@ namespace atto {
         i32         otherPlayerNumber;
     };
     
+    enum SpriteTileFlags {
+        SPRITE_TILE_FLAG_NO_WALK = SetABit( 1 )
+    };
+
+    struct SpriteTile {
+        i32                 xIndex;
+        i32                 yIndex;
+        i32                 flatIndex;
+        glm::vec2           center;
+        BoxBounds2D         wsBounds;
+        SpriteResource *    spriteResource;
+        i32                 spriteTileIndexX;
+        i32                 spriteTileIndexY;
+        i32                 flags;
+    };
+
+    struct SpriteTileMap {
+        i32                              tileXCount;
+        i32                              tileYCount;
+        FixedList<SpriteTile, 100 * 100> tiles;
+
+        void                             GetApron( i32 x, i32 y, FixedList<SpriteTile *, 9> & apron );
+    };
+
+    struct GameGUI {
+        f32             startX;
+        f32             startY;
+        DrawContext *   drawContext;
+        Core *          core;
+
+        void BeginAbilityBar( Core * core, DrawContext * drawContext );
+        void AbilityIcon( Ability & ab );
+        void EndAbilityBar();
+    };
+
     class Map {
     public:
         inline static f32 BlockDim = 4.0f;
@@ -205,6 +241,9 @@ namespace atto {
         
         FixedList< Entity *, 2 >                players = {};
 
+        SpriteTileMap                           tileMap = {};
+
+        GameGUI                                 ui = {};
 
     public:
         // @NOTE: "Map Live" functions 
@@ -213,8 +252,12 @@ namespace atto {
         Entity *                        SpawnEntity( EntityType type );
         Entity *                        SpawnDrone( glm::vec2 pos );
         void                            EntityUpdatePlayer( Core * core, Entity * ent, EntList & activeEnts );
-        
         Entity *                        ClosestPlayerTo( glm::vec2 p, f32 & dist );
+
+
+        // @NOTE: "Map Editor" functions
+        void                            Editor_MapTilePlace( i32 xIndex, i32 yIndex, SpriteResource * sprite, i32 spriteX, i32 spriteY, i32 flags );
+        void                            Editor_MapTileFillBorder( SpriteResource * sprite, i32 spriteX, i32 spriteY, i32 flags );
     };
 
     class GameMode_Game : public GameMode {

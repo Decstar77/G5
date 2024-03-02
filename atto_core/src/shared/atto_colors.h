@@ -7,6 +7,7 @@ namespace atto {
     class Colors {
     public:
         static glm::vec4    FromHex( const char * h );
+        static glm::vec4    FromHexA( const char * h );
         static u32          VecToU32( const glm::vec4 & v );
 
     public:

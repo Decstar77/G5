@@ -77,7 +77,6 @@ namespace atto {
     };
 
     struct Win32TextureResource : public TextureResource {
-        u32 handle;
     };
 
     struct Win32AudioResource : public AudioResource {
@@ -102,6 +101,8 @@ namespace atto {
     public:
         void Run(int argc, char** argv) override;
         
+        virtual f64                     GetTheCurrentTime() const override;
+
         virtual TextureResource *       ResourceGetAndLoadTexture( const char * name, bool genMips, bool genAnti ) override;
         virtual SpriteResource *        ResourceGetAndCreateSprite( const char * spriteName, i32 frameCount, i32 frameWidth, i32 frameHeight, i32 frameRate ) override;
         virtual SpriteResource *        ResourceGetAndLoadSprite( const char * spriteName ) override;

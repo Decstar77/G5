@@ -274,6 +274,16 @@ namespace atto {
         return false;
     }
 
+    bool Collider2D::Collision( const BoxBounds2D & box, Manifold2D & manifold ) const {
+        switch( type ) {
+            case COLLIDER_TYPE_CIRCLE: return this->box.Collision( circle, manifold );
+            case COLLIDER_TYPE_BOX: return this->box.Collision( box, manifold );
+        }
+        
+        Assert( false );
+        return false;
+    }
+
     f32 BoxBounds::GetWidth() const {
         return max.x - min.x;
     }

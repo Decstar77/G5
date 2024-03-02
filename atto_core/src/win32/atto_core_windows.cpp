@@ -182,7 +182,7 @@ namespace atto {
     #if ATTO_EDITOR
         editor = new Editor();
     #endif
-
+        
         bool showDemoWindow = true;
 
         f32 simTickRate = 1.0f / 30.0f;
@@ -223,8 +223,7 @@ namespace atto {
 
             MemoryClearTransient();
 
-            currentTime = glfwGetTime();
-            f64 endTime = currentTime;
+            f64 endTime = glfwGetTime();
             this->deltaTime = (f32)( endTime - startTime );
             startTime = endTime;
         }
@@ -232,6 +231,10 @@ namespace atto {
         EngineImgui::Shutdown();
 
         delete client;
+    }
+
+    f64 WindowsCore::GetTheCurrentTime() const {
+        return glfwGetTime();
     }
 
     void WindowsCore::RenderSetCamera( f32 width, f32 height ) {
@@ -336,8 +339,8 @@ namespace atto {
     void WindowsCore::RenderSubmit( DrawContext * dcxt, bool clearBackBuffers ) {
         if( clearBackBuffers ) {
             //glClearColor(0.5f, 0.2f, 0.2f, 1.0f);
-            glClearColor( 0.2f, 0.5f, 0.2f, 1.0f );
-            //glClearColor( 0.1f, 0.1f, 0.2f, 1.0f );
+            //glClearColor( 0.2f, 0.5f, 0.2f, 1.0f );
+            glClearColor( 0.1f, 0.1f, 0.2f, 1.0f );
             //glClearColor( Colors::SILVER.x, Colors::SILVER.y, Colors::SILVER.z, 1.0f );
             glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
         }
@@ -451,7 +454,7 @@ namespace atto {
                     GLShaderProgramSetSampler( "texture0", 0 );
                     GLShaderProgramSetVec4( "color", cmd.color );
                     GLShaderProgramSetTexture( 0, texture->handle );
-                    GLShaderProgramSetMat4( "p", cameraProjection );
+                    GLShaderProgramSetMat4( "p", cmd.proj );
 
                     glDisable( GL_CULL_FACE );
                     glBindVertexArray( spriteVertexBuffer.vao );

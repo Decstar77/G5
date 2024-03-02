@@ -6,6 +6,7 @@
 #include "atto_logging.h"
 #include "atto_input.h"
 #include "atto_network.h"
+#include "atto_clock.h"
 
 #include "atto_reflection.h"
 
@@ -41,6 +42,7 @@ namespace atto {
         i32 channels;
         bool hasMips;
         bool hasAnti;
+        u32 handle;
     };
 
     struct AudioResource {
@@ -175,7 +177,6 @@ namespace atto {
                     glm::vec2 tlUV;
                     glm::vec2 brUV;
                     SpriteResource * spriteRes;
-                    i32                 frame;
                 } sprite;
                 struct {
                     glm::vec2 bl;
@@ -233,13 +234,15 @@ namespace atto {
         void SetCameraPos( glm::vec2 pos );
         void DrawCircle( glm::vec2 pos, f32 radius, glm::vec4 colour = glm::vec4( 1 ) );
         void DrawRect( glm::vec2 bl, glm::vec2 tr, glm::vec4 colour = glm::vec4( 1 ) );
+        void DrawRectNoCamOffset( glm::vec2 bl, glm::vec2 tr, glm::vec4 colour = glm::vec4( 1 ) );
         void DrawRectScreen( glm::vec2 bl, glm::vec2 tr, glm::vec4 colour = glm::vec4( 1 ) );
         void DrawRect( glm::vec2 center, glm::vec2 dim, f32 rot, const glm::vec4 & color = glm::vec4( 1 ) );
         void DrawLine2D( glm::vec2 start, glm::vec2 end, f32 thicc, const glm::vec4 & color = glm::vec4( 1 ) );
         void DrawLine2D_NDC( glm::vec2 start, glm::vec2 end, f32 thicc, const glm::vec4 & color = glm::vec4( 1 ) );
         void DrawTexture( TextureResource * texture, glm::vec2 center, f32 rot = 0.0f, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
-        void DrawTextureBL( TextureResource * texture, glm::vec2 bl, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
+        void DrawTextureScreen( TextureResource * texture, glm::vec2 bl, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
         void DrawSprite( SpriteResource * sprite, i32 frameIndex, glm::vec2 center, f32 rot = 0.0f, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
+        void DrawSprite( SpriteResource * sprite, i32 tileX, i32 tileY, glm::vec2 center, f32 rot = 0.0f, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
         void DrawText2D( FontHandle font, glm::vec2 tl, f32 fontSize, const char * text, glm::vec4 colour = glm::vec4( 1 ) );
         void DrawPlane( glm::vec3 center, glm::vec3 normal, glm::vec2 dim, glm::vec4 colour = glm::vec4( 1 ) );
         void DrawSphere( glm::vec3 center, f32 r, glm::vec4 colour = glm::vec4( 1 ) );
@@ -271,7 +274,7 @@ namespace atto {
         f32             cameraWidth;
         f32             cameraHeight;
         glm::mat4       screenProjection;
-        FixedList<DrawCommand, 1024> drawList;
+        FixedList<DrawCommand, 4000> drawList;
     };
 
     enum PlayerConnectState {
@@ -311,7 +314,7 @@ namespace atto {
         void                                LogOutput( LogLevel level, const char * message, ... );
 
         f32                                 GetDeltaTime() const;
-        f64                                 GetLastTime() const;
+        virtual f64                         GetTheCurrentTime() const = 0;
         Camera                              CreateDefaultCamera() const;
         
         void                                MoveToGameMode( GameMode * gameMode );
@@ -410,7 +413,6 @@ namespace atto {
         Editor *                    editor = nullptr;
         NetClient *                 client = nullptr;
 
-        f64                 currentTime = 0.0f;
         f32                 deltaTime = 0.0f;
 
         f32                 mainSurfaceWidth;

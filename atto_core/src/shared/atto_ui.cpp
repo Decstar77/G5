@@ -11,7 +11,7 @@ namespace atto {
         this->core = core;
     }
 
-    void UIContext::StartBox( float startX, float startY, bool horizontal ) {
+    void UIContext::BeginBox( float startX, float startY, bool horizontal ) {
         this->startX = startX;
         this->startY = startY;
         this->horizontal = horizontal;

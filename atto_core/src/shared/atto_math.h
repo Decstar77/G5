@@ -114,6 +114,7 @@ namespace atto {
         bool                    Intersects( const BoxBounds2D & bounds ) const;
         bool                    Intersects( const Collider2D & other ) const;
         bool                    Collision( const Collider2D & other, Manifold2D & manifold ) const;
+        bool                    Collision( const BoxBounds2D & box, Manifold2D & manifold ) const;
     };
 
     struct Manifold {
