@@ -233,20 +233,35 @@ namespace atto {
         DrawContext * uiDrawContext = core->RenderGetDrawContext( 1 );
         DrawContext * debugDrawContext = core->RenderGetDrawContext( 2 );
 
-        spriteDrawContext->SetCameraPos( localCameraPos - spriteDrawContext->GetCameraDims() / 2.0f );
-        debugDrawContext->SetCameraPos( localCameraPos - spriteDrawContext->GetCameraDims() / 2.0f );
-
         EntList & entities = *core->MemoryAllocateTransient<EntList>();
         entityPool.GatherActiveObjs( entities );
 
         const glm::vec2 mousePosPix = core->InputMousePosPixels();
         const glm::vec2 mousePosWorld = spriteDrawContext->ScreenPosToWorldPos( mousePosPix );
 
+        //localCameraPos = ent->pos;
+        const glm::vec2 camMin = localCameraPos - spriteDrawContext->GetCameraDims() / 2.0f;
+        const glm::vec2 camMax = localCameraPos + spriteDrawContext->GetCameraDims() / 2.0f;
+        const glm::vec2 worldMin = glm::vec2( 0, 0 );
+        const glm::vec2 worldMax = glm::vec2( tileMap.tileXCount * 32, tileMap.tileYCount * 32 );
+
+        if( camMin.x < worldMin.x ) { localCameraPos.x = spriteDrawContext->GetCameraDims().x / 2.0f; }
+        if( camMin.y < worldMin.y ) { localCameraPos.y = spriteDrawContext->GetCameraDims().y / 2.0f; }
+        if( camMax.x > worldMax.x ) { localCameraPos.x = worldMax.x - spriteDrawContext->GetCameraDims().x / 2.0f; }
+        if( camMax.y > worldMax.y ) { localCameraPos.y = worldMax.y - spriteDrawContext->GetCameraDims().y / 2.0f; }
+
+        spriteDrawContext->SetCameraPos( localCameraPos - spriteDrawContext->GetCameraDims() / 2.0f );
+        debugDrawContext->SetCameraPos( localCameraPos - spriteDrawContext->GetCameraDims() / 2.0f );
+
+        const BoxBounds2D cameraWsBounds = { camMin, camMax };
+
         const i32 tileCount = tileMap.tiles.GetCount();
         for( i32 i = 0; i < tileCount; i++ ) {
             SpriteTile & tile = tileMap.tiles[ i ];
             if( tile.spriteResource != nullptr ) {
-                spriteDrawContext->DrawSprite( tile.spriteResource, tile.spriteTileIndexX, tile.spriteTileIndexY, tile.center );
+                if( tile.wsBounds.Intersects( cameraWsBounds ) == true ) {
+                    spriteDrawContext->DrawSprite( tile.spriteResource, tile.spriteTileIndexX, tile.spriteTileIndexY, tile.center );
+                }
             }
         }
 
@@ -362,16 +377,7 @@ namespace atto {
                         }
 
                         localCameraPos = glm::mix( localCameraPos, ent->pos, dt * 4.0f );
-                        //localCameraPos = ent->pos;
-                        glm::vec2 camMin = localCameraPos - spriteDrawContext->GetCameraDims() / 2.0f;
-                        glm::vec2 camMax = localCameraPos + spriteDrawContext->GetCameraDims() / 2.0f;
-                        glm::vec2 worldMin = glm::vec2( 0, 0 );
-                        glm::vec2 worldMax = glm::vec2( tileMap.tileXCount * 32, tileMap.tileYCount * 32 );
 
-                        if( camMin.x < worldMin.x ) { localCameraPos.x = spriteDrawContext->GetCameraDims().x / 2.0f; }
-                        if( camMin.y < worldMin.y ) { localCameraPos.y = spriteDrawContext->GetCameraDims().y / 2.0f; }
-                        if( camMax.x > worldMax.x ) { localCameraPos.x = worldMax.x - spriteDrawContext->GetCameraDims().x / 2.0f; }
-                        if( camMax.y > worldMax.y ) { localCameraPos.y = worldMax.y - spriteDrawContext->GetCameraDims().y / 2.0f; }
 
                         const f32 playerVel = glm::length( ent->vel );
 
@@ -1069,8 +1075,6 @@ namespace atto {
         glm::vec2 bl = pos + glm::vec2( 4 * 0.8f );
         glm::vec2 tr = bl + glm::vec2( 32, 32  * t) * 0.8f;
         drawContext->DrawRectNoCamOffset( bl, tr, Colors::FromHexA( "#41a6f6cc" ) );
-        
-
 
         startX += 0.08f * scale.x;
     }

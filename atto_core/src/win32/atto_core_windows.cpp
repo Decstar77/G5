@@ -135,7 +135,7 @@ namespace atto {
         }
 
         glfwMakeContextCurrent( window );
-        glfwSwapInterval( 1 );
+        glfwSwapInterval( 0 );
 
         glfwSetWindowUserPointer( window, this );
 
