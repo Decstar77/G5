@@ -2,11 +2,14 @@
 
 #include "../shared/atto_core.h"
 
-struct ALCdevice;
-struct ALCcontext;
-
 struct FONScontext;
 typedef FONScontext * FontContext;
+
+namespace FMOD {
+    class System;
+    class Sound;
+    class Channel;
+}
 
 namespace atto {
     struct ShaderUniform {
@@ -80,7 +83,7 @@ namespace atto {
     };
 
     struct Win32AudioResource : public AudioResource {
-        u32 handle;
+        FMOD::Sound * sound;
     };
 
     struct Win32StaticMeshResource : public StaticMeshResource {
@@ -108,7 +111,6 @@ namespace atto {
         virtual SpriteResource *        ResourceGetAndLoadSprite( const char * spriteName ) override;
         virtual SpriteResource *        ResourceGetLoadedSprite( i64 spriteId );
         virtual AudioResource *         ResourceGetAndLoadAudio( const char * name ) override;
-        virtual StaticMeshResource *    ResourceGetAndLoadMesh( const char * name ) override;
         virtual FontHandle              ResourceGetFont( const char * name ) override;
         virtual void                    ResourceReadEntireFile( const char * path, char * data, i32 maxLen ) override;
         virtual void                    ResourceWriteEntireFile( const char * path, const char * data ) override;
@@ -157,9 +159,8 @@ namespace atto {
         Win32StaticMeshResource *         staticMeshSphere;
         Win32StaticMeshResource *         staticMeshCylinder;
 
-        ALCdevice*                  alDevice = nullptr;
-        ALCcontext*                 alContext = nullptr;
-        FixedList<AudioSpeaker, 32> alSpeakers;
+        FMOD::System *                  fmodSystem;
+        FixedList<AudioSpeaker, 32>     alSpeakers;
 
         ShaderProgram               fontProgram;
         VertexBuffer                fontVertexBuffer;
@@ -177,11 +178,9 @@ namespace atto {
         void            OsErrorBox( const char * msg ) override;
         void            OsParseStartArgs( int argc, char ** argv );
 
-        bool            ALInitialize();
-        void            ALShudown();
-        void            ALCheckErrors();
-        u32             ALGetFormat( u32 numChannels, u32 bitDepth );
-        u32             ALCreateAudioBuffer( i32 sizeBytes, byte * data, i32 channels, i32 bitDepth, i32 sampleRate );
+        bool            AudioInitialize();
+        void            AudioUpdate();
+        void            AudioShudown();
         bool            ALLoadOGG( const char * file, Win32AudioResource & audioBuffer );
         bool            ALLoadWAV( const char * file, Win32AudioResource & audioBuffer );
 

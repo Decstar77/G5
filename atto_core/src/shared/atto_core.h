@@ -50,10 +50,6 @@ namespace atto {
 
     struct AudioResource {
         LargeString name;
-        i32 channels;
-        i32 sampleRate;
-        i32 sizeBytes;
-        i32 bitDepth;
     };
 
     struct SpriteActuation {
@@ -116,9 +112,9 @@ namespace atto {
     };
 
     struct AudioSpeaker {
-        u32         sourceHandle;
-        i32         index;
+        i32             index;
     };
+
     enum class RESOURCE_HANDLE_FONT {};
     typedef ObjectHandle<RESOURCE_HANDLE_FONT> FontHandle;
 
@@ -327,7 +323,6 @@ namespace atto {
         virtual SpriteResource *            ResourceGetAndLoadSprite( const char * spriteName ) = 0;
         virtual SpriteResource *            ResourceGetLoadedSprite( i64 spriteId ) = 0; 
         virtual AudioResource *             ResourceGetAndLoadAudio( const char * name ) = 0;
-        virtual StaticMeshResource *        ResourceGetAndLoadMesh( const char * name ) = 0;
         virtual FontHandle                  ResourceGetFont( const char * name ) = 0;
         virtual void                        ResourceReadEntireFile( const char * path, char * data, i32 maxLen ) = 0;
         virtual void                        ResourceWriteEntireFile( const char * path, const char * data ) = 0;

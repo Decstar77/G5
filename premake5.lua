@@ -10,6 +10,7 @@ local ENET_DIR  = "vendor/enet"
 local FONTSTASH_DIR = "vendor/fontstash"
 local ABSOLUTE_SOL_PATH = path.getabsolute(".")
 local IMGUI_DIR = path.join(ABSOLUTE_SOL_PATH, "atto_core/src/editor/imgui")
+local FMOD_DIR = "vendor/fmod"
 
 solution "Atto"
     location("")
@@ -61,9 +62,8 @@ project "atto_core"
     {
         path.join(GLFW_DIR, "include"),
         path.join(GLAD_DIR, "include"),
-        path.join(OPENAL_DIR, "include"),
+        path.join(FMOD_DIR, "include"),
         path.join(ENET_DIR, "include"),
-        path.join(ASSIMP_DIR, "include"),
         JSON_DIR,
         STB_DIR,
 		path.join(FONTSTASH_DIR, "src"),
@@ -75,8 +75,7 @@ project "atto_core"
     
     libdirs
     {
-        path.join(OPENAL_DIR, "lib"),
-        path.join(ASSIMP_DIR, "lib")
+        path.join(FMOD_DIR, "lib")
     }
     
     files {
@@ -87,7 +86,7 @@ project "atto_core"
         path.join(STB_DIR, "stb_vorbis/stb_vorbis.c")
     }
 
-    links { "opengl32", "glfw", "glad", "OpenAL32", "assimp-vc143-mt" }
+    links { "opengl32", "glfw", "glad", "fmod_vc" }
 
     filter "system:windows"
         links { "kernel32", "user32"  }

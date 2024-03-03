@@ -29,22 +29,4 @@ namespace atto {
     private:
         void GetPixel( i32 x, i32 y, u8 & r, u8 & g, u8 & b, u8 & a );
     };
-
-    class ContentModelProcessor {
-    public:
-        ContentModelProcessor();
-        ~ContentModelProcessor();
-
-        bool LoadFromFile( Core * core, const char * file );
-        void ComputeBoundingBox();
-
-        LargeString                     filePath = {};
-        SmallString                     name = {};
-        std::vector< StaticMeshData  >  meshes;
-        BoxBounds                       boundingBox;
-
-    private:
-        void            ProcessNode( aiNode * node, const aiScene * scene );
-        StaticMeshData  ProcessMesh( aiMesh * mesh, const aiScene * scene );
-    };
 }

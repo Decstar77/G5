@@ -168,7 +168,7 @@ namespace atto {
         GLInitializeTextRendering();
         GLInitializeUnlitModelRendering();
 
-        ALInitialize();
+        AudioInitialize();
 
         EngineImgui::Initialize( window );
 
@@ -217,6 +217,8 @@ namespace atto {
                 currentGameMode->UpdateAndRender( this, this->deltaTime );
             }
         #endif
+
+            AudioUpdate();
 
             glfwSwapBuffers( window );
 
@@ -827,29 +829,6 @@ namespace atto {
         INVALID_CODE_PATH;
 
         return nullptr;
-    }
-
-    StaticMeshResource * WindowsCore::ResourceGetAndLoadMesh( const char * name ) {
-        const i32 meshResourceCount = resources.meshes.GetCount();
-        for( i32 i = 0; i < meshResourceCount; i++ ) {
-            StaticMeshResource & meshResource = resources.meshes[ i ];
-            if( meshResource.name == name ) {
-                return &meshResource;
-            }
-        }
-
-        ContentModelProcessor modelProcessor = {};
-        bool res = modelProcessor.LoadFromFile( this, name );
-        if( res == false ) {
-            return nullptr;
-        }
-        modelProcessor.ComputeBoundingBox();
-
-        Assert( modelProcessor.meshes.size() == 1 );
-
-        StaticMeshResource * mesh = ResourceMeshCreate( name, modelProcessor.meshes[ 0 ] );
-
-        return mesh;
     }
 
     void WindowsCore::InputDisableMouse() {
