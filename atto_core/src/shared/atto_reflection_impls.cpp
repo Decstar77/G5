@@ -12,6 +12,7 @@ namespace atto {
         REFLECT_STRUCT_MEMBER( vsync )
         REFLECT_STRUCT_MEMBER( showDebug )
         REFLECT_STRUCT_MEMBER( basePath )
+        REFLECT_STRUCT_MEMBER( masterVolume )
         REFLECT_STRUCT_END()
 
         REFLECT_STRUCT_BEGIN( SpriteActuation )

@@ -24,7 +24,6 @@ namespace atto {
     static i32                         windowHeight = 0;
     static f32                         windowAspect = 0;
     static SmallString                 windowTitle = SmallString::FromLiteral( "Game" );
-    static bool                        windowVsync = true;
     static bool                        windowFullscreen = false;
     static bool                        shouldClose = false;
     static bool                        firstMouse = true;
@@ -135,7 +134,7 @@ namespace atto {
         }
 
         glfwMakeContextCurrent( window );
-        glfwSwapInterval( 0 );
+        glfwSwapInterval( theGameSettings.vsync );
 
         glfwSetWindowUserPointer( window, this );
 
@@ -875,11 +874,11 @@ namespace atto {
 
     void WindowsCore::WindowSetVSync( bool value ) {
         glfwSwapInterval( (i32)value );
-        windowVsync = value;
+        theGameSettings.vsync = value;
     }
 
     bool WindowsCore::WindowGetVSync() {
-        return windowVsync;
+        return theGameSettings.vsync;
     }
 
     void WindowsCore::GLInitializeShapeRendering() {
@@ -1124,29 +1123,13 @@ namespace atto {
             ResourceReadEntireFile( argv[ 1 ], buffer, sizeof( buffer ) );
             
             nlohmann::json j = nlohmann::json::parse( buffer );
-            GameSettings settings = {};
+            GameSettings settings = GameSettings::CreateSensibleDefaults();
             TypeDescriptor * settingsType = TypeResolver<GameSettings>::get();
             settingsType->JSON_Read( j, &settings );
             theGameSettings = settings;
         }
         else {
-
-            GameSettings settings = {};
-            settings.basePath = "assets/";
-            settings.windowStartPosX = -1;
-            settings.windowStartPosY = -1;
-            //settings.windowWidth = 16 * 115;
-            //settings.windowHeight = 9 * 115;
-            settings.windowWidth = 1280;
-            settings.windowHeight = 720;
-            //settings.windowWidth = 1920;
-            //settings.windowHeight = 1050;
-            settings.fullscreen = false;
-            settings.vsync = true;
-            settings.showDebug = true;
-            settings.noAudio = false;
-
-            theGameSettings = settings;
+            theGameSettings = GameSettings::CreateSensibleDefaults();
         }
     }
 

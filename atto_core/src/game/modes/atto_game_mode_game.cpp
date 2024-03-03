@@ -236,9 +236,6 @@ namespace atto {
         EntList & entities = *core->MemoryAllocateTransient<EntList>();
         entityPool.GatherActiveObjs( entities );
 
-        const glm::vec2 mousePosPix = core->InputMousePosPixels();
-        const glm::vec2 mousePosWorld = spriteDrawContext->ScreenPosToWorldPos( mousePosPix );
-
         //localCameraPos = ent->pos;
         const glm::vec2 camMin = localCameraPos - spriteDrawContext->GetCameraDims() / 2.0f;
         const glm::vec2 camMax = localCameraPos + spriteDrawContext->GetCameraDims() / 2.0f;
@@ -252,6 +249,11 @@ namespace atto {
 
         spriteDrawContext->SetCameraPos( localCameraPos - spriteDrawContext->GetCameraDims() / 2.0f );
         debugDrawContext->SetCameraPos( localCameraPos - spriteDrawContext->GetCameraDims() / 2.0f );
+        core->AudioSetListener( localPlayer->pos, glm::vec2( 0 ) );
+
+
+        const glm::vec2 mousePosPix = core->InputMousePosPixels();
+        const glm::vec2 mousePosWorld = spriteDrawContext->ScreenPosToWorldPos( mousePosPix );
 
         const BoxBounds2D cameraWsBounds = { camMin, camMax };
 
@@ -644,7 +646,7 @@ namespace atto {
                             ent->spriteAnimator.SetSpriteIfDifferent( core, sprVFX_SmallExplody, false );
                             if( unit.playedDeathSound == false && ent->spriteAnimator.frameIndex == 1 ) {
                                 unit.playedDeathSound = true;
-                                core->AudioPlayRandom( 1.0f, false, sndCloseExplody1, sndCloseExplody2 );
+                                core->AudioPlayRandom( 1.0f, false, ent->pos, ent->vel, sndCloseExplody1, sndCloseExplody2 );
                             }
 
                             if( ent->spriteAnimator.loopCount > 0 ) {
@@ -1055,7 +1057,7 @@ namespace atto {
     void GameGUI::BeginAbilityBar( Core * core, DrawContext * drawContext ) {
         i32 count = 3;
         f32 size = count * 0.08f;
-        startX = 0.5f - size / 2.0f;
+        startX = 0.5f - size / 2.0f + 0.04f;
         startY = 0.005f;
         this->drawContext = drawContext;
         this->core = core;

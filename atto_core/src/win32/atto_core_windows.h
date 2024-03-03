@@ -118,6 +118,8 @@ namespace atto {
         StaticMeshResource *            ResourceMeshCreate( const char * name, i32 vertexCount );
 
         virtual AudioSpeaker            AudioPlay( AudioResource * audioResource, f32 volume = 1.0f, bool looping = false ) override;
+        virtual AudioSpeaker            AudioPlay( AudioResource * audioResource, glm::vec2 pos, glm::vec2 vel, f32 volume = 1.0f, bool looping = false ) override;
+        virtual void                    AudioSetListener( glm::vec2 pos, glm::vec2 vel ) override;
 
         virtual float                   FontGetTextBounds( FontHandle font, f32 fontSize, const char * text, glm::vec2 pos, BoxBounds2D & bounds ) override;
         virtual void                    RenderSubmit( DrawContext * dcxt, bool clearBackBuffers ) override;

@@ -5,6 +5,27 @@
 
 namespace atto {
 
+    GameSettings GameSettings::CreateSensibleDefaults() {
+        GameSettings settings = {};
+        settings.basePath = "assets/";
+        settings.windowStartPosX = -1;
+        settings.windowStartPosY = -1;
+        //settings.windowWidth = 16 * 115;
+        //settings.windowHeight = 9 * 115;
+        settings.windowWidth = 1280;
+        settings.windowHeight = 720;
+        //settings.windowWidth = 1920;
+        //settings.windowHeight = 1050;
+        settings.fullscreen = false;
+        settings.vsync = true;
+        settings.showDebug = true;
+        settings.noAudio = false;
+        //settings.masterVolume = 0.25f;
+        settings.masterVolume = 1.0f;
+
+        return settings;
+    }
+
     f32 Core::GetDeltaTime() const {
         return deltaTime;
     }

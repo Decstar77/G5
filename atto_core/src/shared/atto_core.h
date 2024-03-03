@@ -31,6 +31,9 @@ namespace atto {
         bool            vsync;
         bool            showDebug;
         SmallString     basePath;
+        f32             masterVolume;
+        
+        static GameSettings CreateSensibleDefaults();
 
         REFLECT();
     };
@@ -344,11 +347,16 @@ namespace atto {
         virtual void                        RenderSubmit( DrawContext * dcxt, bool clearBackBuffers ) = 0;
 
         virtual AudioSpeaker                AudioPlay( AudioResource * audioResource, f32 volume = 1.0f, bool looping = false ) = 0;
-        
+        virtual AudioSpeaker                AudioPlay( AudioResource * audioResource, glm::vec2 pos, glm::vec2 vel, f32 volume = 1.0f, bool looping = false ) = 0;
+        virtual void                        AudioSetListener( glm::vec2 pos, glm::vec2 vel ) = 0;
         template<i32 capcity>
         AudioResource *                     AudioPlayRandom( const FixedList<AudioResource *, capcity> & audioResources, f32 volume = 1.0f, bool looping = false );
+        template<i32 capcity>
+        AudioResource *                     AudioPlayRandom( const FixedList<AudioResource *, capcity> & audioResources, glm::vec2 pos, glm::vec2 vel, f32 volume = 1.0f, bool looping = false );
         template<typename... args>
         AudioResource *                     AudioPlayRandom( f32 volume, bool looping, args... audioResources );
+        template<typename... args>
+        AudioResource *                     AudioPlayRandom( f32 volume, bool looping, glm::vec2 pos, glm::vec2 vel, args... audioResources );
 
         void                                NetConnect();
         bool                                NetIsConnected();
@@ -423,6 +431,9 @@ namespace atto {
         glm::mat4           cameraProjection;
         glm::vec4           viewport;
 
+        glm::vec2           listenerPos;
+        glm::vec2           listenerVel;
+
         u8 * thePermanentMemory = nullptr;
         u64 thePermanentMemorySize = 0;
         u64 thePermanentMemoryCurrent = 0;
@@ -494,10 +505,25 @@ namespace atto {
         return audioResourceArray[ index ];
     }
 
+    template<typename... args>
+    AudioResource * Core::AudioPlayRandom( f32 volume, bool looping, glm::vec2 pos, glm::vec2 vel, args... audioResources ) {
+        AudioResource * audioResourceArray[] = { audioResources... };
+        i32 index = Random::Int( sizeof...( audioResources ) );
+        AudioPlay( audioResourceArray[ index ], pos, vel, volume, looping );
+        return audioResourceArray[ index ];
+    }
+
     template<i32 capcity>
     AudioResource * Core::AudioPlayRandom( const FixedList<AudioResource *, capcity> & audioResources, f32 volume /*= 1.0f*/, bool looping /*= false */ ) {
         i32 index = Random::Int( audioResources.GetCount() );
         AudioPlay( audioResources[ index ], volume, looping );
+        return audioResources[ index ];
+    }
+
+    template<i32 capcity>
+    AudioResource * Core::AudioPlayRandom( const FixedList<AudioResource *, capcity> & audioResources, glm::vec2 pos, glm::vec2 vel, f32 volume /*= 1.0f*/, bool looping /*= false */ ) {
+        i32 index = Random::Int( audioResources.GetCount() );
+        AudioPlay( audioResources[ index ], pos, vel, volume, looping );
         return audioResources[ index ];
     }
 

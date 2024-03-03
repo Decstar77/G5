@@ -215,6 +215,8 @@ namespace atto {
 
         Win32AudioResource * a = (Win32AudioResource *)audio;
 
+        volume = volume * theGameSettings.masterVolume;
+
         const i32 speakerCount = alSpeakers.GetCount();
         for( i32 speakerIndex = 0; speakerIndex < speakerCount; ++speakerIndex ) {
             AudioSpeaker & speaker = alSpeakers[ speakerIndex ];
@@ -228,6 +230,8 @@ namespace atto {
                 alSourcei( speaker.sourceHandle, AL_BUFFER, a->handle );
                 alSourcei( speaker.sourceHandle, AL_LOOPING, looping ? AL_TRUE : AL_FALSE );
                 alSourcef( speaker.sourceHandle, AL_GAIN, volume );
+                alSource3f( speaker.sourceHandle, AL_POSITION, 0.0f, 0.0f, 0.0f );
+                alSource3f( speaker.sourceHandle, AL_VELOCITY, 0.0f, 0.0f, 0.0f );
                 alSourcePlay( speaker.sourceHandle );
                 ALCheckErrors();
 
@@ -242,6 +246,8 @@ namespace atto {
             alSourcei( speaker.sourceHandle, AL_BUFFER, a->handle );
             alSourcei( speaker.sourceHandle, AL_LOOPING, looping ? AL_TRUE : AL_FALSE );
             alSourcef( speaker.sourceHandle, AL_GAIN, volume );
+            alSource3f( speaker.sourceHandle, AL_POSITION, 0.0f, 0.0f, 0.0f );
+            alSource3f( speaker.sourceHandle, AL_VELOCITY, 0.0f, 0.0f, 0.0f );
             alSourcePlay( speaker.sourceHandle );
             ALCheckErrors();
             alSpeakers.Add( speaker );
@@ -251,5 +257,32 @@ namespace atto {
         }
 
         return speaker;
+    }
+
+    AudioSpeaker WindowsCore::AudioPlay( AudioResource * audioResource, glm::vec2 pos, glm::vec2 vel, f32 volume /*= 1.0f*/, bool looping /*= false */ ) {
+        if( theGameSettings.noAudio ) {
+            return {};
+        }
+
+        AudioSpeaker speaker = AudioPlay( audioResource, volume, looping );
+
+        alSource3f( speaker.sourceHandle, AL_POSITION, pos.x, pos.y, 0.0f );
+        alSource3f( speaker.sourceHandle, AL_VELOCITY, vel.x, vel.y, 0.0f );
+        ALCheckErrors();
+
+        return speaker;
+    }
+
+    void WindowsCore::AudioSetListener( glm::vec2 pos, glm::vec2 vel ) {
+        if( theGameSettings.noAudio ) {
+            return;
+        }
+
+        listenerPos = pos;
+        listenerVel = vel;
+
+        alListener3f( AL_POSITION, listenerPos.x, listenerPos.y, 0.0f );
+        alListener3f( AL_VELOCITY, listenerVel.x, listenerVel.y, 0.0f );
+        ALCheckErrors();
     }
 }
