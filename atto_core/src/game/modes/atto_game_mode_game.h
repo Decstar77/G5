@@ -19,7 +19,9 @@ namespace atto {
         
         ENTITY_TYPE_ENEMIES_START,
         ENTITY_TYPE_ENEMY_DRONE_01,
-        
+        ENTITY_TYPE_ENEMIES_END,
+
+        ENTITY_TYPE_PROP,
     };
 
     enum AbilityType {
@@ -173,6 +175,8 @@ namespace atto {
 
         inline Collider2D GetWorldCollisionCollider() const;
         inline Collider2D GetWorldSelectionCollider() const;
+
+        REFLECT();
     };
 
     struct GameStartParams {
@@ -268,6 +272,7 @@ namespace atto {
         virtual void                    Initialize( Core * core ) override;
         virtual void                    UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags ) override;
         virtual void                    Shutdown( Core * core ) override;
+        virtual Map *                   GetMap() override { return &map; }
 
     public:
         GameStartParams                         startParms;

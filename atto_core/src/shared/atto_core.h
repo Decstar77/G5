@@ -38,23 +38,34 @@ namespace atto {
         REFLECT();
     };
 
-    struct TextureResource {
-        LargeString name;
-        i32 width;
-        i32 height;
-        i32 channels;
-        bool hasMips;
-        bool hasAnti;
-        u32 handle;
+    class Resource {
+    public:
+        u32             id;
+        LargeString     name;
+
+        LargeString     GetShortName() const;
     };
 
-    struct AudioResource {
-        LargeString name;
+    class TextureResource : public Resource {
+    public:
+        u32     handle;
+        i32     width;
+        i32     height;
+        i32     channels;
+        bool    hasMips;
+        bool    hasAnti;
+    };
+
+    class AudioResource : public Resource {
+    public:
+        bool        is2D;
+        bool        is3D;
+        f32         minDist;
+        f32         maxDist;
     };
 
     struct SpriteActuation {
         i32                              frameIndex;
-        FixedList< SmallString,     4 >  audioIds;
         FixedList< AudioResource *, 4 >  audioResources;
 
         REFLECT();
@@ -322,7 +333,7 @@ namespace atto {
         virtual SpriteResource *            ResourceGetAndCreateSprite( const char * spriteName, i32 frameCount, i32 frameWidth, i32 frameHeight, i32 frameRate ) = 0;
         virtual SpriteResource *            ResourceGetAndLoadSprite( const char * spriteName ) = 0;
         virtual SpriteResource *            ResourceGetLoadedSprite( i64 spriteId ) = 0; 
-        virtual AudioResource *             ResourceGetAndLoadAudio( const char * name ) = 0;
+        virtual AudioResource *             ResourceGetAndCreateAudio( const char * name, bool is2D, bool is3D, f32 minDist, f32 maxDist ) = 0;
         virtual FontHandle                  ResourceGetFont( const char * name ) = 0;
         virtual void                        ResourceReadEntireFile( const char * path, char * data, i32 maxLen ) = 0;
         virtual void                        ResourceWriteEntireFile( const char * path, const char * data ) = 0;
@@ -341,17 +352,12 @@ namespace atto {
         f32                                 RenderGetMainSurfaceHeight() const { return mainSurfaceHeight; }
         virtual void                        RenderSubmit( DrawContext * dcxt, bool clearBackBuffers ) = 0;
 
-        virtual AudioSpeaker                AudioPlay( AudioResource * audioResource, f32 volume = 1.0f, bool looping = false ) = 0;
-        virtual AudioSpeaker                AudioPlay( AudioResource * audioResource, glm::vec2 pos, glm::vec2 vel, f32 volume = 1.0f, bool looping = false ) = 0;
-        virtual void                        AudioSetListener( glm::vec2 pos, glm::vec2 vel ) = 0;
+        virtual AudioSpeaker                AudioPlay( AudioResource * audioResource, glm::vec2 * pos = nullptr ) = 0;
+        virtual void AudioSetListener( glm::vec2 pos ) = 0;
         template<i32 capcity>
-        AudioResource *                     AudioPlayRandom( const FixedList<AudioResource *, capcity> & audioResources, f32 volume = 1.0f, bool looping = false );
-        template<i32 capcity>
-        AudioResource *                     AudioPlayRandom( const FixedList<AudioResource *, capcity> & audioResources, glm::vec2 pos, glm::vec2 vel, f32 volume = 1.0f, bool looping = false );
+        AudioResource *                     AudioPlayRandom( const FixedList<AudioResource *, capcity> & audioResources, glm::vec2 * pos = nullptr );
         template<typename... args>
-        AudioResource *                     AudioPlayRandom( f32 volume, bool looping, args... audioResources );
-        template<typename... args>
-        AudioResource *                     AudioPlayRandom( f32 volume, bool looping, glm::vec2 pos, glm::vec2 vel, args... audioResources );
+        AudioResource *                     AudioPlayRandom( glm::vec2 * pos, args... audioResources );
 
         void                                NetConnect();
         bool                                NetIsConnected();
@@ -390,7 +396,7 @@ namespace atto {
         //virtual void                        WindowSetFullscreen(bool fullscreen) = 0;
         //virtual void                        WindowSetCursorVisible(bool visible) = 0;
         //virtual void                        WindowSetCursorLocked(bool locked) = 0;
-        virtual bool                        WindowOpenNativeFileDialog( const char * basePath, LargeString & res ) = 0;
+        virtual bool                        WindowOpenNativeFileDialog( const char * basePath, const char * filter, LargeString & res ) = 0;
         virtual bool                        WindowOpenNativeFolderDialog( const char * basePath, LargeString & res ) = 0;
 
         NetClient *                         GetNetClient();
@@ -404,7 +410,10 @@ namespace atto {
 
         virtual void                        Run( int argc, char ** argv ) = 0;
 
+        inline static Core *                EditorOnly_GetCore() { return theCore; }
+
     protected:
+        inline static Core *        theCore = nullptr;
         GameSettings                theGameSettings = {};
         LoggingState                logger = {};
         FixedList<DrawContext, 8>   drawContexts = {};
@@ -427,7 +436,6 @@ namespace atto {
         glm::vec4           viewport;
 
         glm::vec2           listenerPos;
-        glm::vec2           listenerVel;
 
         u8 * thePermanentMemory = nullptr;
         u64 thePermanentMemorySize = 0;
@@ -493,33 +501,19 @@ namespace atto {
     }
 
     template<typename... args>
-    AudioResource * Core::AudioPlayRandom( f32 volume, bool looping, args... audioResources ) {
+    AudioResource * Core::AudioPlayRandom( glm::vec2 * pos, args... audioResources ) {
         AudioResource * audioResourceArray[] = { audioResources... };
         i32 index = Random::Int( sizeof...( audioResources ) );
-        AudioPlay( audioResourceArray[ index ], volume, looping );
-        return audioResourceArray[ index ];
-    }
-
-    template<typename... args>
-    AudioResource * Core::AudioPlayRandom( f32 volume, bool looping, glm::vec2 pos, glm::vec2 vel, args... audioResources ) {
-        AudioResource * audioResourceArray[] = { audioResources... };
-        i32 index = Random::Int( sizeof...( audioResources ) );
-        AudioPlay( audioResourceArray[ index ], pos, vel, volume, looping );
+        AudioPlay( audioResourceArray[ index ], pos );
         return audioResourceArray[ index ];
     }
 
     template<i32 capcity>
-    AudioResource * Core::AudioPlayRandom( const FixedList<AudioResource *, capcity> & audioResources, f32 volume /*= 1.0f*/, bool looping /*= false */ ) {
+    AudioResource * Core::AudioPlayRandom( const FixedList<AudioResource *, capcity> & audioResources, glm::vec2 * pos ) {
         i32 index = Random::Int( audioResources.GetCount() );
-        AudioPlay( audioResources[ index ], volume, looping );
+        AudioPlay( audioResources[ index ], pos );
         return audioResources[ index ];
     }
 
-    template<i32 capcity>
-    AudioResource * Core::AudioPlayRandom( const FixedList<AudioResource *, capcity> & audioResources, glm::vec2 pos, glm::vec2 vel, f32 volume /*= 1.0f*/, bool looping /*= false */ ) {
-        i32 index = Random::Int( audioResources.GetCount() );
-        AudioPlay( audioResources[ index ], pos, vel, volume, looping );
-        return audioResources[ index ];
-    }
 
 }

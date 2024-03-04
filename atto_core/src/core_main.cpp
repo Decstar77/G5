@@ -12,6 +12,14 @@ using namespace atto;
 * @TODO: 3D Audio support.
 */
 
+/*
+IDEAS:
+FUNNY:
+ACHIVEMTN: You've been granted a random perk: Dead.
+ACHIVEMTN: Hey, real quick, whats the radius on that?: "Yes."
+*/
+
+
 int main( int argc, char ** argv ) {
     WindowsCore * core = new WindowsCore();
     core->Run( argc, argv );

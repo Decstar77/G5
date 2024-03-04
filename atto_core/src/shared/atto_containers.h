@@ -161,7 +161,12 @@ namespace atto {
         i32 index = count; count++;
         AssertMsg( index >= 0 && index < capcity, "Array, add to many items" );
 
-        ZeroStruct( data[ index ] );
+        if constexpr( std::is_pointer<T>::value == true) {
+            data[ index ] = nullptr;
+        }
+        else {
+            ZeroStruct( data[ index ] );
+        }
 
         return data[ index ];
     }

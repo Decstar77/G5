@@ -137,7 +137,7 @@ namespace atto {
 
         virtual void Imgui_Draw( const void * obj, const char * memberName ) {
             nlohmann::json j;
-            if ( ImGui::TreeNode( memberName ) ) {
+            if ( ImGui::TreeNodeEx( memberName, ImGuiTreeNodeFlags_DefaultOpen ) ) {
                 for( const Member & member : members ) {
                     member.type->Imgui_Draw( (char *)obj + member.offset, member.name.GetCStr() );
                 }
@@ -199,10 +199,21 @@ namespace atto {
         virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
             FixedList< _type_, cap > * list = ( FixedList< _type_, cap > * )obj;
         #if 1
-            if( ImGui::TreeNode( memberName ) ) {
+            if( ImGui::TreeNodeEx( memberName, ImGuiTreeNodeFlags_DefaultOpen ) ) {
                 for( i32 i = 0; i < list->GetCount(); i++ ) {
+                    ImGui::PushID( i );
+                    if( ImGui::Button( "-" ) == true ) {
+                        list->RemoveIndex( i );
+                        ImGui::PopID();
+                        break;
+                    }
+                    ImGui::PopID();
+                    ImGui::SameLine();
                     SmallString n = StringFormat::Small( "Index:%d", i );
                     itemType->Imgui_Draw( list->Get( i ), n.GetCStr() );
+                }
+                if( list->IsFull() == false && ImGui::Button( "+" ) ) {
+                    list->AddEmpty();
                 }
                 ImGui::TreePop();
             }
@@ -230,3 +241,4 @@ namespace atto {
 
 #endif
 
+ 

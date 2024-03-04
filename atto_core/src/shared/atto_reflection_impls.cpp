@@ -17,11 +17,12 @@ namespace atto {
 
         REFLECT_STRUCT_BEGIN( SpriteActuation )
         REFLECT_STRUCT_MEMBER( frameIndex )
-        REFLECT_STRUCT_MEMBER( audioIds )
+        REFLECT_STRUCT_MEMBER( audioResources )
         REFLECT_STRUCT_END()
 
         REFLECT_STRUCT_BEGIN( SpriteResource )
         REFLECT_STRUCT_MEMBER( spriteId )
+        REFLECT_STRUCT_MEMBER( textureResource )
         REFLECT_STRUCT_MEMBER( isTileMap )
         REFLECT_STRUCT_MEMBER( tileWidth )
         REFLECT_STRUCT_MEMBER( tileHeight )
@@ -32,4 +33,13 @@ namespace atto {
         REFLECT_STRUCT_MEMBER( origin )
         REFLECT_STRUCT_MEMBER( frameActuations )
         REFLECT_STRUCT_END()
+
+        REFLECT_STRUCT_BEGIN( Entity )
+        //REFLECT_STRUCT_MEMBER( type )
+        REFLECT_STRUCT_MEMBER( name )
+        REFLECT_STRUCT_MEMBER( pos )
+        REFLECT_STRUCT_END()
+
+        
+
 }

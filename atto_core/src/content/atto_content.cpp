@@ -18,7 +18,7 @@ namespace atto {
     }
 
     bool ContentTextureProcessor::LoadFromFile( const char * file ) {
-        filePath = StringFormat::Large( "res/sprites/%s", file );
+        filePath = file;
         pixelData = stbi_load( filePath.GetCStr(), &width, &height, &channels, 4 );
 
         if( pixelData == nullptr ) {

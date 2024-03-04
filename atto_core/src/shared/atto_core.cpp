@@ -20,8 +20,8 @@ namespace atto {
         settings.vsync = true;
         settings.showDebug = true;
         settings.noAudio = false;
-        //settings.masterVolume = 0.25f;
-        settings.masterVolume = 1.0f;
+        settings.masterVolume = 0.25f;
+        //settings.masterVolume = 1.0f;
 
         return settings;
     }
@@ -665,6 +665,12 @@ namespace atto {
         result.Add( '/' );
         result.Add( spriteName.GetFilePart() );
         result.Add( ".json" );
+        return result;
+    }
+
+    LargeString Resource::GetShortName() const {
+        LargeString result = {};
+        result.Add( name.GetFilePart() );
         return result;
     }
 

@@ -38,7 +38,7 @@ namespace atto {
                 localPlayer->collisionCollider.box.CreateFromCenterSize( glm::vec2( 0, 0 ), glm::vec2( 36, 36 ) );
                 localPlayer->playerNumber = localPlayerNumber;
                 localPlayer->pos = glm::vec2( 200, 230 );
-                localPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "asset_pack_01/player_idle", 10, 48, 48, 16 );
+                localPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "res/sprites/asset_pack_01/player_idle/player_idle.json", 10, 48, 48, 16 );
 
                 otherPlayer = SpawnEntity( ENTITY_TYPE_PLAYER );
                 otherPlayer->playerNumber = parms.otherPlayerNumber;
@@ -47,7 +47,7 @@ namespace atto {
                 otherPlayer->netStreamed = true;
                 otherPlayer->pos = glm::vec2( 100, 230 );
                 otherPlayer->netVisualPos = otherPlayer->pos;
-                otherPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "asset_pack_01/player_idle", 10, 48, 48, 16 );
+                otherPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "res/sprites/asset_pack_01/player_idle/player_idle.json", 10, 48, 48, 16 );
             }
             else {
                 otherPlayer = SpawnEntity( ENTITY_TYPE_PLAYER );
@@ -56,13 +56,13 @@ namespace atto {
                 otherPlayer->collisionCollider.box.CreateFromCenterSize( glm::vec2( 0, 0 ), glm::vec2( 36, 36 ) );
                 otherPlayer->pos = glm::vec2( 200, 230 );
                 otherPlayer->netVisualPos = otherPlayer->pos;
-                otherPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "asset_pack_01/player_idle", 10, 48, 48, 16 );
+                otherPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "res/sprites/asset_pack_01/player_idle/player_idle.json", 10, 48, 48, 16 );
                 otherPlayer->netStreamed = true;
 
                 localPlayer = SpawnEntity( ENTITY_TYPE_PLAYER );
                 localPlayer->playerNumber = localPlayerNumber;
                 localPlayer->pos = glm::vec2( 100, 230 );
-                localPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "asset_pack_01/player_idle", 10, 48, 48, 16 );
+                localPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "res/sprites/asset_pack_01/player_idle/player_idle.json", 10, 48, 48, 16 );
                 localPlayer->collisionCollider.type = COLLIDER_TYPE_BOX;
                 localPlayer->collisionCollider.box.CreateFromCenterSize( glm::vec2( 0, 0 ), glm::vec2( 36, 36 ) );
             }
@@ -72,20 +72,20 @@ namespace atto {
             localPlayer = SpawnEntity( ENTITY_TYPE_PLAYER );
             localPlayer->playerNumber = localPlayerNumber;
             localPlayer->pos = glm::vec2( 200, 230 );
-            localPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "asset_pack_01/player_idle", 10, 48, 48, 16 );
+            localPlayer->spriteAnimator.sprite = core->ResourceGetAndCreateSprite( "res/sprites/asset_pack_01/player_idle/player_idle.json", 10, 48, 48, 16 );
             localPlayer->collisionCollider.type = COLLIDER_TYPE_BOX;
             localPlayer->collisionCollider.box.CreateFromCenterSize( glm::vec2( 0, 0 ), glm::vec2( 36, 36 ) );
         }
 
-        localPlayer->playerStuff.abilities[ 0 ].icon = core->ResourceGetAndLoadTexture( "ui_icon_ability_warrior_strike.png", false, false );
+        localPlayer->playerStuff.abilities[ 0 ].icon = core->ResourceGetAndLoadTexture( "res/sprites/ui_icon_ability_warrior_strike.png", false, false );
         localPlayer->playerStuff.abilities[ 0 ].cooldown = 0.5f;
         localPlayer->playerStuff.abilities[ 0 ].type = ABILITY_TYPE_WARRIOR_STRIKE;
 
-        localPlayer->playerStuff.abilities[ 1 ].icon = core->ResourceGetAndLoadTexture( "ui_icon_ability_warrior_stab.png", false, false );
+        localPlayer->playerStuff.abilities[ 1 ].icon = core->ResourceGetAndLoadTexture( "res/sprites/ui_icon_ability_warrior_stab.png", false, false );
         localPlayer->playerStuff.abilities[ 1 ].cooldown = 1.0f;
         localPlayer->playerStuff.abilities[ 1 ].type = ABILITY_TYPE_WARRIOR_STAB;
 
-        localPlayer->playerStuff.abilities[ 2 ].icon = core->ResourceGetAndLoadTexture( "ui_icon_ability_warrior_charge.png", false, false );
+        localPlayer->playerStuff.abilities[ 2 ].icon = core->ResourceGetAndLoadTexture( "res/sprites/ui_icon_ability_warrior_charge.png", false, false );
         localPlayer->playerStuff.abilities[ 2 ].cooldown = 6.0f;
         localPlayer->playerStuff.abilities[ 2 ].type = ABILITY_TYPE_WARRIOR_CHARGE;
         localPlayer->playerStuff.abilities[ 2 ].stopsMovement = true;
@@ -100,8 +100,8 @@ namespace atto {
         SpawnDrone( glm::vec2( 280, 100 ) );
         SpawnDrone( glm::vec2( 300, 100 ) );
 
-        static SpriteResource * sprTile_Stone = core->ResourceGetAndLoadSprite( "stone_tiles" );
-        static SpriteResource * sprTile_Grass = core->ResourceGetAndLoadSprite( "grass_tiles" );
+        static SpriteResource * sprTile_Stone = core->ResourceGetAndLoadSprite( "res/sprites/stone_tiles/stone_tiles.json" );
+        static SpriteResource * sprTile_Grass = core->ResourceGetAndLoadSprite( "res/sprites/grass_tiles/grass_tiles.json" );
 
         tileMap.tileXCount = 50;
         tileMap.tileYCount = 50;
@@ -116,33 +116,32 @@ namespace atto {
     }
 
     void Map::UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags ) {
-        static TextureResource * tile = core->ResourceGetAndLoadTexture( "tile_dark_metal_1.png", false, false );
-        static TextureResource * sprUiPanel = core->ResourceGetAndLoadTexture( "ui_ability_panel.png", false, false );
+        static TextureResource * tile = core->ResourceGetAndLoadTexture( "res/sprites/tile_dark_metal_1.png", false, false );
+        static TextureResource * sprUiPanel = core->ResourceGetAndLoadTexture( "res/sprites/ui_ability_panel.png", false, false );
 
-        static TextureResource * sprCharDroneSelection = core->ResourceGetAndLoadTexture( "char_drone_selection.png", false, false );
-        static TextureResource * sprParticleSingleWhite = core->ResourceGetAndLoadTexture( "particle_single_white_1x1.png", false, false );
+        static TextureResource * sprCharDroneSelection  = core->ResourceGetAndLoadTexture( "res/sprites/char_drone_selection.png", false, false );
+        static TextureResource * sprParticleSingleWhite = core->ResourceGetAndLoadTexture( "res/sprites/particle_single_white_1x1.png", false, false );
 
-        static SpriteResource * sprWarriorIdle = core->ResourceGetAndCreateSprite( "asset_pack_01/player_idle", 10, 48, 48, 16 );
-        static SpriteResource * sprWarriorRun = core->ResourceGetAndCreateSprite( "asset_pack_01/player_run", 8, 48, 48, 14 );
-        static SpriteResource * sprWarriorStab = core->ResourceGetAndCreateSprite( "asset_pack_01/player_sword_stab", 7, 96, 48, 16 );
-        static SpriteResource * sprWarriorStrike = core->ResourceGetAndCreateSprite( "asset_pack_01/basic_sword_attack", 6, 64, 64, 16 );
-        //static SpriteResource * sprWarriorCharge = core->ResourceGetAndCreateSprite( "asset_pack_01/player_katana_continuous_attack", 9, 80, 64, 16 );
-        static SpriteResource * sprWarriorCharge = core->ResourceGetAndLoadSprite( "asset_pack_01/player_katana_continuous_attack" );
+        static SpriteResource * sprWarriorIdle      = core->ResourceGetAndCreateSprite( "res/sprites/asset_pack_01/player_idle/player_idle.json", 10, 48, 48, 16 );
+        static SpriteResource * sprWarriorRun       = core->ResourceGetAndCreateSprite( "res/sprites/asset_pack_01/player_run/player_run.json", 8, 48, 48, 14 );
+        static SpriteResource * sprWarriorStab      = core->ResourceGetAndLoadSprite( "res/sprites/asset_pack_01/player_sword_stab/player_sword_stab.json" );
+        static SpriteResource * sprWarriorStrike    = core->ResourceGetAndLoadSprite( "res/sprites/asset_pack_01/basic_sword_attack/basic_sword_attack.json"  );
+        static SpriteResource * sprWarriorCharge    = core->ResourceGetAndLoadSprite( "res/sprites/asset_pack_01/player_katana_continuous_attack/player_katana_continuous_attack.json" );
 
-        static SpriteResource * sprCharDrone = core->ResourceGetAndCreateSprite( "char_drone_01", 1, 32, 32, 1 );
-        //static SpriteResource * sprVFX_SmallExplody= core->ResourceGetAndCreateSprite( "vfx_small_explody", 3, 32, 32, 10 );
-        static SpriteResource * sprVFX_SmallExplody = core->ResourceGetAndLoadSprite( "vfx_small_explody" );
+        static SpriteResource * sprCharDrone        = core->ResourceGetAndCreateSprite( "res/sprites/char_drone_01/char_drone_01.json", 1, 32, 32, 1 );
+        static SpriteResource * sprVFX_SmallExplody = core->ResourceGetAndLoadSprite( "res/sprites/vfx_small_explody/vfx_small_explody.json" );
 
+        const f32 soundMinDist = 400;
+        const f32 soundMaxDist = 10000;
+        static AudioResource * sndWarriorStrike1 = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/lightsaber_quick_1.wav", true, true, soundMinDist, soundMaxDist );
+        static AudioResource * sndWarriorStrike2 = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/lightsaber_quick_3.wav", true, true, soundMinDist, soundMaxDist );
+        static AudioResource * sndWarriorStab1 = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/lightsaber_quick_2.wav", true, true, soundMinDist, soundMaxDist );
+        static AudioResource * sndWarriorStab2 = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/lightsaber_quick_4.wav", true, true, soundMinDist, soundMaxDist );
+        static AudioResource * sndWarriorCharge1 = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/lightsaber_clash_1.wav", true, true, soundMinDist, soundMaxDist );
+        static AudioResource * sndWarriorCharge2 = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/lightsaber_clash_2.wav", true, true, soundMinDist, soundMaxDist );
 
-        static AudioResource * sndWarriorStrike1 = core->ResourceGetAndLoadAudio( "res/sounds/not_legal/lightsaber_quick_1.wav" );
-        static AudioResource * sndWarriorStrike2 = core->ResourceGetAndLoadAudio( "res/sounds/not_legal/lightsaber_quick_3.wav" );
-        static AudioResource * sndWarriorStab1 = core->ResourceGetAndLoadAudio( "res/sounds/not_legal/lightsaber_quick_2.wav" );
-        static AudioResource * sndWarriorStab2 = core->ResourceGetAndLoadAudio( "res/sounds/not_legal/lightsaber_quick_4.wav" );
-        static AudioResource * sndWarriorCharge1 = core->ResourceGetAndLoadAudio( "res/sounds/not_legal/lightsaber_clash_1.wav" );
-        static AudioResource * sndWarriorCharge2 = core->ResourceGetAndLoadAudio( "res/sounds/not_legal/lightsaber_clash_2.wav" );
-
-        static AudioResource * sndCloseExplody1 = core->ResourceGetAndLoadAudio( "res/sounds/tomwinandysfx_explosions_volume_i_closeexplosion_01.wav" );
-        static AudioResource * sndCloseExplody2 = core->ResourceGetAndLoadAudio( "res/sounds/tomwinandysfx_explosions_volume_i_closeexplosion_01.wav" );
+        static AudioResource * sndCloseExplody1 = core->ResourceGetAndCreateAudio( "res/sounds/tomwinandysfx_explosions_volume_i_closeexplosion_01.wav", true, true, soundMinDist, soundMaxDist );
+        static AudioResource * sndCloseExplody2 = core->ResourceGetAndCreateAudio( "res/sounds/tomwinandysfx_explosions_volume_i_closeexplosion_01.wav", true, true, soundMinDist, soundMaxDist );
 
         static FontHandle fontHandle = core->ResourceGetFont( "default" );
 
@@ -179,7 +178,7 @@ namespace atto {
                         {
                             i32 offset = 0;
                             SmallString id = NetworkMessagePop<SmallString>( msg, offset );
-                            AudioResource * r = core->ResourceGetAndLoadAudio( id.GetCStr() );
+                            AudioResource * r = core->ResourceGetAndCreateAudio( id.GetCStr(), true, false, 30, 800 );
                             if( r != nullptr ) {
                                 core->AudioPlay( r );
                             }
@@ -249,8 +248,7 @@ namespace atto {
 
         spriteDrawContext->SetCameraPos( localCameraPos - spriteDrawContext->GetCameraDims() / 2.0f );
         debugDrawContext->SetCameraPos( localCameraPos - spriteDrawContext->GetCameraDims() / 2.0f );
-        core->AudioSetListener( localPlayer->pos, glm::vec2( 0 ) );
-
+        core->AudioSetListener( localCameraPos );
 
         const glm::vec2 mousePosPix = core->InputMousePosPixels();
         const glm::vec2 mousePosWorld = spriteDrawContext->ScreenPosToWorldPos( mousePosPix );
@@ -395,14 +393,6 @@ namespace atto {
                                     ab.sprite = sprWarriorStrike;
                                     player.state = PLAYER_STATE_ATTACKING;
                                     player.currentAbility = &ab;
-                                    AudioResource * playedSound = core->AudioPlayRandom( 1.0f, false, sndWarriorStrike1, sndWarriorStrike2 );
-
-                                    if( isMp ) {
-                                        NetworkMessage & msg = *core->MemoryAllocateTransient< NetworkMessage >();
-                                        msg.type = NetworkMessageType::ENTITY_AUDIO_PLAY;
-                                        NetworkMessagePush( msg, playedSound->name );
-                                        core->NetworkSend( msg );
-                                    }
                                 }
                             }
                             else {
@@ -427,14 +417,6 @@ namespace atto {
                                     ab.sprite = sprWarriorStab;
                                     player.currentAbility = &ab;
                                     player.state = PLAYER_STATE_ATTACKING;
-                                    AudioResource * playedSound = core->AudioPlayRandom( 1.0f, false, sndWarriorStab1, sndWarriorStab2 );
-
-                                    if( isMp ) {
-                                        NetworkMessage & msg = *core->MemoryAllocateTransient< NetworkMessage >();
-                                        msg.type = NetworkMessageType::ENTITY_AUDIO_PLAY;
-                                        NetworkMessagePush( msg, playedSound->name );
-                                        core->NetworkSend( msg );
-                                    }
                                 }
                             }
                             else {
@@ -646,7 +628,7 @@ namespace atto {
                             ent->spriteAnimator.SetSpriteIfDifferent( core, sprVFX_SmallExplody, false );
                             if( unit.playedDeathSound == false && ent->spriteAnimator.frameIndex == 1 ) {
                                 unit.playedDeathSound = true;
-                                core->AudioPlayRandom( 1.0f, false, ent->pos, ent->vel, sndCloseExplody1, sndCloseExplody2 );
+                                core->AudioPlayRandom( nullptr, sndCloseExplody1, sndCloseExplody2 );
                             }
 
                             if( ent->spriteAnimator.loopCount > 0 ) {
@@ -772,7 +754,9 @@ namespace atto {
             }
 
             glm::vec2 drawPos = ent->netStreamed ? ent->netVisualPos : ent->pos;
-            spriteDrawContext->DrawSprite( ent->spriteAnimator.sprite, ent->spriteAnimator.frameIndex, drawPos, ent->ori, glm::vec2( ent->facingDir, 1.0f ), colorMultiplier );
+            if( ent->spriteAnimator.sprite != nullptr ) {
+                spriteDrawContext->DrawSprite( ent->spriteAnimator.sprite, ent->spriteAnimator.frameIndex, drawPos, ent->ori, glm::vec2( ent->facingDir, 1.0f ), colorMultiplier );
+            }
         }
 
         if( false ) {
@@ -832,6 +816,7 @@ namespace atto {
             entity->handle = handle;
             entity->type = type;
             entity->facingDir = 1.0f;
+            entity->name = "Mr No Name";
         }
 
         return entity;
@@ -932,7 +917,7 @@ namespace atto {
 
         ZeroStruct( particleSystem );
         particleSystem.count = 10;
-        particleSystem.texture = core->ResourceGetAndLoadTexture( "particle_single_white_1x1.png", false, false );;
+        particleSystem.texture = core->ResourceGetAndLoadTexture( "res/sprites/particle_single_white_1x1.png", false, false );;
         particleSystem.lifeTime = 0.5f;
         particleSystem.scaleMin = 1;
         particleSystem.scaleMax = 2;
@@ -1064,8 +1049,8 @@ namespace atto {
     }
 
     void GameGUI::AbilityIcon( Ability & ab ) {
-        static TextureResource * sprUiPanel = core->ResourceGetAndLoadTexture( "ui_ability_panel.png", false, false );
-        static TextureResource * sprUiCharge = core->ResourceGetAndLoadTexture( "ui_icon_ability_warrior_charge.png", false, false );
+        static TextureResource * sprUiPanel = core->ResourceGetAndLoadTexture( "res/sprites/ui_ability_panel.png", false, false );
+        static TextureResource * sprUiCharge = core->ResourceGetAndLoadTexture( "res/sprites/ui_icon_ability_warrior_charge.png", false, false );
         glm::vec2 dims = drawContext->GetCameraDims();
         glm::vec2 scale = glm::vec2( 0.8f );
         glm::vec2 pos = glm::vec2( startX, startY ) * dims;

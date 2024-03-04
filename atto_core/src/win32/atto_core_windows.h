@@ -9,6 +9,7 @@ namespace FMOD {
     class System;
     class Sound;
     class Channel;
+    class ChannelGroup;
 }
 
 namespace atto {
@@ -83,7 +84,8 @@ namespace atto {
     };
 
     struct Win32AudioResource : public AudioResource {
-        FMOD::Sound * sound;
+        FMOD::Sound * sound2D;
+        FMOD::Sound * sound3D;
     };
 
     struct Win32StaticMeshResource : public StaticMeshResource {
@@ -110,7 +112,7 @@ namespace atto {
         virtual SpriteResource *        ResourceGetAndCreateSprite( const char * spriteName, i32 frameCount, i32 frameWidth, i32 frameHeight, i32 frameRate ) override;
         virtual SpriteResource *        ResourceGetAndLoadSprite( const char * spriteName ) override;
         virtual SpriteResource *        ResourceGetLoadedSprite( i64 spriteId );
-        virtual AudioResource *         ResourceGetAndLoadAudio( const char * name ) override;
+        virtual AudioResource *         ResourceGetAndCreateAudio( const char * name, bool is2D, bool is3D, f32 minDist, f32 maxDist ) override;
         virtual FontHandle              ResourceGetFont( const char * name ) override;
         virtual void                    ResourceReadEntireFile( const char * path, char * data, i32 maxLen ) override;
         virtual void                    ResourceWriteEntireFile( const char * path, const char * data ) override;
@@ -119,9 +121,8 @@ namespace atto {
         StaticMeshResource *            ResourceMeshCreate( const char * name, StaticMeshData & data );
         StaticMeshResource *            ResourceMeshCreate( const char * name, i32 vertexCount );
 
-        virtual AudioSpeaker            AudioPlay( AudioResource * audioResource, f32 volume = 1.0f, bool looping = false ) override;
-        virtual AudioSpeaker            AudioPlay( AudioResource * audioResource, glm::vec2 pos, glm::vec2 vel, f32 volume = 1.0f, bool looping = false ) override;
-        virtual void                    AudioSetListener( glm::vec2 pos, glm::vec2 vel ) override;
+        virtual AudioSpeaker            AudioPlay( AudioResource * audioResource, glm::vec2 * pos ) override;
+        virtual void AudioSetListener( glm::vec2 pos ) override;
 
         virtual float                   FontGetTextBounds( FontHandle font, f32 fontSize, const char * text, glm::vec2 pos, BoxBounds2D & bounds ) override;
         virtual void                    RenderSubmit( DrawContext * dcxt, bool clearBackBuffers ) override;
@@ -134,7 +135,7 @@ namespace atto {
         virtual void                    WindowSetTitle(const char* title) override;
         virtual void                    WindowSetVSync( bool value ) override;
         virtual bool                    WindowGetVSync() override;
-        virtual bool                    WindowOpenNativeFileDialog( const char * basePath, LargeString & res ) override;
+        virtual bool WindowOpenNativeFileDialog( const char * basePath, const char * filter, LargeString & res ) override;
         virtual bool                    WindowOpenNativeFolderDialog( const char * basePath, LargeString & res ) override;
 
         void                            GLResetSurface(f32 w, f32 h);
@@ -159,6 +160,7 @@ namespace atto {
         Win32StaticMeshResource *         staticMeshSphere;
         Win32StaticMeshResource *         staticMeshCylinder;
 
+        FMOD::ChannelGroup *            fmodMasterGroup;
         FMOD::System *                  fmodSystem;
         FixedList<AudioSpeaker, 32>     alSpeakers;
 

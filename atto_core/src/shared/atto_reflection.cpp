@@ -648,3 +648,110 @@ namespace atto {
     }
 }
 
+/*
+=====================================================================
+===========================GAME OBJECTS =============================
+=====================================================================
+*/
+
+#include "atto_core.h"
+
+namespace atto {
+    /*
+    * ====================== TEXTURE PTR 
+    */
+    struct TypeDescriptor_TexturePtr : TypeDescriptor {
+        TypeDescriptor_TexturePtr() {
+            name = "TexturePtr";
+            size = sizeof( TextureResource * );
+        }
+
+        nlohmann::json JSON_Write( const void * obj ) override {
+            TextureResource * textureResource = *(TextureResource **)obj;
+            return atto::JSON_Write( textureResource->name );
+        }
+
+        void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+            LargeString resPath = {};
+            atto::JSON_Read( j, resPath );
+
+            TextureResource ** textureResource = (TextureResource **)obj;
+
+            Core * core = Core::EditorOnly_GetCore();
+            *textureResource = core->ResourceGetAndLoadTexture( resPath.GetCStr(), false, false );
+        }
+
+        void Imgui_Draw( const void * obj, const char * memberName ) override {
+            TextureResource * textureResource = *(TextureResource **)obj;
+            ImGui::SeparatorText( "Image" );
+            if( ImGui::ImageButton( (void *)(intptr_t)textureResource->handle, ImVec2( (f32)textureResource->width, (f32)textureResource->height ) ) ) {
+                Core * core = Core::EditorOnly_GetCore();
+                LargeString resPath = {};
+                if( core->WindowOpenNativeFileDialog( nullptr, "png", resPath ) == true ) {
+                    
+                }
+            }
+        }
+    };
+
+    template <>
+    TypeDescriptor * GetPrimitiveDescriptor<TextureResource *>() {
+        static TypeDescriptor_TexturePtr typeDesc;
+        return &typeDesc;
+    }
+    
+    /*
+    * ====================== AUDIO PTR
+    */
+
+    struct TypeDescriptor_AudioPtr : TypeDescriptor {
+        TypeDescriptor_AudioPtr() {
+            name = "AudioPtr";
+            size = sizeof( AudioResource * );
+        }
+
+        nlohmann::json JSON_Write( const void * obj ) override {
+            AudioResource * audioResource = *(AudioResource **)obj;
+            return atto::JSON_Write( audioResource->name );
+        }
+
+        void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+            LargeString resPath = {};
+            atto::JSON_Read( j, resPath );
+
+            AudioResource ** audioResource = (AudioResource **)obj;
+            
+            Core * core = Core::EditorOnly_GetCore();
+            *audioResource = core->ResourceGetAndCreateAudio( resPath.GetCStr(), true, true, 30, 800 ); // @HACK!!!!! Don't hard code these values, especially the 3d/2d. Get a file in place soon !
+        }
+
+        void Imgui_Draw( const void * obj, const char * memberName ) override {
+            Core * core = Core::EditorOnly_GetCore();
+            AudioResource * audioResource = *(AudioResource **)obj;
+            
+            LargeString shortName = audioResource != nullptr ? audioResource->GetShortName() : LargeString::FromLiteral("Pick");
+            if( ImGui::Button( shortName.GetCStr() ) ) {
+                LargeString resPath = {};
+                if( core->WindowOpenNativeFileDialog( nullptr, "wav,ogg", resPath ) == true ) {
+
+                }
+            }
+            
+            if( audioResource != nullptr ) {
+                ImGui::SameLine();
+                ImGui::PushID( audioResource->id );
+                if( ImGui::Button( "Play" ) ) {
+                    core->AudioPlay( audioResource );
+                }
+                ImGui::PopID();
+            }
+        }
+    };
+
+    template <>
+    TypeDescriptor * GetPrimitiveDescriptor<AudioResource *>() {
+        static TypeDescriptor_AudioPtr typeDesc;
+        return &typeDesc;
+    }
+}
+

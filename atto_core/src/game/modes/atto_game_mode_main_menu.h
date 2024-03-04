@@ -13,7 +13,7 @@ namespace atto {
         void Initialize( Core * core ) override;
         void UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags = UPDATE_AND_RENDER_FLAG_NONE ) override;
         void Shutdown( Core * core ) override;
-
+        virtual Map * GetMap() override { return nullptr; }
         UIContext ui;
     };
     

@@ -130,9 +130,9 @@ namespace atto {
         WinBoyoWriteTextFile( path, data );
     }
   
-    bool WindowsCore::WindowOpenNativeFileDialog( const char * basePath, LargeString & res ) {
+    bool WindowsCore::WindowOpenNativeFileDialog( const char * basePath, const char * filter, LargeString & res ) {
         nfdchar_t * outPath = NULL;
-        nfdresult_t result = NFD_OpenDialog( NULL, basePath, &outPath );
+        nfdresult_t result = NFD_OpenDialog( filter, basePath, &outPath );
 
         if( result == NFD_OKAY ) {
             res.Clear();

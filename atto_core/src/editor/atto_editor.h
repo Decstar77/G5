@@ -19,7 +19,8 @@ namespace atto {
     };
 
     struct Editor_ResourceWidget {
-        SpriteResource * spriteResource;
+        Entity *            entity;
+        SpriteResource *    spriteResource;
     };
 
     class Editor {
@@ -28,7 +29,7 @@ namespace atto {
 
         void        UpdateAndRender( Core * core, GameMode * game, f32 dt );
         void        MainMenuBar( Core * core );
-        void        ResourceEditor( Core * core );
+        void        ResourceEditor( Core * core, GameMode * gameMode );
 
         union {
             struct {
@@ -40,6 +41,8 @@ namespace atto {
 
         Editor_ResourceWidget resourceWidget;
         
+
+        Map *                 currentMap = nullptr;
     };
 }
 

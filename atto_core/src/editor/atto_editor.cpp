@@ -19,11 +19,12 @@ namespace atto {
             return;
         }
 
+        currentMap = game->GetMap();
         game->UpdateAndRender( core, dt );
 
         EngineImgui::NewFrame();
         MainMenuBar( core );
-        ResourceEditor( core );
+        ResourceEditor( core, game );
         //ImGui::ShowDemoWindow();
         EngineImgui::EndFrame();
     }
@@ -81,7 +82,7 @@ namespace atto {
     //    REFLECT_STRUCT_END()
 
 
-    void Editor::ResourceEditor( Core * core ) {
+    void Editor::ResourceEditor( Core * core, GameMode * gameMode ) {
         ImGuiWindowFlags windowFlags = 0;
         windowFlags = ImGuiWindowFlags_MenuBar;
 
@@ -89,22 +90,30 @@ namespace atto {
             if( ImGui::BeginMenuBar() ) {
                 if( ImGui::BeginMenu( "File" ) ) {
                     LargeString res = {};
-                    if( ImGui::MenuItem( "New" ) ) {
-                        if( core->WindowOpenNativeFolderDialog( nullptr, res ) ) {
-                            i32 resIndex = res.FindFirstOf( "res/sprites/" );
-                            if( resIndex != -1 ) {
-                                res = res.SubStr( resIndex + 12 );
-                                resourceWidget.spriteResource = core->ResourceGetAndCreateSprite( res.GetCStr(), 0, 0, 0, 0 );
+                    if( ImGui::BeginMenu( "New" ) ) {
+                        if( ImGui::MenuItem( "Entity" ) ) {
+                            if( currentMap != nullptr ) {
+                                resourceWidget.entity = currentMap->SpawnEntity( ENTITY_TYPE_PROP );
+                                resourceWidget.spriteResource = nullptr;
                             }
                         }
+                        if( ImGui::MenuItem( "Sprite" ) ) {
+                            if( core->WindowOpenNativeFolderDialog( nullptr, res ) ) {
+                                i32 resIndex = res.FindFirstOf( "res/sprites/" );
+                                if( resIndex != -1 ) {
+                                    res = res.SubStr( resIndex + 12 );
+                                    resourceWidget.spriteResource = core->ResourceGetAndCreateSprite( res.GetCStr(), 0, 0, 0, 0 );
+                                }
+                            }
+                        }
+                        ImGui::EndMenu();
                     }
 
                     if( ImGui::MenuItem( "Open" ) ) {
-                        core->WindowOpenNativeFileDialog( nullptr, res );
+                        core->WindowOpenNativeFileDialog( nullptr, nullptr, res );
                         i32 resIndex = res.FindFirstOf( "res/sprites/" );
                         if( resIndex != -1 ) {
-                            res = res.SubStr( resIndex + 12 );
-                            res.StripFile();
+                            res = res.SubStr( resIndex );
                             resourceWidget.spriteResource = core->ResourceGetAndLoadSprite( res.GetCStr() );
                         }
                     }
@@ -124,10 +133,10 @@ namespace atto {
             if( resourceWidget.spriteResource != nullptr ) {
                 TypeDescriptor * settingsType = TypeResolver<SpriteResource>::get();
                 settingsType->Imgui_Draw( resourceWidget.spriteResource, resourceWidget.spriteResource->spriteName.GetCStr() );
-                ImGui::SeparatorText( "Image" );
-                if( resourceWidget.spriteResource->textureResource != nullptr ) {
-                    ImGui::Image( (void *)(intptr_t)resourceWidget.spriteResource->textureResource->handle, ImVec2( (f32)resourceWidget.spriteResource->textureResource->width, (f32)resourceWidget.spriteResource->textureResource->height ) );
-                }
+            }
+            else if( resourceWidget.entity != nullptr ) {
+                TypeDescriptor * settingsType = TypeResolver<Entity>::get();
+                settingsType->Imgui_Draw( resourceWidget.entity, resourceWidget.entity->name.GetCStr() );
             }
 
             ImGui::End();

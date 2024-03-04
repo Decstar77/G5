@@ -93,6 +93,8 @@ namespace atto {
     }
 
     void WindowsCore::Run( int argc, char ** argv ) {
+        theCore = this;
+
         OsParseStartArgs( argc, argv );
 
         MemoryMakePermanent( Megabytes( 128 ) );
@@ -752,8 +754,9 @@ namespace atto {
             }
         }
 
-        const SmallString shortName = GetEndingFolder( spriteName );
-        LargeString textureName = StringFormat::Large( "%s/%s.png", spriteName, shortName.GetCStr() );
+        LargeString textureName = LargeString::FromLiteral( spriteName );
+        textureName.StripFileExtension();
+        textureName.Add( ".png" );
         TextureResource * textureResource = ResourceGetAndLoadTexture( textureName.GetCStr(), false, false );
         if( textureResource == nullptr ) {
             LogOutput( LogLevel::ERR, "Could not find texture for sprite '%s'", spriteName );
@@ -785,32 +788,10 @@ namespace atto {
             }
         }
 
-        const SmallString folder = GetEndingFolder( spriteName );
-        LargeString resPath = StringFormat::Large( "res/sprites/%s/%s.json", spriteName, folder.GetCStr() );
-
         SpriteResource * spriteResource = MemoryAllocateTransient<SpriteResource>();
         spriteResource->spriteName = spriteName;
 
-        if( ResourceLoadRefl( spriteResource, resPath.GetCStr() ) == true ) {
-            resPath = StringFormat::Large( "%s/%s.png", spriteName, folder.GetCStr() );
-            spriteResource->textureResource = ResourceGetAndLoadTexture( resPath.GetCStr(), false, false );
-            if( spriteResource->textureResource == nullptr ) {
-                return nullptr;
-            }
-
-            const i32 frameActuationCount = spriteResource->frameActuations.GetCount();
-            for( i32 frameActuationIndex = 0; frameActuationIndex < frameActuationCount; frameActuationIndex++ ) {
-                SpriteActuation & actuation = spriteResource->frameActuations[ frameActuationIndex ];
-
-                const i32 audioIdCount = actuation.audioIds.GetCount();
-                actuation.audioResources.SetCount( audioIdCount );
-                for( i32 audioIndex = 0; audioIndex < audioIdCount; audioIndex++ ) {
-                    SmallString & id = actuation.audioIds[ audioIndex ];
-                    resPath = StringFormat::Large( "res/sprites/%s/%s", spriteName, id.GetCStr() );
-                    actuation.audioResources[ audioIndex ] = ResourceGetAndLoadAudio( resPath.GetCStr() );
-                }
-            }
-
+        if( ResourceLoadRefl( spriteResource, spriteName ) == true ) {
             return resources.sprites.Add_MemCpyPtr( spriteResource );
         }
 
