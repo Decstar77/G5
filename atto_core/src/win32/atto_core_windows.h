@@ -97,7 +97,6 @@ namespace atto {
     struct ResourceRegistry {
         FixedList<Win32TextureResource, 1024>       textures;
         FixedList<Win32AudioResource, 1024>         audios;
-        FixedList<Win32StaticMeshResource, 1024>    meshes;
         FixedList<SpriteResource, 1024>             sprites;
         FontContext                                 fontContext;
     };
@@ -115,14 +114,12 @@ namespace atto {
         virtual AudioResource *         ResourceGetAndCreateAudio( const char * name, bool is2D, bool is3D, f32 minDist, f32 maxDist ) override;
         virtual FontHandle              ResourceGetFont( const char * name ) override;
         virtual void                    ResourceReadEntireFile( const char * path, char * data, i32 maxLen ) override;
-        virtual void                    ResourceWriteEntireFile( const char * path, const char * data ) override;
+        virtual void                    ResourceWriteEntireTextFile( const char * path, const char * data ) override;
+        virtual void                    ResourceWriteEntireBinaryFile( const char * path, const byte * data, i32 size ) override;
         virtual i64                     ResourceGetFileSize( const char * path ) override;
 
-        StaticMeshResource *            ResourceMeshCreate( const char * name, StaticMeshData & data );
-        StaticMeshResource *            ResourceMeshCreate( const char * name, i32 vertexCount );
-
         virtual AudioSpeaker            AudioPlay( AudioResource * audioResource, glm::vec2 * pos ) override;
-        virtual void AudioSetListener( glm::vec2 pos ) override;
+        virtual void                    AudioSetListener( glm::vec2 pos ) override;
 
         virtual float                   FontGetTextBounds( FontHandle font, f32 fontSize, const char * text, glm::vec2 pos, BoxBounds2D & bounds ) override;
         virtual void                    RenderSubmit( DrawContext * dcxt, bool clearBackBuffers ) override;
@@ -135,13 +132,17 @@ namespace atto {
         virtual void                    WindowSetTitle(const char* title) override;
         virtual void                    WindowSetVSync( bool value ) override;
         virtual bool                    WindowGetVSync() override;
-        virtual bool WindowOpenNativeFileDialog( const char * basePath, const char * filter, LargeString & res ) override;
+        virtual bool                    WindowOpenNativeFileDialog( const char * basePath, const char * filter, LargeString & res ) override;
         virtual bool                    WindowOpenNativeFolderDialog( const char * basePath, LargeString & res ) override;
 
         void                            GLResetSurface(f32 w, f32 h);
 
         static void                     WinBoyoWriteTextFile( const char * path, const char * text );
         static void                     WinBoyoReadTextFile( const char * path, char * text, i32 maxLen );
+
+    #if ATTO_EDITOR
+        virtual void                    EditorOnly_SaveLoadedResourcesToBinary() override;
+    #endif
 
     public:
         ResourceRegistry            resources = {};

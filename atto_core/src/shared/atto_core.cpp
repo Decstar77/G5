@@ -471,6 +471,12 @@ namespace atto {
         return client->GetPing();
     }
 
+    BinaryBlob Core::CreateBinaryBlob( i32 blobSize ) {
+        BinaryBlob blob = {};
+        blob.Create( (byte *)MemoryAllocateTransient( blobSize ), (i32)blobSize );
+        return blob;
+    }
+
     void * Core::MemoryAllocatePermanent( u64 bytes ) {
         thePermanentMemoryMutex.lock();
 

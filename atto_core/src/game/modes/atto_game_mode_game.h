@@ -16,9 +16,10 @@ namespace atto {
     enum EntityType {
         ENTITY_TYPE_INVALID = 0,
         ENTITY_TYPE_PLAYER = 1,
-        
+
         ENTITY_TYPE_ENEMIES_START,
-        ENTITY_TYPE_ENEMY_DRONE_01,
+        ENTITY_TYPE_ENEMY_BOT_DRONE,
+        ENTITY_TYPE_ENEMY_BOT_BIG,
         ENTITY_TYPE_ENEMIES_END,
 
         ENTITY_TYPE_PROP,
@@ -30,7 +31,7 @@ namespace atto {
         ABILITY_TYPE_WARRIOR_STAB = 2,
         ABILITY_TYPE_WARRIOR_CHARGE = 3,
     };
-    
+
     struct Ability {
         AbilityType type;
         f32 cooldown;
@@ -53,8 +54,8 @@ namespace atto {
 
     struct PlayerStuff {
         PlayerState state;
-        Ability *   currentAbility;
-        Ability *   primingAbility;
+        Ability * currentAbility;
+        Ability * primingAbility;
 
         f32 speed;
 
@@ -84,7 +85,7 @@ namespace atto {
     };
 
     struct SpriteAnimator {
-        SpriteResource *    sprite;
+        SpriteResource * sprite;
         i32                 frameIndex;
         f32                 frameTimer;
         f32                 frameDuration;
@@ -115,7 +116,7 @@ namespace atto {
         f32                     scaleMax;
         glm::vec2               velMin;
         glm::vec2               velMax;
-        TextureResource *       texture;
+        TextureResource * texture;
 
         // State
         bool                      emitting;
@@ -185,7 +186,7 @@ namespace atto {
         i32         localPlayerNumber;
         i32         otherPlayerNumber;
     };
-    
+
     enum SpriteTileFlags {
         SPRITE_TILE_FLAG_NO_WALK = SetABit( 1 )
     };
@@ -196,7 +197,7 @@ namespace atto {
         i32                 flatIndex;
         glm::vec2           center;
         BoxBounds2D         wsBounds;
-        SpriteResource *    spriteResource;
+        SpriteResource * spriteResource;
         i32                 spriteTileIndexX;
         i32                 spriteTileIndexY;
         i32                 flags;
@@ -213,8 +214,8 @@ namespace atto {
     struct GameGUI {
         f32             startX;
         f32             startY;
-        DrawContext *   drawContext;
-        Core *          core;
+        DrawContext * drawContext;
+        Core * core;
 
         void BeginAbilityBar( Core * core, DrawContext * drawContext );
         void AbilityIcon( Ability & ab );
@@ -236,13 +237,13 @@ namespace atto {
 
         bool                                    isMp = false;
         bool                                    hasAuthority = false;
-        
+
         i32                                     localPlayerNumber = -1;
         i32                                     otherPlayerNumber = -1;
 
-        Entity *                                localPlayer = nullptr;
-        Entity *                                otherPlayer = nullptr;
-        
+        Entity * localPlayer = nullptr;
+        Entity * otherPlayer = nullptr;
+
         FixedList< Entity *, 2 >                players = {};
 
         SpriteTileMap                           tileMap = {};
@@ -253,26 +254,27 @@ namespace atto {
         // @NOTE: "Map Live" functions 
         void                            Start( Core * core, const GameStartParams & parms );
         void                            UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags );
-        Entity *                        SpawnEntity( EntityType type );
-        Entity *                        SpawnDrone( glm::vec2 pos );
-        void                            EntityUpdatePlayer( Core * core, Entity * ent, EntList & activeEnts );
-        Entity *                        ClosestPlayerTo( glm::vec2 p, f32 & dist );
+        Entity * SpawnEntity( EntityType type );
+        Entity * Spawn_EnemyBotDrone( Core * core, glm::vec2 pos );
+        Entity * Spawn_EnemyBotBig( Core * core, glm::vec2 pos );
+        Entity * ClosestPlayerTo( glm::vec2 p, f32 & dist );
 
-
+    #if ATTO_EDITOR
         // @NOTE: "Map Editor" functions
         void                            Editor_MapTilePlace( i32 xIndex, i32 yIndex, SpriteResource * sprite, i32 spriteX, i32 spriteY, i32 flags );
         void                            Editor_MapTileFillBorder( SpriteResource * sprite, i32 spriteX, i32 spriteY, i32 flags );
+    #endif
     };
 
     class GameMode_Game : public GameMode {
     public:
-                                        GameMode_Game( GameStartParams parms ) : startParms( parms ) {};
+        GameMode_Game( GameStartParams parms ) : startParms( parms ) {};
         virtual GameModeType            GetGameModeType() override;
         virtual bool                    IsInitialized() override;
         virtual void                    Initialize( Core * core ) override;
         virtual void                    UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags ) override;
         virtual void                    Shutdown( Core * core ) override;
-        virtual Map *                   GetMap() override { return &map; }
+        virtual Map * GetMap() override { return &map; }
 
     public:
         GameStartParams                         startParms;

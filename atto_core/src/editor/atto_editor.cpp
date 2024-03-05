@@ -3,6 +3,8 @@
 
 #include "imgui.h"
 
+#if ATTO_EDITOR
+
 namespace atto {
 
     Editor::Editor() {
@@ -41,6 +43,7 @@ namespace atto {
 
 
             if( ImGui::MenuItem( "Save Map" ) ) {
+                core->EditorOnly_SaveLoadedResourcesToBinary();
                 //leGame->map.DEBUG_SaveToFile( core, "res/maps/map.json" );
             }
 
@@ -121,7 +124,8 @@ namespace atto {
                     if( ImGui::MenuItem( "Save" ) ) {
                         if( resourceWidget.spriteResource != nullptr ) {
                             res = resourceWidget.spriteResource->GetResourcePath();
-                            core->ResourceSaveRefl( resourceWidget.spriteResource, res.GetCStr() );
+                            //core->ResourceWriteTextRefl( resourceWidget.spriteResource, res.GetCStr() );
+                            core->ResourceWriteBinaryRefl( resourceWidget.spriteResource, "res/sprites/test.bin" );
                         }
                     }
 
@@ -142,5 +146,6 @@ namespace atto {
             ImGui::End();
         }
     }
-
 }
+
+#endif

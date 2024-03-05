@@ -126,10 +126,21 @@ namespace atto {
         WinBoyoReadTextFile( path, data, maxLen );
     }
 
-    void WindowsCore::ResourceWriteEntireFile( const char * path, const char * data ) {
+    void WindowsCore::ResourceWriteEntireTextFile( const char * path, const char * data ) {
         WinBoyoWriteTextFile( path, data );
     }
-  
+
+    void WindowsCore::ResourceWriteEntireBinaryFile( const char * path, const byte * data, i32 size ) {
+        std::ofstream file( path, std::ios::out | std::ios::binary );
+        if( file.is_open() ) {
+            file.write( reinterpret_cast<const char *>( data ), size );
+            file.close();
+        }
+        else {
+            LogOutput( LogLevel::ERR, "ResourceWriteEntireBinaryFile :: Failed to open file %s", path );
+        }
+    }
+
     bool WindowsCore::WindowOpenNativeFileDialog( const char * basePath, const char * filter, LargeString & res ) {
         nfdchar_t * outPath = NULL;
         nfdresult_t result = NFD_OpenDialog( filter, basePath, &outPath );

@@ -12,14 +12,17 @@ namespace atto {
     }
 
     ContentTextureProcessor::~ContentTextureProcessor() {
+    #if !ATTO_EDITOR
         if( pixelData != nullptr ) {
             free( pixelData );
         }
+    #endif
     }
 
     bool ContentTextureProcessor::LoadFromFile( const char * file ) {
         filePath = file;
         pixelData = stbi_load( filePath.GetCStr(), &width, &height, &channels, 4 );
+        channels = 4;
 
         if( pixelData == nullptr ) {
             return false;

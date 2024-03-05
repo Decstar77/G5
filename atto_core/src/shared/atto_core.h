@@ -54,6 +54,12 @@ namespace atto {
         i32     channels;
         bool    hasMips;
         bool    hasAnti;
+
+        inline i32 GetByteSize() const { return width * height * channels; }
+
+    #if ATTO_EDITOR // Used for baking purposes.
+        byte *  pixelData;
+    #endif
     };
 
     class AudioResource : public Resource {
@@ -336,14 +342,19 @@ namespace atto {
         virtual AudioResource *             ResourceGetAndCreateAudio( const char * name, bool is2D, bool is3D, f32 minDist, f32 maxDist ) = 0;
         virtual FontHandle                  ResourceGetFont( const char * name ) = 0;
         virtual void                        ResourceReadEntireFile( const char * path, char * data, i32 maxLen ) = 0;
-        virtual void                        ResourceWriteEntireFile( const char * path, const char * data ) = 0;
+        virtual void                        ResourceWriteEntireTextFile( const char * path, const char * data ) = 0;
+        virtual void                        ResourceWriteEntireBinaryFile( const char * path, const byte * data, i32 size ) = 0;
         virtual i64                         ResourceGetFileSize( const char * path ) = 0;
         char *                              ResourceReadEntireFileIntoTransientMemory( const char * path, i64 * size );
 
         template< typename _type_ >
-        void                                ResourceSaveRefl( const _type_ * obj, const char * path );
+        void                                ResourceWriteTextRefl( const _type_ * obj, const char * path );
         template< typename _type_>
-        bool                                ResourceLoadRefl( _type_ * obj, const char * path );
+        bool                                ResourceReadTextRefl( _type_ * obj, const char * path );
+        template< typename _type_ >
+        void                                ResourceWriteBinaryRefl( const _type_ * obj, const char * path );
+        template< typename _type_>
+        bool                                ResourceReadBinaryRefl( _type_ * obj, const char * path );
 
         virtual float                       FontGetTextBounds( FontHandle font, f32 fontSize, const char * text, glm::vec2 pos, BoxBounds2D & bounds ) = 0;
 
@@ -353,7 +364,7 @@ namespace atto {
         virtual void                        RenderSubmit( DrawContext * dcxt, bool clearBackBuffers ) = 0;
 
         virtual AudioSpeaker                AudioPlay( AudioResource * audioResource, glm::vec2 * pos = nullptr ) = 0;
-        virtual void AudioSetListener( glm::vec2 pos ) = 0;
+        virtual void                        AudioSetListener( glm::vec2 pos ) = 0;
         template<i32 capcity>
         AudioResource *                     AudioPlayRandom( const FixedList<AudioResource *, capcity> & audioResources, glm::vec2 * pos = nullptr );
         template<typename... args>
@@ -364,6 +375,8 @@ namespace atto {
         void                                NetDisconnect();
         SmallString                         NetStatusText();
         u32                                 NetGetPing();
+
+        BinaryBlob                          CreateBinaryBlob( i32 blobSize );
 
         void *                              MemoryAllocatePermanent( u64 bytes );
         void *                              MemoryAllocateTransient( u64 bytes );
@@ -410,7 +423,10 @@ namespace atto {
 
         virtual void                        Run( int argc, char ** argv ) = 0;
 
+    #if ATTO_EDITOR
         inline static Core *                EditorOnly_GetCore() { return theCore; }
+        virtual void                        EditorOnly_SaveLoadedResourcesToBinary() = 0;
+    #endif
 
     protected:
         inline static Core *        theCore = nullptr;
@@ -480,14 +496,14 @@ namespace atto {
     }
 
     template< typename _type_ >
-    void Core::ResourceSaveRefl( const _type_ * obj, const char * path ) {
+    void Core::ResourceWriteTextRefl( const _type_ * obj, const char * path ) {
         TypeDescriptor * settingsType = TypeResolver<_type_>::get();
         nlohmann::json j = settingsType->JSON_Write( obj );
-        ResourceWriteEntireFile( path, j.dump().c_str() );
+        ResourceWriteEntireTextFile( path, j.dump().c_str() );
     }
 
     template< typename _type_>
-    bool Core::ResourceLoadRefl( _type_ * obj, const char * path ) {
+    bool Core::ResourceReadTextRefl( _type_ * obj, const char * path ) {
         i64 fileSize;
         char * data = ResourceReadEntireFileIntoTransientMemory( path, &fileSize );
         if( data != nullptr ) {
@@ -497,6 +513,31 @@ namespace atto {
             return true;
         }
 
+        return false;
+    }
+
+    template< typename _type_ >
+    void Core::ResourceWriteBinaryRefl( const _type_ * obj, const char * path ) {
+        TypeDescriptor * settingsType = TypeResolver<_type_>::get();
+        const i32 tempSize = Megabytes( 100 );
+        BinaryBlob blob = {};
+        blob.Create( (byte*)MemoryAllocateTransient( tempSize ), tempSize );
+        settingsType->Binary_Write( obj, blob );
+        ResourceWriteEntireBinaryFile( path, blob.buffer, blob.current );
+    }
+
+    template< typename _type_>
+    bool Core::ResourceReadBinaryRefl( _type_ * obj, const char * path ) {
+        i64 fileSize;
+        char * data = ResourceReadEntireFileIntoTransientMemory( path, &fileSize );
+        if( data != nullptr ) {
+            TypeDescriptor * settingsType = TypeResolver<_type_>::get();
+            BinaryBlob blob = {};
+            blob.Create( data, (i32)fileSize );
+            settingsType->Binary_Read( obj );
+            return true;
+        }
+        
         return false;
     }
 

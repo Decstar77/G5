@@ -177,11 +177,11 @@ namespace atto {
             size = sizeof( i32 );
         }
 
-        nlohmann::json JSON_Write( const void * obj ) override {
+        virtual nlohmann::json JSON_Write( const void * obj ) override {
             return nlohmann::json( *(i32 *)obj );
         }
 
-        void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+        virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             *(i32 *)obj = j.get<i32>();
         }
 
@@ -202,11 +202,11 @@ namespace atto {
             size = sizeof( u32 );
         }
 
-        nlohmann::json JSON_Write( const void * obj ) override {
+        virtual nlohmann::json JSON_Write( const void * obj ) override {
             return nlohmann::json( *(u32 *)obj );
         }
 
-        void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+        virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             *(u32 *)obj = j.get<u32>();
         }
 
@@ -227,11 +227,11 @@ namespace atto {
             size = sizeof( i64 );
         }
 
-        nlohmann::json JSON_Write( const void * obj ) override {
+        virtual nlohmann::json JSON_Write( const void * obj ) override {
             return nlohmann::json( *(i64 *)obj );
         }
 
-        void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+        virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             *(i64 *)obj = j.get<i64>();
         }
 
@@ -252,11 +252,11 @@ namespace atto {
             size = sizeof( u64 );
         }
 
-        nlohmann::json JSON_Write( const void * obj ) override {
+        virtual nlohmann::json JSON_Write( const void * obj ) override {
             return nlohmann::json( *(u64 *)obj );
         }
 
-        void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+        virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             *(u64 *)obj = j.get<u64>();
         }
 
@@ -277,11 +277,11 @@ namespace atto {
             size = sizeof( f32 );
         }
 
-        nlohmann::json JSON_Write( const void * obj ) override {
+        virtual nlohmann::json JSON_Write( const void * obj ) override {
             return nlohmann::json( *(f32 *)obj );
         }
 
-        void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+        virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             *(f32 *)obj = j.get<f32>();
         }
 
@@ -302,11 +302,11 @@ namespace atto {
             size = sizeof( f64 );
         }
 
-        nlohmann::json JSON_Write( const void * obj ) override {
+        virtual nlohmann::json JSON_Write( const void * obj ) override {
             return nlohmann::json( *(f64 *)obj );
         }
 
-        void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+        virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             *(f64 *)obj = j.get<f64>();
         }
 
@@ -327,11 +327,11 @@ namespace atto {
             size = sizeof( bool );
         }
 
-        nlohmann::json JSON_Write( const void * obj ) override {
+        virtual nlohmann::json JSON_Write( const void * obj ) override {
             return nlohmann::json( *(bool *)obj );
         }
 
-        void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+        virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             *(bool *)obj = j.get<bool>();
         }
 
@@ -352,11 +352,11 @@ namespace atto {
             size = sizeof( glm::vec2 );
         }
 
-        nlohmann::json JSON_Write( const void * obj ) override {
+        virtual nlohmann::json JSON_Write( const void * obj ) override {
             return atto::JSON_Write( *(glm::vec2 *)obj );
         }
 
-        void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+        virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             atto::JSON_Read( j, *(glm::vec2 *)obj );
         }
 
@@ -377,11 +377,11 @@ namespace atto {
             size = sizeof( glm::vec3 );
         }
 
-        nlohmann::json JSON_Write( const void * obj ) override {
+        virtual nlohmann::json JSON_Write( const void * obj ) override {
             return atto::JSON_Write( *(glm::vec3 *)obj );
         }
 
-        void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+        virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             atto::JSON_Read( j, *(glm::vec3 *)obj );
         }
 
@@ -402,11 +402,11 @@ namespace atto {
             size = sizeof( glm::vec4 );
         }
 
-        nlohmann::json JSON_Write( const void * obj ) override {
+        virtual nlohmann::json JSON_Write( const void * obj ) override {
             return atto::JSON_Write( *(glm::vec4 *)obj );
         }
 
-        void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+        virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             atto::JSON_Read( j, *(glm::vec4 *)obj );
         }
 
@@ -427,11 +427,11 @@ namespace atto {
             size = sizeof( glm::mat2 );
         }
 
-        nlohmann::json JSON_Write( const void * obj ) override {
+        virtual nlohmann::json JSON_Write( const void * obj ) override {
             return atto::JSON_Write( *(glm::mat2 *)obj );
         }
 
-        void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+        virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             atto::JSON_Read( j, *(glm::mat2 *)obj );
         }
 
@@ -452,14 +452,14 @@ namespace atto {
             size = sizeof( glm::mat3 );
         }
 
-        nlohmann::json JSON_Write( const void * obj ) override {
+        virtual nlohmann::json JSON_Write( const void * obj ) override {
             return atto::JSON_Write( *(glm::mat3 *)obj );
         }
 
-        void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+        virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             atto::JSON_Read( j, *(glm::mat3 *)obj );
         }
-        
+
         virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
             throw std::logic_error( "The method or operation is not implemented." );
         }
@@ -477,11 +477,11 @@ namespace atto {
             size = sizeof( glm::mat4 );
         }
 
-        nlohmann::json JSON_Write( const void * obj ) override {
+        virtual nlohmann::json JSON_Write( const void * obj ) override {
             return atto::JSON_Write( *(glm::mat4 *)obj );
         }
 
-        void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+        virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             atto::JSON_Read( j, *(glm::mat4 *)obj );
         }
 
@@ -502,11 +502,11 @@ namespace atto {
             size = sizeof( SmallString );
         }
 
-        nlohmann::json JSON_Write( const void * obj ) override {
+        virtual nlohmann::json JSON_Write( const void * obj ) override {
             return atto::JSON_Write( *(SmallString *)obj );
         }
 
-        void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+        virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             atto::JSON_Read( j, *(SmallString *)obj );
         }
 
@@ -530,11 +530,11 @@ namespace atto {
             size = sizeof( LargeString );
         }
 
-        nlohmann::json JSON_Write( const void * obj ) override {
+        virtual nlohmann::json JSON_Write( const void * obj ) override {
             return atto::JSON_Write( *(LargeString *)obj );
         }
 
-        void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+        virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             atto::JSON_Read( j, *(LargeString *)obj );
         }
 
@@ -558,7 +558,7 @@ namespace atto {
             size = sizeof( Collider );
         }
 
-        nlohmann::json JSON_Write( const void * obj ) override {
+        virtual nlohmann::json JSON_Write( const void * obj ) override {
             Collider * collider = (Collider *)obj;
             nlohmann::json j;
             j[ "type" ] = (i32)collider->type;
@@ -598,7 +598,7 @@ namespace atto {
             return j;
         }
 
-        void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+        virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             Collider * collider = (Collider *)obj;
             collider->type = j[ "type" ];
             switch( collider->type ) {
@@ -639,6 +639,13 @@ namespace atto {
             throw std::logic_error( "The method or operation is not implemented." );
         }
 
+        virtual void Binary_Read( void * obj, BinaryBlob & f ) override {
+            throw std::logic_error( "The method or operation is not implemented." );
+        }
+
+        virtual void Binary_Write( const void * obj, BinaryBlob & f ) override {
+            throw std::logic_error( "The method or operation is not implemented." );
+        }
     };
 
     template <>
@@ -658,7 +665,7 @@ namespace atto {
 
 namespace atto {
     /*
-    * ====================== TEXTURE PTR 
+    * ====================== TEXTURE PTR
     */
     struct TypeDescriptor_TexturePtr : TypeDescriptor {
         TypeDescriptor_TexturePtr() {
@@ -666,12 +673,14 @@ namespace atto {
             size = sizeof( TextureResource * );
         }
 
-        nlohmann::json JSON_Write( const void * obj ) override {
+        virtual nlohmann::json JSON_Write( const void * obj ) override {
             TextureResource * textureResource = *(TextureResource **)obj;
             return atto::JSON_Write( textureResource->name );
         }
 
-        void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+        virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+        #if ATTO_EDITOR
+
             LargeString resPath = {};
             atto::JSON_Read( j, resPath );
 
@@ -679,17 +688,56 @@ namespace atto {
 
             Core * core = Core::EditorOnly_GetCore();
             *textureResource = core->ResourceGetAndLoadTexture( resPath.GetCStr(), false, false );
+            
+        #endif
         }
 
-        void Imgui_Draw( const void * obj, const char * memberName ) override {
+        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
+        #if ATTO_EDITOR
+
             TextureResource * textureResource = *(TextureResource **)obj;
-            ImGui::SeparatorText( "Image" );
-            if( ImGui::ImageButton( (void *)(intptr_t)textureResource->handle, ImVec2( (f32)textureResource->width, (f32)textureResource->height ) ) ) {
-                Core * core = Core::EditorOnly_GetCore();
-                LargeString resPath = {};
-                if( core->WindowOpenNativeFileDialog( nullptr, "png", resPath ) == true ) {
-                    
+            if( textureResource != nullptr ) {
+                ImGui::SeparatorText( "Image" );
+                if( ImGui::ImageButton( (void *)(intptr_t)textureResource->handle, ImVec2( (f32)textureResource->width, (f32)textureResource->height ) ) ) {
+                    Core * core = Core::EditorOnly_GetCore();
+                    LargeString resPath = {};
+                    if( core->WindowOpenNativeFileDialog( nullptr, "png", resPath ) == true ) {
+                        TextureResource ** tptr = (TextureResource **)obj;
+                        *tptr = core->ResourceGetAndLoadTexture( resPath.GetCStr(), false, false );
+                    }
                 }
+            }
+            else {
+                if( ImGui::Button( "No Image" ) ) {
+                    Core * core = Core::EditorOnly_GetCore();
+                    LargeString resPath = {};
+                    if( core->WindowOpenNativeFileDialog( nullptr, "png", resPath ) == true ) {
+                        TextureResource ** tptr = (TextureResource **)obj;
+                        *tptr = core->ResourceGetAndLoadTexture( resPath.GetCStr(), false, false );
+                    }
+                }
+            }
+            
+        #endif
+        }
+
+        virtual void Binary_Read( void * obj, BinaryBlob & f ) override {
+            //LargeString resPath = {};
+            //f.Read( &resPath );
+            //TextureResource ** tptr = (TextureResource **)obj;
+            //Core * core = Core::EditorOnly_GetCore();
+            //*tptr = core->ResourceGetAndLoadTexture( resPath.GetCStr(), false, false );
+        }
+
+        virtual void Binary_Write( const void * obj, BinaryBlob & f ) override {
+            TextureResource * textureResource = *(TextureResource **)obj;
+            if( textureResource != nullptr ) {
+                f.Write( &textureResource->id );
+                f.Write( &textureResource->name );
+                f.Write( &textureResource->width );
+                f.Write( &textureResource->height );
+                f.Write( &textureResource->channels );
+                f.Write( textureResource->pixelData, textureResource->GetByteSize() );
             }
         }
     };
@@ -699,7 +747,7 @@ namespace atto {
         static TypeDescriptor_TexturePtr typeDesc;
         return &typeDesc;
     }
-    
+
     /*
     * ====================== AUDIO PTR
     */
@@ -710,33 +758,39 @@ namespace atto {
             size = sizeof( AudioResource * );
         }
 
-        nlohmann::json JSON_Write( const void * obj ) override {
+        virtual nlohmann::json JSON_Write( const void * obj ) override {
             AudioResource * audioResource = *(AudioResource **)obj;
             return atto::JSON_Write( audioResource->name );
         }
 
-        void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+        virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+        #if ATTO_EDITOR
+
             LargeString resPath = {};
             atto::JSON_Read( j, resPath );
 
             AudioResource ** audioResource = (AudioResource **)obj;
-            
+
             Core * core = Core::EditorOnly_GetCore();
             *audioResource = core->ResourceGetAndCreateAudio( resPath.GetCStr(), true, true, 30, 800 ); // @HACK!!!!! Don't hard code these values, especially the 3d/2d. Get a file in place soon !
+
+        #endif
         }
 
-        void Imgui_Draw( const void * obj, const char * memberName ) override {
+        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
+        #if ATTO_EDITOR
+            
             Core * core = Core::EditorOnly_GetCore();
             AudioResource * audioResource = *(AudioResource **)obj;
-            
-            LargeString shortName = audioResource != nullptr ? audioResource->GetShortName() : LargeString::FromLiteral("Pick");
+
+            LargeString shortName = audioResource != nullptr ? audioResource->GetShortName() : LargeString::FromLiteral( "Pick" );
             if( ImGui::Button( shortName.GetCStr() ) ) {
                 LargeString resPath = {};
                 if( core->WindowOpenNativeFileDialog( nullptr, "wav,ogg", resPath ) == true ) {
 
                 }
             }
-            
+
             if( audioResource != nullptr ) {
                 ImGui::SameLine();
                 ImGui::PushID( audioResource->id );
@@ -745,6 +799,16 @@ namespace atto {
                 }
                 ImGui::PopID();
             }
+
+        #endif
+        }
+
+        virtual void Binary_Read( void * obj, BinaryBlob & f ) override {
+            throw std::logic_error( "The method or operation is not implemented." );
+        }
+
+        virtual void Binary_Write( const void * obj, BinaryBlob & f ) override {
+            throw std::logic_error( "The method or operation is not implemented." );
         }
     };
 

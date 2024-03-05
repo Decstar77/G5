@@ -2,6 +2,7 @@
 
 #include "atto_containers.h"
 #include "atto_math.h"
+#include "atto_binary_file.h"
 
 #include <vector>
 #include <iostream>
@@ -53,14 +54,14 @@ namespace atto {
     void JSON_Read( const nlohmann::json & j, glm::mat3 & o );
     void JSON_Read( const nlohmann::json & j, glm::mat4 & o );
 
-
-
     struct TypeDescriptor {
         i32         size;
         SmallString name;
         virtual ~TypeDescriptor() {}
         virtual nlohmann::json      JSON_Write( const void * obj ) = 0;
         virtual void                JSON_Read( const nlohmann::json & j, const void * obj ) = 0;
+        virtual void                Binary_Read( void * obj, BinaryBlob & f ) { f.Read( obj, size ); }
+        virtual void                Binary_Write( const void * obj, BinaryBlob & f ) { f.Write( obj, size ); }
         virtual void                Imgui_Draw( const void * obj, const char * memberName ) = 0;
     };
 
@@ -70,6 +71,7 @@ namespace atto {
     struct DefaultResolver {
         template <typename T> static char func( decltype( &T::Reflection ) );
         template <typename T> static int func( ... );
+
         template <typename T>
         struct IsReflected {
             enum { value = ( sizeof( func<T>( nullptr ) ) == sizeof( char ) ) };
@@ -118,7 +120,7 @@ namespace atto {
             }
         }
 
-        nlohmann::json JSON_Write( const void * obj ) override {
+        virtual nlohmann::json JSON_Write( const void * obj ) override {
             nlohmann::json j;
             for( const Member & member : members ) {
                 j[ member.name.GetCStr() ] = member.type->JSON_Write( (char *)obj + member.offset );
@@ -126,7 +128,7 @@ namespace atto {
             return j;
         }
 
-        void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+        virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             for( const Member & member : members ) {
                 if( j.contains( member.name.GetCStr() ) == true ) {
                     const nlohmann::json & jj = j[ member.name.GetCStr() ];
@@ -135,7 +137,7 @@ namespace atto {
             }
         }
 
-        virtual void Imgui_Draw( const void * obj, const char * memberName ) {
+        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
             nlohmann::json j;
             if ( ImGui::TreeNodeEx( memberName, ImGuiTreeNodeFlags_DefaultOpen ) ) {
                 for( const Member & member : members ) {
@@ -143,6 +145,18 @@ namespace atto {
                 }
 
                 ImGui::TreePop();
+            }
+        }
+
+        virtual void Binary_Read( void * obj, BinaryBlob & f ) override {
+            for( const Member & member : members ) {
+                member.type->Binary_Read( (char *)obj + member.offset, f );
+            }
+        }
+
+        virtual void Binary_Write( const void * obj, BinaryBlob & f ) override {
+            for( const Member & member : members ) {
+                member.type->Binary_Write( (char *)obj + member.offset, f );
             }
         }
     };
@@ -186,7 +200,7 @@ namespace atto {
             return j;
         }
 
-        void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+        virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             FixedList< _type_, cap > * list = ( FixedList< _type_, cap > * )obj;
             list->Clear( true );
             for( const nlohmann::json & jj : j ) {
@@ -226,6 +240,26 @@ namespace atto {
                 ImGui::EndListBox();
             }
         #endif
+        }
+
+        virtual void Binary_Read( void * obj, BinaryBlob & f ) override {
+            FixedList< _type_, cap > * list = ( FixedList< _type_, cap > * )obj;
+            list->Clear( true );
+            i32 count = 0;
+            f.Read( &count );
+            for( i32 i = 0; i < count; i++ ) {
+                _type_ * t = &list->AddEmpty();
+                itemType->Binary_Read( t, f );
+            }
+        }
+
+        virtual void Binary_Write( const void * obj, BinaryBlob & f ) override {
+            const FixedList< _type_, cap > * list = ( const FixedList< _type_, cap > * )obj;
+            const i32 count = list->GetCount();
+            f.Write( &count );
+            for( i32 i = 0; i < count; i++ ) {
+                itemType->Binary_Write( list->Get( i ), f );
+            }
         }
     };
 

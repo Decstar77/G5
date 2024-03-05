@@ -93,12 +93,13 @@ namespace atto {
         players.Add( localPlayer );
         players.Add( otherPlayer );
 
-        SpawnDrone( glm::vec2( 200, 100 ) );
-        SpawnDrone( glm::vec2( 220, 100 ) );
-        SpawnDrone( glm::vec2( 240, 100 ) );
-        SpawnDrone( glm::vec2( 260, 100 ) );
-        SpawnDrone( glm::vec2( 280, 100 ) );
-        SpawnDrone( glm::vec2( 300, 100 ) );
+        Spawn_EnemyBotDrone( core, glm::vec2( 200, 100 ) );
+        Spawn_EnemyBotDrone( core, glm::vec2( 220, 100 ) );
+        Spawn_EnemyBotDrone( core, glm::vec2( 240, 100 ) );
+        Spawn_EnemyBotDrone( core, glm::vec2( 260, 100 ) );
+        Spawn_EnemyBotDrone( core, glm::vec2( 280, 100 ) );
+        Spawn_EnemyBotDrone( core, glm::vec2( 300, 100 ) );
+        Spawn_EnemyBotBig( core, glm::vec2( 300, 150 ) );
 
         static SpriteResource * sprTile_Stone = core->ResourceGetAndLoadSprite( "res/sprites/stone_tiles/stone_tiles.json" );
         static SpriteResource * sprTile_Grass = core->ResourceGetAndLoadSprite( "res/sprites/grass_tiles/grass_tiles.json" );
@@ -116,9 +117,7 @@ namespace atto {
     }
 
     void Map::UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags ) {
-        static TextureResource * tile = core->ResourceGetAndLoadTexture( "res/sprites/tile_dark_metal_1.png", false, false );
-        static TextureResource * sprUiPanel = core->ResourceGetAndLoadTexture( "res/sprites/ui_ability_panel.png", false, false );
-
+        static TextureResource * sprUiPanel             = core->ResourceGetAndLoadTexture( "res/sprites/ui_ability_panel.png", false, false );
         static TextureResource * sprCharDroneSelection  = core->ResourceGetAndLoadTexture( "res/sprites/char_drone_selection.png", false, false );
         static TextureResource * sprParticleSingleWhite = core->ResourceGetAndLoadTexture( "res/sprites/particle_single_white_1x1.png", false, false );
 
@@ -127,23 +126,19 @@ namespace atto {
         static SpriteResource * sprWarriorStab      = core->ResourceGetAndLoadSprite( "res/sprites/asset_pack_01/player_sword_stab/player_sword_stab.json" );
         static SpriteResource * sprWarriorStrike    = core->ResourceGetAndLoadSprite( "res/sprites/asset_pack_01/basic_sword_attack/basic_sword_attack.json"  );
         static SpriteResource * sprWarriorCharge    = core->ResourceGetAndLoadSprite( "res/sprites/asset_pack_01/player_katana_continuous_attack/player_katana_continuous_attack.json" );
-
-        static SpriteResource * sprCharDrone        = core->ResourceGetAndCreateSprite( "res/sprites/char_drone_01/char_drone_01.json", 1, 32, 32, 1 );
         static SpriteResource * sprVFX_SmallExplody = core->ResourceGetAndLoadSprite( "res/sprites/vfx_small_explody/vfx_small_explody.json" );
 
         const f32 soundMinDist = 400;
         const f32 soundMaxDist = 10000;
-        static AudioResource * sndWarriorStrike1 = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/lightsaber_quick_1.wav", true, true, soundMinDist, soundMaxDist );
-        static AudioResource * sndWarriorStrike2 = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/lightsaber_quick_3.wav", true, true, soundMinDist, soundMaxDist );
-        static AudioResource * sndWarriorStab1 = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/lightsaber_quick_2.wav", true, true, soundMinDist, soundMaxDist );
-        static AudioResource * sndWarriorStab2 = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/lightsaber_quick_4.wav", true, true, soundMinDist, soundMaxDist );
-        static AudioResource * sndWarriorCharge1 = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/lightsaber_clash_1.wav", true, true, soundMinDist, soundMaxDist );
-        static AudioResource * sndWarriorCharge2 = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/lightsaber_clash_2.wav", true, true, soundMinDist, soundMaxDist );
-
-        static AudioResource * sndCloseExplody1 = core->ResourceGetAndCreateAudio( "res/sounds/tomwinandysfx_explosions_volume_i_closeexplosion_01.wav", true, true, soundMinDist, soundMaxDist );
-        static AudioResource * sndCloseExplody2 = core->ResourceGetAndCreateAudio( "res/sounds/tomwinandysfx_explosions_volume_i_closeexplosion_01.wav", true, true, soundMinDist, soundMaxDist );
-
-        static FontHandle fontHandle = core->ResourceGetFont( "default" );
+        static AudioResource * sndWarriorStrike1    = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/lightsaber_quick_1.wav", true, true, soundMinDist, soundMaxDist );
+        static AudioResource * sndWarriorStrike2    = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/lightsaber_quick_3.wav", true, true, soundMinDist, soundMaxDist );
+        static AudioResource * sndWarriorStab1      = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/lightsaber_quick_2.wav", true, true, soundMinDist, soundMaxDist );
+        static AudioResource * sndWarriorStab2      = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/lightsaber_quick_4.wav", true, true, soundMinDist, soundMaxDist );
+        static AudioResource * sndWarriorCharge1    = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/lightsaber_clash_1.wav", true, true, soundMinDist, soundMaxDist );
+        static AudioResource * sndWarriorCharge2    = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/lightsaber_clash_2.wav", true, true, soundMinDist, soundMaxDist );
+        static AudioResource * sndCloseExplody1     = core->ResourceGetAndCreateAudio( "res/sounds/tomwinandysfx_explosions_volume_i_closeexplosion_01.wav", true, true, soundMinDist, soundMaxDist );
+        static AudioResource * sndCloseExplody2     = core->ResourceGetAndCreateAudio( "res/sounds/tomwinandysfx_explosions_volume_i_closeexplosion_01.wav", true, true, soundMinDist, soundMaxDist );
+        static FontHandle fontHandle                = core->ResourceGetFont( "default" );
 
         if( isMp == true ) {
             if( core->NetworkIsConnected() == true ) {
@@ -542,7 +537,7 @@ namespace atto {
 
                                                 Entity * enemy = entities[ entityIndexB ];
                                                 switch( enemy->type ) {
-                                                    case ENTITY_TYPE_ENEMY_DRONE_01:
+                                                    case ENTITY_TYPE_ENEMY_BOT_DRONE:
                                                     {
                                                         if( player.currentAbility->hits.Contains( enemy->handle ) == false ) {
                                                             Collider2D c = enemy->GetWorldCollisionCollider();
@@ -594,17 +589,12 @@ namespace atto {
                     //spriteDrawContext->DrawText2D( fontHandle, glm::vec2( 200 ), 32, vv.GetCStr() );
 
                 } break;
-                case ENTITY_TYPE_ENEMY_DRONE_01:
+                case ENTITY_TYPE_ENEMY_BOT_DRONE:
                 {
                     UnitStuff & unit = ent->unitStuff;
                     Navigator & nav = ent->navigator;
 
-                    if( ent->spriteAnimator.sprite == nullptr ) {
-                        ent->spriteAnimator.SetSpriteIfDifferent( core, sprCharDrone, false );
-                    }
-
                     const f32 alertRad = 55.0f;
-
 
                     switch( unit.state ) {
                         case UNIT_STATE_IDLE:
@@ -823,8 +813,8 @@ namespace atto {
     }
 
 
-    Entity * Map::SpawnDrone( glm::vec2 pos ) {
-        Entity * entity = SpawnEntity( ENTITY_TYPE_ENEMY_DRONE_01 );
+    Entity * Map::Spawn_EnemyBotDrone( Core * core, glm::vec2 pos ) {
+        Entity * entity = SpawnEntity( ENTITY_TYPE_ENEMY_BOT_DRONE );
         if( entity != nullptr ) {
             entity->pos = pos;
             entity->netStreamed = !hasAuthority;
@@ -834,13 +824,30 @@ namespace atto {
             entity->collisionCollider = entity->selectionCollider;
             entity->maxHealth = 100;
             entity->currentHealth = entity->maxHealth;
+
+            static SpriteResource * spriteResource = core->ResourceGetAndCreateSprite( "res/sprites/char_drone_01/char_drone_01.json", 1, 32, 32, 1 );
+            entity->spriteAnimator.SetSpriteIfDifferent( core, spriteResource, false );
         }
 
         return entity;
     }
 
-    void Map::EntityUpdatePlayer( Core * core, Entity * ent, EntList & activeEnts ) {
+    Entity * Map::Spawn_EnemyBotBig( Core * core, glm::vec2 pos ) {
+        Entity * entity = SpawnEntity( ENTITY_TYPE_ENEMY_BOT_BIG );
+        if( entity != nullptr ) {
+            entity->pos = pos;
+            entity->netStreamed = !hasAuthority;
+            entity->selectionCollider.type = COLLIDER_TYPE_CIRCLE;
+            entity->selectionCollider.circle.pos = glm::vec2( -0.5f, -0.5f );
+            entity->selectionCollider.circle.rad = 5.0f;
+            entity->collisionCollider = entity->selectionCollider;
+            entity->maxHealth = 100;
+            entity->currentHealth = entity->maxHealth;
+            static SpriteResource * spriteResource = core->ResourceGetAndLoadSprite( "res/sprites/char_bot_big/char_bot_big.json" );
+            entity->spriteAnimator.SetSpriteIfDifferent( core, spriteResource, false );
+        }
 
+        return entity;
     }
 
     Entity * Map::ClosestPlayerTo( glm::vec2 p, f32 & dist ) {
@@ -859,33 +866,6 @@ namespace atto {
         }
 
         return closePlayer;
-    }
-
-    void Map::Editor_MapTilePlace( i32 xIndex, i32 yIndex, SpriteResource * sprite, i32 spriteX, i32 spriteY, i32 flags ) {
-        SpriteTile tile = {};
-        tile.xIndex = xIndex;
-        tile.yIndex = yIndex;
-        tile.flatIndex = yIndex * tileMap.tileXCount + xIndex;
-        tile.spriteResource = sprite;
-        tile.spriteTileIndexX = spriteX;
-        tile.spriteTileIndexY = spriteY;
-        tile.flags = flags;
-
-        const f32 TILE_SIZE = 32.0f;
-        tile.center = glm::vec2( xIndex * TILE_SIZE + TILE_SIZE * 0.5f, yIndex * TILE_SIZE + TILE_SIZE * 0.5f );
-        tile.wsBounds.min = tile.center + glm::vec2( -TILE_SIZE / 2.0f, -TILE_SIZE / 2.0f );
-        tile.wsBounds.max = tile.center + glm::vec2( TILE_SIZE / 2.0f, TILE_SIZE / 2.0f );
-        tileMap.tiles[ tile.flatIndex ] = tile;
-    }
-
-    void Map::Editor_MapTileFillBorder( SpriteResource * sprite, i32 spriteX, i32 spriteY, i32 flags ) {
-        for( i32 yIndex = 0; yIndex < tileMap.tileYCount; yIndex++ ) {
-            for( i32 xIndex = 0; xIndex < tileMap.tileXCount; xIndex++ ) {
-                if( xIndex == 0 || xIndex == tileMap.tileXCount - 1 || yIndex == 0 || yIndex == tileMap.tileYCount - 1 ) {
-                    Editor_MapTilePlace( xIndex, yIndex, sprite, spriteX, spriteY, flags );
-                }
-            }
-        }
     }
 
     inline static Collider2D ColliderForSpace( const Collider2D & base, glm::vec2 p ) {
@@ -1069,5 +1049,45 @@ namespace atto {
     void GameGUI::EndAbilityBar() {
 
     }
+}
+
+/*
+=====================================================================
+===========================EDITOR FUNCS==============================
+=====================================================================
+*/
+
+#if ATTO_EDITOR
+
+namespace atto {
+
+    void Map::Editor_MapTilePlace( i32 xIndex, i32 yIndex, SpriteResource * sprite, i32 spriteX, i32 spriteY, i32 flags ) {
+        SpriteTile tile = {};
+        tile.xIndex = xIndex;
+        tile.yIndex = yIndex;
+        tile.flatIndex = yIndex * tileMap.tileXCount + xIndex;
+        tile.spriteResource = sprite;
+        tile.spriteTileIndexX = spriteX;
+        tile.spriteTileIndexY = spriteY;
+        tile.flags = flags;
+
+        const f32 TILE_SIZE = 32.0f;
+        tile.center = glm::vec2( xIndex * TILE_SIZE + TILE_SIZE * 0.5f, yIndex * TILE_SIZE + TILE_SIZE * 0.5f );
+        tile.wsBounds.min = tile.center + glm::vec2( -TILE_SIZE / 2.0f, -TILE_SIZE / 2.0f );
+        tile.wsBounds.max = tile.center + glm::vec2( TILE_SIZE / 2.0f, TILE_SIZE / 2.0f );
+        tileMap.tiles[ tile.flatIndex ] = tile;
+    }
+
+    void Map::Editor_MapTileFillBorder( SpriteResource * sprite, i32 spriteX, i32 spriteY, i32 flags ) {
+        for( i32 yIndex = 0; yIndex < tileMap.tileYCount; yIndex++ ) {
+            for( i32 xIndex = 0; xIndex < tileMap.tileXCount; xIndex++ ) {
+                if( xIndex == 0 || xIndex == tileMap.tileXCount - 1 || yIndex == 0 || yIndex == tileMap.tileYCount - 1 ) {
+                    Editor_MapTilePlace( xIndex, yIndex, sprite, spriteX, spriteY, flags );
+                }
+            }
+        }
+    }
 
 }
+
+#endif

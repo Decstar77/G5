@@ -98,7 +98,7 @@ namespace atto {
         OsParseStartArgs( argc, argv );
 
         MemoryMakePermanent( Megabytes( 128 ) );
-        MemoryMakeTransient( Megabytes( 128 ) );
+        MemoryMakeTransient( Megabytes( 512 ) );
 
         if( !glfwInit() ) {
             //ATTOFATAL("Could not init GLFW, your windows is f*cked");
@@ -172,17 +172,16 @@ namespace atto {
 
         AudioInitialize();
 
+    #if ATTO_EDITOR
         EngineImgui::Initialize( window );
-
+        editor = new Editor();
+    #endif
+        
         client = new NetClient( this );
 
         //game = new GameModeGame();
         currentGameMode = new GameMode_MainMenu();
         currentGameMode->Initialize( this );
-
-    #if ATTO_EDITOR
-        editor = new Editor();
-    #endif
         
         bool showDemoWindow = true;
 
@@ -216,6 +215,11 @@ namespace atto {
             editor->UpdateAndRender( this, currentGameMode, deltaTime );
         #else 
             if( skipFrame == false ) {
+                if( currentGameMode->IsInitialized() == false ) {
+                    currentGameMode->Initialize( this );
+                    return;
+                }
+
                 currentGameMode->UpdateAndRender( this, this->deltaTime );
             }
         #endif
@@ -230,8 +234,10 @@ namespace atto {
             this->deltaTime = (f32)( endTime - startTime );
             startTime = endTime;
         }
-
+        
+    #if ATTO_EDITOR
         EngineImgui::Shutdown();
+    #endif
 
         delete client;
     }
@@ -247,96 +253,6 @@ namespace atto {
         i32 h = 0;
         glfwGetFramebufferSize( window, &w, &h );
         GLResetSurface( (f32)w, (f32)h );
-    }
-
-    StaticMeshResource * WindowsCore::ResourceMeshCreate( const char * name, StaticMeshData & data ) {
-        const i32 meshResourceCount = resources.meshes.GetCount();
-        for( i32 i = 0; i < meshResourceCount; i++ ) {
-            StaticMeshResource & meshResource = resources.meshes[ i ];
-            if( meshResource.name == name ) {
-                INVALID_CODE_PATH;
-                return nullptr;
-            }
-        }
-
-        Win32StaticMeshResource meshResource = {};
-        meshResource.name = name;
-        meshResource.vertexCount = data.vertexCount;
-        meshResource.vertexStride = sizeof( StaticMeshVertex );
-        meshResource.indexStride = sizeof( u16 );
-        meshResource.indexCount = data.indexCount;
-
-        glGenVertexArrays( 1, &meshResource.vao );
-        glGenBuffers( 1, &meshResource.vbo );
-        glGenBuffers( 1, &meshResource.ibo );
-
-        glBindVertexArray( meshResource.vao );
-        glBindBuffer( GL_ARRAY_BUFFER, meshResource.vbo );
-        glBufferData( GL_ARRAY_BUFFER, data.vertexCount * sizeof( StaticMeshVertex ), data.vertices, GL_STATIC_DRAW );
-
-        glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, meshResource.ibo );
-        glBufferData( GL_ELEMENT_ARRAY_BUFFER, data.indexCount * sizeof( u16 ), data.indices, GL_STATIC_DRAW );
-
-        glEnableVertexAttribArray( 0 );
-        glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, sizeof( StaticMeshVertex ), (void *)0 );
-
-        glEnableVertexAttribArray( 1 );
-        glVertexAttribPointer( 1, 3, GL_FLOAT, GL_FALSE, sizeof( StaticMeshVertex ), (void *)offsetof( StaticMeshVertex, normal ) );
-
-        glEnableVertexAttribArray( 2 );
-        glVertexAttribPointer( 2, 2, GL_FLOAT, GL_FALSE, sizeof( StaticMeshVertex ), (void *)offsetof( StaticMeshVertex, uv ) );
-
-        glBindVertexArray( 0 );
-
-        meshResource.boundingBox = {};
-        for( i32 vertexIndex = 0; vertexIndex < data.vertexCount; vertexIndex++ ) {
-            const StaticMeshVertex & v = data.vertices[ vertexIndex ];
-            meshResource.boundingBox .Expand( v.position );
-        }
-
-        data.Free();
-
-        return resources.meshes.Add( meshResource );
-    }
-
-    StaticMeshResource * WindowsCore::ResourceMeshCreate( const char * name, i32 vertexCount ) {
-        const i32 meshResourceCount = resources.meshes.GetCount();
-        for( i32 i = 0; i < meshResourceCount; i++ ) {
-            StaticMeshResource & meshResource = resources.meshes[ i ];
-            if( meshResource.name == name ) {
-                INVALID_CODE_PATH;
-                return nullptr;
-            }
-        }
-
-        Win32StaticMeshResource meshResource = {};
-        meshResource.name = name;
-        meshResource.vertexCount = vertexCount;
-        meshResource.vertexStride = sizeof( StaticMeshVertex );
-        meshResource.indexStride = -1;
-        meshResource.indexCount = -1;
-        meshResource.updateable = true;
-
-        glGenVertexArrays( 1, &meshResource.vao );
-        glGenBuffers( 1, &meshResource.vbo );
-
-        glBindVertexArray( meshResource.vao );
-
-        glBindBuffer( GL_ARRAY_BUFFER, meshResource.vbo );
-        glBufferData( GL_ARRAY_BUFFER, meshResource.vertexCount * meshResource.vertexStride, NULL, GL_DYNAMIC_DRAW );
-
-        glEnableVertexAttribArray( 0 );
-        glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, sizeof( StaticMeshVertex ), (void *)0 );
-
-        glEnableVertexAttribArray( 1 );
-        glVertexAttribPointer( 1, 3, GL_FLOAT, GL_FALSE, sizeof( StaticMeshVertex ), (void *)offsetof( StaticMeshVertex, normal ) );
-
-        glEnableVertexAttribArray( 2 );
-        glVertexAttribPointer( 2, 2, GL_FLOAT, GL_FALSE, sizeof( StaticMeshVertex ), (void *)offsetof( StaticMeshVertex, uv ) );
-
-        glBindVertexArray( 0 );
-
-        return resources.meshes.Add( meshResource );
     }
 
     void WindowsCore::RenderSubmit( DrawContext * dcxt, bool clearBackBuffers ) {
@@ -696,6 +612,7 @@ namespace atto {
         textureResource.channels = textureProcessor.channels;
         textureResource.width = textureProcessor.width;
         textureResource.height = textureProcessor.height;
+        textureResource.pixelData = textureProcessor.pixelData; // @NOTE: In EDITOR mode we keep the pixel data for baking. See ~ContentTextureProcessor().
         textureResource.hasMips = genMips;
         textureResource.hasAnti = genAnti;
         
@@ -791,7 +708,7 @@ namespace atto {
         SpriteResource * spriteResource = MemoryAllocateTransient<SpriteResource>();
         spriteResource->spriteName = spriteName;
 
-        if( ResourceLoadRefl( spriteResource, spriteName ) == true ) {
+        if( ResourceReadTextRefl( spriteResource, spriteName ) == true ) {
             return resources.sprites.Add_MemCpyPtr( spriteResource );
         }
 
@@ -1066,11 +983,11 @@ namespace atto {
             }
         )";
 
-        staticMeshUnlitProgram = GLCreateShaderProgram( vertexShaderSource, fragmentShaderSource );
-        staticMeshTriangle = (Win32StaticMeshResource *)ResourceMeshCreate( "Triangle", 3 );
-        staticMeshPlane = (Win32StaticMeshResource *)ResourceMeshCreate( "Plane", StaticMeshGeneration::CreateQuad( -1, 1, 2.0f, 2.0f, 0.0f ) );
-        staticMeshBox = (Win32StaticMeshResource *)ResourceMeshCreate( "Box", StaticMeshGeneration::CreateBox( 1, 1, 1, 0 ) );
-        staticMeshSphere = (Win32StaticMeshResource *)ResourceMeshCreate( "Sphere", StaticMeshGeneration::CreateSphere( 1, 8, 8 ) );
+        //staticMeshUnlitProgram = GLCreateShaderProgram( vertexShaderSource, fragmentShaderSource );
+        //staticMeshTriangle = (Win32StaticMeshResource *)ResourceMeshCreate( "Triangle", 3 );
+        //staticMeshPlane = (Win32StaticMeshResource *)ResourceMeshCreate( "Plane", StaticMeshGeneration::CreateQuad( -1, 1, 2.0f, 2.0f, 0.0f ) );
+        //staticMeshBox = (Win32StaticMeshResource *)ResourceMeshCreate( "Box", StaticMeshGeneration::CreateBox( 1, 1, 1, 0 ) );
+        //staticMeshSphere = (Win32StaticMeshResource *)ResourceMeshCreate( "Sphere", StaticMeshGeneration::CreateSphere( 1, 8, 8 ) );
     }
 
     void WindowsCore::OsParseStartArgs( int argc, char ** argv ) {
@@ -1331,6 +1248,26 @@ namespace atto {
         cameraProjection = glm::ortho( 0.0f, (f32)cameraWidth, 0.0f, (f32)cameraHeight, -1.0f, 1.0f );
         screenProjection = glm::ortho( 0.0f, (f32)w, (f32)h, 0.0f, -1.0f, 1.0f );
     }
+#if ATTO_EDITOR
+    
+    void WindowsCore::EditorOnly_SaveLoadedResourcesToBinary() {
+        BinaryBlob blob = CreateBinaryBlob( Megabytes( 150 ) );
+        const i32 textureCount = resources.textures.GetCount();
+        for( i32 i = 0; i < textureCount; i++ ) {
+            TextureResource * texture = resources.textures.Get( i );
+            TypeDescriptor * type = TypeResolver<TextureResource *>::get();
+            type->Binary_Write( &texture, blob );
+        }
+
+        ResourceWriteEntireBinaryFile( "res/sprites/test.bin", blob.buffer, blob.current );
+
+        blob.current = 0;
+        const i32 audioCount = resources.audios.GetCount();
+
+        const i32 spriteCount = resources.sprites.GetCount();
+    }
+
+#endif
 
     void VertexLayoutShape::Layout() {
         i32 stride = StrideBytes();
