@@ -115,6 +115,7 @@ namespace atto {
         virtual SpriteResource *        ResourceGetLoadedSprite( i64 spriteId );
         
         virtual AudioResource *         ResourceGetAndCreateAudio( const char * name, bool is2D, bool is3D, f32 minDist, f32 maxDist ) override;
+        virtual AudioResource *         ResourceRegisterAudio( AudioResource * src ) override;
         
         virtual FontHandle              ResourceGetFont( const char * name ) override;
         
@@ -155,6 +156,7 @@ namespace atto {
     public:
         ResourceRegistry            resources = {};
         BinaryBlob                  textureBlob = {};
+        BinaryBlob                  audioBlob = {};
 
         ShaderProgram *             boundProgram;
 

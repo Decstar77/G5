@@ -276,11 +276,32 @@ namespace atto {
         drawList.Add( cmd );
     }
 
-    void DrawContext::DrawTextureScreen( TextureResource * texture, glm::vec2 bl, glm::vec2 size /*= glm::vec2( 1 )*/, glm::vec4 colour /*= glm::vec4( 1 ) */ ) {
+    void DrawContext::DrawTextureBL( TextureResource * texture, glm::vec2 bl, glm::vec2 size /*= glm::vec2( 1 )*/, glm::vec4 colour /*= glm::vec4( 1 ) */ ) {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::TEXTURE;
         cmd.color = colour;
         cmd.proj = cameraProj;
+        cmd.texture.textureRes = texture;
+
+        glm::vec2 dim = glm::vec2( texture->width, texture->height ) * size;
+        cmd.texture.bl = bl;
+        cmd.texture.tr = bl + dim;
+        cmd.texture.br = glm::vec2( cmd.sprite.tr.x, cmd.sprite.bl.y );
+        cmd.texture.tl = glm::vec2( cmd.sprite.bl.x, cmd.sprite.tr.y );
+
+        cmd.texture.bl -= cameraPos;
+        cmd.texture.tr -= cameraPos;
+        cmd.texture.br -= cameraPos;
+        cmd.texture.tl -= cameraPos;
+
+        drawList.Add( cmd );
+    }
+
+    void DrawContext::DrawTextureScreen( TextureResource * texture, glm::vec2 bl, glm::vec2 size /*= glm::vec2( 1 )*/, glm::vec4 colour /*= glm::vec4( 1 ) */ ) {
+        DrawCommand cmd = {};
+        cmd.type = DrawCommandType::TEXTURE;
+        cmd.color = colour;
+        cmd.proj = screenProjection;
         cmd.texture.textureRes = texture;
 
         glm::vec2 dim = glm::vec2( texture->width, texture->height ) * size;

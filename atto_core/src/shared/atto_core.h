@@ -69,6 +69,8 @@ namespace atto {
         bool        is3D;
         f32         minDist;
         f32         maxDist;
+        i32         audioSize;
+        char *      audioData;
     };
 
     struct SpriteActuation {
@@ -257,6 +259,7 @@ namespace atto {
         void DrawLine2D( glm::vec2 start, glm::vec2 end, f32 thicc, const glm::vec4 & color = glm::vec4( 1 ) );
         void DrawLine2D_NDC( glm::vec2 start, glm::vec2 end, f32 thicc, const glm::vec4 & color = glm::vec4( 1 ) );
         void DrawTexture( TextureResource * texture, glm::vec2 center, f32 rot = 0.0f, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
+        void DrawTextureBL( TextureResource * texture, glm::vec2 bl, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
         void DrawTextureScreen( TextureResource * texture, glm::vec2 bl, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
         void DrawSprite( SpriteResource * sprite, i32 frameIndex, glm::vec2 center, f32 rot = 0.0f, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
         void DrawSprite( SpriteResource * sprite, i32 tileX, i32 tileY, glm::vec2 center, f32 rot = 0.0f, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
@@ -338,16 +341,22 @@ namespace atto {
         
         virtual TextureResource *           ResourceGetAndLoadTexture( const char * name, bool genMips, bool genAnti ) = 0;
         virtual TextureResource *           ResourceRegisterTexture( TextureResource * src ) = 0;
+        
         virtual SpriteResource *            ResourceGetAndCreateSprite( const char * spriteName, i32 frameCount, i32 frameWidth, i32 frameHeight, i32 frameRate ) = 0;
         virtual SpriteResource *            ResourceGetAndLoadSprite( const char * spriteName ) = 0;
         virtual SpriteResource *            ResourceGetLoadedSprite( i64 spriteId ) = 0; 
+
         virtual AudioResource *             ResourceGetAndCreateAudio( const char * name, bool is2D, bool is3D, f32 minDist, f32 maxDist ) = 0;
+        virtual AudioResource *             ResourceRegisterAudio( AudioResource * src ) = 0;
+
         virtual FontHandle                  ResourceGetFont( const char * name ) = 0;
+        
         virtual void                        ResourceReadEntireTextFile( const char * path, char * data, i32 maxLen ) = 0;
         virtual void                        ResourceWriteEntireTextFile( const char * path, const char * data ) = 0;
         virtual void                        ResourceReadEntireBinaryFile( const char * path, char * data, i32 maxLen ) = 0;
         virtual void                        ResourceWriteEntireBinaryFile( const char * path, const char * data, i32 size ) = 0;
         virtual i64                         ResourceGetFileSize( const char * path ) = 0;
+        
         char *                              ResourceReadEntireTextFileIntoPermanentMemory( const char * path, i64 * size );
         char *                              ResourceReadEntireTextFileIntoTransientMemory( const char * path, i64 * size );
         char *                              ResourceReadEntireBinaryFileIntoPermanentMemory( const char * path, i64 * size );

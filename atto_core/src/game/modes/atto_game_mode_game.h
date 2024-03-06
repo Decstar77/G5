@@ -197,7 +197,7 @@ namespace atto {
         i32                 flatIndex;
         glm::vec2           center;
         BoxBounds2D         wsBounds;
-        SpriteResource * spriteResource;
+        SpriteResource *    spriteResource;
         i32                 spriteTileIndexX;
         i32                 spriteTileIndexY;
         i32                 flags;

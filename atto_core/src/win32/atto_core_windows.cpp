@@ -172,22 +172,43 @@ namespace atto {
 
         AudioInitialize();
 
-        if( theGameSettings.usePackedAssets == false ) {
-            i64 spritesTotalSize = 0;
-            textureBlob.buffer = (byte *)ResourceReadEntireBinaryFileIntoPermanentMemory( "res/sprites/textures.bin", &spritesTotalSize );
-            textureBlob.totalSize = (i32)spritesTotalSize;
-            if( textureBlob.buffer == nullptr ) {
-                LogOutput( LogLevel::ERR, "Could not load sprites.bin" );
-                return;
+        if( theGameSettings.usePackedAssets == 1 ) {
+            {
+                i64 spritesTotalSize = 0;
+                textureBlob.buffer = (byte *)ResourceReadEntireBinaryFileIntoPermanentMemory( "res/sprites/textures.bin", &spritesTotalSize );
+                textureBlob.totalSize = (i32)spritesTotalSize;
+                if( textureBlob.buffer == nullptr ) {
+                    LogOutput( LogLevel::ERR, "Could not load sprites.bin" );
+                    return;
+                }
+
+                i32 textureCount = 0;
+                textureBlob.Read( &textureCount );
+
+                for( i32 i = 0; i < textureCount; i++ ) {
+                    TypeDescriptor * type = TypeResolver<TextureResource *>::get();
+                    TextureResource texture = {};
+                    type->Binary_Read( &texture, textureBlob );
+                }
             }
+            // Audio 
+            {
+                i64 audioTotalSize = 0;
+                audioBlob.buffer = (byte *)ResourceReadEntireBinaryFileIntoPermanentMemory( "res/sprites/audios.bin", &audioTotalSize );
+                audioBlob.totalSize = (i32)audioTotalSize;
+                if( audioBlob.buffer == nullptr ) {
+                    LogOutput( LogLevel::ERR, "Could not load audio.bin" );
+                    return;
+                }
 
-            i32 textureCount = 0;
-            textureBlob.Read( &textureCount );
+                i32 audioCount = 0;
+                audioBlob.Read( &audioCount );
 
-            for( i32 i = 0; i < textureCount; i++ ) {
-                TypeDescriptor * type = TypeResolver<TextureResource *>::get();
-                TextureResource texture = {};
-                type->Binary_Read( &texture, textureBlob );
+                for( i32 i = 0; i < audioCount; i++ ) {
+                    TypeDescriptor * type = TypeResolver<AudioResource *>::get();
+                    AudioResource audio = {};
+                    type->Binary_Read( &audio, audioBlob );
+                }
             }
         }
 
@@ -278,8 +299,8 @@ namespace atto {
         if( clearBackBuffers ) {
             //glClearColor(0.5f, 0.2f, 0.2f, 1.0f);
             //glClearColor( 0.2f, 0.5f, 0.2f, 1.0f );
-            glClearColor( 0.1f, 0.1f, 0.2f, 1.0f );
-            //glClearColor( Colors::SILVER.x, Colors::SILVER.y, Colors::SILVER.z, 1.0f );
+            //glClearColor( 0.1f, 0.1f, 0.2f, 1.0f );
+            glClearColor( 0.0f, 0.0f, 0.0f, 1.0f );
             glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
         }
 
@@ -1292,23 +1313,33 @@ namespace atto {
     }
 
 #if ATTO_EDITOR
-    
+
+    template<typename _type_, typename _base_ >
+    void WriteResourceArray( BinaryBlob & blob, FixedList<_type_, 1024> & resources ) {
+        const i32 count = resources.GetCount();
+        blob.Write( &count );
+        for( i32 i = 0; i < count; i++ ) {
+            _type_ * res = &resources[ i ];
+            TypeDescriptor * type = TypeResolver<_base_ *>::get();
+            type->Binary_Write( &res, blob );
+        }
+    }
+
     void WindowsCore::EditorOnly_SaveLoadedResourcesToBinary() {
         BinaryBlob blob = CreateBinaryBlob( Megabytes( 150 ) );
-        const i32 textureCount = resources.textures.GetCount();
-        blob.Write( &textureCount );
-        for( i32 i = 0; i < textureCount; i++ ) {
-            TextureResource * texture = resources.textures.Get( i );
-            TypeDescriptor * type = TypeResolver<TextureResource *>::get();
-            type->Binary_Write( &texture, blob );
-        }
-
+        WriteResourceArray<Win32TextureResource, TextureResource>( blob, resources.textures );
         ResourceWriteEntireBinaryFile( "res/sprites/textures.bin", (char*)blob.buffer, blob.current );
 
         blob.current = 0;
-        const i32 audioCount = resources.audios.GetCount();
-
+        WriteResourceArray<Win32AudioResource, AudioResource>( blob, resources.audios );
+        ResourceWriteEntireBinaryFile( "res/sprites/audios.bin", (char *)blob.buffer, blob.current );
+        
         const i32 spriteCount = resources.sprites.GetCount();
+        for( i32 i = 0; i < spriteCount; i++ ) {
+            SpriteResource res = resources.sprites[ i ];
+            TypeDescriptor * type = TypeResolver<SpriteResource>::get();
+            type->Binary_Write( &res, blob );
+        }
     }
 
 #endif

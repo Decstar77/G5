@@ -680,7 +680,6 @@ namespace atto {
 
         virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
         #if ATTO_EDITOR
-
             LargeString resPath = {};
             atto::JSON_Read( j, resPath );
 
@@ -688,13 +687,11 @@ namespace atto {
 
             Core * core = Core::EditorOnly_GetCore();
             *textureResource = core->ResourceGetAndLoadTexture( resPath.GetCStr(), false, false );
-            
         #endif
         }
 
         virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
         #if ATTO_EDITOR
-
             TextureResource * textureResource = *(TextureResource **)obj;
             if( textureResource != nullptr ) {
                 ImGui::SeparatorText( "Image" );
@@ -717,7 +714,6 @@ namespace atto {
                     }
                 }
             }
-            
         #endif
         }
 
@@ -808,7 +804,19 @@ namespace atto {
         }
 
         virtual void Binary_Read( void * obj, BinaryBlob & f ) override {
-            throw std::logic_error( "The method or operation is not implemented." );
+            AudioResource temp = {};
+            f.Read( &temp.id );
+            f.Read( &temp.name );
+            f.Read( &temp.is2D );
+            f.Read( &temp.is3D );
+            f.Read( &temp.minDist );
+            f.Read( &temp.maxDist );
+            f.Read( &temp.audioSize );
+            temp.audioData = (char *)&f.buffer[ f.current ];
+            f.current += temp.audioSize;
+            Core * core = Core::EditorOnly_GetCore();
+            AudioResource ** audioResource = (AudioResource **)obj;
+            *audioResource = core->ResourceRegisterAudio( &temp );
         }
 
         virtual void Binary_Write( const void * obj, BinaryBlob & f ) override {
@@ -816,15 +824,22 @@ namespace atto {
             if( audioResource != nullptr ) {
                 f.Write( &audioResource->id );
                 f.Write( &audioResource->name );
+                f.Write( &audioResource->is2D );
+                f.Write( &audioResource->is3D );
+                f.Write( &audioResource->minDist );
+                f.Write( &audioResource->maxDist );
 
                 Core * core = Core::EditorOnly_GetCore();
                 
                 i64 size = {};
-                char * buff = core->ResourceReadEntireTextFileIntoTransientMemory( audioResource->name.GetCStr(), &size );
+                char * buff = core->ResourceReadEntireBinaryFileIntoTransientMemory( audioResource->name.GetCStr(), &size );
                 if( buff != nullptr ) {
                     i32 smol = (i32)size;
                     f.Write( &smol );
                     f.Write( buff, (i32) size );
+                }
+                else {
+                    INVALID_CODE_PATH;
                 }
             }
         }
@@ -835,5 +850,53 @@ namespace atto {
         static TypeDescriptor_AudioPtr typeDesc;
         return &typeDesc;
     }
+
+    /*
+    * ====================== SPRITE PTR
+    */
+    
+    struct TypeDescriptor_SpritePtr : TypeDescriptor {
+        TypeDescriptor_SpritePtr() {
+            name = "SpritePtr";
+            size = sizeof( SpriteResource * );
+        }
+
+        virtual nlohmann::json JSON_Write( const void * obj ) override {
+            SpriteResource * spriteResource = *(SpriteResource **)obj;
+            return atto::JSON_Write( spriteResource->spriteName );
+        }
+
+        virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+        #if ATTO_EDITOR
+            LargeString resPath = {};
+            atto::JSON_Read( j, resPath );
+
+            SpriteResource** spriteResource = (SpriteResource **)obj;
+
+            Core * core = Core::EditorOnly_GetCore();
+            *spriteResource = core->ResourceGetAndLoadSprite( resPath.GetCStr() );
+        #endif
+        }
+
+        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
+            ImGui::Text( "This is a sprite" );
+        }
+
+        virtual void Binary_Read( void * obj, BinaryBlob & f ) override {
+
+        }
+
+        virtual void Binary_Write( const void * obj, BinaryBlob & f ) override {
+          
+        }
+    };
+
+    template <>
+    TypeDescriptor * GetPrimitiveDescriptor<SpriteResource *>() {
+        static TypeDescriptor_SpritePtr typeDesc;
+        return &typeDesc;
+    }
+
+
 }
 

@@ -1034,9 +1034,9 @@ namespace atto {
         glm::vec2 dims = drawContext->GetCameraDims();
         glm::vec2 scale = glm::vec2( 0.8f );
         glm::vec2 pos = glm::vec2( startX, startY ) * dims;
-        drawContext->DrawTextureScreen( sprUiPanel, pos, scale );
+        drawContext->DrawTextureBL( sprUiPanel, pos, scale );
         //scale = glm::vec2( 1.25f );
-        drawContext->DrawTextureScreen( ab.icon, pos + glm::vec2(4 * 0.8f), scale);
+        drawContext->DrawTextureBL( ab.icon, pos + glm::vec2(4 * 0.8f), scale);
 
         f32 t = ab.cooldownTimer / ab.cooldown;
         glm::vec2 bl = pos + glm::vec2( 4 * 0.8f );

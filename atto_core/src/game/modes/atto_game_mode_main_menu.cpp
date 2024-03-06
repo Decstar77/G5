@@ -15,6 +15,10 @@ namespace atto {
     }
 
     void GameMode_MainMenu::UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags /*= UPDATE_AND_RENDER_FLAG_NONE */ ) {
+        static TextureResource * background = core->ResourceGetAndLoadTexture( "res/sprites/ui/main_menu_screen_01.png", false, false );
+        DrawContext * draw = core->RenderGetDrawContext( 0, true );
+        draw->DrawTextureBL( background, glm::vec2( 0, 0 ) );
+
         if( core->NetworkIsConnected() ) {
             NetworkMessage msg = {};
             while( core->NetworkRecieve( msg ) ) {
@@ -56,7 +60,6 @@ namespace atto {
             core->WindowClose();
         }
         ui.EndBox();
-        DrawContext * draw = core->RenderGetDrawContext( 0, true );
         ui.Draw( draw );
 
         FontHandle fontHandle = core->ResourceGetFont( "default" );
