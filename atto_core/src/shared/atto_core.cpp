@@ -44,7 +44,23 @@ namespace atto {
         nextGameMode = gameMode;
     }
 
-    char * Core::ResourceReadEntireFileIntoTransientMemory( const char * path, i64 * size ) {
+    char * Core::ResourceReadEntireTextFileIntoPermanentMemory( const char * path, i64 * size ) {
+        *size = ResourceGetFileSize( path );
+        if( *size == -1 ) {
+            return nullptr;
+        }
+
+        char * data = (char *)MemoryAllocatePermanent( *size );
+        if( data == nullptr ) {
+            return nullptr;
+        }
+
+        ResourceReadEntireTextFile( path, data, (i32)( *size ) );
+
+        return data;
+    }
+
+    char * Core::ResourceReadEntireTextFileIntoTransientMemory( const char * path, i64 * size ) {
         *size = ResourceGetFileSize( path );
         if( *size == -1 ) {
             return nullptr;
@@ -55,7 +71,40 @@ namespace atto {
             return nullptr;
         }
 
-        ResourceReadEntireFile( path, data, (i32)( *size ) );
+        ResourceReadEntireTextFile( path, data, (i32)( *size ) );
+
+        return data;
+    }
+
+
+    char * Core::ResourceReadEntireBinaryFileIntoPermanentMemory( const char * path, i64 * size ) {
+        *size = ResourceGetFileSize( path );
+        if( *size == -1 ) {
+            return nullptr;
+        }
+
+        char * data = (char *)MemoryAllocatePermanent( *size );
+        if( data == nullptr ) {
+            return nullptr;
+        }
+
+        ResourceReadEntireBinaryFile( path, data, (i32)( *size ) );
+
+        return data;
+    }
+
+    char * Core::ResourceReadEntireBinaryFileIntoTransientMemory( const char * path, i64 * size ) {
+        *size = ResourceGetFileSize( path );
+        if( *size == -1 ) {
+            return nullptr;
+        }
+
+        char * data = (char *)MemoryAllocateTransient( *size );
+        if( data == nullptr ) {
+            return nullptr;
+        }
+
+        ResourceReadEntireBinaryFile( path, data, (i32)( *size ) );
 
         return data;
     }

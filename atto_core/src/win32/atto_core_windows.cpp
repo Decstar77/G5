@@ -99,7 +99,7 @@ namespace atto {
 
         MemoryMakePermanent( Megabytes( 128 ) );
         MemoryMakeTransient( Megabytes( 512 ) );
-
+        
         if( !glfwInit() ) {
             //ATTOFATAL("Could not init GLFW, your windows is f*cked");
             return;
@@ -171,6 +171,25 @@ namespace atto {
         GLInitializeUnlitModelRendering();
 
         AudioInitialize();
+
+        if( theGameSettings.usePackedAssets == false ) {
+            i64 spritesTotalSize = 0;
+            textureBlob.buffer = (byte *)ResourceReadEntireBinaryFileIntoPermanentMemory( "res/sprites/textures.bin", &spritesTotalSize );
+            textureBlob.totalSize = (i32)spritesTotalSize;
+            if( textureBlob.buffer == nullptr ) {
+                LogOutput( LogLevel::ERR, "Could not load sprites.bin" );
+                return;
+            }
+
+            i32 textureCount = 0;
+            textureBlob.Read( &textureCount );
+
+            for( i32 i = 0; i < textureCount; i++ ) {
+                TypeDescriptor * type = TypeResolver<TextureResource *>::get();
+                TextureResource texture = {};
+                type->Binary_Read( &texture, textureBlob );
+            }
+        }
 
     #if ATTO_EDITOR
         EngineImgui::Initialize( window );
@@ -607,32 +626,55 @@ namespace atto {
         //textureProcessor.MakeAlphaEdge();
         textureProcessor.FixAplhaEdges();
 
+        TextureResource temp = {};
+        temp.name = name;
+        temp.channels = textureProcessor.channels;
+        temp.width = textureProcessor.width;
+        temp.height = textureProcessor.height;
+        temp.pixelData = textureProcessor.pixelData;
+        temp.hasMips = genMips;
+        temp.hasAnti = genAnti;
+
+        return ResourceRegisterTexture( &temp );
+    }
+
+    TextureResource * WindowsCore::ResourceRegisterTexture( TextureResource * src ) {
+        const i32 textureResourceCount = resources.textures.GetCount();
+        for( i32 i = 0; i < textureResourceCount; i++ ) {
+            TextureResource & textureResource = resources.textures[ i ];
+            if( textureResource.id == src->id ) {
+                LogOutput( LogLevel::WARN, "WindowsCore::ResourceRegisterTexture - Texture already registered: %s", src->name );
+                return &textureResource;
+            }
+        }
+
         Win32TextureResource textureResource = {};
-        textureResource.name = name;
-        textureResource.channels = textureProcessor.channels;
-        textureResource.width = textureProcessor.width;
-        textureResource.height = textureProcessor.height;
-        textureResource.pixelData = textureProcessor.pixelData; // @NOTE: In EDITOR mode we keep the pixel data for baking. See ~ContentTextureProcessor().
-        textureResource.hasMips = genMips;
-        textureResource.hasAnti = genAnti;
-        
+        textureResource.id = StringHash::Hash( src->name.GetCStr() );
+        textureResource.name = src->name;
+        textureResource.channels = src->channels;
+        textureResource.width = src->width;
+        textureResource.height = src->height;
+        textureResource.pixelData = src->pixelData;
+        textureResource.hasMips = src->hasMips;
+        textureResource.hasAnti = src->hasAnti;
+
         glPixelStorei( GL_UNPACK_ALIGNMENT, 1 ); // @TODO: Remove this pack the textures
 
         glGenTextures( 1, &textureResource.handle );
         glBindTexture( GL_TEXTURE_2D, textureResource.handle );
-        glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, textureResource.width, textureResource.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureProcessor.pixelData );
+        glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, textureResource.width, textureResource.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureResource.pixelData );
 
         glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
         glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, genMips ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR );
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, textureResource.hasMips ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR );
         glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 
         // Generate mipsmaps, thanks opengl for making this easy.
-        if( genMips ) {
+        if( textureResource.hasMips ) {
             glGenerateMipmap( GL_TEXTURE_2D );
         }
 
-        if( genAnti ) {
+        if( textureResource.hasAnti ) {
             f32 maxAnti = 0.0f;
             glGetFloatv( GL_MAX_TEXTURE_MAX_ANISOTROPY, &maxAnti );
             glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, maxAnti );
@@ -997,7 +1039,7 @@ namespace atto {
 
             // TODO(DECLAN): Don't do this...
             static char buffer[ 2048 ] = {};
-            ResourceReadEntireFile( argv[ 1 ], buffer, sizeof( buffer ) );
+            ResourceReadEntireTextFile( argv[ 1 ], buffer, sizeof( buffer ) );
             
             nlohmann::json j = nlohmann::json::parse( buffer );
             GameSettings settings = GameSettings::CreateSensibleDefaults();
@@ -1248,18 +1290,20 @@ namespace atto {
         cameraProjection = glm::ortho( 0.0f, (f32)cameraWidth, 0.0f, (f32)cameraHeight, -1.0f, 1.0f );
         screenProjection = glm::ortho( 0.0f, (f32)w, (f32)h, 0.0f, -1.0f, 1.0f );
     }
+
 #if ATTO_EDITOR
     
     void WindowsCore::EditorOnly_SaveLoadedResourcesToBinary() {
         BinaryBlob blob = CreateBinaryBlob( Megabytes( 150 ) );
         const i32 textureCount = resources.textures.GetCount();
+        blob.Write( &textureCount );
         for( i32 i = 0; i < textureCount; i++ ) {
             TextureResource * texture = resources.textures.Get( i );
             TypeDescriptor * type = TypeResolver<TextureResource *>::get();
             type->Binary_Write( &texture, blob );
         }
 
-        ResourceWriteEntireBinaryFile( "res/sprites/test.bin", blob.buffer, blob.current );
+        ResourceWriteEntireBinaryFile( "res/sprites/textures.bin", (char*)blob.buffer, blob.current );
 
         blob.current = 0;
         const i32 audioCount = resources.audios.GetCount();

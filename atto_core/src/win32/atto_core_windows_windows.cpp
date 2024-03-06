@@ -107,6 +107,22 @@ namespace atto {
         }
     }
 
+    void WindowsCore::WinBoyoWriteBinaryFile( const char * path, const char * data, i64 size ) {
+        std::ofstream file( path, std::ios::out | std::ios::binary );
+        if( file.is_open() ) {
+            file.write( data, size );
+            file.close();
+        }
+    }
+
+    void WindowsCore::WinBoyoReadBinaryFile( const char * path, char * data, i64 size ) {
+        std::ifstream file( path, std::ios::in | std::ios::binary );
+        if( file.is_open() ) {
+            file.read( data, size );
+            file.close();
+        }
+    }
+
     i64 WindowsCore::ResourceGetFileSize( const char * path ) {
         std::ifstream file( path );
 
@@ -122,7 +138,7 @@ namespace atto {
         return -1;
     }
 
-    void WindowsCore::ResourceReadEntireFile( const char * path, char * data, i32 maxLen ) {
+    void WindowsCore::ResourceReadEntireTextFile( const char * path, char * data, i32 maxLen ) {
         WinBoyoReadTextFile( path, data, maxLen );
     }
 
@@ -130,15 +146,12 @@ namespace atto {
         WinBoyoWriteTextFile( path, data );
     }
 
-    void WindowsCore::ResourceWriteEntireBinaryFile( const char * path, const byte * data, i32 size ) {
-        std::ofstream file( path, std::ios::out | std::ios::binary );
-        if( file.is_open() ) {
-            file.write( reinterpret_cast<const char *>( data ), size );
-            file.close();
-        }
-        else {
-            LogOutput( LogLevel::ERR, "ResourceWriteEntireBinaryFile :: Failed to open file %s", path );
-        }
+    void WindowsCore::ResourceReadEntireBinaryFile( const char * path, char * data, i32 maxLen ) {
+        WinBoyoReadBinaryFile( path, reinterpret_cast<char *>( data ), maxLen );
+    }
+
+    void WindowsCore::ResourceWriteEntireBinaryFile( const char * path, const char * data, i32 size ) {
+        WinBoyoWriteBinaryFile( path, reinterpret_cast<const char *>( data ), size );
     }
 
     bool WindowsCore::WindowOpenNativeFileDialog( const char * basePath, const char * filter, LargeString & res ) {

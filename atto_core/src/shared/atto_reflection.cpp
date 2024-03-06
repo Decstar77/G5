@@ -722,11 +722,17 @@ namespace atto {
         }
 
         virtual void Binary_Read( void * obj, BinaryBlob & f ) override {
-            //LargeString resPath = {};
-            //f.Read( &resPath );
-            //TextureResource ** tptr = (TextureResource **)obj;
-            //Core * core = Core::EditorOnly_GetCore();
-            //*tptr = core->ResourceGetAndLoadTexture( resPath.GetCStr(), false, false );
+            TextureResource temp = {};
+            f.Read( &temp.id );
+            f.Read( &temp.name );
+            f.Read( &temp.width );
+            f.Read( &temp.height );
+            f.Read( &temp.channels );
+            temp.pixelData = &f.buffer[f.current];
+            f.current += temp.GetByteSize();
+            Core * core = Core::EditorOnly_GetCore();
+            TextureResource ** textureResource = (TextureResource **)obj;
+            *textureResource = core->ResourceRegisterTexture( &temp );
         }
 
         virtual void Binary_Write( const void * obj, BinaryBlob & f ) override {
@@ -779,7 +785,6 @@ namespace atto {
 
         virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
         #if ATTO_EDITOR
-            
             Core * core = Core::EditorOnly_GetCore();
             AudioResource * audioResource = *(AudioResource **)obj;
 
@@ -799,7 +804,6 @@ namespace atto {
                 }
                 ImGui::PopID();
             }
-
         #endif
         }
 
@@ -808,7 +812,21 @@ namespace atto {
         }
 
         virtual void Binary_Write( const void * obj, BinaryBlob & f ) override {
-            throw std::logic_error( "The method or operation is not implemented." );
+            AudioResource * audioResource = *(AudioResource **)obj;
+            if( audioResource != nullptr ) {
+                f.Write( &audioResource->id );
+                f.Write( &audioResource->name );
+
+                Core * core = Core::EditorOnly_GetCore();
+                
+                i64 size = {};
+                char * buff = core->ResourceReadEntireTextFileIntoTransientMemory( audioResource->name.GetCStr(), &size );
+                if( buff != nullptr ) {
+                    i32 smol = (i32)size;
+                    f.Write( &smol );
+                    f.Write( buff, (i32) size );
+                }
+            }
         }
     };
 

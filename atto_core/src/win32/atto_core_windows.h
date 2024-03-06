@@ -108,14 +108,20 @@ namespace atto {
         virtual f64                     GetTheCurrentTime() const override;
 
         virtual TextureResource *       ResourceGetAndLoadTexture( const char * name, bool genMips, bool genAnti ) override;
+        virtual TextureResource *       ResourceRegisterTexture( TextureResource * src ) override;
+        
         virtual SpriteResource *        ResourceGetAndCreateSprite( const char * spriteName, i32 frameCount, i32 frameWidth, i32 frameHeight, i32 frameRate ) override;
         virtual SpriteResource *        ResourceGetAndLoadSprite( const char * spriteName ) override;
         virtual SpriteResource *        ResourceGetLoadedSprite( i64 spriteId );
+        
         virtual AudioResource *         ResourceGetAndCreateAudio( const char * name, bool is2D, bool is3D, f32 minDist, f32 maxDist ) override;
+        
         virtual FontHandle              ResourceGetFont( const char * name ) override;
-        virtual void                    ResourceReadEntireFile( const char * path, char * data, i32 maxLen ) override;
+        
+        virtual void                    ResourceReadEntireTextFile( const char * path, char * data, i32 maxLen ) override;
         virtual void                    ResourceWriteEntireTextFile( const char * path, const char * data ) override;
-        virtual void                    ResourceWriteEntireBinaryFile( const char * path, const byte * data, i32 size ) override;
+        virtual void                    ResourceReadEntireBinaryFile( const char * path, char * data, i32 maxLen ) override;
+        virtual void                    ResourceWriteEntireBinaryFile( const char * path, const char * data, i32 size ) override;
         virtual i64                     ResourceGetFileSize( const char * path ) override;
 
         virtual AudioSpeaker            AudioPlay( AudioResource * audioResource, glm::vec2 * pos ) override;
@@ -139,6 +145,8 @@ namespace atto {
 
         static void                     WinBoyoWriteTextFile( const char * path, const char * text );
         static void                     WinBoyoReadTextFile( const char * path, char * text, i32 maxLen );
+        static void                     WinBoyoWriteBinaryFile( const char * path, const char * data, i64 size );
+        static void                     WinBoyoReadBinaryFile( const char * path, char * data, i64 size );
 
     #if ATTO_EDITOR
         virtual void                    EditorOnly_SaveLoadedResourcesToBinary() override;
@@ -146,6 +154,7 @@ namespace atto {
 
     public:
         ResourceRegistry            resources = {};
+        BinaryBlob                  textureBlob = {};
 
         ShaderProgram *             boundProgram;
 

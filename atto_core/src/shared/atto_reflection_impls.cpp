@@ -11,6 +11,7 @@ namespace atto {
         REFLECT_STRUCT_MEMBER( fullscreen )
         REFLECT_STRUCT_MEMBER( vsync )
         REFLECT_STRUCT_MEMBER( showDebug )
+        REFLECT_STRUCT_MEMBER( usePackedAssets )
         REFLECT_STRUCT_MEMBER( basePath )
         REFLECT_STRUCT_MEMBER( masterVolume )
         REFLECT_STRUCT_END()

@@ -9,7 +9,7 @@ namespace atto {
     }
 
     void BinaryBlob::Save( Core * core, const char * path ) {
-        core->ResourceWriteEntireBinaryFile( path, buffer, totalSize );
+        core->ResourceWriteEntireBinaryFile( path, (char*)buffer, totalSize );
     }
 
     void BinaryBlob::Write( const void * data, i32 size ) {

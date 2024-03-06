@@ -30,6 +30,7 @@ namespace atto {
         bool            fullscreen;
         bool            vsync;
         bool            showDebug;
+        bool            usePackedAssets;
         SmallString     basePath;
         f32             masterVolume;
         
@@ -54,12 +55,12 @@ namespace atto {
         i32     channels;
         bool    hasMips;
         bool    hasAnti;
-
-        inline i32 GetByteSize() const { return width * height * channels; }
-
-    #if ATTO_EDITOR // Used for baking purposes.
         byte *  pixelData;
-    #endif
+
+        inline i32 GetByteSize() const { 
+            i32 size = width * height * channels * 1;
+            return size;
+        }
     };
 
     class AudioResource : public Resource {
@@ -336,16 +337,21 @@ namespace atto {
         void                                MoveToGameMode( GameMode * gameMode );
         
         virtual TextureResource *           ResourceGetAndLoadTexture( const char * name, bool genMips, bool genAnti ) = 0;
+        virtual TextureResource *           ResourceRegisterTexture( TextureResource * src ) = 0;
         virtual SpriteResource *            ResourceGetAndCreateSprite( const char * spriteName, i32 frameCount, i32 frameWidth, i32 frameHeight, i32 frameRate ) = 0;
         virtual SpriteResource *            ResourceGetAndLoadSprite( const char * spriteName ) = 0;
         virtual SpriteResource *            ResourceGetLoadedSprite( i64 spriteId ) = 0; 
         virtual AudioResource *             ResourceGetAndCreateAudio( const char * name, bool is2D, bool is3D, f32 minDist, f32 maxDist ) = 0;
         virtual FontHandle                  ResourceGetFont( const char * name ) = 0;
-        virtual void                        ResourceReadEntireFile( const char * path, char * data, i32 maxLen ) = 0;
+        virtual void                        ResourceReadEntireTextFile( const char * path, char * data, i32 maxLen ) = 0;
         virtual void                        ResourceWriteEntireTextFile( const char * path, const char * data ) = 0;
-        virtual void                        ResourceWriteEntireBinaryFile( const char * path, const byte * data, i32 size ) = 0;
+        virtual void                        ResourceReadEntireBinaryFile( const char * path, char * data, i32 maxLen ) = 0;
+        virtual void                        ResourceWriteEntireBinaryFile( const char * path, const char * data, i32 size ) = 0;
         virtual i64                         ResourceGetFileSize( const char * path ) = 0;
-        char *                              ResourceReadEntireFileIntoTransientMemory( const char * path, i64 * size );
+        char *                              ResourceReadEntireTextFileIntoPermanentMemory( const char * path, i64 * size );
+        char *                              ResourceReadEntireTextFileIntoTransientMemory( const char * path, i64 * size );
+        char *                              ResourceReadEntireBinaryFileIntoPermanentMemory( const char * path, i64 * size );
+        char *                              ResourceReadEntireBinaryFileIntoTransientMemory( const char * path, i64 * size );
 
         template< typename _type_ >
         void                                ResourceWriteTextRefl( const _type_ * obj, const char * path );
@@ -505,7 +511,7 @@ namespace atto {
     template< typename _type_>
     bool Core::ResourceReadTextRefl( _type_ * obj, const char * path ) {
         i64 fileSize;
-        char * data = ResourceReadEntireFileIntoTransientMemory( path, &fileSize );
+        char * data = ResourceReadEntireTextFileIntoTransientMemory( path, &fileSize );
         if( data != nullptr ) {
             nlohmann::json j = nlohmann::json::parse( data );
             TypeDescriptor * settingsType = TypeResolver<_type_>::get();
@@ -523,13 +529,13 @@ namespace atto {
         BinaryBlob blob = {};
         blob.Create( (byte*)MemoryAllocateTransient( tempSize ), tempSize );
         settingsType->Binary_Write( obj, blob );
-        ResourceWriteEntireBinaryFile( path, blob.buffer, blob.current );
+        ResourceWriteEntireBinaryFile( path, (char*)blob.buffer, blob.current );
     }
 
     template< typename _type_>
     bool Core::ResourceReadBinaryRefl( _type_ * obj, const char * path ) {
         i64 fileSize;
-        char * data = ResourceReadEntireFileIntoTransientMemory( path, &fileSize );
+        char * data = ResourceReadEntireTextFileIntoTransientMemory( path, &fileSize );
         if( data != nullptr ) {
             TypeDescriptor * settingsType = TypeResolver<_type_>::get();
             BinaryBlob blob = {};
