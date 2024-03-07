@@ -682,13 +682,26 @@ namespace atto {
         #if ATTO_EDITOR
             LargeString resPath = {};
             atto::JSON_Read( j, resPath );
-
-            TextureResource ** textureResource = (TextureResource **)obj;
-
+            TextureResource ** resource = (TextureResource **)obj;
             Core * core = Core::EditorOnly_GetCore();
-            *textureResource = core->ResourceGetAndLoadTexture( resPath.GetCStr(), false, false );
+            *resource = core->ResourceGetAndLoadTexture( resPath.GetCStr() );
         #endif
         }
+
+        virtual void Binary_Write( const void * obj, BinaryBlob & f ) override {
+            TextureResource * resource = *(TextureResource **)obj;
+            Assert( resource != nullptr );
+            f.Write( &resource->name );
+        }
+
+        virtual void Binary_Read( void * obj, BinaryBlob & f ) override {
+            LargeString resPath = {};
+            f.Read( &resPath );
+            TextureResource ** resource = (TextureResource **)obj;
+            Core * core = Core::EditorOnly_GetCore();
+            *resource = core->ResourceGetAndLoadTexture( resPath.GetCStr() );
+        }
+
 
         virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
         #if ATTO_EDITOR
@@ -700,7 +713,7 @@ namespace atto {
                     LargeString resPath = {};
                     if( core->WindowOpenNativeFileDialog( nullptr, "png", resPath ) == true ) {
                         TextureResource ** tptr = (TextureResource **)obj;
-                        *tptr = core->ResourceGetAndLoadTexture( resPath.GetCStr(), false, false );
+                        *tptr = core->ResourceGetAndCreateTexture( resPath.GetCStr(), false, false );
                     }
                 }
             }
@@ -710,37 +723,11 @@ namespace atto {
                     LargeString resPath = {};
                     if( core->WindowOpenNativeFileDialog( nullptr, "png", resPath ) == true ) {
                         TextureResource ** tptr = (TextureResource **)obj;
-                        *tptr = core->ResourceGetAndLoadTexture( resPath.GetCStr(), false, false );
+                        *tptr = core->ResourceGetAndCreateTexture( resPath.GetCStr(), false, false );
                     }
                 }
             }
         #endif
-        }
-
-        virtual void Binary_Read( void * obj, BinaryBlob & f ) override {
-            TextureResource temp = {};
-            f.Read( &temp.id );
-            f.Read( &temp.name );
-            f.Read( &temp.width );
-            f.Read( &temp.height );
-            f.Read( &temp.channels );
-            temp.pixelData = &f.buffer[f.current];
-            f.current += temp.GetByteSize();
-            Core * core = Core::EditorOnly_GetCore();
-            TextureResource ** textureResource = (TextureResource **)obj;
-            *textureResource = core->ResourceRegisterTexture( &temp );
-        }
-
-        virtual void Binary_Write( const void * obj, BinaryBlob & f ) override {
-            TextureResource * textureResource = *(TextureResource **)obj;
-            if( textureResource != nullptr ) {
-                f.Write( &textureResource->id );
-                f.Write( &textureResource->name );
-                f.Write( &textureResource->width );
-                f.Write( &textureResource->height );
-                f.Write( &textureResource->channels );
-                f.Write( textureResource->pixelData, textureResource->GetByteSize() );
-            }
         }
     };
 
@@ -753,7 +740,6 @@ namespace atto {
     /*
     * ====================== AUDIO PTR
     */
-
     struct TypeDescriptor_AudioPtr : TypeDescriptor {
         TypeDescriptor_AudioPtr() {
             name = "AudioPtr";
@@ -767,16 +753,26 @@ namespace atto {
 
         virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
         #if ATTO_EDITOR
-
             LargeString resPath = {};
             atto::JSON_Read( j, resPath );
-
-            AudioResource ** audioResource = (AudioResource **)obj;
-
+            AudioResource ** resource = (AudioResource **)obj;
             Core * core = Core::EditorOnly_GetCore();
-            *audioResource = core->ResourceGetAndCreateAudio( resPath.GetCStr(), true, true, 30, 800 ); // @HACK!!!!! Don't hard code these values, especially the 3d/2d. Get a file in place soon !
-
+            *resource = core->ResourceGetAndLoadAudio( resPath.GetCStr() );
         #endif
+        }
+
+        virtual void Binary_Write( const void * obj, BinaryBlob & f ) override {
+            AudioResource * resource = *(AudioResource **)obj;
+            Assert( resource != nullptr );
+            f.Write( &resource->name );
+        }
+
+        virtual void Binary_Read( void * obj, BinaryBlob & f ) override {
+            LargeString resPath = {};
+            f.Read( &resPath );
+            AudioResource ** resource = (AudioResource **)obj;
+            Core * core = Core::EditorOnly_GetCore();
+            *resource = core->ResourceGetAndLoadAudio( resPath.GetCStr() );
         }
 
         virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
@@ -802,47 +798,6 @@ namespace atto {
             }
         #endif
         }
-
-        virtual void Binary_Read( void * obj, BinaryBlob & f ) override {
-            AudioResource temp = {};
-            f.Read( &temp.id );
-            f.Read( &temp.name );
-            f.Read( &temp.is2D );
-            f.Read( &temp.is3D );
-            f.Read( &temp.minDist );
-            f.Read( &temp.maxDist );
-            f.Read( &temp.audioSize );
-            temp.audioData = (char *)&f.buffer[ f.current ];
-            f.current += temp.audioSize;
-            Core * core = Core::EditorOnly_GetCore();
-            AudioResource ** audioResource = (AudioResource **)obj;
-            *audioResource = core->ResourceRegisterAudio( &temp );
-        }
-
-        virtual void Binary_Write( const void * obj, BinaryBlob & f ) override {
-            AudioResource * audioResource = *(AudioResource **)obj;
-            if( audioResource != nullptr ) {
-                f.Write( &audioResource->id );
-                f.Write( &audioResource->name );
-                f.Write( &audioResource->is2D );
-                f.Write( &audioResource->is3D );
-                f.Write( &audioResource->minDist );
-                f.Write( &audioResource->maxDist );
-
-                Core * core = Core::EditorOnly_GetCore();
-                
-                i64 size = {};
-                char * buff = core->ResourceReadEntireBinaryFileIntoTransientMemory( audioResource->name.GetCStr(), &size );
-                if( buff != nullptr ) {
-                    i32 smol = (i32)size;
-                    f.Write( &smol );
-                    f.Write( buff, (i32) size );
-                }
-                else {
-                    INVALID_CODE_PATH;
-                }
-            }
-        }
     };
 
     template <>
@@ -854,7 +809,6 @@ namespace atto {
     /*
     * ====================== SPRITE PTR
     */
-    
     struct TypeDescriptor_SpritePtr : TypeDescriptor {
         TypeDescriptor_SpritePtr() {
             name = "SpritePtr";
@@ -870,16 +824,10 @@ namespace atto {
         #if ATTO_EDITOR
             LargeString resPath = {};
             atto::JSON_Read( j, resPath );
-
-            SpriteResource** spriteResource = (SpriteResource **)obj;
-
+            SpriteResource ** spriteResource = (SpriteResource **)obj;
             Core * core = Core::EditorOnly_GetCore();
             *spriteResource = core->ResourceGetAndLoadSprite( resPath.GetCStr() );
         #endif
-        }
-
-        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
-            ImGui::Text( "This is a sprite" );
         }
 
         virtual void Binary_Read( void * obj, BinaryBlob & f ) override {
@@ -888,6 +836,10 @@ namespace atto {
 
         virtual void Binary_Write( const void * obj, BinaryBlob & f ) override {
           
+        }
+
+        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
+            ImGui::Text( "This is a sprite" );
         }
     };
 

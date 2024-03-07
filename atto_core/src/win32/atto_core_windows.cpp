@@ -98,7 +98,7 @@ namespace atto {
         OsParseStartArgs( argc, argv );
 
         MemoryMakePermanent( Megabytes( 128 ) );
-        MemoryMakeTransient( Megabytes( 512 ) );
+        MemoryMakeTransient( Megabytes( 128 ) );
         
         if( !glfwInit() ) {
             //ATTOFATAL("Could not init GLFW, your windows is f*cked");
@@ -628,7 +628,7 @@ namespace atto {
         }
     }
 
-    TextureResource * WindowsCore::ResourceGetAndLoadTexture( const char * name, bool genMips, bool genAnti ) {
+    TextureResource * WindowsCore::ResourceGetAndCreateTexture( const char * name, bool genMips, bool genAnti ) {
         const i32 textureResourceCount = resources.textures.GetCount();
         for( i32 i = 0; i < textureResourceCount; i++ ) {
             TextureResource & textureResource = resources.textures[ i ];
@@ -647,43 +647,20 @@ namespace atto {
         //textureProcessor.MakeAlphaEdge();
         textureProcessor.FixAplhaEdges();
 
-        TextureResource temp = {};
-        temp.name = name;
-        temp.channels = textureProcessor.channels;
-        temp.width = textureProcessor.width;
-        temp.height = textureProcessor.height;
-        temp.pixelData = textureProcessor.pixelData;
-        temp.hasMips = genMips;
-        temp.hasAnti = genAnti;
-
-        return ResourceRegisterTexture( &temp );
-    }
-
-    TextureResource * WindowsCore::ResourceRegisterTexture( TextureResource * src ) {
-        const i32 textureResourceCount = resources.textures.GetCount();
-        for( i32 i = 0; i < textureResourceCount; i++ ) {
-            TextureResource & textureResource = resources.textures[ i ];
-            if( textureResource.id == src->id ) {
-                LogOutput( LogLevel::WARN, "WindowsCore::ResourceRegisterTexture - Texture already registered: %s", src->name );
-                return &textureResource;
-            }
-        }
-
         Win32TextureResource textureResource = {};
-        textureResource.id = StringHash::Hash( src->name.GetCStr() );
-        textureResource.name = src->name;
-        textureResource.channels = src->channels;
-        textureResource.width = src->width;
-        textureResource.height = src->height;
-        textureResource.pixelData = src->pixelData;
-        textureResource.hasMips = src->hasMips;
-        textureResource.hasAnti = src->hasAnti;
+        textureResource.id = StringHash::Hash( name );
+        textureResource.name = name;
+        textureResource.channels = textureProcessor.channels;
+        textureResource.width = textureProcessor.width;
+        textureResource.height = textureProcessor.height;
+        textureResource.hasMips = genMips;
+        textureResource.hasAnti = genAnti;
 
         glPixelStorei( GL_UNPACK_ALIGNMENT, 1 ); // @TODO: Remove this pack the textures
 
         glGenTextures( 1, &textureResource.handle );
         glBindTexture( GL_TEXTURE_2D, textureResource.handle );
-        glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, textureResource.width, textureResource.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureResource.pixelData );
+        glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, textureResource.width, textureResource.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureProcessor.pixelData );
 
         glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
         glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
@@ -704,6 +681,24 @@ namespace atto {
         glBindTexture( GL_TEXTURE_2D, 0 );
 
         return resources.textures.Add( textureResource );
+
+    }
+
+    TextureResource * WindowsCore::ResourceGetAndLoadTexture( const char * name ) {
+        return ResourceGetAndCreateTexture( name, false , false );
+        //const i32 textureResourceCount = resources.textures.GetCount();
+        //for( i32 i = 0; i < textureResourceCount; i++ ) {
+        //    TextureResource & textureResource = resources.textures[ i ];
+        //    if( textureResource.name == name ) {
+        //        return &textureResource;
+        //    }
+        //}
+        //
+        //Win32TextureResource * textureResource = MemoryAllocateTransient<Win32TextureResource>();
+        //if( ResourceReadTextRefl<TextureResource>( (TextureResource *)textureResource, name ) == true ) {
+        //    
+        //}
+        //return nullptr;
     }
 
     inline static SmallString GetEndingFolder( const char * path ) {
@@ -737,7 +732,7 @@ namespace atto {
         LargeString textureName = LargeString::FromLiteral( spriteName );
         textureName.StripFileExtension();
         textureName.Add( ".png" );
-        TextureResource * textureResource = ResourceGetAndLoadTexture( textureName.GetCStr(), false, false );
+        TextureResource * textureResource = ResourceGetAndCreateTexture( textureName.GetCStr(), false, false );
         if( textureResource == nullptr ) {
             LogOutput( LogLevel::ERR, "Could not find texture for sprite '%s'", spriteName );
         }
@@ -1326,20 +1321,45 @@ namespace atto {
     }
 
     void WindowsCore::EditorOnly_SaveLoadedResourcesToBinary() {
-        BinaryBlob blob = CreateBinaryBlob( Megabytes( 150 ) );
-        WriteResourceArray<Win32TextureResource, TextureResource>( blob, resources.textures );
-        ResourceWriteEntireBinaryFile( "res/sprites/textures.bin", (char*)blob.buffer, blob.current );
+        //BinaryBlob blob = CreateBinaryBlob( Megabytes( 50 ) );
+        //const i32 textureCount = resources.textures.GetCount();
+        //i32 textureOffset = 0;
+        //for( i32 i = 0; i < textureCount; i++ ) {
+        //    TextureResource * res = resources.textures.Get( i );
+        //    blob.Write( &res->name );
+        //    blob.Write( &textureOffset );
+        //    textureOffset += res->GetByteSize();
+        //}
+        //
+        //for( i32 i = 0; i < textureCount; i++ ) {
+        //    TextureResource * res = resources.textures.Get( i );
+        //    ContentTextureProcessor tp = {};
+        //    tp.LoadFromFile( res->name.GetCStr() );
+        //    i32 size = res->GetByteSize();
+        //    blob.Write( &size );
+        //    blob.Write( tp.pixelData, size );
+        //}
 
-        blob.current = 0;
-        WriteResourceArray<Win32AudioResource, AudioResource>( blob, resources.audios );
-        ResourceWriteEntireBinaryFile( "res/sprites/audios.bin", (char *)blob.buffer, blob.current );
-        
-        const i32 spriteCount = resources.sprites.GetCount();
-        for( i32 i = 0; i < spriteCount; i++ ) {
-            SpriteResource res = resources.sprites[ i ];
-            TypeDescriptor * type = TypeResolver<SpriteResource>::get();
-            type->Binary_Write( &res, blob );
-        }
+        //const i32 audioCount = resources.audios.GetCount();
+        //for( i32 i = 0; i < audioCount; i++ ) {
+        //    AudioResource * res = resources.audios.Get( i );
+        //
+        //}
+
+        //BinaryBlob blob = CreateBinaryBlob( Megabytes( 150 ) );
+        //WriteResourceArray<Win32TextureResource, TextureResource>( blob, resources.textures );
+        //ResourceWriteEntireBinaryFile( "res/sprites/textures.bin", (char*)blob.buffer, blob.current );
+        //
+        //blob.current = 0;
+        //WriteResourceArray<Win32AudioResource, AudioResource>( blob, resources.audios );
+        //ResourceWriteEntireBinaryFile( "res/sprites/audios.bin", (char *)blob.buffer, blob.current );
+        //
+        //const i32 spriteCount = resources.sprites.GetCount();
+        //for( i32 i = 0; i < spriteCount; i++ ) {
+        //    SpriteResource res = resources.sprites[ i ];
+        //    TypeDescriptor * type = TypeResolver<SpriteResource>::get();
+        //    type->Binary_Write( &res, blob );
+        //}
     }
 
 #endif

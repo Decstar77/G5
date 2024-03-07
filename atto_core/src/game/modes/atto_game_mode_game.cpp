@@ -77,15 +77,15 @@ namespace atto {
             localPlayer->collisionCollider.box.CreateFromCenterSize( glm::vec2( 0, 0 ), glm::vec2( 36, 36 ) );
         }
 
-        localPlayer->playerStuff.abilities[ 0 ].icon = core->ResourceGetAndLoadTexture( "res/sprites/ui_icon_ability_warrior_strike.png", false, false );
+        localPlayer->playerStuff.abilities[ 0 ].icon = core->ResourceGetAndCreateTexture( "res/sprites/ui_icon_ability_warrior_strike.png", false, false );
         localPlayer->playerStuff.abilities[ 0 ].cooldown = 0.5f;
         localPlayer->playerStuff.abilities[ 0 ].type = ABILITY_TYPE_WARRIOR_STRIKE;
 
-        localPlayer->playerStuff.abilities[ 1 ].icon = core->ResourceGetAndLoadTexture( "res/sprites/ui_icon_ability_warrior_stab.png", false, false );
+        localPlayer->playerStuff.abilities[ 1 ].icon = core->ResourceGetAndCreateTexture( "res/sprites/ui_icon_ability_warrior_stab.png", false, false );
         localPlayer->playerStuff.abilities[ 1 ].cooldown = 1.0f;
         localPlayer->playerStuff.abilities[ 1 ].type = ABILITY_TYPE_WARRIOR_STAB;
 
-        localPlayer->playerStuff.abilities[ 2 ].icon = core->ResourceGetAndLoadTexture( "res/sprites/ui_icon_ability_warrior_charge.png", false, false );
+        localPlayer->playerStuff.abilities[ 2 ].icon = core->ResourceGetAndCreateTexture( "res/sprites/ui_icon_ability_warrior_charge.png", false, false );
         localPlayer->playerStuff.abilities[ 2 ].cooldown = 6.0f;
         localPlayer->playerStuff.abilities[ 2 ].type = ABILITY_TYPE_WARRIOR_CHARGE;
         localPlayer->playerStuff.abilities[ 2 ].stopsMovement = true;
@@ -99,7 +99,7 @@ namespace atto {
         Spawn_EnemyBotDrone( core, glm::vec2( 260, 100 ) );
         Spawn_EnemyBotDrone( core, glm::vec2( 280, 100 ) );
         Spawn_EnemyBotDrone( core, glm::vec2( 300, 100 ) );
-        Spawn_EnemyBotBig( core, glm::vec2( 300, 150 ) );
+        //Spawn_EnemyBotBig( core, glm::vec2( 300, 150 ) );
 
         static SpriteResource * sprTile_Stone = core->ResourceGetAndLoadSprite( "res/sprites/stone_tiles/stone_tiles.json" );
         static SpriteResource * sprTile_Grass = core->ResourceGetAndLoadSprite( "res/sprites/grass_tiles/grass_tiles.json" );
@@ -117,25 +117,19 @@ namespace atto {
     }
 
     void Map::UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags ) {
-        static TextureResource * sprUiPanel             = core->ResourceGetAndLoadTexture( "res/sprites/ui_ability_panel.png", false, false );
-        static TextureResource * sprCharDroneSelection  = core->ResourceGetAndLoadTexture( "res/sprites/char_drone_selection.png", false, false );
-        static TextureResource * sprParticleSingleWhite = core->ResourceGetAndLoadTexture( "res/sprites/particle_single_white_1x1.png", false, false );
+        static TextureResource * sprUiPanel             = core->ResourceGetAndCreateTexture( "res/sprites/ui_ability_panel.png", false, false );
+        static TextureResource * sprCharDroneSelection  = core->ResourceGetAndCreateTexture( "res/sprites/char_drone_selection.png", false, false );
+        static TextureResource * sprParticleSingleWhite = core->ResourceGetAndCreateTexture( "res/sprites/particle_single_white_1x1.png", false, false );
 
-        static SpriteResource * sprWarriorIdle      = core->ResourceGetAndCreateSprite( "res/sprites/asset_pack_01/player_idle/player_idle.json", 10, 48, 48, 16 );
-        static SpriteResource * sprWarriorRun       = core->ResourceGetAndCreateSprite( "res/sprites/asset_pack_01/player_run/player_run.json", 8, 48, 48, 14 );
-        static SpriteResource * sprWarriorStab      = core->ResourceGetAndLoadSprite( "res/sprites/asset_pack_01/player_sword_stab/player_sword_stab.json" );
-        static SpriteResource * sprWarriorStrike    = core->ResourceGetAndLoadSprite( "res/sprites/asset_pack_01/basic_sword_attack/basic_sword_attack.json"  );
-        static SpriteResource * sprWarriorCharge    = core->ResourceGetAndLoadSprite( "res/sprites/asset_pack_01/player_katana_continuous_attack/player_katana_continuous_attack.json" );
+        static SpriteResource * sprWarriorIdle      = core->ResourceGetAndCreateSprite( "res/ents/player_warrior/idle/player_idle.json", 10, 48, 48, 16 );
+        static SpriteResource * sprWarriorRun       = core->ResourceGetAndCreateSprite( "res/ents/player_warrior/run/player_run.json", 8, 48, 48, 14 );
+        static SpriteResource * sprWarriorStab      = core->ResourceGetAndLoadSprite( "res/ents/player_warrior/stab/player_sword_stab.json" );
+        static SpriteResource * sprWarriorStrike    = core->ResourceGetAndLoadSprite( "res/ents/player_warrior/strike/basic_sword_attack.json"  );
+        static SpriteResource * sprWarriorCharge    = core->ResourceGetAndLoadSprite( "res/ents/player_warrior/charge/player_katana_continuous_attack.json" );
         static SpriteResource * sprVFX_SmallExplody = core->ResourceGetAndLoadSprite( "res/sprites/vfx_small_explody/vfx_small_explody.json" );
 
         const f32 soundMinDist = 400;
         const f32 soundMaxDist = 10000;
-        static AudioResource * sndWarriorStrike1    = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/lightsaber_quick_1.wav", true, true, soundMinDist, soundMaxDist );
-        static AudioResource * sndWarriorStrike2    = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/lightsaber_quick_3.wav", true, true, soundMinDist, soundMaxDist );
-        static AudioResource * sndWarriorStab1      = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/lightsaber_quick_2.wav", true, true, soundMinDist, soundMaxDist );
-        static AudioResource * sndWarriorStab2      = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/lightsaber_quick_4.wav", true, true, soundMinDist, soundMaxDist );
-        static AudioResource * sndWarriorCharge1    = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/lightsaber_clash_1.wav", true, true, soundMinDist, soundMaxDist );
-        static AudioResource * sndWarriorCharge2    = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/lightsaber_clash_2.wav", true, true, soundMinDist, soundMaxDist );
         static AudioResource * sndCloseExplody1     = core->ResourceGetAndCreateAudio( "res/sounds/tomwinandysfx_explosions_volume_i_closeexplosion_01.wav", true, true, soundMinDist, soundMaxDist );
         static AudioResource * sndCloseExplody2     = core->ResourceGetAndCreateAudio( "res/sounds/tomwinandysfx_explosions_volume_i_closeexplosion_01.wav", true, true, soundMinDist, soundMaxDist );
         static FontHandle fontHandle                = core->ResourceGetFont( "default" );
@@ -423,15 +417,6 @@ namespace atto {
                             Ability & ab = ent->playerStuff.abilities[ 2 ];
                             if( ab.cooldownTimer == 0.0f ) {
                                 player.primingAbility = &ab;
-
-                                //ab.cooldownTimer = ab.cooldown;
-                                //ab.sprite = sprWarriorCharge;
-                                //player.currentAbility = &ab;
-                                //player.state = PLAYER_STATE_ATTACKING;
-                                //
-                                //glm::vec2 dir = glm::normalize( mousePosWorld - ent->pos );
-                                //ent->vel += dir * 2500.0f;
-                                //core->AudioPlayRandom( 1.0f, false, sndWarriorCharge1, sndWarriorCharge2 );
                             }
                         }
 
@@ -829,6 +814,8 @@ namespace atto {
             entity->spriteAnimator.SetSpriteIfDifferent( core, spriteResource, false );
         }
 
+
+
         return entity;
     }
 
@@ -897,7 +884,7 @@ namespace atto {
 
         ZeroStruct( particleSystem );
         particleSystem.count = 10;
-        particleSystem.texture = core->ResourceGetAndLoadTexture( "res/sprites/particle_single_white_1x1.png", false, false );;
+        particleSystem.texture = core->ResourceGetAndCreateTexture( "res/sprites/particle_single_white_1x1.png", false, false );;
         particleSystem.lifeTime = 0.5f;
         particleSystem.scaleMin = 1;
         particleSystem.scaleMax = 2;
@@ -1029,8 +1016,8 @@ namespace atto {
     }
 
     void GameGUI::AbilityIcon( Ability & ab ) {
-        static TextureResource * sprUiPanel = core->ResourceGetAndLoadTexture( "res/sprites/ui_ability_panel.png", false, false );
-        static TextureResource * sprUiCharge = core->ResourceGetAndLoadTexture( "res/sprites/ui_icon_ability_warrior_charge.png", false, false );
+        static TextureResource * sprUiPanel = core->ResourceGetAndCreateTexture( "res/sprites/ui_ability_panel.png", false, false );
+        static TextureResource * sprUiCharge = core->ResourceGetAndCreateTexture( "res/sprites/ui_icon_ability_warrior_charge.png", false, false );
         glm::vec2 dims = drawContext->GetCameraDims();
         glm::vec2 scale = glm::vec2( 0.8f );
         glm::vec2 pos = glm::vec2( startX, startY ) * dims;

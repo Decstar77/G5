@@ -60,8 +60,8 @@ namespace atto {
         virtual ~TypeDescriptor() {}
         virtual nlohmann::json      JSON_Write( const void * obj ) = 0;
         virtual void                JSON_Read( const nlohmann::json & j, const void * obj ) = 0;
-        virtual void                Binary_Read( void * obj, BinaryBlob & f ) { f.Read( obj, size ); }
         virtual void                Binary_Write( const void * obj, BinaryBlob & f ) { f.Write( obj, size ); }
+        virtual void                Binary_Read( void * obj, BinaryBlob & f ) { f.Read( obj, size ); }
         virtual void                Imgui_Draw( const void * obj, const char * memberName ) = 0;
     };
 

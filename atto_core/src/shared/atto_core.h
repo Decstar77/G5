@@ -55,12 +55,13 @@ namespace atto {
         i32     channels;
         bool    hasMips;
         bool    hasAnti;
-        byte *  pixelData;
 
         inline i32 GetByteSize() const { 
             i32 size = width * height * channels * 1;
             return size;
         }
+
+        REFLECT();
     };
 
     class AudioResource : public Resource {
@@ -70,7 +71,8 @@ namespace atto {
         f32         minDist;
         f32         maxDist;
         i32         audioSize;
-        char *      audioData;
+
+        REFLECT();
     };
 
     struct SpriteActuation {
@@ -336,18 +338,20 @@ namespace atto {
         f32                                 GetDeltaTime() const;
         virtual f64                         GetTheCurrentTime() const = 0;
         Camera                              CreateDefaultCamera() const;
-        
+
         void                                MoveToGameMode( GameMode * gameMode );
         
-        virtual TextureResource *           ResourceGetAndLoadTexture( const char * name, bool genMips, bool genAnti ) = 0;
-        virtual TextureResource *           ResourceRegisterTexture( TextureResource * src ) = 0;
-        
+        virtual TextureResource *           ResourceGetAndCreateTexture( const char * name, bool genMips, bool genAnti ) = 0;
+        virtual TextureResource *           ResourceGetAndLoadTexture( const char * name ) = 0;
+
+        virtual AudioResource *             ResourceGetAndCreateAudio( const char * name, bool is2D, bool is3D, f32 minDist, f32 maxDist ) = 0;
+        virtual AudioResource *             ResourceGetAndLoadAudio( const char * name ) = 0;
+
         virtual SpriteResource *            ResourceGetAndCreateSprite( const char * spriteName, i32 frameCount, i32 frameWidth, i32 frameHeight, i32 frameRate ) = 0;
         virtual SpriteResource *            ResourceGetAndLoadSprite( const char * spriteName ) = 0;
         virtual SpriteResource *            ResourceGetLoadedSprite( i64 spriteId ) = 0; 
 
-        virtual AudioResource *             ResourceGetAndCreateAudio( const char * name, bool is2D, bool is3D, f32 minDist, f32 maxDist ) = 0;
-        virtual AudioResource *             ResourceRegisterAudio( AudioResource * src ) = 0;
+        
 
         virtual FontHandle                  ResourceGetFont( const char * name ) = 0;
         
@@ -526,6 +530,9 @@ namespace atto {
             TypeDescriptor * settingsType = TypeResolver<_type_>::get();
             settingsType->JSON_Read( j, obj );
             return true;
+        }
+        else {
+            LogOutput( LogLevel::ERR, "ResourceReadTextRefl :: Could not load %s", path );
         }
 
         return false;

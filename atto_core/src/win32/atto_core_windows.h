@@ -107,15 +107,14 @@ namespace atto {
         
         virtual f64                     GetTheCurrentTime() const override;
 
-        virtual TextureResource *       ResourceGetAndLoadTexture( const char * name, bool genMips, bool genAnti ) override;
-        virtual TextureResource *       ResourceRegisterTexture( TextureResource * src ) override;
-        
+        virtual TextureResource *       ResourceGetAndCreateTexture( const char * name, bool genMips, bool genAnti ) override;
+        virtual TextureResource *       ResourceGetAndLoadTexture( const char * name ) override;
+        virtual AudioResource *         ResourceGetAndCreateAudio( const char * name, bool is2D, bool is3D, f32 minDist, f32 maxDist ) override;
+        virtual AudioResource *         ResourceGetAndLoadAudio( const char * name ) override;
+
         virtual SpriteResource *        ResourceGetAndCreateSprite( const char * spriteName, i32 frameCount, i32 frameWidth, i32 frameHeight, i32 frameRate ) override;
         virtual SpriteResource *        ResourceGetAndLoadSprite( const char * spriteName ) override;
         virtual SpriteResource *        ResourceGetLoadedSprite( i64 spriteId );
-        
-        virtual AudioResource *         ResourceGetAndCreateAudio( const char * name, bool is2D, bool is3D, f32 minDist, f32 maxDist ) override;
-        virtual AudioResource *         ResourceRegisterAudio( AudioResource * src ) override;
         
         virtual FontHandle              ResourceGetFont( const char * name ) override;
         

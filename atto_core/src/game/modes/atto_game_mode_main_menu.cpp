@@ -15,7 +15,7 @@ namespace atto {
     }
 
     void GameMode_MainMenu::UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags /*= UPDATE_AND_RENDER_FLAG_NONE */ ) {
-        static TextureResource * background = core->ResourceGetAndLoadTexture( "res/sprites/ui/main_menu_screen_01.png", false, false );
+        static TextureResource * background = core->ResourceGetAndCreateTexture( "res/sprites/ui/main_menu_screen_01.png", false, false );
         DrawContext * draw = core->RenderGetDrawContext( 0, true );
         draw->DrawTextureBL( background, glm::vec2( 0, 0 ) );
 

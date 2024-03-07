@@ -31,7 +31,7 @@ namespace atto {
 
     }
 
-    atto::AudioResource * WindowsCore::ResourceGetAndCreateAudio( const char * name, bool is2D, bool is3D, f32 minDist, f32 maxDist ) {
+    AudioResource * WindowsCore::ResourceGetAndCreateAudio( const char * name, bool is2D, bool is3D, f32 minDist, f32 maxDist ) {
         const i32 audioResourceCount = resources.audios.GetCount();
         for( i32 audioIndex = 0; audioIndex < audioResourceCount; audioIndex++ ) {
             AudioResource & audioResource = resources.audios[ audioIndex ];
@@ -62,45 +62,26 @@ namespace atto {
         return resources.audios.Add_MemCpyPtr( &audioResource );
     }
 
-    AudioResource * WindowsCore::ResourceRegisterAudio( AudioResource * src ) {
+    AudioResource * WindowsCore::ResourceGetAndLoadAudio( const char * name ) {
         const i32 audioResourceCount = resources.audios.GetCount();
         for( i32 audioIndex = 0; audioIndex < audioResourceCount; audioIndex++ ) {
             AudioResource & audioResource = resources.audios[ audioIndex ];
-            if( audioResource.name == src->name ) {
+            if( audioResource.name == name ) {
                 return &audioResource;
             }
         }
 
-        Win32AudioResource audioResource = {};
-        audioResource.id = src->id;
-        audioResource.name = src->name;
-        audioResource.is2D = src->is2D;
-        audioResource.is3D = src->is3D;
-        audioResource.minDist = src->minDist;
-        audioResource.maxDist = src->maxDist;
-        
-        FMOD_RESULT result = {};
-        if( audioResource.is2D == true ) {
-            FMOD_CREATESOUNDEXINFO createInfo = {};
-            createInfo.cbsize = sizeof( FMOD_CREATESOUNDEXINFO );
-            createInfo.length = src->audioSize;
+        LargeString resPath = {};
+        resPath.Add( name );
+        resPath.StripFileExtension();
+        resPath.Add( ".json" );
 
-            FMOD_RESULT result = fmodSystem->createSound( src->audioData, FMOD_OPENMEMORY, &createInfo, &audioResource.sound2D );
-            ERRCHECK( result );
+        AudioResource * resource = MemoryAllocateTransient<AudioResource>();
+        if( ResourceReadTextRefl<AudioResource>( resource, resPath.GetCStr() ) == true ) {
+            return ResourceGetAndCreateAudio( name, resource->is2D, resource->id, resource->minDist, resource->maxDist );
         }
 
-        result = {};
-        if( audioResource.is3D == true ) {
-            FMOD_CREATESOUNDEXINFO createInfo = {};
-            createInfo.cbsize = sizeof( FMOD_CREATESOUNDEXINFO );
-            createInfo.length = src->audioSize;
-
-            result = fmodSystem->createSound( src->audioData, FMOD_OPENMEMORY | FMOD_3D, &createInfo, &audioResource.sound3D );
-            audioResource.sound3D->set3DMinMaxDistance( audioResource.minDist, audioResource.maxDist );
-            ERRCHECK( result );
-        }
-
-        return resources.audios.Add_MemCpyPtr( &audioResource );
+        return nullptr;
     }
 
     AudioSpeaker WindowsCore::AudioPlay( AudioResource * audio, glm::vec2 * pos ) {

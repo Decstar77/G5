@@ -16,6 +16,22 @@ namespace atto {
         REFLECT_STRUCT_MEMBER( masterVolume )
         REFLECT_STRUCT_END()
 
+        REFLECT_STRUCT_BEGIN( TextureResource )
+        REFLECT_STRUCT_MEMBER( id )
+        REFLECT_STRUCT_MEMBER( name )
+        REFLECT_STRUCT_MEMBER( hasAnti )
+        REFLECT_STRUCT_MEMBER( hasMips )
+        REFLECT_STRUCT_END()
+
+        REFLECT_STRUCT_BEGIN( AudioResource )
+        REFLECT_STRUCT_MEMBER( id )
+        REFLECT_STRUCT_MEMBER( name )
+        REFLECT_STRUCT_MEMBER( is2D )
+        REFLECT_STRUCT_MEMBER( is3D )
+        REFLECT_STRUCT_MEMBER( minDist )
+        REFLECT_STRUCT_MEMBER( maxDist )
+        REFLECT_STRUCT_END()
+
         REFLECT_STRUCT_BEGIN( SpriteActuation )
         REFLECT_STRUCT_MEMBER( frameIndex )
         REFLECT_STRUCT_MEMBER( audioResources )

@@ -202,7 +202,7 @@ namespace atto {
         i32                 spriteTileIndexY;
         i32                 flags;
     };
-
+    
     struct SpriteTileMap {
         i32                              tileXCount;
         i32                              tileYCount;
