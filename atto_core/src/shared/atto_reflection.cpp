@@ -653,6 +653,136 @@ namespace atto {
         static TypeDescriptor_Collider typeDesc;
         return &typeDesc;
     }
+
+
+    struct TypeDescriptor_Collider2D : TypeDescriptor {
+        TypeDescriptor_Collider2D() {
+            name = "Collider2D";
+            size = sizeof( Collider );
+        }
+
+        nlohmann::json JSON_Write( const void * obj ) override {
+            Collider2D * collider = (Collider2D *)obj;
+            nlohmann::json j;
+            j[ "type" ] = (i32)collider->type;
+            switch( collider->type ) {
+                case COLLIDER_TYPE_NONE:
+                {
+
+                } break;
+                case COLLIDER_TYPE_CIRCLE:
+                {
+                    j[ "c" ] = atto::JSON_Write( collider->circle.pos );
+                    j[ "r" ] = collider->circle.rad;
+                } break;
+                case COLLIDER_TYPE_SPHERE:
+                {
+                    INVALID_CODE_PATH;
+                } break;
+                case COLLIDER_TYPE_BOX:
+                {
+                    j[ "min" ] = atto::JSON_Write( collider->box.min );
+                    j[ "max" ] = atto::JSON_Write( collider->box.max );
+                } break;
+                case COLLIDER_TYPE_PLANE:
+                {
+                    INVALID_CODE_PATH;
+                } break;
+                case COLLIDER_TYPE_TRIANGLE:
+                {
+                    INVALID_CODE_PATH;
+                } break;
+                default:
+                {
+                    INVALID_CODE_PATH;
+                } break;
+            }
+
+            return j;
+        }
+
+        void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+            Collider2D * collider = (Collider2D *)obj;
+            collider->type = j[ "type" ];
+            switch( collider->type ) {
+                case COLLIDER_TYPE_NONE:
+                {
+
+                } break;
+                case COLLIDER_TYPE_CIRCLE:
+                {
+                    atto::JSON_Read( j[ "c" ], collider->circle.pos );
+                    atto::JSON_Read( j[ "r" ], collider->circle.rad );
+                } break;
+                case COLLIDER_TYPE_SPHERE:
+                {
+                    INVALID_CODE_PATH;
+                } break;
+                case COLLIDER_TYPE_BOX:
+                {
+                    atto::JSON_Read( j[ "min" ], collider->box.min );
+                    atto::JSON_Read( j[ "max" ], collider->box.max );
+                } break;
+                case COLLIDER_TYPE_PLANE:
+                {
+                    INVALID_CODE_PATH;
+                } break;
+                case COLLIDER_TYPE_TRIANGLE:
+                {
+                    INVALID_CODE_PATH;
+                } break;
+                default:
+                {
+                    INVALID_CODE_PATH;
+                } break;
+            }
+        }
+
+        void Imgui_Draw( const void * obj, const char * memberName ) override {
+            Collider2D * collider = (Collider2D *)obj;
+            if( ImGui::TreeNode( memberName ) ) {
+                switch( collider->type ) {
+                    case COLLIDER_TYPE_NONE:
+                    {
+
+                    } break;
+                    case COLLIDER_TYPE_CIRCLE:
+                    {
+                        ImGui::InputFloat2( "Position", &collider->circle.pos.x );
+                        ImGui::InputFloat( "Radius", &collider->circle.rad );
+                    } break;
+                    case COLLIDER_TYPE_SPHERE:
+                    {
+                        INVALID_CODE_PATH;
+                    } break;
+                    case COLLIDER_TYPE_BOX:
+                    {
+                        ImGui::InputFloat2( "Min", &collider->box.min.x );
+                        ImGui::InputFloat2( "Max", &collider->box.max.x );
+                    } break;
+                    case COLLIDER_TYPE_PLANE:
+                    {
+                        INVALID_CODE_PATH;
+                    } break;
+                    case COLLIDER_TYPE_TRIANGLE:
+                    {
+                        INVALID_CODE_PATH;
+                    } break;
+                    default:
+                    {
+                        INVALID_CODE_PATH;
+                    } break;
+                }
+                ImGui::TreePop();
+            }
+        }
+    };
+
+    template<>
+    TypeDescriptor * GetPrimitiveDescriptor<Collider2D>() {
+        static TypeDescriptor_Collider2D typeDesc;
+        return &typeDesc;
+    }
 }
 
 /*

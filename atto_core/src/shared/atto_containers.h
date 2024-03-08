@@ -1421,14 +1421,16 @@ namespace atto {
     template<typename _type_, i32 capcity>
     class FixedObjectPool {
     public:
-        _type_ * Add( ObjectHandle<_type_> & hdl );
-        _type_ * Get( ObjectHandle<_type_> hdlt );
+        _type_ *    Add( ObjectHandle<_type_> & hdl );
+        _type_ *    Get( ObjectHandle<_type_> hdlt );
         bool        Remove( ObjectHandle<_type_> hdlt );
         void        GatherActiveObjs( FixedList<_type_ *, capcity> & inList );
+        void        GatherActiveObjs_MemCopy( FixedList<_type_, capcity> * inList );
 
     private:
         void        Initialize();
         i32         FindFreeIndex();
+
     private:
         bool                                        initialized;
         FixedList<_type_, capcity>                  objs;
@@ -1547,4 +1549,31 @@ namespace atto {
         }
     }
 
+    template<typename _type_, i32 capcity>
+    void atto::FixedObjectPool<_type_, capcity>::GatherActiveObjs_MemCopy( FixedList<_type_, capcity> * inList ) {
+        Initialize();
+
+        for( i32 i = 0; i < capcity; i++ ) {
+            activeList[ i ] = true;
+        }
+
+        const i32 freeCount = idxs.GetCount();
+        for( i32 i = 0; i < freeCount; i++ ) {
+            activeList[ idxs[ i ] ] = false;
+        }
+
+        const i32 activeCount = capcity - freeCount - 1;    // @NOTE: -1 because we don't want to include the first element
+
+        i32 count = 0;
+        for( i32 i = 1; i < capcity; i++ ) {                // @NOTE: Start at 1 because we don't want to include the first element
+            if( activeList[ i ] ) {
+                _type_ * t = &objs[ i ];
+                inList->Add_MemCpyPtr( t );
+                count++;
+            }
+            if( count == activeCount ) {
+                break;
+            }
+        }
+    }
 }

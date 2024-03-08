@@ -85,6 +85,23 @@ namespace atto {
     //    REFLECT_STRUCT_END()
 
 
+    REFL_ENUM( SomethingNew, 
+               INVALID, 
+               OOON, 
+               TWOOO, 
+               EEEE 
+    );
+
+    struct Teester {
+        SomethingNew s;
+        REFLECT();
+    };
+
+    REFLECT_STRUCT_BEGIN( Teester )
+        REFLECT_STRUCT_MEMBER( s )
+        REFLECT_STRUCT_END()
+
+
     void Editor::ResourceEditor( Core * core, GameMode * gameMode ) {
         ImGuiWindowFlags windowFlags = 0;
         windowFlags = ImGuiWindowFlags_MenuBar;
@@ -96,9 +113,12 @@ namespace atto {
                     if( ImGui::BeginMenu( "New" ) ) {
                         if( ImGui::MenuItem( "Entity" ) ) {
                             if( currentMap != nullptr ) {
-                                resourceWidget.entity = currentMap->SpawnEntity( ENTITY_TYPE_PROP );
+                                resourceWidget.entity = currentMap->SpawnEntity( EntityType::Make( EntityType::TYPE_PROP ) );
                                 resourceWidget.spriteResource = nullptr;
                             }
+                                Teester t = {};
+                                t.s = SomethingNew::TWOOO;
+                                core->ResourceWriteTextRefl( &t, "res/test.json" );
                         }
                         if( ImGui::MenuItem( "Sprite" ) ) {
                             if( core->WindowOpenNativeFolderDialog( nullptr, res ) ) {
@@ -125,7 +145,8 @@ namespace atto {
                         if( resourceWidget.spriteResource != nullptr ) {
                             res = resourceWidget.spriteResource->GetResourcePath();
                             //core->ResourceWriteTextRefl( resourceWidget.spriteResource, res.GetCStr() );
-                            core->ResourceWriteBinaryRefl( resourceWidget.spriteResource, "res/sprites/test.bin" );
+                            //core->ResourceWriteBinaryRefl( resourceWidget.spriteResource, "res/sprites/test.bin" );
+                          
                         }
                     }
 

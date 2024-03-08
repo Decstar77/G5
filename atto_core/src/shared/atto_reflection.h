@@ -103,7 +103,7 @@ namespace atto {
             SmallString name;
             struct TypeDescriptor * type;
         };
-        
+
         std::vector<Member> members;
 
         TypeDescriptor_Struct( void ( *init )( TypeDescriptor_Struct * ) ) {
@@ -111,7 +111,7 @@ namespace atto {
             size = 0;
             init( this );
         }
-        
+
         TypeDescriptor_Struct( const char * name, i32 size, const std::initializer_list<Member> & init ) {
             this->name = SmallString::FromLiteral( name );
             this->size = size;
@@ -139,7 +139,7 @@ namespace atto {
 
         virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
             nlohmann::json j;
-            if ( ImGui::TreeNodeEx( memberName, ImGuiTreeNodeFlags_DefaultOpen ) ) {
+            if( ImGui::TreeNodeEx( memberName, ImGuiTreeNodeFlags_DefaultOpen ) ) {
                 for( const Member & member : members ) {
                     member.type->Imgui_Draw( (char *)obj + member.offset, member.name.GetCStr() );
                 }
@@ -183,8 +183,8 @@ namespace atto {
 
     template <typename _type_, i32 cap>
     struct TypeDescriptor_FixedList : TypeDescriptor {
-        TypeDescriptor *    itemType;
-        
+        TypeDescriptor * itemType;
+
         TypeDescriptor_FixedList( _type_ * ) {
             this->size = sizeof( FixedList<_type_, cap> );
             this->name = SmallString::FromLiteral( "FixedList" );
@@ -271,8 +271,206 @@ namespace atto {
             return &typeDesc;
         }
     };
+
+    template <typename _type_, i32 cap>
+    struct TypeDescriptor_FixedObjectPool : TypeDescriptor {
+        TypeDescriptor * itemType;
+
+        TypeDescriptor_FixedObjectPool( _type_ * ) {
+            this->size = sizeof( FixedObjectPool<_type_, cap> );
+            this->name = SmallString::FromLiteral( "FixedObjectPool" );
+            this->itemType = TypeResolver<_type_>::get();
+        }
+
+        typedef FixedList< _type_, cap > PoolList;
+
+        virtual nlohmann::json JSON_Write( const void * obj ) {
+            std::unique_ptr< PoolList > activeItems = std::make_unique<PoolList>();
+            FixedObjectPool<_type_, cap> * pool = ( FixedObjectPool<_type_, cap> * )obj;
+            pool->GatherActiveObjs_MemCopy( activeItems.get() );
+            TypeDescriptor * poolListType = TypeResolver<PoolList>::get();
+            return poolListType->JSON_Write( activeItems.get() );
+        };
+
+        virtual void JSON_Read( const nlohmann::json & j, const void * obj ) {
+
+        };
+
+        virtual void Binary_Write( const void * obj, BinaryBlob & f ) {
+            INVALID_CODE_PATH;
+            f.Write( obj, size );
+        }
+
+        virtual void Binary_Read( void * obj, BinaryBlob & f ) {
+            INVALID_CODE_PATH;
+            f.Read( obj, size );
+        }
+
+        virtual void Imgui_Draw( const void * obj, const char * memberName ) {
+
+        };
+    };
+
+    template< typename T, i32 cap >
+    class TypeResolver< FixedObjectPool< T, cap > > {
+    public:
+        static TypeDescriptor * get() {
+            static TypeDescriptor_FixedObjectPool< T, cap > typeDesc( ( T * )nullptr );
+            return &typeDesc;
+        }
+    };
+
+#define MAP(macro, ...) \
+    IDENTITY( \
+        APPLY(CHOOSE_MAP_START, COUNT(__VA_ARGS__)) \
+            (macro, __VA_ARGS__))
+
+#define CHOOSE_MAP_START(count) MAP ## count
+
+#define APPLY(macro, ...) IDENTITY(macro(__VA_ARGS__))
+
+// Needed to expand __VA_ARGS__ "eagerly" on the MSVC preprocessor.
+#define IDENTITY(x) x
+
+#define MAP1(m, x)      m(x)
+#define MAP2(m, x, ...) m(x) IDENTITY(MAP1(m, __VA_ARGS__))
+#define MAP3(m, x, ...) m(x) IDENTITY(MAP2(m, __VA_ARGS__))
+#define MAP4(m, x, ...) m(x) IDENTITY(MAP3(m, __VA_ARGS__))
+#define MAP5(m, x, ...) m(x) IDENTITY(MAP4(m, __VA_ARGS__))
+#define MAP6(m, x, ...) m(x) IDENTITY(MAP5(m, __VA_ARGS__))
+#define MAP7(m, x, ...) m(x) IDENTITY(MAP6(m, __VA_ARGS__))
+#define MAP8(m, x, ...) m(x) IDENTITY(MAP7(m, __VA_ARGS__))
+#define MAP9(m, x, ...) m(x) IDENTITY(MAP8(m, __VA_ARGS__))
+#define MAP10(m, x, ...) m(x) IDENTITY(MAP9(m, __VA_ARGS__))
+#define MAP11(m, x, ...) m(x) IDENTITY(MAP10(m, __VA_ARGS__))
+#define MAP12(m, x, ...) m(x) IDENTITY(MAP11(m, __VA_ARGS__))
+#define MAP13(m, x, ...) m(x) IDENTITY(MAP12(m, __VA_ARGS__))
+#define MAP14(m, x, ...) m(x) IDENTITY(MAP13(m, __VA_ARGS__))
+#define MAP15(m, x, ...) m(x) IDENTITY(MAP14(m, __VA_ARGS__))
+#define MAP16(m, x, ...) m(x) IDENTITY(MAP15(m, __VA_ARGS__))
+#define MAP17(m, x, ...) m(x) IDENTITY(MAP16(m, __VA_ARGS__))
+#define MAP18(m, x, ...) m(x) IDENTITY(MAP17(m, __VA_ARGS__))
+#define MAP19(m, x, ...) m(x) IDENTITY(MAP18(m, __VA_ARGS__))
+#define MAP20(m, x, ...) m(x) IDENTITY(MAP19(m, __VA_ARGS__))
+#define MAP21(m, x, ...) m(x) IDENTITY(MAP20(m, __VA_ARGS__))
+#define MAP22(m, x, ...) m(x) IDENTITY(MAP21(m, __VA_ARGS__))
+#define MAP23(m, x, ...) m(x) IDENTITY(MAP22(m, __VA_ARGS__))
+#define MAP24(m, x, ...) m(x) IDENTITY(MAP23(m, __VA_ARGS__))
+#define MAP25(m, x, ...) m(x) IDENTITY(MAP24(m, __VA_ARGS__))
+#define MAP26(m, x, ...) m(x) IDENTITY(MAP25(m, __VA_ARGS__))
+#define MAP27(m, x, ...) m(x) IDENTITY(MAP26(m, __VA_ARGS__))
+#define MAP28(m, x, ...) m(x) IDENTITY(MAP27(m, __VA_ARGS__))
+#define MAP29(m, x, ...) m(x) IDENTITY(MAP28(m, __VA_ARGS__))
+#define MAP30(m, x, ...) m(x) IDENTITY(MAP29(m, __VA_ARGS__))
+#define MAP31(m, x, ...) m(x) IDENTITY(MAP30(m, __VA_ARGS__))
+#define MAP32(m, x, ...) m(x) IDENTITY(MAP31(m, __VA_ARGS__))
+#define MAP33(m, x, ...) m(x) IDENTITY(MAP32(m, __VA_ARGS__))
+
+#define EVALUATE_COUNT(_1, _2, _3, _4, _5, _6, _7, _8, count, ...) count
+
+#define COUNT(...) \
+    IDENTITY(EVALUATE_COUNT(__VA_ARGS__, 8, 7, 6, 5, 4, 3, 2, 1))
+
+
+    struct ignore_assign {
+        ignore_assign( int value ) : _value( value ) {}
+        operator int() const { return _value; }
+
+        const ignore_assign & operator =( int dummy ) { return *this; }
+
+        int _value;
+    };
+
+#define IGNORE_ASSIGN_SINGLE(expression) (ignore_assign)expression,
+#define IGNORE_ASSIGN(...) IDENTITY(MAP(IGNORE_ASSIGN_SINGLE, __VA_ARGS__))
+
+#define STRINGIZE_SINGLE(expression) #expression,
+#define STRINGIZE(...) IDENTITY(MAP(STRINGIZE_SINGLE, __VA_ARGS__))
+
+
+#define REFL_ENUM(EnumName, ...)                                                                            \
+struct EnumName {                                                                                           \
+    enum _enumerated { __VA_ARGS__ };                                                                       \
+                                                                                                            \
+    _enumerated     _value;                                                                                 \
+                                                                                                            \
+    operator _enumerated() const { return _value; }                                                         \
+    inline void operator=( _enumerated other ) { _value = other; }                                          \
+                                                                                                            \
+    inline const char* ToString() const                                                                     \
+    {                                                                                                       \
+        for (size_t index = 0; index < _count; ++index) {                                                   \
+            if (Values()[index] == _value)                                                                  \
+                return Names()[index];                                                                      \
+        }                                                                                                   \
+                                                                                                            \
+        return NULL;                                                                                        \
+    }                                                                                                       \
+                                                                                                            \
+    inline static const size_t _count = IDENTITY(COUNT(__VA_ARGS__));                                       \
+                                                                                                            \
+    inline static EnumName Make(_enumerated e){ return { e }; }                                             \
+                                                                                                            \
+    inline static const int* Values()                                                                       \
+    {                                                                                                       \
+        static const int values[] =                                                                         \
+            { IDENTITY(IGNORE_ASSIGN(__VA_ARGS__)) };                                                       \
+        return values;                                                                                      \
+    }                                                                                                       \
+                                                                                                            \
+    inline static const char* const* Names()                                                                \
+    {                                                                                                       \
+        static const char* const    raw_names[] =                                                           \
+            { IDENTITY(STRINGIZE(__VA_ARGS__)) };                                                           \
+                                                                                                            \
+        static char*                processed_names[_count];                                                \
+        static bool                 initialized = false;                                                    \
+                                                                                                            \
+        if (!initialized) {                                                                                 \
+            for (size_t index = 0; index < _count; ++index) {                                               \
+                size_t length =                                                                             \
+                    std::strcspn(raw_names[index], " =\t\n\r");                                             \
+                                                                                                            \
+                processed_names[index] = new char[length + 1];                                              \
+                                                                                                            \
+                std::strncpy(                                                                               \
+                    processed_names[index], raw_names[index], length);                                      \
+                processed_names[index][length] = '\0';                                                      \
+            }                                                                                               \
+        }                                                                                                   \
+                                                                                                            \
+        return processed_names;                                                                             \
+    }                                                                                                       \
+};                                                                                                          \
+                                                                                                            \
+    struct TypeDescriptor_##EnumName : TypeDescriptor {                                                     \
+                                                                                                            \
+      TypeDescriptor_##EnumName() {                                                                         \
+          this->size = sizeof( EnumName );                                                                  \
+          this->name = SmallString::FromLiteral( #EnumName );                                               \
+      }                                                                                                     \
+                                                                                                            \
+      virtual nlohmann::json JSON_Write( const void * obj ) {                                               \
+          EnumName en = *(EnumName *)obj;                                                                   \
+          nlohmann::json j;                                                                                 \
+          j[ name.GetCStr() ] = en.ToString();                                                              \
+          return j;                                                                                         \
+      }                                                                                                     \
+                                                                                                            \
+      virtual void JSON_Read( const nlohmann::json & j, const void * obj ) {                                \
+                                                                                                            \
+      }                                                                                                     \
+                                                                                                            \
+      virtual void Imgui_Draw( const void * obj, const char * memberName ) {                                \
+                                                                                                            \
+      };                                                                                                    \
+    };                                                                                                      \
+                                                                                                            \
+    template <>                                                                                             \
+    inline TypeDescriptor * GetPrimitiveDescriptor<EnumName>() {                                            \
+        static TypeDescriptor_##EnumName typeDesc;                                                          \
+        return &typeDesc;                                                                                   \
+    }
 }
 
-#endif
-
- 
+#endif                                                                                                      

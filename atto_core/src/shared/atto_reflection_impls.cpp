@@ -51,12 +51,25 @@ namespace atto {
         REFLECT_STRUCT_MEMBER( frameActuations )
         REFLECT_STRUCT_END()
 
-        REFLECT_STRUCT_BEGIN( Entity )
-        //REFLECT_STRUCT_MEMBER( type )
-        REFLECT_STRUCT_MEMBER( name )
-        REFLECT_STRUCT_MEMBER( pos )
+        REFLECT_STRUCT_BEGIN( SpriteAnimator )
+        REFLECT_STRUCT_MEMBER( sprite )
         REFLECT_STRUCT_END()
 
-        
+        REFLECT_STRUCT_BEGIN( Entity )
+        REFLECT_STRUCT_MEMBER( type )
+        REFLECT_STRUCT_MEMBER( name )
+        REFLECT_STRUCT_MEMBER( pos )
+        REFLECT_STRUCT_MEMBER( selectionCollider )
+        REFLECT_STRUCT_MEMBER( collisionCollider )
+        REFLECT_STRUCT_MEMBER( spriteAnimator )
+        REFLECT_STRUCT_END()
+
+        REFLECT_STRUCT_BEGIN( Map )
+        REFLECT_STRUCT_MEMBER( mapWidth )
+        REFLECT_STRUCT_MEMBER( mapHeight )
+        REFLECT_STRUCT_MEMBER( mapName )
+        REFLECT_STRUCT_MEMBER( entityPool )
+        REFLECT_STRUCT_END()
+
 
 }

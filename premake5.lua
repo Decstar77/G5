@@ -56,6 +56,7 @@ project "atto_core"
         "4214", -- Bool bit-fields. Valid C99.
         "4221", -- Pointers to locals in initializers. Valid C99.
         "4702", -- Unreachable code. We sometimes want return after exit() because otherwise we get an error about no return value.
+        "4996"  -- Deprecated functions
     }
 
     includedirs

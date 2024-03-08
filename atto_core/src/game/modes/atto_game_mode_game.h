@@ -7,23 +7,23 @@ namespace atto {
 
     class Map;
     struct Entity;
-    enum EntityType;
     struct MapFileEntity;
 
     typedef ObjectHandle<Entity> EntityHandle;
     typedef FixedList<Entity *, MAX_ENTITIES> EntList;
 
-    enum EntityType {
-        ENTITY_TYPE_INVALID = 0,
-        ENTITY_TYPE_PLAYER = 1,
+    REFL_ENUM( EntityType,
+               INVALID = 0,
+               PLAYER,
 
-        ENTITY_TYPE_ENEMIES_START,
-        ENTITY_TYPE_ENEMY_BOT_DRONE,
-        ENTITY_TYPE_ENEMY_BOT_BIG,
-        ENTITY_TYPE_ENEMIES_END,
+               ENEMIES_START,
+               ENEMY_BOT_DRONE,
+               ENEMY_BOT_BIG,
+               ENEMIES_END,
 
-        ENTITY_TYPE_PROP,
-    };
+               TYPE_PROP
+    );
+
 
     enum AbilityType {
         ABILITY_TYPE_INVALID = 0,
@@ -54,10 +54,9 @@ namespace atto {
 
     struct PlayerStuff {
         PlayerState state;
-        Ability * currentAbility;
-        Ability * primingAbility;
-
-        f32 speed;
+        Ability *   currentAbility;
+        Ability *   primingAbility;
+        f32         speed;
 
         union {
             Ability abilities[ MAX_ABILITIES ];
@@ -85,7 +84,7 @@ namespace atto {
     };
 
     struct SpriteAnimator {
-        SpriteResource * sprite;
+        SpriteResource *    sprite;
         i32                 frameIndex;
         f32                 frameTimer;
         f32                 frameDuration;
@@ -97,6 +96,8 @@ namespace atto {
         bool                SetSpriteIfDifferent( Core * core, SpriteResource * sprite, bool loops );
         void                Update( Core * core, f32 dt );
         void                TestFrameActuations( Core * core );
+
+        REFLECT();
     };
 
     struct Particle {
@@ -108,21 +109,21 @@ namespace atto {
 
     struct ParticleSystem {
         // Settings
-        bool                    oneShot;
-        i32                     count;
-        f32                     lifeTime;
-        f32                     spawnRate;
-        f32                     scaleMin;
-        f32                     scaleMax;
-        glm::vec2               velMin;
-        glm::vec2               velMax;
-        TextureResource * texture;
+        bool                        oneShot;
+        i32                         count;
+        f32                         lifeTime;
+        f32                         spawnRate;
+        f32                         scaleMin;
+        f32                         scaleMax;
+        glm::vec2                   velMin;
+        glm::vec2                   velMax;
+        TextureResource *           texture;
 
         // State
-        bool                      emitting;
-        f32                       spawnTimer;
-        i32                       spawnedCount;
-        FixedList<Particle, 128>  particles;
+        bool                        emitting;
+        f32                         spawnTimer;
+        i32                         spawnedCount;
+        FixedList<Particle, 128>    particles;
     };
 
     struct Navigator {
@@ -131,51 +132,47 @@ namespace atto {
     };
 
     struct Entity {
-        EntityHandle        handle;
-        EntityType          type;
+        EntityHandle                handle;
+        EntityType                  type;
 
-        SmallString         name;
-        i32                 playerNumber;
+        SmallString                 name;
+        i32                         playerNumber;
 
-        bool                active;
+        bool                        active;
 
-        glm::vec2           pos;
-        glm::vec2           vel;
-        f32                 ori;
-        f32                 facingDir; // 1.0f -> right | -1.0f -> left
+        glm::vec2                   pos;
+        glm::vec2                   vel;
+        f32                         ori;
+        f32                         facingDir; // 1.0f -> right | -1.0f -> left
 
-        i32                 maxHealth;
-        i32                 currentHealth;
+        i32                         maxHealth;
+        i32                         currentHealth;
 
-        bool                netStreamed;
-        glm::vec2           netVisualPos;
-        glm::vec2           netDesiredVel;
-
+        bool                        netStreamed;
+        glm::vec2                   netVisualPos;
+        glm::vec2                   netDesiredVel;
 
         // Make these flags
-        bool                hasHitCollision;
-        bool                isCollisionStatic;
-        bool                isSelectable;
+        bool                        hasHitCollision;
+        bool                        isCollisionStatic;
+        bool                        isSelectable;
 
-        Collider2D                selectionCollider;
-        Collider2D                collisionCollider;  // @NOTE: Used for movement | In Local Space
-        FixedList<Collider2D, 8>  hitColliders;       // @NOTE: Used for shooting and stuff | In Local Space
+        Collider2D                  selectionCollider;
+        Collider2D                  collisionCollider;  // @NOTE: Used for movement | In Local Space
 
-        SpriteAnimator          spriteAnimator;
-        ParticleSystem          particleSystem;
-        Navigator               navigator;
+        SpriteAnimator              spriteAnimator;
+        ParticleSystem              particleSystem;
+        Navigator                   navigator;
+
+        // The stuffs
+        PlayerStuff             playerStuff;
+        UnitStuff               unitStuff;
 
         void                    Unit_TakeDamage( Core * core, bool sendPacket, i32 damage );
         void                    Unit_Die( Core * core, bool sendPacket );
 
-        // The stuffs
-        union {
-            PlayerStuff         playerStuff;
-            UnitStuff           unitStuff;
-        };
-
-        inline Collider2D GetWorldCollisionCollider() const;
-        inline Collider2D GetWorldSelectionCollider() const;
+        inline Collider2D       GetWorldCollisionCollider() const;
+        inline Collider2D       GetWorldSelectionCollider() const;
 
         REFLECT();
     };
@@ -214,8 +211,8 @@ namespace atto {
     struct GameGUI {
         f32             startX;
         f32             startY;
-        DrawContext * drawContext;
-        Core * core;
+        DrawContext *   drawContext;
+        Core *          core;
 
         void BeginAbilityBar( Core * core, DrawContext * drawContext );
         void AbilityIcon( Ability & ab );
@@ -224,46 +221,51 @@ namespace atto {
 
     class Map {
     public:
-        inline static f32 BlockDim = 4.0f;
+        /*
+            Stored data
+        */
+
         i32                                     mapWidth = 0;
         i32                                     mapHeight = 0;
-
-        glm::vec3                               playerStartPos = {};
-
+        LargeString                             mapName = {};
         FixedObjectPool< Entity, MAX_ENTITIES > entityPool = {};
+        SpriteTileMap                           tileMap = {};
+
+        /*
+            Runtime data
+        */
         f32                                     dtAccumulator = 0.0f;
 
         glm::vec2                               localCameraPos = glm::vec2( 0.0f );
 
+        bool                                    isStarting = false;
         bool                                    isMp = false;
-        bool                                    hasAuthority = false;
+        bool                                    isAuthority = false;
 
         i32                                     localPlayerNumber = -1;
         i32                                     otherPlayerNumber = -1;
 
-        Entity * localPlayer = nullptr;
-        Entity * otherPlayer = nullptr;
-
+        Entity *                                localPlayer = nullptr;
+        Entity *                                otherPlayer = nullptr;
         FixedList< Entity *, 2 >                players = {};
-
-        SpriteTileMap                           tileMap = {};
-
         GameGUI                                 ui = {};
 
     public:
         // @NOTE: "Map Live" functions 
-        void                            Start( Core * core, const GameStartParams & parms );
-        void                            UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags );
-        Entity * SpawnEntity( EntityType type );
-        Entity * Spawn_EnemyBotDrone( Core * core, glm::vec2 pos );
-        Entity * Spawn_EnemyBotBig( Core * core, glm::vec2 pos );
-        Entity * ClosestPlayerTo( glm::vec2 p, f32 & dist );
+        void                                    Start( Core * core, const GameStartParams & parms );
+        void                                    UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags );
+        Entity *                                SpawnEntity( EntityType type );
+        Entity *                                Spawn_EnemyBotDrone( Core * core, glm::vec2 pos );
+        Entity *                                Spawn_EnemyBotBig( Core * core, glm::vec2 pos );
+        Entity *                                ClosestPlayerTo( glm::vec2 p, f32 & dist );
 
     #if ATTO_EDITOR
         // @NOTE: "Map Editor" functions
-        void                            Editor_MapTilePlace( i32 xIndex, i32 yIndex, SpriteResource * sprite, i32 spriteX, i32 spriteY, i32 flags );
-        void                            Editor_MapTileFillBorder( SpriteResource * sprite, i32 spriteX, i32 spriteY, i32 flags );
+        void                                    Editor_MapTilePlace( i32 xIndex, i32 yIndex, SpriteResource * sprite, i32 spriteX, i32 spriteY, i32 flags );
+        void                                    Editor_MapTileFillBorder( SpriteResource * sprite, i32 spriteX, i32 spriteY, i32 flags );
     #endif
+
+        REFLECT();
     };
 
     class GameMode_Game : public GameMode {
