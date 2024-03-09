@@ -64,7 +64,7 @@ namespace atto {
         REFLECT_STRUCT_MEMBER( spriteAnimator )
         REFLECT_STRUCT_END()
 
-        REFLECT_STRUCT_BEGIN( Map )
+        REFLECT_STRUCT_BEGIN( MapLocal )
         REFLECT_STRUCT_MEMBER( mapWidth )
         REFLECT_STRUCT_MEMBER( mapHeight )
         REFLECT_STRUCT_MEMBER( mapName )

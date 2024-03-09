@@ -42,7 +42,7 @@ namespace atto {
         Editor_ResourceWidget resourceWidget;
         
 
-        Map *                 currentMap = nullptr;
+        MapLocal *                 currentMap = nullptr;
     };
 }
 

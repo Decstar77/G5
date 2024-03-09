@@ -160,9 +160,9 @@ namespace atto {
         gladLoadGLLoader( (GLADloadproc)glfwGetProcAddress );
         LogOutput( LogLevel::INFO, "OpenGL %s, GLSL %s", glGetString( GL_VERSION ), glGetString( GL_SHADING_LANGUAGE_VERSION ) );
 
-        //RenderSetCamera( 320, 180 );
+        RenderSetCamera( 320, 180 );
         //RenderSetCamera( 320 * 1.5f, 180 * 1.5f );
-        RenderSetCamera( 640, 360 );
+        //RenderSetCamera( 640, 360 );
         //RenderSetCamera( 1280, 720 );
         GLCheckCapablities();
         GLInitializeShapeRendering();

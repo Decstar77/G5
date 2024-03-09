@@ -5,7 +5,7 @@
 namespace atto {
     constexpr static int    MAX_ENTITIES = 1024;
 
-    class Map;
+    class MapHost;
     struct Entity;
     struct MapFileEntity;
 
@@ -21,30 +21,11 @@ namespace atto {
                ENEMY_BOT_BIG,
                ENEMIES_END,
 
+               BULLET,
+
                TYPE_PROP
     );
 
-
-    enum AbilityType {
-        ABILITY_TYPE_INVALID = 0,
-        ABILITY_TYPE_WARRIOR_STRIKE = 1,
-        ABILITY_TYPE_WARRIOR_STAB = 2,
-        ABILITY_TYPE_WARRIOR_CHARGE = 3,
-    };
-
-    struct Ability {
-        AbilityType type;
-        f32 cooldown;
-        f32 range;
-        f32 cooldownTimer;
-        bool stopsMovement;
-        SpriteResource * sprite;
-        TextureResource * icon;
-
-        FixedList< EntityHandle, 32 > hits;
-    };
-
-#define MAX_ABILITIES 12
 
     enum PlayerState {
         PLAYER_STATE_IDLE = 0,
@@ -54,18 +35,9 @@ namespace atto {
 
     struct PlayerStuff {
         PlayerState state;
-        Ability *   currentAbility;
-        Ability *   primingAbility;
-        f32         speed;
 
-        union {
-            Ability abilities[ MAX_ABILITIES ];
-            struct {
-                Ability slash;
-                Ability strike;
-                Ability charge;
-            } warrior;
-        };
+        f32 weaponTimer;
+        glm::vec2 weaponPos;
     };
 
     enum UnitState {
@@ -135,6 +107,8 @@ namespace atto {
         EntityHandle                handle;
         EntityType                  type;
 
+        MapHost *                  map;
+
         SmallString                 name;
         i32                         playerNumber;
 
@@ -142,6 +116,8 @@ namespace atto {
 
         glm::vec2                   pos;
         glm::vec2                   vel;
+        glm::vec2                   acc;
+        f32                         resistance;
         f32                         ori;
         f32                         facingDir; // 1.0f -> right | -1.0f -> left
 
@@ -151,6 +127,7 @@ namespace atto {
         bool                        netStreamed;
         glm::vec2                   netVisualPos;
         glm::vec2                   netDesiredVel;
+        i32                         netTempId;
 
         // Make these flags
         bool                        hasHitCollision;
@@ -169,7 +146,6 @@ namespace atto {
         UnitStuff               unitStuff;
 
         void                    Unit_TakeDamage( Core * core, bool sendPacket, i32 damage );
-        void                    Unit_Die( Core * core, bool sendPacket );
 
         inline Collider2D       GetWorldCollisionCollider() const;
         inline Collider2D       GetWorldSelectionCollider() const;
@@ -215,11 +191,14 @@ namespace atto {
         Core *          core;
 
         void BeginAbilityBar( Core * core, DrawContext * drawContext );
-        void AbilityIcon( Ability & ab );
         void EndAbilityBar();
     };
 
-    class Map {
+    class MapServer {
+        
+    };
+
+    class MapHost {
     public:
         /*
             Stored data
@@ -231,6 +210,8 @@ namespace atto {
         FixedObjectPool< Entity, MAX_ENTITIES > entityPool = {};
         SpriteTileMap                           tileMap = {};
 
+        FixedList< Entity, 512 >                temporyEntities = {};
+
         /*
             Runtime data
         */
@@ -241,6 +222,7 @@ namespace atto {
         bool                                    isStarting = false;
         bool                                    isMp = false;
         bool                                    isAuthority = false;
+        i32                                     netTempId = 1;
 
         i32                                     localPlayerNumber = -1;
         i32                                     otherPlayerNumber = -1;
@@ -254,9 +236,9 @@ namespace atto {
         // @NOTE: "Map Live" functions 
         void                                    Start( Core * core, const GameStartParams & parms );
         void                                    UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags );
-        Entity *                                SpawnEntity( EntityType type );
-        Entity *                                Spawn_EnemyBotDrone( Core * core, glm::vec2 pos );
-        Entity *                                Spawn_EnemyBotBig( Core * core, glm::vec2 pos );
+        Entity *                                SpawnEntity( Core * core, EntityType type, glm::vec2 pos, glm::vec2 vel = glm::vec2(0,0) );
+        void                                    DestroyEntity( Core * core, Entity * entity );
+
         Entity *                                ClosestPlayerTo( glm::vec2 p, f32 & dist );
 
     #if ATTO_EDITOR
@@ -276,10 +258,10 @@ namespace atto {
         virtual void                    Initialize( Core * core ) override;
         virtual void                    UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags ) override;
         virtual void                    Shutdown( Core * core ) override;
-        virtual Map * GetMap() override { return &map; }
+        virtual MapHost * GetMap() override { return &map; }
 
     public:
         GameStartParams                         startParms;
-        Map                                     map;
+        MapHost                                     map;
     };
 }

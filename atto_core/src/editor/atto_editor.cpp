@@ -113,7 +113,7 @@ namespace atto {
                     if( ImGui::BeginMenu( "New" ) ) {
                         if( ImGui::MenuItem( "Entity" ) ) {
                             if( currentMap != nullptr ) {
-                                resourceWidget.entity = currentMap->SpawnEntity( EntityType::Make( EntityType::TYPE_PROP ) );
+                                //resourceWidget.entity = currentMap->SpawnEntity( EntityType::Make( EntityType::TYPE_PROP ) );
                                 resourceWidget.spriteResource = nullptr;
                             }
                                 Teester t = {};

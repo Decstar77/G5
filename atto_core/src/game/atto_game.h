@@ -14,7 +14,7 @@ namespace atto {
         UPDATE_AND_RENDER_FLAG_DONT_SUBMIT_RENDER = SetABit( 2 ),
     };
 
-    class Map;
+    class MapLocal;
     class GameMode {
     public:
         virtual GameModeType        GetGameModeType() = 0;
@@ -22,7 +22,7 @@ namespace atto {
         virtual void                Initialize( Core * core ) = 0;
         virtual void                UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags = UPDATE_AND_RENDER_FLAG_NONE ) = 0;
         virtual void                Shutdown( Core * core ) = 0;
-        virtual Map *               GetMap() = 0;
+        virtual MapLocal *               GetMap() = 0;
     };
 }
 
