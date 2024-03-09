@@ -236,7 +236,12 @@ namespace atto {
         // @NOTE: "Map Live" functions 
         void                                    Start( Core * core, const GameStartParams & parms );
         void                                    UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags );
-        Entity *                                SpawnEntity( Core * core, EntityType type, glm::vec2 pos, glm::vec2 vel = glm::vec2(0,0) );
+
+        void                                    SpawnEntitySetup( Core * core, Entity * entity, EntityType type, glm::vec2 pos, glm::vec2 vel );
+        Entity *                                SpawnEntitySim( Core * core, EntityType type, glm::vec2 pos, glm::vec2 vel );
+        Entity *                                SpawnEntityTemp( Core * core, EntityType type, glm::vec2 pos, glm::vec2 vel );
+        Entity *                                SpawnEntityResolve( Core * core, EntityType type, glm::vec2 pos, glm::vec2 vel, i32 netId );
+        Entity *                                SpawnEntity( Core * core, EntityType type, glm::vec2 pos, glm::vec2 vel = glm::vec2( 0, 0 ) );
         void                                    DestroyEntity( Core * core, Entity * entity );
 
         Entity *                                ClosestPlayerTo( glm::vec2 p, f32 & dist );
@@ -258,7 +263,7 @@ namespace atto {
         virtual void                    Initialize( Core * core ) override;
         virtual void                    UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags ) override;
         virtual void                    Shutdown( Core * core ) override;
-        virtual MapHost * GetMap() override { return &map; }
+        virtual MapHost *               GetMap() override { return &map; }
 
     public:
         GameStartParams                         startParms;

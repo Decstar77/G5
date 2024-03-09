@@ -1495,6 +1495,13 @@ namespace atto {
             return nullptr;
         }
 
+        const i32 freeCount = idxs.GetCount();
+        for( i32 i = 0; i < freeCount; i++ ) {
+            if( idxs[ i ] == hdlt.idx ) {
+                return nullptr;
+            }
+        }
+
         return &objs[ hdlt.idx ];
     }
 
