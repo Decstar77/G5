@@ -14,6 +14,7 @@ namespace atto {
         ENTITY_AUDIO_PLAY,
         ENTITY_SPAWN,
         ENTITY_DESTROY,
+        ENTITY_PLAYER_UPDATE,
         ENTITY_RPC_UNIT_TAKE_DAMAGE,
         ENTITY_RPC_UNIT_TARGET_ACQUIRED,
     };

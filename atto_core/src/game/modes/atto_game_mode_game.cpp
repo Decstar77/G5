@@ -2,6 +2,10 @@
 #include "../../shared/atto_colors.h"
 
 namespace atto {
+
+    static glm::vec2 player1SpawnLocation = glm::vec2( 80, 80 );
+    static glm::vec2 player2SpawnLocation = glm::vec2( 80 + 20, 80 );
+
     static i32 YSortEntities( Entity *& a, Entity *& b ) {
         return (i32)( b->pos.y - a->pos.y );
     }
@@ -25,7 +29,7 @@ namespace atto {
     void GameMode_Game::Shutdown( Core * core ) {
     }
 
-    void MapHost::Start( Core * core, const GameStartParams & parms ) {
+    void Map::Start( Core * core, const GameStartParams & parms ) {
         isMp = parms.isMutliplayer;
         localPlayerNumber = parms.localPlayerNumber;
         otherPlayerNumber = parms.otherPlayerNumber;
@@ -35,32 +39,29 @@ namespace atto {
         if( isMp ) {
             if( localPlayerNumber == 1 ) {
                 isAuthority = true;
-                localPlayer = SpawnEntity( core, EntityType::Make( EntityType::PLAYER ), glm::vec2( 25 * 32 - 20, 25 * 32 ) );
+                localPlayer = SpawnEntity( core, EntityType::Make( EntityType::PLAYER ), player1SpawnLocation );
                 localPlayer->collisionCollider.type = COLLIDER_TYPE_BOX;
                 localPlayer->collisionCollider.box.CreateFromCenterSize( glm::vec2( 0, 0 ), glm::vec2( 36, 36 ) );
                 localPlayer->playerNumber = localPlayerNumber;
                 localPlayer->spriteAnimator.sprite = playerSprite;
 
-                otherPlayer = SpawnEntity( core, EntityType::Make( EntityType::PLAYER ), glm::vec2( 25 * 32 + 20, 25 * 32 ) );
+                otherPlayer = SpawnEntity( core, EntityType::Make( EntityType::PLAYER ), player2SpawnLocation );
                 otherPlayer->playerNumber = parms.otherPlayerNumber;
                 otherPlayer->collisionCollider.type = COLLIDER_TYPE_BOX;
                 otherPlayer->collisionCollider.box.CreateFromCenterSize( glm::vec2( 0, 0 ), glm::vec2( 36, 36 ) );
                 otherPlayer->netStreamed = true;
-                otherPlayer->netVisualPos = otherPlayer->pos;
                 otherPlayer->spriteAnimator.sprite = playerSprite;
             }
             else {
-                otherPlayer = SpawnEntity( core, EntityType::Make( EntityType::PLAYER ), glm::vec2( 25 * 32 - 20, 25 * 32 ) );
+                otherPlayer = SpawnEntity( core, EntityType::Make( EntityType::PLAYER ), player2SpawnLocation );
                 otherPlayer->playerNumber = parms.otherPlayerNumber;
                 otherPlayer->collisionCollider.type = COLLIDER_TYPE_BOX;
                 otherPlayer->collisionCollider.box.CreateFromCenterSize( glm::vec2( 0, 0 ), glm::vec2( 36, 36 ) );
-                otherPlayer->netVisualPos = otherPlayer->pos;
                 otherPlayer->spriteAnimator.sprite = playerSprite;
                 otherPlayer->netStreamed = true;
 
-                localPlayer = SpawnEntity( core, EntityType::Make( EntityType::PLAYER ), glm::vec2( 25 * 32 - 20, 25 * 32 ) );
+                localPlayer = SpawnEntity( core, EntityType::Make( EntityType::PLAYER ), player1SpawnLocation );
                 localPlayer->playerNumber = localPlayerNumber;
-                localPlayer->pos = glm::vec2( 25 * 32 + 20, 25 * 32 );
                 localPlayer->spriteAnimator.sprite = playerSprite;
                 localPlayer->collisionCollider.type = COLLIDER_TYPE_BOX;
                 localPlayer->collisionCollider.box.CreateFromCenterSize( glm::vec2( 0, 0 ), glm::vec2( 36, 36 ) );
@@ -68,9 +69,8 @@ namespace atto {
         }
         else {
             isAuthority = true;
-            localPlayer = SpawnEntity( core, EntityType::Make( EntityType::PLAYER ), glm::vec2( 25 * 32 - 20, 25 * 32 ) );
+            localPlayer = SpawnEntity( core, EntityType::Make( EntityType::PLAYER ), player1SpawnLocation );
             localPlayer->playerNumber = localPlayerNumber;
-            localPlayer->pos = glm::vec2( 25 * 32 - 20, 25 * 32 );
             localPlayer->spriteAnimator.sprite = playerSprite;
             localPlayer->collisionCollider.type = COLLIDER_TYPE_BOX;
             localPlayer->collisionCollider.box.CreateFromCenterSize( glm::vec2( 0, 0 ), glm::vec2( 36, 36 ) );
@@ -83,29 +83,34 @@ namespace atto {
 
         static SpriteResource * sprTile_Stone = core->ResourceGetAndLoadSprite( "res/sprites/stone_tiles/stone_tiles.json" );
         static SpriteResource * sprTile_Grass = core->ResourceGetAndLoadSprite( "res/sprites/grass_tiles/grass_tiles.json" );
+        static SpriteResource * sprTile_Ship = core->ResourceGetAndLoadSprite( "res/ents/tiles/tile_ship.json" );
 
-        tileMap.tileXCount = 50;
-        tileMap.tileYCount = 50;
+
+        tileMap.tileXCount = 8;
+        tileMap.tileYCount = 8;
         tileMap.tiles.SetCount( tileMap.tileXCount * tileMap.tileYCount );
         for( i32 y = 0; y < tileMap.tileYCount; y++ ) {
             for( i32 x = 0; x < tileMap.tileXCount; x++ ) {
-                Editor_MapTilePlace( x, y, sprTile_Grass, Random::Int( 0, 8 ), Random::Int( 0, 8 ), 0 );
+                //Editor_MapTilePlace( x, y, sprTile_Grass, Random::Int( 0, 8 ), Random::Int( 0, 8 ), 0 );
+                Editor_MapTilePlace( x, y, sprTile_Ship, 0, 2, 0 );
             }
         }
 
-        Editor_MapTileFillBorder( sprTile_Stone, 3, 3, SPRITE_TILE_FLAG_NO_WALK );
+        //Editor_MapTileFillBorder( sprTile_Stone, 3, 3, SPRITE_TILE_FLAG_NO_WALK );
+        Editor_MapTileFillBorder( sprTile_Ship, 0, 1, SPRITE_TILE_FLAG_NO_WALK );
 
         for( i32 i = 0; i < 7; i++ ) {
-            SpawnEntity( core, EntityType::Make( EntityType::ENEMY_BOT_DRONE ), glm::vec2( 25 * 32, 25 * 32 ) );
+            SpawnEntity( core, EntityType::Make( EntityType::ENEMY_BOT_DRONE ), player1SpawnLocation );
         }
 
         isStarting = false;
     }
 
-    void MapHost::UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags ) {
+    void Map::UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags ) {
         static TextureResource * sprUiPanel             = core->ResourceGetAndCreateTexture( "res/sprites/ui_ability_panel.png", false, false );
         static TextureResource * sprCharDroneSelection  = core->ResourceGetAndCreateTexture( "res/sprites/char_drone_selection.png", false, false );
         static TextureResource * sprParticleSingleWhite = core->ResourceGetAndCreateTexture( "res/sprites/particle_single_white_1x1.png", false, false );
+        static TextureResource * sprTileTest            = core->ResourceGetAndCreateTexture( "res/ents/Tile01.png", false, false );
 
         static SpriteResource * sprPlayerGun = core->ResourceGetAndCreateSprite( "res/ents/player/gun.json", 1, 32, 32, 0 );
         static SpriteResource * sprPlayerBullet = core->ResourceGetAndCreateSprite( "res/ents/player/bullet.json", 1, 8, 8, 0 );
@@ -115,8 +120,9 @@ namespace atto {
         const f32 soundMinDist = 400;
         const f32 soundMaxDist = 10000;
         static AudioResource * sndCloseExplody1     = core->ResourceGetAndCreateAudio( "res/sounds/tomwinandysfx_explosions_volume_i_closeexplosion_01.wav", true, true, soundMinDist, soundMaxDist );
-        static AudioResource * sndCloseExplody2     = core->ResourceGetAndCreateAudio( "res/sounds/tomwinandysfx_explosions_volume_i_closeexplosion_01.wav", true, true, soundMinDist, soundMaxDist );
+        static AudioResource * sndCloseExplody2     = core->ResourceGetAndCreateAudio( "res/sounds/TomWinandySFX_Explosions Volume I_CloseExplosion_06.wav", true, true, soundMinDist, soundMaxDist );
         static FontHandle fontHandle                = core->ResourceGetFont( "default" );
+
 
         if( isMp == true ) {
             if( core->NetworkIsConnected() == true ) {
@@ -130,7 +136,7 @@ namespace atto {
                             Entity * ent = entityPool.Get( handle );
                             if( ent != nullptr ) {
                                 ent->pos = NetworkMessagePop<glm::vec2>( msg, offset );
-                                ent->vel = NetworkMessagePop<glm::vec2>( msg, offset );
+                                ent->ori = NetworkMessagePop<f32>( msg, offset );
                             }
                             else {
                                 core->LogOutput( LogLevel::WARN, "ENTITY_POS_UPDATE :: Could not find entity" );
@@ -169,7 +175,7 @@ namespace atto {
                                 glm::vec2 pos = NetworkMessagePop<glm::vec2>( msg, offset );
                                 glm::vec2 vel = NetworkMessagePop<glm::vec2>( msg, offset );
                                 i32 netId = NetworkMessagePop<i32>( msg, offset );
-                                if( isAuthority == true ) {
+                                if( isAuthority == true ) { // Peer requesting spawn
                                     ent = SpawnEntitySim( core, type, pos, vel );
                                     NetworkMessage & reply = *core->MemoryAllocateTransient< NetworkMessage >();
                                     reply.type = NetworkMessageType::ENTITY_SPAWN;
@@ -177,15 +183,15 @@ namespace atto {
                                     NetworkMessagePush( reply, (i32)type );
                                     NetworkMessagePush( reply, pos );
                                     NetworkMessagePush( reply, vel );
-                                    NetworkMessagePush( reply, 0 );
+                                    NetworkMessagePush( reply, netId );
                                     core->NetworkSend( reply );
                                 }
                                 else {
-                                    if( netId == 0 ) {
+                                    if( netId == 0 ) { // Host directed spawned
                                         SpawnEntitySim( core, type, pos, vel );
                                     }
-                                    else {
-                                        SpawnEntityResolve( core, type, pos, vel, netId );
+                                    else { // Reply to peer spawn request.
+                                        SpawnEntityResolve( core, netId );
                                     }
                                 }
                             }
@@ -199,7 +205,38 @@ namespace atto {
                             EntityHandle handle = NetworkMessagePop<EntityHandle>( msg, offset );
                             Entity * ent = entityPool.Get( handle );
                             if( ent != nullptr ) {
-                                DestroyEntity( core, ent );
+                                i32 netId = NetworkMessagePop<i32>( msg, offset );
+                                if( isAuthority == true ) { // Peer requesting destruction
+                                    NetworkMessage & reply = *core->MemoryAllocateTransient< NetworkMessage >();
+                                    reply.type = NetworkMessageType::ENTITY_DESTROY;
+                                    NetworkMessagePush( msg, ent->handle );
+                                    NetworkMessagePush( msg, netId );
+                                    core->NetworkSend( msg );
+
+                                    DestroyEntitySim( core, ent );
+                                }
+                                else {
+                                    if( netId == 0 ) { // Host directed destructions
+                                        DestroyEntitySim( core, ent );
+                                    }
+                                    else { // Reply to peer destruction
+                                        DestroyEntityResolve( core,  netId );
+                                    }
+                                }
+                            }
+                        } break;
+                        case NetworkMessageType::ENTITY_PLAYER_UPDATE:
+                        {
+                            i32 offset = 0;
+                            EntityHandle handle = NetworkMessagePop<EntityHandle>( msg, offset );
+                            Entity * ent = entityPool.Get( handle );
+                            if( ent != nullptr ) {
+                                glm::vec2 pos = NetworkMessagePop<glm::vec2>( msg, offset );
+                                f32 gunOri = NetworkMessagePop<f32>( msg, offset );
+                                f32 gunDir = NetworkMessagePop<f32>( msg, offset );
+                                ent->pos = pos;
+                                ent->playerStuff.weaponOri = gunOri;
+                                ent->playerStuff.weaponDir = gunDir;
                             }
                         } break;
                         case NetworkMessageType::ENTITY_RPC_UNIT_TAKE_DAMAGE:
@@ -209,16 +246,22 @@ namespace atto {
                             Entity * ent = entityPool.Get( handle );
                             if( ent != nullptr ) {
                                 i32 damage = NetworkMessagePop<i32>( msg, offset );
-                                ent->Unit_TakeDamage( core, false, damage );
+                                Unit_TakeDamageSim( core, ent, damage );
                             }
                             else {
-                                core->LogOutput( LogLevel::ERR, "ENTITY_RPC_UNIT_TAKE_DAMAGE :: Could not find entity" );
+                                core->LogOutput( LogLevel::WARN, "ENTITY_RPC_UNIT_TAKE_DAMAGE :: Could not find entity" );
                             }
                         } break;
                     }
                 }
             }
+        }
+        
 
+        EntList & entities = *core->MemoryAllocateTransient<EntList>();
+        entityPool.GatherActiveObjs( entities );
+
+        if( isMp == true ) {
             const f32 tickTime = 0.016f; // 60z
             static f32 dtAccumulator = 0.0f;
             dtAccumulator += dt;
@@ -226,11 +269,27 @@ namespace atto {
                 dtAccumulator = 0.0f;
                 NetworkMessage & msg = *core->MemoryAllocateTransient< NetworkMessage >();
                 msg.isUDP = true;
-                msg.type = NetworkMessageType::ENTITY_POS_UPDATE;
+                msg.type = NetworkMessageType::ENTITY_PLAYER_UPDATE;
                 NetworkMessagePush( msg, localPlayer->handle );
                 NetworkMessagePush( msg, localPlayer->pos );
-                NetworkMessagePush( msg, localPlayer->vel );
+                NetworkMessagePush( msg, localPlayer->playerStuff.weaponOri );
+                NetworkMessagePush( msg, localPlayer->playerStuff.weaponDir );
                 core->NetworkSend( msg );
+
+                if( isAuthority == true ) {
+                    const i32 entityCount = entities.GetCount();
+                    for( i32 entityIndexA = 0; entityIndexA < entityCount; entityIndexA++ ) {
+                        Entity * ent = entities[ entityIndexA ];
+                        if( ent->netStreamer == true ) {
+                            ZeroStruct( msg );
+                            msg.type = NetworkMessageType::ENTITY_POS_UPDATE;
+                            NetworkMessagePush( msg, ent->handle );
+                            NetworkMessagePush( msg, ent->pos );
+                            NetworkMessagePush( msg, ent->ori );
+                            core->NetworkSend( msg );
+                        }
+                    }
+                }
             }
         }
 
@@ -238,8 +297,10 @@ namespace atto {
         DrawContext * uiDrawContext = core->RenderGetDrawContext( 1 );
         DrawContext * debugDrawContext = core->RenderGetDrawContext( 2 );
 
-        EntList & entities = *core->MemoryAllocateTransient<EntList>();
-        entityPool.GatherActiveObjs( entities );
+        const i32 temporyEntitiesCount = temporySpawningEntities.GetCount();
+        for( i32 i = 0; i < temporyEntitiesCount; i++ ) {
+            entities.Add( temporySpawningEntities.Get( i ) );
+        }
 
         //localCameraPos = ent->pos;
         const glm::vec2 camMin = localCameraPos - spriteDrawContext->GetCameraDims() / 2.0f;
@@ -247,10 +308,10 @@ namespace atto {
         const glm::vec2 worldMin = glm::vec2( 0, 0 );
         const glm::vec2 worldMax = glm::vec2( tileMap.tileXCount * 32, tileMap.tileYCount * 32 );
 
-        if( camMin.x < worldMin.x ) { localCameraPos.x = spriteDrawContext->GetCameraDims().x / 2.0f; }
-        if( camMin.y < worldMin.y ) { localCameraPos.y = spriteDrawContext->GetCameraDims().y / 2.0f; }
-        if( camMax.x > worldMax.x ) { localCameraPos.x = worldMax.x - spriteDrawContext->GetCameraDims().x / 2.0f; }
-        if( camMax.y > worldMax.y ) { localCameraPos.y = worldMax.y - spriteDrawContext->GetCameraDims().y / 2.0f; }
+        //if( camMin.x < worldMin.x ) { localCameraPos.x = spriteDrawContext->GetCameraDims().x / 2.0f; }
+        //if( camMin.y < worldMin.y ) { localCameraPos.y = spriteDrawContext->GetCameraDims().y / 2.0f; }
+        //if( camMax.x > worldMax.x ) { localCameraPos.x = worldMax.x - spriteDrawContext->GetCameraDims().x / 2.0f; }
+        //if( camMax.y > worldMax.y ) { localCameraPos.y = worldMax.y - spriteDrawContext->GetCameraDims().y / 2.0f; }
 
         spriteDrawContext->SetCameraPos( localCameraPos - spriteDrawContext->GetCameraDims() / 2.0f );
         debugDrawContext->SetCameraPos( localCameraPos - spriteDrawContext->GetCameraDims() / 2.0f );
@@ -271,6 +332,8 @@ namespace atto {
             }
         }
 
+        //spriteDrawContext->DrawTexture( sprTileTest, glm::vec2( 25 * 32, 25 * 32 ) );
+
 
         // @HACK:
         if( dt > 0.5f ) {
@@ -281,7 +344,7 @@ namespace atto {
         spawnTimer += dt;
         if( spawnTimer > 5.0f && isMp && isAuthority ) {
             spawnTimer = 0.0f;
-            SpawnEntity( core, EntityType::Make( EntityType::ENEMY_BOT_DRONE ), glm::vec2( 25 * 32, 25 * 32 ) );
+            SpawnEntity( core, EntityType::Make( EntityType::ENEMY_BOT_DRONE ), player1SpawnLocation );
         }
 
         const i32 entityCount = entities.GetCount();
@@ -309,25 +372,19 @@ namespace atto {
 
             glm::vec4 colorMultiplier = glm::vec4( 1, 1, 1, 1 );
 
-            ent->acc.x -= ent->vel.x * ent->resistance;
-            ent->acc.y -= ent->vel.y * ent->resistance;
-            ent->vel += ent->acc * dt;
-            ent->pos += ent->vel * dt;
-
-            ent->acc = glm::vec2( 0.0 );
-
             glm::vec2 drawPos = ent->netStreamed ? ent->netVisualPos : ent->pos;
             if( ent->spriteAnimator.sprite != nullptr ) {
                 spriteDrawContext->DrawSprite( ent->spriteAnimator.sprite, ent->spriteAnimator.frameIndex, drawPos, ent->ori, glm::vec2( ent->facingDir, 1.0f ), colorMultiplier );
             }
 
+            ent->acc = glm::vec2( 0.0 );
+
             switch( ent->type ) {
                 case EntityType::PLAYER:
                 {
+                    PlayerStuff & player = ent->playerStuff;
+
                     if( ent->playerNumber == localPlayerNumber ) {
-
-                        PlayerStuff & player = ent->playerStuff;
-
                         const f32 playerSpeed = 2500.0f / 2.0f;
 
                         bool getInput = true;
@@ -350,6 +407,11 @@ namespace atto {
                                 ent->acc = glm::normalize( ent->acc ) * playerSpeed;
                             }
                         }
+
+                        ent->acc.x -= ent->vel.x * ent->resistance;
+                        ent->acc.y -= ent->vel.y * ent->resistance;
+                        ent->vel += ent->acc * dt;
+                        ent->pos += ent->vel * dt;
 
                         //debugDrawContext->DrawRect( ent->pos, glm::vec2( 5, 5 ), 0.0f, glm::vec4( 0.2f, 0.8f, 0.2f, 0.5f ) );
 
@@ -394,9 +456,8 @@ namespace atto {
                         if( player.weaponTimer == 0.0f && core->InputMouseButtonDown( MOUSE_BUTTON_1 ) == true ) {
                             player.weaponTimer += 0.1f;
                             player.weaponPos = player.weaponPos + dir * 2.0f;
-                            
+
                             Entity * b = SpawnEntity( core, EntityType::Make( EntityType::BULLET ), player.weaponPos - dir * 10.0f, -dir * 250.0f );
-                            
                         }
 
 
@@ -405,26 +466,22 @@ namespace atto {
 
                         f32 angle = glm::atan( dir.x, dir.y ) + halfPi;
                         if( angle >= -halfPi && angle <= halfPi ) {
-                            spriteDrawContext->DrawSprite( sprPlayerGun, 0, player.weaponPos, angle, glm::vec2( 1.0f, 1.0f ) );
+                            player.weaponOri = angle;
+                            player.weaponDir = 1.0f;
                         }
                         else {
-                            spriteDrawContext->DrawSprite( sprPlayerGun, 0, player.weaponPos, angle - pi, glm::vec2( -1.0f, 1.0f ) );
+                            player.weaponOri = angle - pi;
+                            player.weaponDir = -1.0f;
+                            
+                        }
+                    }
+                    else {
+                        if( isMp ) {
+                            player.weaponPos = ent->netVisualPos;
                         }
                     }
 
-                    //{
-                    //    ent->spriteAnimator.sprite = sprWarriorStab;
-                    //    static int frameIndex = 0;
-                    //    if( core->InputKeyJustPressed( KeyCode::KEY_CODE_Z ) ) {
-                    //        frameIndex++;
-                    //    }
-                    //    frameIndex = frameIndex % ent->spriteAnimator.sprite->frameCount;
-                    //    spriteDrawContext->DrawSprite( ent->spriteAnimator.sprite, frameIndex, ent->pos, ent->ori, glm::vec2( ent->facingDir, 1.0f ) );
-                    //}
-
-                    //SmallString vv = StringFormat::Small( "%f", glm::length( ent->vel ) );
-                    //spriteDrawContext->DrawText2D( fontHandle, glm::vec2( 200 ), 32, vv.GetCStr() );
-
+                    spriteDrawContext->DrawSprite( sprPlayerGun, 0, player.weaponPos, player.weaponOri, glm::vec2( player.weaponDir, 1.0f ) );
                 } break;
                 case EntityType::ENEMY_BOT_DRONE:
                 {
@@ -542,14 +599,12 @@ namespace atto {
                         }
                     }
 
-                    if( isMp == true && isAuthority == true ) {
-                        NetworkMessage & msg = *core->MemoryAllocateTransient< NetworkMessage >();
-                        msg.type = NetworkMessageType::ENTITY_POS_UPDATE;
-                        NetworkMessagePush( msg, ent->handle );
-                        NetworkMessagePush( msg, ent->pos );
-                        NetworkMessagePush( msg, ent->vel );
-                        core->NetworkSend( msg );
-                    }
+                    ent->acc.x -= ent->vel.x * ent->resistance;
+                    ent->acc.y -= ent->vel.y * ent->resistance;
+                    ent->vel += ent->acc * dt;
+                    ent->pos += ent->vel * dt;
+
+
 
                     // Debug
                     //debugDrawContext->DrawRect( ent->pos, glm::vec2( alertRad ), 0.0f, glm::vec4( 0.2f, 0.2f, 0.75f, 0.76f ) );
@@ -557,6 +612,11 @@ namespace atto {
                 } break;
                 case EntityType::BULLET:
                 {
+                    ent->acc.x -= ent->vel.x * ent->resistance;
+                    ent->acc.y -= ent->vel.y * ent->resistance;
+                    ent->vel += ent->acc * dt;
+                    ent->pos += ent->vel * dt;
+                    
                     for( int otherEntityIndex = 0; otherEntityIndex < entityCount; otherEntityIndex++ ) {
                         Entity * enemy = entities[ otherEntityIndex ];
                         if( enemy->type == EntityType::ENEMY_BOT_DRONE ) {
@@ -567,11 +627,12 @@ namespace atto {
                             Collider2D bulletCollider = ent->GetWorldCollisionCollider();
                             Collider2D enemyCollider = enemy->GetWorldCollisionCollider();
                             if( bulletCollider.Intersects( enemyCollider ) ) {
+                                Unit_TakeDamage( core, enemy, 50 );
                                 DestroyEntity( core, ent );
-                                enemy->Unit_TakeDamage( core, true, 50 );
                             }
                         }
                     }
+                    
                 } break;
             }
          
@@ -601,13 +662,6 @@ namespace atto {
             }
         }
 
-        //spriteDrawContext->DrawSprite( sprCharge, 1, mousePosWorld );
-
-        //SmallString s =StringFormat::Small( "d=%d", (i32)core->InputKeyDown( KeyCode::KEY_CODE_D ) );
-        //spriteDrawContext->DrawText2D( fontHandle, glm::vec2( 128, 128 ), 32, s.GetCStr() );
-        //SmallString ss = StringFormat::Small( "a=%d", (i32)core->InputKeyDown( KeyCode::KEY_CODE_A ) );
-        //spriteDrawContext->DrawText2D( fontHandle, glm::vec2( 128, 168 ), 32, ss.GetCStr() );
-
         SmallString s = StringFormat::Small( "ping=%d", (i32)core->NetworkGetPing() );
         spriteDrawContext->DrawText2D( fontHandle, glm::vec2( 128, 128 ), 32, s.GetCStr() );
         s = StringFormat::Small( "dt=%f", dt );
@@ -618,13 +672,9 @@ namespace atto {
         core->RenderSubmit( spriteDrawContext, true );
         core->RenderSubmit( uiDrawContext, false );
         core->RenderSubmit( debugDrawContext, false );
-
-
-        //spriteDrawContext->DrawText2D( fontHandle, glm::vec2( 128, 128 ), 32, "Hello World" );
-        //spriteDrawContext->DrawText2D( fontHandle, glm::vec2( 128, 128 ), 32, startParms.localPlayerNumber == 1 ? "1" : "2" );
     }
 
-    void MapHost::SpawnEntitySetup( Core * core, Entity * entity, EntityType type, glm::vec2 pos, glm::vec2 vel ) {
+    void Map::SetupEntity( Core * core, Entity * entity, EntityType type, glm::vec2 pos, glm::vec2 vel ) {
         entity->active = true;
         entity->type = type;
         entity->facingDir = 1.0f;
@@ -646,7 +696,9 @@ namespace atto {
                 entity->maxHealth = 100;
                 entity->currentHealth = entity->maxHealth;
                 entity->currentHealth = entity->maxHealth;
+                entity->netStreamer = true;
                 static SpriteResource * spriteResource = core->ResourceGetAndCreateSprite( "res/ents/char_bot_drone/bot_drone_smol.json", 7, 16, 16, 10 );
+                //static SpriteResource * spriteResource = core->ResourceGetAndCreateSprite( "res/ents/char_bot_drone/char_drone_01.json", 1, 32, 32, 1 );
                 entity->spriteAnimator.SetSpriteIfDifferent( core, spriteResource, false );
             } break;
             case EntityType::BULLET:
@@ -660,31 +712,23 @@ namespace atto {
         }
     }
 
-    Entity * MapHost::SpawnEntitySim( Core * core, EntityType type, glm::vec2 pos, glm::vec2 vel ) {
+    Entity * Map::SpawnEntitySim( Core * core, EntityType type, glm::vec2 pos, glm::vec2 vel ) {
         EntityHandle handle = {};
         Entity * entity = entityPool.Add( handle );
         AssertMsg( entity != nullptr, "Spawn Entity is nullptr" );
         if( entity != nullptr ) {
             ZeroStructPtr( entity );
             entity->handle = handle;
-            SpawnEntitySetup( core, entity, type, pos, vel );
+            SetupEntity( core, entity, type, pos, vel );
         }
 
         return entity;
     }
 
-    Entity * MapHost::SpawnEntityTemp( Core * core, EntityType type, glm::vec2 pos, glm::vec2 vel ) {
-        Entity * entity = &temporyEntities.AddEmpty();
-        entity->netTempId = netTempId;
-        SpawnEntitySetup( core, entity, type, pos, vel );
-        netTempId++;
-        return entity;
-    }
-
-    Entity * MapHost::SpawnEntityResolve( Core * core, EntityType type, glm::vec2 pos, glm::vec2 vel, i32 netId ) {
-        const i32 tempEntCount = temporyEntities.GetCount();
+    Entity * Map::SpawnEntityResolve( Core * core, i32 netId ) {
+        const i32 tempEntCount = temporySpawningEntities.GetCount();
         for( i32 i = 0; i < tempEntCount; i++ ) {
-            Entity * ent = &temporyEntities[ i ];
+            Entity * ent = &temporySpawningEntities[ i ];
             if( ent->netTempId == netId ) {
                 EntityHandle handle = {};
                 Entity * entity = entityPool.Add( handle );
@@ -693,7 +737,7 @@ namespace atto {
                     memcpy( entity, ent, sizeof( Entity ) );
                     entity->handle = handle;
                     entity->netTempId = 0;
-                    temporyEntities.RemoveIndex( i );
+                    temporySpawningEntities.RemoveIndex( i );
                     return entity;
                 }
                 return nullptr;
@@ -702,7 +746,7 @@ namespace atto {
         return nullptr;
     }
     
-    Entity * MapHost::SpawnEntity( Core * core, EntityType type, glm::vec2 pos, glm::vec2 vel ) {
+    Entity * Map::SpawnEntity( Core * core, EntityType type, glm::vec2 pos, glm::vec2 vel ) {
         if( isStarting == true ) {
             return SpawnEntitySim( core, type, pos, vel );
         }
@@ -722,35 +766,116 @@ namespace atto {
             }
         }
         else {
-            entity = SpawnEntityTemp( core, type, pos, vel );
-            if( isMp == true ) {
-                NetworkMessage & msg = *core->MemoryAllocateTransient< NetworkMessage >();
-                msg.type = NetworkMessageType::ENTITY_SPAWN;
-                NetworkMessagePush( msg, entity->handle );
-                NetworkMessagePush( msg, (i32)entity->type );
-                NetworkMessagePush( msg, pos );
-                NetworkMessagePush( msg, vel );
-                NetworkMessagePush( msg, entity->netTempId );
-                core->NetworkSend( msg );
-            }
+            Assert( isMp == true );
+
+            entity = &temporySpawningEntities.AddEmpty();
+            entity->netTempId = netTempId++;
+            SetupEntity( core, entity, type, pos, vel );
+
+            NetworkMessage & msg = *core->MemoryAllocateTransient< NetworkMessage >();
+            msg.type = NetworkMessageType::ENTITY_SPAWN;
+            NetworkMessagePush( msg, entity->handle );
+            NetworkMessagePush( msg, (i32)entity->type );
+            NetworkMessagePush( msg, pos );
+            NetworkMessagePush( msg, vel );
+            NetworkMessagePush( msg, entity->netTempId );
+            core->NetworkSend( msg );
         }
 
         return entity;
     }
 
-    void MapHost::DestroyEntity( Core * core, Entity * entity ) {
+    void Map::DestroyEntitySim( Core * core, Entity * entity ) {
         if( entity != nullptr ) {
             entityPool.Remove( entity->handle );
-            if( isMp == true && isAuthority == true ) {
-                NetworkMessage & msg = *core->MemoryAllocateTransient< NetworkMessage >();
-                msg.type = NetworkMessageType::ENTITY_DESTROY;
-                NetworkMessagePush( msg, entity->handle );
-                core->NetworkSend( msg );
-            }
         }
     }
 
-    Entity * MapHost::ClosestPlayerTo( glm::vec2 p, f32 & dist ) {
+    void Map::DestroyEntityResolve( Core * core, i32 netId ) {
+        const i32 tempEntCount = temporyDestroyingEntities.GetCount();
+        for( i32 i = 0; i < tempEntCount; i++ ) {
+            if( temporyDestroyingEntities[ i ].netTempId == netId ) {
+                Entity * entity = entityPool.Get( temporyDestroyingEntities[ i ].handle );
+                DestroyEntitySim( core, entity );
+                temporyDestroyingEntities.RemoveIndex( i );
+                return;
+            };
+        }
+    }
+
+    void Map::DestroyEntity( Core * core, Entity * entity ) {
+        if( isAuthority == true ) {
+            if( isMp == true ) {
+                NetworkMessage & msg = *core->MemoryAllocateTransient< NetworkMessage >();
+                msg.type = NetworkMessageType::ENTITY_DESTROY;
+                NetworkMessagePush( msg, entity->handle );
+                NetworkMessagePush( msg, 0 );
+                core->NetworkSend( msg );
+            }
+
+            DestroyEntitySim( core, entity );
+        }
+        else {
+            Assert( isMp == true );
+            entity->active = false;
+            entity = temporyDestroyingEntities.Add_MemCpyPtr( entity );
+            entity->netTempId = netTempId++;
+
+            NetworkMessage & msg = *core->MemoryAllocateTransient< NetworkMessage >();
+            msg.type = NetworkMessageType::ENTITY_DESTROY;
+            NetworkMessagePush( msg, entity->handle );
+            NetworkMessagePush( msg, entity->netTempId );
+            core->NetworkSend( msg );
+        }
+    }
+
+    void Map::Unit_TakeDamageSim( Core * core, Entity * ent, i32 damage ) {
+        ent->currentHealth -= damage;
+
+        if( ent->currentHealth < 0 ) {
+            ent->currentHealth = 0;
+            ent->unitStuff.state = UNIT_STATE_EXPLODING;
+            ent->spriteAnimator.frameDelaySkip = Random::Int( 3 );
+            return;
+        }
+
+        ent->unitStuff.state = UNIT_STATE_TAKING_DAMAGE;
+        ent->unitStuff.takingDamageTimer = 0.1f;
+
+        ZeroStruct( ent->particleSystem );
+        ent->particleSystem.count = 10;
+        ent->particleSystem.texture = core->ResourceGetAndCreateTexture( "res/sprites/particle_single_white_1x1.png", false, false );;
+        ent->particleSystem.lifeTime = 0.5f;
+        ent->particleSystem.scaleMin = 1;
+        ent->particleSystem.scaleMax = 2;
+        ent->particleSystem.velMin = glm::vec2( -100.0f );
+        ent->particleSystem.velMax = glm::vec2( 100.0f );
+        ent->particleSystem.oneShot = true;
+
+        ParticleSystem & part = ent->particleSystem;
+        ent->particleSystem.emitting = true;
+        for( i32 partIndex = 0; partIndex < ent->particleSystem.count; partIndex++ ) {
+            Particle & p = part.particles[ partIndex ];
+            p.pos = ent->pos;
+            p.lifeTime = part.lifeTime;
+            p.scale = Random::Float( part.scaleMin, part.scaleMax );
+            p.vel = Random::Vec2( part.velMin, part.velMax );
+        }
+    }
+
+    void Map::Unit_TakeDamage( Core * core, Entity * ent, i32 damage ) {
+        if( isMp == true ) {
+            NetworkMessage & msg = *core->MemoryAllocateTransient< NetworkMessage >();
+            msg.type = NetworkMessageType::ENTITY_RPC_UNIT_TAKE_DAMAGE;
+            NetworkMessagePush( msg, ent->handle );
+            NetworkMessagePush( msg, damage );
+            core->NetworkSend( msg );
+        }
+
+        Unit_TakeDamageSim( core, ent, damage );
+    }
+
+    Entity * Map::ClosestPlayerTo( glm::vec2 p, f32 & dist ) {
         dist = FLT_MAX;
         Entity * closePlayer = nullptr;
         const int playerCount = players.GetCount();
@@ -786,49 +911,6 @@ namespace atto {
         }
 
         return c;
-    }
-
-
-    void Entity::Unit_TakeDamage( Core * core, bool sendPacket, i32 damage ) {
-        currentHealth -= damage;
-
-        if( currentHealth < 0 ) {
-            currentHealth = 0;
-            unitStuff.state = UNIT_STATE_EXPLODING;
-            spriteAnimator.frameDelaySkip = Random::Int( 3 );
-            return;
-        }
-
-        unitStuff.state = UNIT_STATE_TAKING_DAMAGE;
-        unitStuff.takingDamageTimer = 0.1f;
-
-        ZeroStruct( particleSystem );
-        particleSystem.count = 10;
-        particleSystem.texture = core->ResourceGetAndCreateTexture( "res/sprites/particle_single_white_1x1.png", false, false );;
-        particleSystem.lifeTime = 0.5f;
-        particleSystem.scaleMin = 1;
-        particleSystem.scaleMax = 2;
-        particleSystem.velMin = glm::vec2( -100.0f );
-        particleSystem.velMax = glm::vec2( 100.0f );
-        particleSystem.oneShot = true;
-
-        ParticleSystem & part = particleSystem;
-        particleSystem.emitting = true;
-        for( i32 partIndex = 0; partIndex < particleSystem.count; partIndex++ ) {
-            Particle & p = part.particles[ partIndex ];
-            p.pos = pos;
-            p.lifeTime = part.lifeTime;
-            p.scale = Random::Float( part.scaleMin, part.scaleMax );
-            p.vel = Random::Vec2( part.velMin, part.velMax );
-        }
-
-        if( sendPacket == true ) {
-            NetworkMessage & msg = *core->MemoryAllocateTransient< NetworkMessage >();
-            msg.type = NetworkMessageType::ENTITY_RPC_UNIT_TAKE_DAMAGE;
-            NetworkMessagePush( msg, handle );
-            NetworkMessagePush( msg, damage );
-            core->NetworkSend( msg );
-        }
     }
 
     Collider2D Entity::GetWorldCollisionCollider() const {
@@ -925,7 +1007,7 @@ namespace atto {
 
 namespace atto {
 
-    void MapHost::Editor_MapTilePlace( i32 xIndex, i32 yIndex, SpriteResource * sprite, i32 spriteX, i32 spriteY, i32 flags ) {
+    void Map::Editor_MapTilePlace( i32 xIndex, i32 yIndex, SpriteResource * sprite, i32 spriteX, i32 spriteY, i32 flags ) {
         SpriteTile tile = {};
         tile.xIndex = xIndex;
         tile.yIndex = yIndex;
@@ -942,7 +1024,7 @@ namespace atto {
         tileMap.tiles[ tile.flatIndex ] = tile;
     }
 
-    void MapHost::Editor_MapTileFillBorder( SpriteResource * sprite, i32 spriteX, i32 spriteY, i32 flags ) {
+    void Map::Editor_MapTileFillBorder( SpriteResource * sprite, i32 spriteX, i32 spriteY, i32 flags ) {
         for( i32 yIndex = 0; yIndex < tileMap.tileYCount; yIndex++ ) {
             for( i32 xIndex = 0; xIndex < tileMap.tileXCount; xIndex++ ) {
                 if( xIndex == 0 || xIndex == tileMap.tileXCount - 1 || yIndex == 0 || yIndex == tileMap.tileYCount - 1 ) {
@@ -951,6 +1033,9 @@ namespace atto {
             }
         }
     }
+
+
+
 
 
 }

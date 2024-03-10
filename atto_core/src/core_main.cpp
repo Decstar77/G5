@@ -14,6 +14,20 @@ using namespace atto;
 
 /*
 IDEAS:
+
+    BIOOOOMS:
+        - Ship:
+            Enemies:
+                Healer/Shield drones
+                Kamikazy drones
+                Wall turret
+                Ground turret
+                Rover turret
+                Droikedia
+                Battle droid
+
+        
+
 FUNNY:
 ACHIVEMTN: You've been granted a random perk: Dead.
 ACHIVEMTN: Hey, real quick, whats the radius on that?: "Yes."

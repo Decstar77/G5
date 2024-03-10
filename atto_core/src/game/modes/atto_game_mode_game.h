@@ -5,7 +5,7 @@
 namespace atto {
     constexpr static int    MAX_ENTITIES = 1024;
 
-    class MapHost;
+    class Map;
     struct Entity;
     struct MapFileEntity;
 
@@ -37,7 +37,9 @@ namespace atto {
         PlayerState state;
 
         f32 weaponTimer;
-        glm::vec2 weaponPos;
+        f32         weaponOri;
+        f32         weaponDir;
+        glm::vec2   weaponPos;
     };
 
     enum UnitState {
@@ -107,7 +109,7 @@ namespace atto {
         EntityHandle                handle;
         EntityType                  type;
 
-        MapHost *                  map;
+        Map *                  map;
 
         SmallString                 name;
         i32                         playerNumber;
@@ -125,6 +127,7 @@ namespace atto {
         i32                         currentHealth;
 
         bool                        netStreamed;
+        bool                        netStreamer;
         glm::vec2                   netVisualPos;
         glm::vec2                   netDesiredVel;
         i32                         netTempId;
@@ -144,8 +147,6 @@ namespace atto {
         // The stuffs
         PlayerStuff             playerStuff;
         UnitStuff               unitStuff;
-
-        void                    Unit_TakeDamage( Core * core, bool sendPacket, i32 damage );
 
         inline Collider2D       GetWorldCollisionCollider() const;
         inline Collider2D       GetWorldSelectionCollider() const;
@@ -198,7 +199,7 @@ namespace atto {
         
     };
 
-    class MapHost {
+    class Map {
     public:
         /*
             Stored data
@@ -210,7 +211,9 @@ namespace atto {
         FixedObjectPool< Entity, MAX_ENTITIES > entityPool = {};
         SpriteTileMap                           tileMap = {};
 
-        FixedList< Entity, 512 >                temporyEntities = {};
+        i32                                     netTempId = 1;
+        FixedList< Entity, 512 >                temporySpawningEntities = {};
+        FixedList< Entity, 512 >                temporyDestroyingEntities = {};
 
         /*
             Runtime data
@@ -222,7 +225,7 @@ namespace atto {
         bool                                    isStarting = false;
         bool                                    isMp = false;
         bool                                    isAuthority = false;
-        i32                                     netTempId = 1;
+        
 
         i32                                     localPlayerNumber = -1;
         i32                                     otherPlayerNumber = -1;
@@ -237,12 +240,18 @@ namespace atto {
         void                                    Start( Core * core, const GameStartParams & parms );
         void                                    UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags );
 
-        void                                    SpawnEntitySetup( Core * core, Entity * entity, EntityType type, glm::vec2 pos, glm::vec2 vel );
+        void                                    SetupEntity( Core * core, Entity * entity, EntityType type, glm::vec2 pos, glm::vec2 vel );
+
         Entity *                                SpawnEntitySim( Core * core, EntityType type, glm::vec2 pos, glm::vec2 vel );
-        Entity *                                SpawnEntityTemp( Core * core, EntityType type, glm::vec2 pos, glm::vec2 vel );
-        Entity *                                SpawnEntityResolve( Core * core, EntityType type, glm::vec2 pos, glm::vec2 vel, i32 netId );
+        Entity *                                SpawnEntityResolve( Core * core, i32 netId );
         Entity *                                SpawnEntity( Core * core, EntityType type, glm::vec2 pos, glm::vec2 vel = glm::vec2( 0, 0 ) );
+
+        void                                    DestroyEntitySim( Core * core, Entity * entity );
+        void                                    DestroyEntityResolve( Core * core, i32 netId );
         void                                    DestroyEntity( Core * core, Entity * entity );
+
+        void                                    Unit_TakeDamageSim( Core * core, Entity * ent, i32 damage );
+        void                                    Unit_TakeDamage( Core * core, Entity *ent, i32 damage );
 
         Entity *                                ClosestPlayerTo( glm::vec2 p, f32 & dist );
 
@@ -263,10 +272,10 @@ namespace atto {
         virtual void                    Initialize( Core * core ) override;
         virtual void                    UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags ) override;
         virtual void                    Shutdown( Core * core ) override;
-        virtual MapHost *               GetMap() override { return &map; }
+        virtual Map *               GetMap() override { return &map; }
 
     public:
         GameStartParams                         startParms;
-        MapHost                                     map;
+        Map                                     map;
     };
 }

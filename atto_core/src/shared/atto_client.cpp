@@ -90,7 +90,7 @@ namespace atto {
                 }
 
                 ENetEvent event = {};
-                i32 res = enet_host_service( client, &event, 30 );
+                i32 res = enet_host_service( client, &event, 50 );
 
                 if( res > 0 ) {
                     if( event.type == ENET_EVENT_TYPE_NONE ) {
@@ -142,8 +142,6 @@ namespace atto {
 
                 //ATTOINFO("Enet ping %d", peer->roundTripTime);
             }
-
-            Sleep( 200 );
         }
 
         enet_deinitialize();
