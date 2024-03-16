@@ -160,7 +160,7 @@ namespace atto {
         gladLoadGLLoader( (GLADloadproc)glfwGetProcAddress );
         LogOutput( LogLevel::INFO, "OpenGL %s, GLSL %s", glGetString( GL_VERSION ), glGetString( GL_SHADING_LANGUAGE_VERSION ) );
 
-        RenderSetCamera( 320, 180 );
+        RenderSetCameraDims( 320, 180 );
         //RenderSetCamera( 320 * 1.5f, 180 * 1.5f );
         //RenderSetCamera( 640, 360 );
         //RenderSetCamera( 1280, 720 );
@@ -215,6 +215,7 @@ namespace atto {
     #if ATTO_EDITOR
         EngineImgui::Initialize( window );
         editor = new Editor();
+        editor->Initialize( this );
     #endif
         
         client = new NetClient( this );
@@ -286,7 +287,7 @@ namespace atto {
         return glfwGetTime();
     }
 
-    void WindowsCore::RenderSetCamera( f32 width, f32 height ) {
+    void WindowsCore::RenderSetCameraDims( f32 width, f32 height ) {
         cameraWidth = width;
         cameraHeight = height;
         i32 w = 0;
@@ -301,6 +302,8 @@ namespace atto {
             //glClearColor( 0.2f, 0.5f, 0.2f, 1.0f );
             //glClearColor( 0.1f, 0.1f, 0.2f, 1.0f );
             glClearColor( 0.0f, 0.0f, 0.0f, 1.0f );
+            // Magenta
+            //glClearColor( 1.0f, 0.0f, 1.0f, 1.0f );
             glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
         }
 
@@ -343,6 +346,11 @@ namespace atto {
                 } break;
                 case DrawCommandType::RECT:
                 {
+                    cmd.rect.bl -= dcxt->cameraPos;
+                    cmd.rect.br -= dcxt->cameraPos;
+                    cmd.rect.tr -= dcxt->cameraPos;
+                    cmd.rect.tl -= dcxt->cameraPos;
+
                     f32 vertices[ 6 ][ 2 ] = {
                       { cmd.rect.tl.x, cmd.rect.tl.y, },
                       { cmd.rect.bl.x, cmd.rect.bl.y, },
@@ -367,6 +375,11 @@ namespace atto {
                 } break;
                 case DrawCommandType::LINE2D:
                 {
+                    cmd.line2D.p1 -= dcxt->cameraPos;
+                    cmd.line2D.p2 -= dcxt->cameraPos;
+                    cmd.line2D.p3 -= dcxt->cameraPos;
+                    cmd.line2D.p4 -= dcxt->cameraPos;
+
                     f32 vertices[ 6 ][ 2 ] = {
                          { cmd.line2D.p1.x, cmd.line2D.p1.y, },
                          { cmd.line2D.p2.x, cmd.line2D.p2.y, },
@@ -379,7 +392,7 @@ namespace atto {
 
                     GLEnableAlphaBlending();
                     GLShaderProgramBind( shapeProgram );
-                    GLShaderProgramSetMat4( "p", cmd.line2D.p );
+                    GLShaderProgramSetMat4( "p", cmd.proj );
                     GLShaderProgramSetInt( "mode", 0 );
                     GLShaderProgramSetVec4( "color", cmd.color );
 
@@ -391,6 +404,11 @@ namespace atto {
                 } break;
                 case DrawCommandType::TEXTURE:
                 {
+                    cmd.rect.bl -= dcxt->cameraPos;
+                    cmd.rect.br -= dcxt->cameraPos;
+                    cmd.rect.tr -= dcxt->cameraPos;
+                    cmd.rect.tl -= dcxt->cameraPos;
+
                     Win32TextureResource * texture = (Win32TextureResource *)cmd.texture.textureRes;
                     AssertMsg( texture != nullptr, "Texture resource is null" );
                     /*
@@ -424,6 +442,11 @@ namespace atto {
                 } break;
                 case DrawCommandType::SPRITE:
                 {
+                    cmd.rect.bl -= dcxt->cameraPos;
+                    cmd.rect.br -= dcxt->cameraPos;
+                    cmd.rect.tr -= dcxt->cameraPos;
+                    cmd.rect.tl -= dcxt->cameraPos;
+
                     SpriteResource * spriteRes = cmd.sprite.spriteRes;
                     AssertMsg( spriteRes != nullptr, "Texture resource is null" );
                     Win32TextureResource * texture = (Win32TextureResource *)cmd.sprite.spriteRes->textureResource;

@@ -211,7 +211,7 @@ namespace atto {
         }
 
         virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
-            throw std::logic_error( "The method or operation is not implemented." );
+            ImGui::InputScalar( memberName, ImGuiDataType_U32, (u32 *)obj );
         }
     };
 
@@ -551,6 +551,17 @@ namespace atto {
         static TypeDescriptor_LargeString typeDesc;
         return &typeDesc;
     }
+}
+
+/*
+=====================================================================
+===========================MATH OBJECTS==============================
+=====================================================================
+*/
+
+#include "atto_math.h"
+
+namespace atto {
 
     struct TypeDescriptor_Collider : TypeDescriptor {
         TypeDescriptor_Collider() {
@@ -787,11 +798,12 @@ namespace atto {
 
 /*
 =====================================================================
-===========================GAME OBJECTS =============================
+===========================GAME OBJECTS==============================
 =====================================================================
 */
 
 #include "atto_core.h"
+#include "../game/modes/atto_game_mode_game.h"
 
 namespace atto {
     /*
@@ -969,7 +981,27 @@ namespace atto {
         }
 
         virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
-            ImGui::Text( "This is a sprite" );
+            SpriteResource * spriteResource = *(SpriteResource **)obj;
+            if( spriteResource != nullptr || spriteResource->textureResource != nullptr ) {
+                ImGui::SeparatorText( "Image" );
+                if( ImGui::ImageButton( (void *)(intptr_t)spriteResource->textureResource->handle, ImVec2( (f32)spriteResource->textureResource->width, (f32)spriteResource->textureResource->height ) ) ) {
+                    Core * core = Core::EditorOnly_GetCore();
+                    LargeString resPath = {};
+                    if( core->WindowOpenNativeFileDialog( nullptr, "png", resPath ) == true ) {
+                        spriteResource->textureResource = core->ResourceGetAndCreateTexture( resPath.GetCStr(), false, false );
+                    }
+                }
+            }
+            else {
+                if( ImGui::Button( "No Image" ) ) {
+                    Core * core = Core::EditorOnly_GetCore();
+                    LargeString resPath = {};
+                    if( core->WindowOpenNativeFileDialog( nullptr, "png", resPath ) == true ) {
+                        TextureResource ** tptr = (TextureResource **)obj;
+                        *tptr = core->ResourceGetAndCreateTexture( resPath.GetCStr(), false, false );
+                    }
+                }
+            }
         }
     };
 
@@ -978,7 +1010,5 @@ namespace atto {
         static TypeDescriptor_SpritePtr typeDesc;
         return &typeDesc;
     }
-
-
 }
 

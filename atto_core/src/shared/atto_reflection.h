@@ -1,7 +1,7 @@
 #pragma once
 
 #include "atto_containers.h"
-#include "atto_math.h"
+#include "atto_random.h"
 #include "atto_binary_file.h"
 
 #include <vector>
@@ -183,6 +183,7 @@ namespace atto {
 
     template <typename _type_, i32 cap>
     struct TypeDescriptor_FixedList : TypeDescriptor {
+        static_assert( std::is_trivial<_type_>::value, "Type must be trivial" );
         TypeDescriptor * itemType;
 
         TypeDescriptor_FixedList( _type_ * ) {
@@ -203,11 +204,13 @@ namespace atto {
         virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             FixedList< _type_, cap > * list = ( FixedList< _type_, cap > * )obj;
             list->Clear( true );
+            _type_ * item = new _type_();
             for( const nlohmann::json & jj : j ) {
-                _type_ item = {};
-                itemType->JSON_Read( jj, &item );
-                list->Add( item );
+                ZeroStructPtr( item );
+                itemType->JSON_Read( jj, item );
+                list->Add_MemCpyPtr( item );
             }
+            delete item;
         }
 
         virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
@@ -293,7 +296,18 @@ namespace atto {
         };
 
         virtual void JSON_Read( const nlohmann::json & j, const void * obj ) {
-
+            std::unique_ptr< PoolList > activeItems = std::make_unique<PoolList>();
+            TypeDescriptor * poolListType = TypeResolver<PoolList>::get();
+            poolListType->JSON_Read( j, activeItems.get() );
+            FixedObjectPool<_type_, cap> * pool = ( FixedObjectPool<_type_, cap> * )obj;
+            const i32 count = activeItems->GetCount();
+            for( i32 i = 0; i < count; i++ ) {
+                ObjectHandle<_type_> handle = {};
+                _type_ * newT = pool->Add( handle );
+                _type_ * t = activeItems->Get( i );
+                memcpy( newT, t, sizeof( _type_ ) );
+                newT->handle = handle;
+            }
         };
 
         virtual void Binary_Write( const void * obj, BinaryBlob & f ) {
@@ -319,6 +333,20 @@ namespace atto {
             return &typeDesc;
         }
     };
+
+    template<typename _type_>
+    inline static _type_ ReflEnumFromString( const char * str ) {
+        _type_ type = _type_::Make( (_type_::_enumerated)( 0 ) );
+        auto values = _type_::Values();
+        auto names = _type_::Names();
+        auto count = _type_::_count;
+        for( size_t i = 0; i < count; i++ ) {
+            if( strcmp( str, names[ i ] ) == 0 ) {
+                type = (_type_::_enumerated)values[ i ];
+            }
+        }
+        return type;
+    }
 
 #define MAP(macro, ...) \
     IDENTITY( \
@@ -366,10 +394,10 @@ namespace atto {
 #define MAP32(m, x, ...) m(x) IDENTITY(MAP31(m, __VA_ARGS__))
 #define MAP33(m, x, ...) m(x) IDENTITY(MAP32(m, __VA_ARGS__))
 
-#define EVALUATE_COUNT(_1, _2, _3, _4, _5, _6, _7, _8, count, ...) count
+#define EVALUATE_COUNT(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, count, ...) count
 
 #define COUNT(...) \
-    IDENTITY(EVALUATE_COUNT(__VA_ARGS__, 8, 7, 6, 5, 4, 3, 2, 1))
+    IDENTITY(EVALUATE_COUNT(__VA_ARGS__, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1))
 
 
     struct ignore_assign {
@@ -458,11 +486,18 @@ struct EnumName {                                                               
       }                                                                                                     \
                                                                                                             \
       virtual void JSON_Read( const nlohmann::json & j, const void * obj ) {                                \
-                                                                                                            \
-      }                                                                                                     \
+            EnumName * en = (EnumName *)obj;                                                                \
+            auto names = EnumName::Names();                                                                 \
+            for (size_t index = 0; index < EnumName::_count; ++index) {                                     \
+                if ( names[ index ] == j[ name.GetCStr() ]) {                                               \
+                    *en = EnumName::Make( (EnumName::_enumerated)EnumName::Values()[index] );               \
+                    return;                                                                                 \
+                }                                                                                           \
+            }                                                                                               \
+        }                                                                                                   \
                                                                                                             \
       virtual void Imgui_Draw( const void * obj, const char * memberName ) {                                \
-                                                                                                            \
+            ImGui::Text( "%s: %s", memberName, ((EnumName *)obj)->ToString() );                             \
       };                                                                                                    \
     };                                                                                                      \
                                                                                                             \

@@ -720,7 +720,7 @@ namespace atto {
 
         FixedStringBase<SizeBytes> & operator=( const char * other );
 
-        bool                                operator==( const char * other );
+        bool                                operator==( const char * other ) const;
         bool                                operator==( const FixedStringBase<SizeBytes> & other ) const;
         char & operator[]( const i32 & index );
         char                                operator[]( const i32 & index ) const;
@@ -1184,7 +1184,7 @@ namespace atto {
     }
 
     template<u64 SizeBytes>
-    bool FixedStringBase<SizeBytes>::operator==( const char * other ) {
+    bool FixedStringBase<SizeBytes>::operator==( const char * other ) const {
         i32 index = 0;
         const i32 l = length;
         const i32 o = static_cast<i32>( StringHash::ConstStrLen( other ) );

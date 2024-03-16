@@ -10,23 +10,61 @@ using namespace atto;
 * @TODO: Live resource reloading.
 * @TODO: Store all resources in a single file.
 * @TODO: 3D Audio support.
+* @TODO: Fix bullet despawning
 */
 
 /*
 IDEAS:
+    You get cloned ?
+    CAMERA SHAKE
+    HEALTH BAR
+    SHEILD BAR
+    ENERGY BAR
+
+    EACH BIOOM will drop different parts. 
 
     BIOOOOMS:
-        - Ship:
-            Enemies:
-                Healer/Shield drones
-                Kamikazy drones
-                Wall turret
-                Ground turret
-                Rover turret
-                Droikedia
-                Battle droid
+        - Homebase:
+            - Augment station
 
+        - Ship:
+            Tile sheet:
+                - Ventilation
+                - Control panel
+            Props:
+                - Charging station
+                - Cables
+                - Pipes
+                - Storage
+                - Monitor/Datapad
+                - Escape pod
+
+            Enemies:
+                Shield drones: ( Shield effect + particles )
+                Kamikazy drones: ( Explosition + Particles )
+                Wall turret: 
+                Ground turret: ( Explosition + Particles )
+                Droikedia:
+
+            Boss:
+                - Captains bolts
+
+        - Desert:
+            Enemies:
+                Sand worm
         
+        - Forest:
+            Enemies:
+                -
+
+        - Snow: 
+            Enemies:
+                -
+
+        - Volcano:
+            Enemies:
+                    -
+
 
 FUNNY:
 ACHIVEMTN: You've been granted a random perk: Dead.

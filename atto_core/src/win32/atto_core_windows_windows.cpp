@@ -107,7 +107,7 @@ namespace atto {
         }
     }
 
-    void WindowsCore::WinBoyoWriteBinaryFile( const char * path, const char * data, i64 size ) {
+void WindowsCore::WinBoyoWriteBinaryFile( const char * path, const char * data, i64 size ) {
         std::ofstream file( path, std::ios::out | std::ios::binary );
         if( file.is_open() ) {
             file.write( data, size );

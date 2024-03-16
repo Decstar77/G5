@@ -97,6 +97,7 @@ namespace atto {
         glm::vec2                       origin;
         FixedList< SpriteActuation, 4 > frameActuations;
 
+        void                            GetUVForTile( i32 tileX, i32 tileY, glm::vec2 & bl, glm::vec2 & tr ) const;
         LargeString                     GetResourcePath() const;
 
         REFLECT();
@@ -179,7 +180,6 @@ namespace atto {
                     glm::vec2 p2;
                     glm::vec2 p3;
                     glm::vec2 p4;
-                    glm::mat4 p;
                 } line2D;
                 struct {
                     glm::vec2 tr;
@@ -255,13 +255,13 @@ namespace atto {
         void SetCameraPos( glm::vec2 pos );
         void DrawCircle( glm::vec2 pos, f32 radius, glm::vec4 colour = glm::vec4( 1 ) );
         void DrawRect( glm::vec2 bl, glm::vec2 tr, glm::vec4 colour = glm::vec4( 1 ) );
-        void DrawRectNoCamOffset( glm::vec2 bl, glm::vec2 tr, glm::vec4 colour = glm::vec4( 1 ) );
-        void DrawRectScreen( glm::vec2 bl, glm::vec2 tr, glm::vec4 colour = glm::vec4( 1 ) );
         void DrawRect( glm::vec2 center, glm::vec2 dim, f32 rot, const glm::vec4 & color = glm::vec4( 1 ) );
+        void DrawRectScreen( glm::vec2 bl, glm::vec2 tr, glm::vec4 colour = glm::vec4( 1 ) );
         void DrawLine2D( glm::vec2 start, glm::vec2 end, f32 thicc, const glm::vec4 & color = glm::vec4( 1 ) );
         void DrawLine2D_NDC( glm::vec2 start, glm::vec2 end, f32 thicc, const glm::vec4 & color = glm::vec4( 1 ) );
         void DrawTexture( TextureResource * texture, glm::vec2 center, f32 rot = 0.0f, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
         void DrawTextureBL( TextureResource * texture, glm::vec2 bl, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
+        void DrawTextureTL( TextureResource * texture, glm::vec2 tl, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
         void DrawTextureScreen( TextureResource * texture, glm::vec2 bl, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
         void DrawSprite( SpriteResource * sprite, i32 frameIndex, glm::vec2 center, f32 rot = 0.0f, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
         void DrawSprite( SpriteResource * sprite, i32 tileX, i32 tileY, glm::vec2 center, f32 rot = 0.0f, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
@@ -380,6 +380,7 @@ namespace atto {
         DrawContext *                       RenderGetDrawContext( i32 index, bool clear = true );
         f32                                 RenderGetMainSurfaceWidth() const { return mainSurfaceWidth; }
         f32                                 RenderGetMainSurfaceHeight() const { return mainSurfaceHeight; }
+        virtual void                        RenderSetCameraDims( f32 width, f32 height ) = 0;
         virtual void                        RenderSubmit( DrawContext * dcxt, bool clearBackBuffers ) = 0;
 
         virtual AudioSpeaker                AudioPlay( AudioResource * audioResource, glm::vec2 * pos = nullptr ) = 0;
@@ -416,6 +417,7 @@ namespace atto {
         glm::vec2                           InputMousePosNDC();
         glm::vec2                           InputMousePosPixels();
         glm::vec2                           InputMouseDeltaPixels();
+        f32                                 InputMouseWheelDelta();
         FrameInput &                        InputGetFrameInput();
         virtual void                        InputDisableMouse() = 0;
         virtual void                        InputEnableMouse() = 0;

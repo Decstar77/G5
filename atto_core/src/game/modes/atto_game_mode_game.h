@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../atto_game.h"
+#include "../atto_tiles.h"
 
 namespace atto {
     constexpr static int    MAX_ENTITIES = 1024;
@@ -18,13 +19,20 @@ namespace atto {
 
                ENEMIES_START,
                ENEMY_BOT_DRONE,
-               ENEMY_BOT_BIG,
+               ENEMY_BOT_TURRET,
                ENEMIES_END,
 
+               OBJ_TERMINAL,
+
                BULLET,
+               ENEMY_BULLET,
 
                TYPE_PROP
     );
+
+    inline bool EntityTypeIsEnemy( EntityType type ) {
+        return type > EntityType::ENEMIES_START && type < EntityType::ENEMIES_END;
+    }
 
 
     enum PlayerState {
@@ -36,7 +44,7 @@ namespace atto {
     struct PlayerStuff {
         PlayerState state;
 
-        f32 weaponTimer;
+        f32         weaponTimer;
         f32         weaponOri;
         f32         weaponDir;
         glm::vec2   weaponPos;
@@ -44,6 +52,7 @@ namespace atto {
 
     enum UnitState {
         UNIT_STATE_IDLE,
+        UNIT_STATE_ALERT,
         UNIT_STATE_ATTACKING,
         UNIT_STATE_TAKING_DAMAGE,
         UNIT_STATE_EXPLODING,
@@ -53,6 +62,7 @@ namespace atto {
 
     struct UnitStuff {
         UnitState state;
+        f32       fireRateTimer;
         f32       takingDamageTimer;
         bool      playedDeathSound;
     };
@@ -109,7 +119,7 @@ namespace atto {
         EntityHandle                handle;
         EntityType                  type;
 
-        Map *                  map;
+        Map *                       map;
 
         SmallString                 name;
         i32                         playerNumber;
@@ -132,13 +142,18 @@ namespace atto {
         glm::vec2                   netDesiredVel;
         i32                         netTempId;
 
+        glm::vec4                   colorMultiplier;
+
         // Make these flags
         bool                        hasHitCollision;
         bool                        isCollisionStatic;
-        bool                        isSelectable;
-
-        Collider2D                  selectionCollider;
         Collider2D                  collisionCollider;  // @NOTE: Used for movement | In Local Space
+
+    #if ATTO_EDITOR
+        bool                        selected;
+        bool                        isSelectable;
+        Collider2D                  selectionCollider;
+    #endif
 
         SpriteAnimator              spriteAnimator;
         ParticleSystem              particleSystem;
@@ -161,30 +176,6 @@ namespace atto {
         i32         otherPlayerNumber;
     };
 
-    enum SpriteTileFlags {
-        SPRITE_TILE_FLAG_NO_WALK = SetABit( 1 )
-    };
-
-    struct SpriteTile {
-        i32                 xIndex;
-        i32                 yIndex;
-        i32                 flatIndex;
-        glm::vec2           center;
-        BoxBounds2D         wsBounds;
-        SpriteResource *    spriteResource;
-        i32                 spriteTileIndexX;
-        i32                 spriteTileIndexY;
-        i32                 flags;
-    };
-    
-    struct SpriteTileMap {
-        i32                              tileXCount;
-        i32                              tileYCount;
-        FixedList<SpriteTile, 100 * 100> tiles;
-
-        void                             GetApron( i32 x, i32 y, FixedList<SpriteTile *, 9> & apron );
-    };
-
     struct GameGUI {
         f32             startX;
         f32             startY;
@@ -195,9 +186,6 @@ namespace atto {
         void EndAbilityBar();
     };
 
-    class MapServer {
-        
-    };
 
     class Map {
     public:
@@ -209,7 +197,7 @@ namespace atto {
         i32                                     mapHeight = 0;
         LargeString                             mapName = {};
         FixedObjectPool< Entity, MAX_ENTITIES > entityPool = {};
-        SpriteTileMap                           tileMap = {};
+        TileMap                                 tileMap = {};
 
         i32                                     netTempId = 1;
         FixedList< Entity, 512 >                temporySpawningEntities = {};
@@ -250,15 +238,18 @@ namespace atto {
         void                                    DestroyEntityResolve( Core * core, i32 netId );
         void                                    DestroyEntity( Core * core, Entity * entity );
 
+        void                                    Unit_Fire( Core * core, Entity * ent, f32 fireRate );
         void                                    Unit_TakeDamageSim( Core * core, Entity * ent, i32 damage );
         void                                    Unit_TakeDamage( Core * core, Entity *ent, i32 damage );
 
-        Entity *                                ClosestPlayerTo( glm::vec2 p, f32 & dist );
+        bool                                    LineOfSite( Entity * a, Entity * b, f32 maxDist );
+        Entity *                                ClosestPlayerTo( glm::vec2 p, f32 & dist, glm::vec2 & dir );
 
     #if ATTO_EDITOR
         // @NOTE: "Map Editor" functions
-        void                                    Editor_MapTilePlace( i32 xIndex, i32 yIndex, SpriteResource * sprite, i32 spriteX, i32 spriteY, i32 flags );
-        void                                    Editor_MapTileFillBorder( SpriteResource * sprite, i32 spriteX, i32 spriteY, i32 flags );
+        void                                    Editor_MapTilePlace( i32 xIndex, i32 yIndex, i32 spriteX, i32 spriteY, i32 flags );
+        void                                    Editor_MapTileFillBorder( i32 spriteX, i32 spriteY, i32 flags );
+
     #endif
 
         REFLECT();

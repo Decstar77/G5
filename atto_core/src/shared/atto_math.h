@@ -2,6 +2,7 @@
 
 #include "atto_defines.h"
 #include "atto_random.h"
+#include "atto_reflection.h"
 
 namespace atto {
 
@@ -75,6 +76,8 @@ namespace atto {
         void                    Expand( f32 mul );
 
         void                    CreateFromCenterSize( const glm::vec2 & center, const glm::vec2 & size );
+
+        REFLECT();
     };
     
     struct BoxBounds {

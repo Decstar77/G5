@@ -28,10 +28,12 @@ namespace atto {
         inline static glm::vec4 ALIZARIN = FromHex( "#e74c3c" );
         inline static glm::vec4 SILVER = FromHex( "#bdc3c7" );
 
-
+        
 
         // Game specific colors
         inline static glm::vec4 BOX_SELECTION_COLOR = glm::vec4( 0.5f, 1, 0.5f, 0.5f );
+
+        inline static glm::vec4 NEON_RED = FromHex( "#ff0044" );
     };
 
 }

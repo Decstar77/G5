@@ -55,13 +55,17 @@ namespace atto {
         REFLECT_STRUCT_MEMBER( sprite )
         REFLECT_STRUCT_END()
 
+        REFLECT_STRUCT_BEGIN( BoxBounds2D )
+        REFLECT_STRUCT_MEMBER( min )
+        REFLECT_STRUCT_MEMBER( max )
+        REFLECT_STRUCT_END()
+
         REFLECT_STRUCT_BEGIN( Entity )
         REFLECT_STRUCT_MEMBER( type )
         REFLECT_STRUCT_MEMBER( name )
         REFLECT_STRUCT_MEMBER( pos )
         REFLECT_STRUCT_MEMBER( selectionCollider )
         REFLECT_STRUCT_MEMBER( collisionCollider )
-        REFLECT_STRUCT_MEMBER( spriteAnimator )
         REFLECT_STRUCT_END()
 
         REFLECT_STRUCT_BEGIN( Map )
@@ -70,6 +74,4 @@ namespace atto {
         REFLECT_STRUCT_MEMBER( mapName )
         REFLECT_STRUCT_MEMBER( entityPool )
         REFLECT_STRUCT_END()
-
-
 }

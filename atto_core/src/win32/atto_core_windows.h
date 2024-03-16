@@ -128,6 +128,7 @@ namespace atto {
         virtual void                    AudioSetListener( glm::vec2 pos ) override;
 
         virtual float                   FontGetTextBounds( FontHandle font, f32 fontSize, const char * text, glm::vec2 pos, BoxBounds2D & bounds ) override;
+        virtual void                    RenderSetCameraDims( f32 width, f32 height ) override;
         virtual void                    RenderSubmit( DrawContext * dcxt, bool clearBackBuffers ) override;
         
         virtual void                    InputDisableMouse() override;
@@ -184,7 +185,6 @@ namespace atto {
         i32                         kenFontHandle;
 
         void            RenderDrawCommandText( DrawCommand & cmd );
-        void            RenderSetCamera( f32 width, f32 height );
 
         u64             OsGetFileLastWriteTime( const char * fileName ) override;
         void            OsLogMessage( const char * message, u8 colour ) override;

@@ -149,26 +149,9 @@ namespace atto {
         cmd.rect.tr = tr;
         cmd.rect.tl = glm::vec2( bl.x, tr.y );
 
-        cmd.rect.bl -= cameraPos;
-        cmd.rect.br -= cameraPos;
-        cmd.rect.tr -= cameraPos;
-        cmd.rect.tl -= cameraPos;
-
         drawList.Add( cmd );
     }
-
-    void DrawContext::DrawRectNoCamOffset( glm::vec2 bl, glm::vec2 tr, glm::vec4 colour /*= glm::vec4( 1 ) */ ) {
-        DrawCommand cmd = {};
-        cmd.type = DrawCommandType::RECT;
-        cmd.color = colour;
-        cmd.proj = cameraProj;
-        cmd.rect.bl = bl;
-        cmd.rect.br = glm::vec2( tr.x, bl.y );
-        cmd.rect.tr = tr;
-        cmd.rect.tl = glm::vec2( bl.x, tr.y );
-
-        drawList.Add( cmd );
-    }
+   
 
     void DrawContext::DrawRect( glm::vec2 center, glm::vec2 dim, f32 rot, const glm::vec4 & color /*= glm::vec4(1)*/ ) {
         DrawCommand cmd = {};
@@ -191,11 +174,6 @@ namespace atto {
         cmd.rect.tr += center;
         cmd.rect.br += center;
         cmd.rect.tl += center;
-
-        cmd.rect.bl -= cameraPos;
-        cmd.rect.tr -= cameraPos;
-        cmd.rect.br -= cameraPos;
-        cmd.rect.tl -= cameraPos;
 
         drawList.Add( cmd );
     }
@@ -229,7 +207,7 @@ namespace atto {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::LINE2D;
         cmd.color = color;
-        cmd.line2D.p = screenProjection;
+        cmd.proj = cameraProj;
         cmd.line2D.p1 = points[ 0 ];
         cmd.line2D.p2 = points[ 1 ];
         cmd.line2D.p3 = points[ 2 ];
@@ -241,7 +219,7 @@ namespace atto {
 
     void DrawContext::DrawLine2D_NDC( glm::vec2 start, glm::vec2 end, f32 thicc, const glm::vec4 & color /*= glm::vec4( 1 ) */ ) {
         DrawLine2D( start, end, thicc, color );
-        drawList.Last().line2D.p = glm::mat4( 1 );
+        drawList.Last().proj = glm::mat4( 1 );
     }
 
     void DrawContext::DrawTexture( TextureResource * texture, glm::vec2 center, f32 rot, glm::vec2 size, glm::vec4 colour ) {
@@ -268,11 +246,6 @@ namespace atto {
         cmd.texture.br += center;
         cmd.texture.tl += center;
 
-        cmd.texture.bl -= cameraPos;
-        cmd.texture.tr -= cameraPos;
-        cmd.texture.br -= cameraPos;
-        cmd.texture.tl -= cameraPos;
-
         drawList.Add( cmd );
     }
 
@@ -289,10 +262,22 @@ namespace atto {
         cmd.texture.br = glm::vec2( cmd.sprite.tr.x, cmd.sprite.bl.y );
         cmd.texture.tl = glm::vec2( cmd.sprite.bl.x, cmd.sprite.tr.y );
 
-        cmd.texture.bl -= cameraPos;
-        cmd.texture.tr -= cameraPos;
-        cmd.texture.br -= cameraPos;
-        cmd.texture.tl -= cameraPos;
+        drawList.Add( cmd );
+    }
+
+
+    void DrawContext::DrawTextureTL( TextureResource * texture, glm::vec2 tl, glm::vec2 size /*= glm::vec2( 1 )*/, glm::vec4 colour /*= glm::vec4( 1 ) */ ) {
+        DrawCommand cmd = {};
+        cmd.type = DrawCommandType::TEXTURE;
+        cmd.color = colour;
+        cmd.proj = cameraProj;
+        cmd.texture.textureRes = texture;
+
+        glm::vec2 dim = glm::vec2( texture->width, texture->height ) * size;
+        cmd.texture.tl = tl;
+        cmd.texture.bl = glm::vec2( tl.x, tl.y - dim.y );
+        cmd.texture.tr = cmd.texture.bl + dim;
+        cmd.texture.br = glm::vec2( cmd.sprite.tr.x, cmd.sprite.bl.y );
 
         drawList.Add( cmd );
     }
@@ -336,11 +321,6 @@ namespace atto {
         cmd.sprite.br += center;
         cmd.sprite.tl += center;
 
-        cmd.sprite.bl -= cameraPos;
-        cmd.sprite.tr -= cameraPos;
-        cmd.sprite.br -= cameraPos;
-        cmd.sprite.tl -= cameraPos;
-
         const f32 textureWidth = (f32)sprite->textureResource->width; // @TODO(DECLAN): This '2' is a hack, we need to make an alpha border for each frame of animation, not the entire texture...
         const f32 frameWidth = (f32)sprite->frameWidth;
 
@@ -375,19 +355,14 @@ namespace atto {
         cmd.sprite.br += center;
         cmd.sprite.tl += center;
 
-        cmd.sprite.bl -= cameraPos;
-        cmd.sprite.tr -= cameraPos;
-        cmd.sprite.br -= cameraPos;
-        cmd.sprite.tl -= cameraPos;
-
         const f32 textureWidth = (f32)sprite->textureResource->width;
         const f32 textureHeight = (f32)sprite->textureResource->height;
         const f32 tileWidth = (f32)sprite->tileWidth;
         const f32 tileHeight = (f32)sprite->tileHeight;
-        const f32 tileXStart = (f32)( tileX * sprite->tileWidth ) / textureWidth;
-        const f32 tileYStart = (f32)( tileY * sprite->tileHeight ) / textureHeight;
-        const f32 tileXEnd = (f32)( ( tileX + 1 ) * sprite->tileWidth ) / textureWidth;
-        const f32 tileYEnd = (f32)( ( tileY + 1 ) * sprite->tileHeight ) / textureHeight;
+        const f32 tileXStart = (f32)( tileX * tileWidth ) / textureWidth;
+        const f32 tileYStart = (f32)( tileY * tileHeight ) / textureHeight;
+        const f32 tileXEnd = (f32)( ( tileX + 1 ) * tileWidth ) / textureWidth;
+        const f32 tileYEnd = (f32)( ( tileY + 1 ) * tileHeight ) / textureHeight;
 
         cmd.sprite.blUV = glm::vec2( tileXStart, tileYEnd );
         cmd.sprite.trUV = glm::vec2( tileXEnd, tileYStart );
@@ -614,6 +589,10 @@ namespace atto {
         return input.mouseDeltaPixels;
     }
 
+    f32 Core::InputMouseWheelDelta() {
+        return input.mouseWheelDelta.y;
+    }
+
     FrameInput & Core::InputGetFrameInput() {
         return input;
     }
@@ -734,14 +713,20 @@ namespace atto {
         }
     }
 
+    void SpriteResource::GetUVForTile(i32 tileX, i32 tileY, glm::vec2 & bl, glm::vec2 & tr) const {
+        const f32 textureWidth = (f32)textureResource->width;
+        const f32 textureHeight = (f32)textureResource->height;
+        const f32 tileXStart = (f32)(tileX * tileWidth) / textureWidth;
+        const f32 tileYStart = (f32)(tileY * tileHeight) / textureHeight;
+        const f32 tileXEnd = (f32)((tileX + 1) * tileWidth) / textureWidth;
+        const f32 tileYEnd = (f32)((tileY + 1) * tileHeight) / textureHeight;
+
+        bl = glm::vec2(tileXStart, tileYEnd);
+        tr = glm::vec2(tileXEnd, tileYStart);
+    }
+
     LargeString SpriteResource::GetResourcePath() const {
-        LargeString result = {};
-        result.Add( "res/sprites/" );
-        result.Add( spriteName );
-        result.Add( '/' );
-        result.Add( spriteName.GetFilePart() );
-        result.Add( ".json" );
-        return result;
+        return spriteName;
     }
 
     LargeString Resource::GetShortName() const {

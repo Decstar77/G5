@@ -2,7 +2,7 @@
 
 #include "atto_defines.h"
 #include "atto_containers.h"
-#include "atto_math.h"
+#include "atto_random.h"
 
 namespace atto {
     enum class NetworkMessageType {
@@ -17,6 +17,7 @@ namespace atto {
         ENTITY_PLAYER_UPDATE,
         ENTITY_RPC_UNIT_TAKE_DAMAGE,
         ENTITY_RPC_UNIT_TARGET_ACQUIRED,
+        ENTITY_RPC_UNIT_FIRE,
     };
 
 #define NETWORK_MESSAGE_MAX_BYTES 512
