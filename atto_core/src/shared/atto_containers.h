@@ -1254,8 +1254,9 @@ namespace atto {
     public:
         bool            IsEmpty() const;
         void            Clear( bool zeroOut = false );
-        T * Enqueue( const T & value );
+        T *             Enqueue( const T & value );
         T               Dequeue();
+        T *             Peek();
         bool            Contains( const T & value );
         inline i32      GetCount() { return count; }
 
@@ -1307,6 +1308,16 @@ namespace atto {
         head = ( head + 1 ) % capcity;
         count--;
         return result;
+    }
+
+    template<typename T, i32 capcity>
+    T * FixedQueue<T, capcity>::Peek() {
+        AssertMsg( count > 0, "FixedQueue, queue is empty" );
+        if( count == 0 ) {
+            return nullptr;
+        }
+
+        return &data[ head ];
     }
 
     template<typename T, i32 capcity>

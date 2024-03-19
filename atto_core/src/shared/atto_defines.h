@@ -31,6 +31,7 @@
 
 #define REAL_MAX FLT_MAX
 #define REAL_MIN -FLT_MAX
+#define PI 3.14159265359f
 
 #define Kilobytes(val) (val * 1024LL)
 #define Megabytes(val) (Kilobytes(val) * 1024LL)
@@ -60,6 +61,8 @@
 #define MACRO_COMBINE(x, y) MACRO_COMBINE1(x, y)
 
 #define I16_MAX 32767
+#define I16_MIN -32768
+#define U16_MAX 65535
 
 namespace atto
 {

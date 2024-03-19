@@ -160,9 +160,9 @@ namespace atto {
         gladLoadGLLoader( (GLADloadproc)glfwGetProcAddress );
         LogOutput( LogLevel::INFO, "OpenGL %s, GLSL %s", glGetString( GL_VERSION ), glGetString( GL_SHADING_LANGUAGE_VERSION ) );
 
-        RenderSetCameraDims( 320, 180 );
+        //RenderSetCameraDims( 320, 180 );
         //RenderSetCamera( 320 * 1.5f, 180 * 1.5f );
-        //RenderSetCamera( 640, 360 );
+        RenderSetCameraDims( 640, 360 );
         //RenderSetCamera( 1280, 720 );
         GLCheckCapablities();
         GLInitializeShapeRendering();
@@ -298,10 +298,10 @@ namespace atto {
 
     void WindowsCore::RenderSubmit( DrawContext * dcxt, bool clearBackBuffers ) {
         if( clearBackBuffers ) {
-            //glClearColor(0.5f, 0.2f, 0.2f, 1.0f);
+            glClearColor(0.5f, 0.2f, 0.2f, 1.0f);
             //glClearColor( 0.2f, 0.5f, 0.2f, 1.0f );
             //glClearColor( 0.1f, 0.1f, 0.2f, 1.0f );
-            glClearColor( 0.0f, 0.0f, 0.0f, 1.0f );
+            //glClearColor( 0.0f, 0.0f, 0.0f, 1.0f );
             // Magenta
             //glClearColor( 1.0f, 0.0f, 1.0f, 1.0f );
             glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );

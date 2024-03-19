@@ -29,6 +29,18 @@ namespace atto {
         return z * width * height + y * width + x;
     }
 
+    inline glm::vec2 Truncate( glm::vec2 v, f32 maxMag ) {
+        f32 l = glm::length( v );
+        if( l > maxMag ) {
+            return ( v / l ) * maxMag;
+        }
+        return v;
+    }
+
+    inline glm::vec2 LeftPerp( glm::vec2 v ) {
+        return glm::vec2( -v.y, v.x );
+    }
+
     struct Manifold2D {
         f32 penetration;
         glm::vec2 pointA;

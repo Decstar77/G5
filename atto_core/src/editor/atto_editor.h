@@ -2,6 +2,8 @@
 
 #include "../shared/atto_defines.h"
 #include "../game/modes/atto_game_mode_game.h"
+#include "../game/sim/atto_sim_map.h"
+
 
 #if ATTO_EDITOR
 
@@ -19,7 +21,7 @@ namespace atto {
     };
 
     struct Editor_ResourceWidget {
-        Entity *            entity = nullptr;
+        SimEntity *            entity = nullptr;
         SpriteResource *    spriteResource = nullptr;
     };
 
@@ -54,12 +56,12 @@ namespace atto {
         bool                    isCameraDragging = false;
         glm::vec2               dragStartPos = glm::vec2( 0, 0 );
         glm::vec2               gizmoDrag = glm::vec2( 0, 0 );
-        Entity *                gizmoEntity = nullptr;
+        SimEntity *                gizmoEntity = nullptr;
         i32                     gizmoMode = 0;
 
         Editor_CanvasWidget     canvasWidget;
         Editor_ResourceWidget   resourceWidget;
-        Map *                   currentMap = nullptr;
+        SimMap *                   currentMap = nullptr;
 
         TextureResource *       gizmoTranslationTexture = nullptr;
     };

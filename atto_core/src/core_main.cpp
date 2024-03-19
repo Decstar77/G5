@@ -4,6 +4,13 @@
 using namespace atto;
 
 
+
+/*
+MEMES:
+    An ability that scrambles your opponesnts selections.... :D :D :D
+
+*/
+
 /*
 * @TODO: Fix circle rendering
 * @TODO: Fix alpha padding issue

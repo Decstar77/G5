@@ -36,8 +36,8 @@ namespace atto {
                         parms.isMutliplayer = true;
                         parms.localPlayerNumber = localPlayerNumber;
                         parms.otherPlayerNumber = otherPlayerNumber;
-                        
-                        core->MoveToGameMode( new GameMode_Game( parms ) );
+
+                        core->MoveToGameMode( new GameMode_MultiplayerGame( parms ) );
                     } break;
                     default:
                         INVALID_CODE_PATH;
@@ -51,7 +51,7 @@ namespace atto {
         if( ui.AddButton( "Loner" ) ) {
             GameStartParams parms = {};
             parms.isMutliplayer = false;
-            core->MoveToGameMode( new GameMode_Game( parms ) );
+            core->MoveToGameMode( new GameMode_SinglePlayerGame( parms ) );
         }
         if( ui.AddButton( "Blessed" ) ) {
             core->NetConnect();
