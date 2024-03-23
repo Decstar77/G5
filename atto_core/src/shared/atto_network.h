@@ -9,17 +9,7 @@ namespace atto {
         NONE,
         GAME_START,
 
-        ENTITY_STATE_UPDATE,
-        ENTITY_ANIM_UPDATE,
-        ENTITY_AUDIO_PLAY,
-        ENTITY_SPAWN,
-        ENTITY_DESTROY,
-
-        
-        ENTITY_REQUEST_MOVE,
-        ENTITY_REQUEST_SELECTION,
-        ENTITY_UPDATE_SELECTION,
-        ENTITY_REQUEST_ATTACK,
+        MAP_TURN,
     };
 
 #define NETWORK_MESSAGE_MAX_BYTES 512

@@ -172,45 +172,7 @@ namespace atto {
 
         AudioInitialize();
 
-        if( theGameSettings.usePackedAssets == 1 ) {
-            {
-                i64 spritesTotalSize = 0;
-                textureBlob.buffer = (byte *)ResourceReadEntireBinaryFileIntoPermanentMemory( "res/sprites/textures.bin", &spritesTotalSize );
-                textureBlob.totalSize = (i32)spritesTotalSize;
-                if( textureBlob.buffer == nullptr ) {
-                    LogOutput( LogLevel::ERR, "Could not load sprites.bin" );
-                    return;
-                }
-
-                i32 textureCount = 0;
-                textureBlob.Read( &textureCount );
-
-                for( i32 i = 0; i < textureCount; i++ ) {
-                    TypeDescriptor * type = TypeResolver<TextureResource *>::get();
-                    TextureResource texture = {};
-                    type->Binary_Read( &texture, textureBlob );
-                }
-            }
-            // Audio 
-            {
-                i64 audioTotalSize = 0;
-                audioBlob.buffer = (byte *)ResourceReadEntireBinaryFileIntoPermanentMemory( "res/sprites/audios.bin", &audioTotalSize );
-                audioBlob.totalSize = (i32)audioTotalSize;
-                if( audioBlob.buffer == nullptr ) {
-                    LogOutput( LogLevel::ERR, "Could not load audio.bin" );
-                    return;
-                }
-
-                i32 audioCount = 0;
-                audioBlob.Read( &audioCount );
-
-                for( i32 i = 0; i < audioCount; i++ ) {
-                    TypeDescriptor * type = TypeResolver<AudioResource *>::get();
-                    AudioResource audio = {};
-                    type->Binary_Read( &audio, audioBlob );
-                }
-            }
-        }
+        taskScheduler.Initialize( 4 );
 
     #if ATTO_EDITOR
         EngineImgui::Initialize( window );
@@ -241,6 +203,19 @@ namespace atto {
             //std::cout << "Poll start " << std::endl;
             glfwPollEvents();
             //std::cout << "Poll end " << std::endl;
+
+            if( InputKeyJustPressed( KEY_CODE_ENTER ) && InputKeyDown( KEY_CODE_LEFT_ALT ) ) {
+                if( windowFullscreen ) {
+                    glfwSetWindowMonitor( window, nullptr, theGameSettings.windowStartPosX, theGameSettings.windowStartPosY, windowWidth, windowHeight, 0 );
+                    windowFullscreen = false;
+                }
+                else {
+                    const GLFWvidmode * mode = glfwGetVideoMode( monitor );
+                    glfwSetWindowMonitor( window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate );
+                    windowFullscreen = true;
+                }
+            }
+
 
             bool skipFrame = false;
             if( nextGameMode != nullptr ) {
@@ -467,7 +442,7 @@ namespace atto {
                     GLShaderProgramSetSampler( "texture0", 0 );
                     GLShaderProgramSetVec4( "color", cmd.color );
                     GLShaderProgramSetTexture( 0, texture->handle );
-                    GLShaderProgramSetMat4( "p", cameraProjection );
+                    GLShaderProgramSetMat4( "p", cmd.proj );
 
                     glDisable( GL_CULL_FACE );
                     glBindVertexArray( spriteVertexBuffer.vao );
@@ -1326,7 +1301,7 @@ namespace atto {
         mainSurfaceWidth = w;
         mainSurfaceHeight = h;
         viewport = glm::vec4( viewX, viewY, viewWidth, viewHeight );
-        cameraProjection = glm::ortho( 0.0f, (f32)cameraWidth, 0.0f, (f32)cameraHeight, -1.0f, 1.0f );
+        cameraProjection = glm::ortho( 0.0f, cameraWidth, 0.0f, cameraHeight, -1.0f, 1.0f );
         screenProjection = glm::ortho( 0.0f, (f32)w, (f32)h, 0.0f, -1.0f, 1.0f );
     }
 

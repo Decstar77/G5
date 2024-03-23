@@ -9,6 +9,7 @@
 #include "atto_clock.h"
 
 #include "atto_reflection.h"
+#include "enki_task_scheduler.h"
 
 #include <memory>
 #include <mutex>
@@ -449,13 +450,15 @@ namespace atto {
         virtual void                        EditorOnly_SaveLoadedResourcesToBinary() = 0;
     #endif
 
+        enki::TaskScheduler                 taskScheduler = {}; // @TODO: Make private
+
     protected:
-        inline static Core *        theCore = nullptr;
-        GameSettings                theGameSettings = {};
-        LoggingState                logger = {};
-        FixedList<DrawContext, 8>   drawContexts = {};
-        FrameInput                  input = {};
-        UIState                     uiState = {};
+        inline static Core *                theCore = nullptr;
+        GameSettings                        theGameSettings = {};
+        LoggingState                        logger = {};
+        FixedList<DrawContext, 8>           drawContexts = {};
+        FrameInput                          input = {};
+        UIState                             uiState = {};
 
         GameMode *                  currentGameMode = nullptr;
         GameMode *                  nextGameMode = nullptr;

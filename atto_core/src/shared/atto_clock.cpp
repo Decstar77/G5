@@ -8,7 +8,8 @@ namespace atto {
 
     ScopedClock::~ScopedClock() {
         f64 endTime = core->GetTheCurrentTime();
-        f64 dt = endTime - startTime;
+        f64 seconds = endTime - startTime;
+        f64 dt = seconds * 1000.0;
         core->LogOutput( LogLevel::INFO, "ScopedClock '%s' time = %f", name.GetCStr(), (f32)dt );
     }
 }

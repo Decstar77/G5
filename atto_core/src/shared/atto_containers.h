@@ -38,6 +38,8 @@ namespace atto {
         T &             First();
         T &             Last();
 
+        T *             Set_MemCpyPtr( i32 index, const T * value );
+
         T *             Add( const T & value );
         T *             Add_MemCpyPtr( const T * value );
         T &             AddEmpty();
@@ -64,8 +66,8 @@ namespace atto {
         T operator[]( const i32 & index ) const;
 
     private:
+        i32 count;          // @NOTE: It's imperative that this is the first member of the struct as the rpc system relies on this. It does a cast
         T data[ capcity ];
-        i32 count;
     };
 
     template<typename T, i32 capcity>
@@ -94,6 +96,15 @@ namespace atto {
     T & FixedList<T, capcity>::Last() {
         AssertMsg( count >= 1, "Array, invalid index" );
         return data[ count - 1 ];
+    }
+
+    template<typename T, i32 capcity>
+    T * FixedList<T, capcity>::Set_MemCpyPtr( i32 index, const T * value ) {
+        AssertMsg( index >= 0 && index < capcity, "Set_MemCpyPtr" );
+
+        memcpy( &data[ index ], (const void *)value, sizeof( T ) );
+
+        return &data[ index ];
     }
 
     template<typename T, i32 capcity>
@@ -1436,6 +1447,8 @@ namespace atto {
         _type_ *    Get( ObjectHandle<_type_> hdlt );
         bool        Remove( ObjectHandle<_type_> hdlt );
         void        GatherActiveObjs( FixedList<_type_ *, capcity> & inList );
+        void        GatherActiveObjs( FixedList<_type_ *, capcity> * inList );
+        void        GatherActiveObjs( FixedList< const _type_ *, capcity > * inList );
         void        GatherActiveObjs_MemCopy( FixedList<_type_, capcity> * inList );
 
     private:
@@ -1559,6 +1572,62 @@ namespace atto {
             if( activeList[ i ] ) {
                 _type_ * t = &objs[ i ];
                 inList.Add( t );
+                count++;
+            }
+            if( count == activeCount ) {
+                break;
+            }
+        }
+    }
+
+    template<typename _type_, i32 capcity>
+    void FixedObjectPool<_type_, capcity>::GatherActiveObjs( FixedList<_type_ *, capcity> * inList ) {
+        Initialize();
+
+        for( i32 i = 0; i < capcity; i++ ) {
+            activeList[ i ] = true;
+        }
+
+        const i32 freeCount = idxs.GetCount();
+        for( i32 i = 0; i < freeCount; i++ ) {
+            activeList[ idxs[ i ] ] = false;
+        }
+
+        const i32 activeCount = capcity - freeCount - 1;    // @NOTE: -1 because we don't want to include the first element
+
+        i32 count = 0;
+        for( i32 i = 1; i < capcity; i++ ) {                // @NOTE: Start at 1 because we don't want to include the first element
+            if( activeList[ i ] ) {
+                _type_ * t = &objs[ i ];
+                inList->Add( t );
+                count++;
+            }
+            if( count == activeCount ) {
+                break;
+            }
+        }
+    }
+
+    template<typename _type_, i32 capcity>
+    void atto::FixedObjectPool<_type_, capcity>::GatherActiveObjs( FixedList< const _type_ *, capcity > * inList ) {
+        Initialize();
+
+        for( i32 i = 0; i < capcity; i++ ) {
+            activeList[ i ] = true;
+        }
+
+        const i32 freeCount = idxs.GetCount();
+        for( i32 i = 0; i < freeCount; i++ ) {
+            activeList[ idxs[ i ] ] = false;
+        }
+
+        const i32 activeCount = capcity - freeCount - 1;    // @NOTE: -1 because we don't want to include the first element
+
+        i32 count = 0;
+        for( i32 i = 1; i < capcity; i++ ) {                // @NOTE: Start at 1 because we don't want to include the first element
+            if( activeList[ i ] ) {
+                _type_ * t = &objs[ i ];
+                inList->Add( t );
                 count++;
             }
             if( count == activeCount ) {

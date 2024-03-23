@@ -35,9 +35,7 @@ namespace atto {
 
     public:
         GameStartParams                         startParms;
-        VisMap                                  visMap;
         SimMap                                  simMap;
-        MapCommunicatorHost                     mapCommunicator;
     };
 
     class GameMode_MultiplayerGame : public GameMode {
@@ -52,8 +50,6 @@ namespace atto {
     public:
         GameStartParams                         startParms;
         bool                                    isHost;
-        VisMap                                  visMap;
         SimMap                                  simMap;
-        std::unique_ptr<MapCommunicator>        mapCommunicator;
     };
 }

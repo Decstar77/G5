@@ -303,6 +303,7 @@ namespace atto {
         cmd.type = DrawCommandType::SPRITE;
         cmd.color = colour;
         cmd.sprite.spriteRes = sprite;
+        cmd.proj = cameraProj;
 
         glm::vec2 dim = glm::vec2( sprite->frameWidth, sprite->frameHeight ) * size;
         cmd.sprite.bl = -dim / 2.0f;
@@ -337,6 +338,7 @@ namespace atto {
         cmd.type = DrawCommandType::SPRITE;
         cmd.color = colour;
         cmd.sprite.spriteRes = sprite;
+        cmd.proj = cameraProj;
 
         glm::vec2 dim = glm::vec2( sprite->tileWidth, sprite->tileHeight ) * size;
         cmd.sprite.bl = -dim / 2.0f;

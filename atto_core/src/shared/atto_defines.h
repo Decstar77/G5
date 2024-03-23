@@ -4,6 +4,8 @@
 #define ATTO_DEBUG_RENDERING 0
 #define ATTO_EDITOR 1
 
+#define ATTO_GAME_CHECK_RPC_FUNCTION_TYPES 1
+
 
 #define Assert(expr)                                                            \
     {                                                                           \

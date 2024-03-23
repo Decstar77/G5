@@ -12,18 +12,13 @@ namespace atto {
     }
 
     void GameMode_SinglePlayerGame::Initialize( Core * core ) {
-        mapCommunicator.core = core;
-        mapCommunicator.simMap = &simMap;
-        mapCommunicator.visMap = &visMap;
-        
-        
-        simMap.Initialize( &mapCommunicator, true );
-        visMap.Initialize( core, &simMap, &mapCommunicator, 1, 1 );
+        simMap.Initialize( core );
+        simMap.localPlayerNumber = 1;
+        simMap.localPlayerTeamNumber = 1;
     }
 
     void GameMode_SinglePlayerGame::UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags updateAndRenderFlags ) {
         simMap.Update( core, dt );
-        visMap.Render( core, dt );
     }
 
     void GameMode_SinglePlayerGame::Shutdown( Core * core ) {
@@ -40,32 +35,25 @@ namespace atto {
     }
 
     void GameMode_MultiplayerGame::Initialize( Core * core ) {
-        i32 teamNumber = 1;
+        simMap.Initialize( core );
+
         if( startParms.localPlayerNumber == 1 ) {
             core->LogOutput( LogLevel::INFO, "I am the host" );
-            mapCommunicator = std::make_unique<MapCommunicatorHost>();
             isHost = true;
+            simMap.localPlayerTeamNumber = 1;
         }
         else {
-            teamNumber = 2;
             core->LogOutput( LogLevel::INFO, "I am a peer" );
-            mapCommunicator = std::make_unique<MapCommunicatorPeer>();
             isHost = false;
+            simMap.localPlayerTeamNumber = 2;
         }
 
-        mapCommunicator->core = core;
-        mapCommunicator->simMap = &simMap;
-        mapCommunicator->visMap = &visMap;
-
-        simMap.Initialize( mapCommunicator.get(), startParms.localPlayerNumber == 1 );
-        visMap.Initialize( core, &simMap, mapCommunicator.get(), startParms.localPlayerNumber, teamNumber );
+        simMap.localPlayerNumber = startParms.localPlayerNumber;
     }
 
     void GameMode_MultiplayerGame::UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags ) {
         simMap.Update( core, dt );
-        visMap.Render( core, dt );
     }
-
 
     void GameMode_MultiplayerGame::Shutdown( Core * core ) {
 
