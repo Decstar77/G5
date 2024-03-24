@@ -1,5 +1,4 @@
 #include "atto_sim_map.h"
-#include "../../shared/atto_core.h"
 #include "../atto_map_communicator.h"
 
 #include "../../shared/atto_rpc.h"
@@ -12,12 +11,15 @@ namespace atto {
             rpcTable[ (i32)MapActionType::PLAYER_ATTACK ]      = new RpcMemberFunction( this, &SimMap::SimAction_Attack );
 
             rpcTable[ (i32)MapActionType::SIM_ENTITY_SPAWN ]   = new RpcMemberFunction( this, &SimMap::SimAction_SpawnEntity );
+            rpcTable[ (i32)MapActionType::SIM_ENTITY_DESTROY ] = new RpcMemberFunction( this, &SimMap::SimAction_DestroyEntity );
+            rpcTable[ (i32)MapActionType::SIM_ENTITY_UNIT_APPLY_DAMAGE ] = new RpcMemberFunction( this, &SimMap::SimAction_ApplyDamage );
         }
 
         this->core = core;
         syncQueues.Start();
-        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), 1, 1, glm::vec2( 100.0f ), glm::vec2( 0.0f ) );
-        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), 2, 2, glm::vec2( 500.0f ), glm::vec2( 0.0f ) );
+        //SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), 1, 1, glm::vec2( 100.0f ), 0.0f, glm::vec2( 0.0f ) );
+        //SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), 1, 1, glm::vec2( 500.0f ), 0.0f, glm::vec2( 0.0f ) );
+        SpawnEntity( EntityType::Make( EntityType::PLANET ), 2, 2, glm::vec2( 700.0f ), 0.0f, glm::vec2( 0.0f ) );
     }
 
     void SimMap::Update( Core * core, f32 dt ) {
@@ -37,8 +39,8 @@ namespace atto {
             }
 
             dtAccumulator += dt;
-            if( dtAccumulator > TURNS_DELTA ) {
-                dtAccumulator -= TURNS_DELTA;
+            if( dtAccumulator > SIM_DT ) {
+                dtAccumulator -= SIM_DT;
                 if( syncQueues.CanTurn() == false ) {
                     syncTurnAttempts++;
 
@@ -85,8 +87,8 @@ namespace atto {
         }
         else {
             dtAccumulator += dt;
-            if( dtAccumulator > TURNS_DELTA ) {
-                dtAccumulator -= TURNS_DELTA;
+            if( dtAccumulator > SIM_DT ) {
+                dtAccumulator -= SIM_DT;
 
                 localMapTurn.playerNumber = localPlayerNumber;
                 localMapTurn.turnNumber = turnNumber;
@@ -185,6 +187,7 @@ namespace atto {
                 spriteDrawContext->DrawSprite( ent->selectionAnimator.sprite, ent->selectionAnimator.frameIndex, drawPos, drawOri );
             }
 
+            ent->spriteAnimator.Update( core, dt );
             if( ent->spriteAnimator.sprite != nullptr ) {
                 spriteDrawContext->DrawSprite( ent->spriteAnimator.sprite, ent->spriteAnimator.frameIndex, drawPos, drawOri );
             }
@@ -202,12 +205,10 @@ namespace atto {
                     else if( turret.size == WeaponSize::MEDIUM ) {
                         spriteDrawContext->DrawTexture( sprTurretMed, worldPos, turret.ori );
                     }
-                    //glm::vec2 worldPos = ;
-
                 }
             }
 
-            if( core->InputMouseButtonJustPressed( MOUSE_BUTTON_1 ) == true ) {
+            if( ent->isSelectable == true && core->InputMouseButtonJustPressed( MOUSE_BUTTON_1 ) == true ) {
                 Collider2D selectionCollider = ent->GetWorldSelectionCollider();
                 if( selectionCollider.Contains( mousePosWorld ) ) {
                     EntHandleList & selection = *core->MemoryAllocateTransient<EntHandleList>();
@@ -221,17 +222,19 @@ namespace atto {
             bool inputMade = false;
             for( i32 entityIndexA = 0; entityIndexA < entityCount; entityIndexA++ ) {
                 const SimEntity * ent = entities[ entityIndexA ];
-                const Collider2D selectionCollider = ent->GetWorldSelectionCollider();
-                if( selectionCollider.Contains( mousePosWorld ) ) {
-                    if( ent->teamNumber != localPlayerTeamNumber ) {
-                        localActionBuffer.AddAction( MapActionType::PLAYER_ATTACK, localPlayerNumber, ent->handle );
-                    }
-                    else {
-                     // Follow
-                    }
+                if( ent->isSelectable == true ) {
+                    const Collider2D selectionCollider = ent->GetWorldSelectionCollider();
+                    if( selectionCollider.Contains( mousePosWorld ) ) {
+                        if( ent->teamNumber != localPlayerTeamNumber ) {
+                            localActionBuffer.AddAction( MapActionType::PLAYER_ATTACK, localPlayerNumber, ent->handle );
+                        }
+                        else {
+                         // Follow
+                        }
 
-                    inputMade = true;
-                    break;
+                        inputMade = true;
+                        break;
+                    }
                 }
             }
 
@@ -252,7 +255,7 @@ namespace atto {
         core->RenderSubmit( debugDrawContext, false );
     }
 
-    SimEntity * SimMap::SpawnEntity( EntityType type, i32 playerNumber, i32 teamNumber, glm::vec2 pos, glm::vec2 vel ) {
+    SimEntity * SimMap::SpawnEntity( EntityType type, i32 playerNumber, i32 teamNumber, glm::vec2 pos, f32 ori, glm::vec2 vel ) {
         EntityHandle handle = {};
         SimEntity * entity = entityPool.Add( handle );
         AssertMsg( entity != nullptr, "Spawn Entity is nullptr" );
@@ -265,6 +268,8 @@ namespace atto {
             entity->resistance = 14.0f;
             entity->pos = pos;
             entity->visPos = pos;
+            entity->ori = ori;
+            entity->visOri = ori;
             entity->vel = vel;
             entity->teamNumber = teamNumber;
             entity->playerNumber = playerNumber;
@@ -272,46 +277,89 @@ namespace atto {
             switch( entity->type ) {
                 case EntityType::UNIT_TEST:
                 {
+                    static SpriteResource * blueSprite = core->ResourceGetAndCreateSprite( "res/ents/test/ship_blue.png", 1, 48, 48, 0 );
+                    static SpriteResource * redSprite = core->ResourceGetAndCreateSprite( "res/ents/test/ship_red.png", 1, 48, 48, 0 );
+                    static SpriteResource * selectionSprite = core->ResourceGetAndCreateSprite( "res/ents/test/ship_selected.png", 1, 48, 48, 0 );
+                    SpriteResource * mainSprite = teamNumber == 1 ? blueSprite : redSprite;
+                    entity->spriteAnimator.SetSpriteIfDifferent( mainSprite, false );
+                    entity->selectionAnimator.SetSpriteIfDifferent( selectionSprite, false );
+
+                    entity->isSelectable = true;
                     entity->selectionCollider.type = COLLIDER_TYPE_BOX;
                     entity->selectionCollider.box.CreateFromCenterSize( glm::vec2( 0 ), glm::vec2( 26, 36 ) );
-                    entity->unit.averageFiringRange = 400.0f;
 
-                    static SpriteResource * mainSprite = core->ResourceGetAndCreateSprite( "res/ents/test/ship.png", 1, 48, 48, 0 );
-                    static SpriteResource * selectionSprite = core->ResourceGetAndCreateSprite( "res/ents/test/ship_selected.png", 1, 48, 48, 0 );
-                    entity->spriteAnimator.SetSpriteIfDifferent( core, mainSprite, false );
-                    entity->selectionAnimator.SetSpriteIfDifferent( core, selectionSprite, false );
+                    entity->unit.averageFiringRange = 400.0f;
+                    entity->unit.maxHealth = 100;
+                    entity->unit.currentHealth = entity->unit.maxHealth;
 
                     UnitTurret turret1 = {};
                     turret1.size = WeaponSize::SMALL;
                     turret1.posOffset = glm::vec2( -4, 7 );
-                    turret1.fireRate = 0.5f;
+                    turret1.fireRate = 1.25f;
                     turret1.fireRange = 400.0f;
-                    turret1.fireDamage = 1.0f;
                     entity->unit.turrets.Add( turret1 );
 
                     UnitTurret turret2 = {};
                     turret2.size = WeaponSize::SMALL;
                     turret2.posOffset = glm::vec2( 4, 7 );
-                    turret2.fireRate = 0.5f;
+                    turret2.fireRate = 1.25f;
                     turret2.fireRange = 400.0f;
-                    turret2.fireDamage = 1.0f;
                     entity->unit.turrets.Add( turret2 );
 
                     UnitTurret turret3 = {};
                     turret3.size = WeaponSize::MEDIUM;
                     turret3.posOffset = glm::vec2( -7, -5 );
-                    turret3.fireRate = 0.5f;
+                    turret3.fireRate = 4.5f;
                     turret3.fireRange = 400.0f;
-                    turret3.fireDamage = 1.0f;
                     entity->unit.turrets.Add( turret3 );
 
                     UnitTurret turret4 = {};
                     turret4.size = WeaponSize::MEDIUM;
                     turret4.posOffset = glm::vec2( 7, -5 );
-                    turret4.fireRate = 0.5f;
+                    turret4.fireRate = 4.5f;
                     turret4.fireRange = 400.0f;
-                    turret4.fireDamage = 1.0f;
                     entity->unit.turrets.Add( turret4 );
+                } break;
+                case EntityType::BULLET_SMOL:
+                {
+                    static SpriteResource * mainSprite = core->ResourceGetAndCreateSprite( "res/ents/test/bullet_smol.png", 1, 7, 7, 0 );
+                    static SpriteResource * sprVFX_SmallExplody = core->ResourceGetAndCreateSprite( "res/ents/test/bullet_hit_smol.png", 3, 16, 16, 10 );
+                    static AudioResource * audVFX_SmallExplody = core->ResourceGetAndCreateAudio( "res/sounds/tomwinandysfx_explosions_volume_i_closeexplosion_01.wav", true, false, 400.0f, 1000.0f );
+
+                    //if( sprVFX_SmallExplody->frameActuations.GetCount() == 0 ) {
+                    //    SpriteActuation a1 = {};
+                    //    a1.audioResources.Add( audVFX_SmallExplody );
+                    //    a1.frameIndex = 0;
+                    //    sprVFX_SmallExplody->frameActuations.Add( a1 );
+                    //}
+                    
+                    entity->spriteAnimator.SetSpriteIfDifferent( mainSprite, false );
+                    entity->bullet.sprVFX_SmallExplody = sprVFX_SmallExplody;
+                    entity->bullet.aliveTime = 1.87f;
+                    entity->bullet.damage = 5;
+                } break;
+                case EntityType::BULLET_MED:
+                {
+                    static SpriteResource * mainSprite = core->ResourceGetAndCreateSprite( "res/ents/test/bullet_med.png", 1, 8, 8, 0 );
+                    static SpriteResource * sprVFX_SmallExplody = core->ResourceGetAndLoadSprite( "res/sprites/vfx_small_explody/vfx_small_explody.json" );
+                    entity->spriteAnimator.SetSpriteIfDifferent( mainSprite, false );
+
+                    entity->bullet.sprVFX_SmallExplody = sprVFX_SmallExplody;
+                    entity->bullet.aliveTime = 3.0f;
+                    entity->bullet.damage = 8;
+                } break;
+                case EntityType::PLANET:
+                {
+                    static SpriteResource * mainSprite = core->ResourceGetAndCreateSprite( "res/ents/test/planet_big.png", 1, 250, 250, 0 );
+                    static SpriteResource * selectionSprite = core->ResourceGetAndCreateSprite( "res/ents/test/planet_big_selection.png", 1, 250, 250, 0 );
+                    entity->spriteAnimator.SetSpriteIfDifferent( mainSprite, false );
+                    entity->selectionAnimator.SetSpriteIfDifferent( selectionSprite, false );
+
+                    entity->isSelectable = true;
+                    entity->selectionCollider.type = COLLIDER_TYPE_CIRCLE;
+                    entity->selectionCollider.circle.pos = glm::vec2( 0, 0 );
+                    entity->selectionCollider.circle.rad = 250.0f;
+
                 } break;
             }
         }
@@ -319,13 +367,28 @@ namespace atto {
         return entity;
     }
 
-    void SimMap::SimAction_SpawnEntity( i32 * typePtr, i32 * playerNumberPtr, i32 * teamNumberPtr, glm::vec2 * posPtr, glm::vec2 * velPtr ) {
+    void SimMap::SimAction_SpawnEntity( i32 * typePtr, i32 * playerNumberPtr, i32 * teamNumberPtr, glm::vec2 * posPtr, f32 * oriPtr, glm::vec2 * velPtr ) {
         EntityType type = EntityType::Make( (EntityType::_enumerated)( * typePtr) );
         i32 playerNumber = *playerNumberPtr;
         i32 teamNumber = *teamNumberPtr;
+        f32 ori = *oriPtr;
         glm::vec2 pos = *posPtr;
         glm::vec2 vel = *velPtr;
-        SpawnEntity( type, playerNumber, teamNumber, pos, vel );
+        SpawnEntity( type, playerNumber, teamNumber, pos, ori, vel );
+        //core->LogOutput( LogLevel::INFO, "SimAction_SpawnEntity: type=%s, playerNumber=%d, teamNumber=%d, pos=(%f,%f), vel=(%f,%f)", type.ToString(), playerNumber, teamNumber, pos.x, pos.y, vel.x, vel.y );
+    }
+
+    void SimMap::DestroyEntity( SimEntity * entity ) {
+        if( entity != nullptr ) {
+            entityPool.Remove( entity->handle );
+        }
+    }
+
+    void SimMap::SimAction_DestroyEntity( EntityHandle * handlePtr ) {
+        EntityHandle handle = *handlePtr;
+        SimEntity * ent = entityPool.Get( handle );
+        DestroyEntity( ent );
+        //core->LogOutput( LogLevel::INFO, "SimAction_DestroyEntity: %d, %d", handle.idx, handle.gen );
     }
 
     void SimMap::SimAction_Select( i32 * playerNumberPtr, EntHandleList * selection, EntitySelectionChange * changePtr ) {
@@ -418,6 +481,19 @@ namespace atto {
         }
     }
 
+    void SimMap::SimAction_ApplyDamage( i32 * damagePtr, EntityHandle * targetPtr ) {
+        const i32 damage = *damagePtr;
+        const EntityHandle target = *targetPtr;
+        SimEntity * targetEnt = entityPool.Get( target );
+        if( targetEnt != nullptr ) {
+            targetEnt->unit.currentHealth -= damage;
+            if( targetEnt->unit.currentHealth <= 0 ) {
+                targetEnt->unit.currentHealth = 0;
+            }
+        }
+        //core->LogOutput( LogLevel::INFO, "SimAction_ApplyDamage: Applying damage %d to %d, %d", damage, target.idx, target.gen );
+    }
+
     static void SimTick_SelfUpdate( const ConstEntList * entities, i32 index, SimEntity * ent ) {
         const f32 playerSpeed = 2500.0f / 100.0f;
         const f32 maxForce = 20.0f;
@@ -425,105 +501,167 @@ namespace atto {
 
         ZeroStruct( ent->actions );
 
-        // Boid arrival
-        if( ent->type == EntityType::UNIT_TEST ) {
-            if( ent->navigator.hasDest == true ) {
-                const glm::vec2 targetPos = ent->navigator.dest;
-                glm::vec2 desiredVel = ( targetPos - ent->pos );
-                f32 dist = glm::length( desiredVel );
+        switch( ent->type ) {
+            case EntityType::UNIT_TEST:
+            {
+                Unit & unit = ent->unit;
 
-                if( dist < ent->navigator.slowRad ) {
-                    if( dist < 5 ) {
-                        desiredVel = glm::vec2( 0.0f );
+                if( unit.currentHealth == 0 ) {
+                    ent->actions.AddAction( MapActionType::SIM_ENTITY_DESTROY, ent->handle );
+                    break;
+                }
+
+                if( ent->navigator.hasDest == true ) {
+                    const glm::vec2 targetPos = ent->navigator.dest;
+                    glm::vec2 desiredVel = ( targetPos - ent->pos );
+                    f32 dist = glm::length( desiredVel );
+
+                    if( dist < ent->navigator.slowRad ) {
+                        if( dist < 5 ) {
+                            desiredVel = glm::vec2( 0.0f );
+                        }
+                        else {
+                            desiredVel = glm::normalize( desiredVel ) * playerSpeed * ( dist / ent->navigator.slowRad );
+                        }
                     }
                     else {
-                        desiredVel = glm::normalize( desiredVel ) * playerSpeed * ( dist / ent->navigator.slowRad );
+                        desiredVel = glm::normalize( desiredVel ) * playerSpeed;
                     }
+
+                #if 0
+                    if( dist > ent->navigator.slowRad ) {
+                        constexpr f32 maxSteerAngle = glm::radians( 15.0f );
+
+                        glm::vec2 current = ent->vel;
+                        if( glm::length2( current ) < 1.0f ) {
+                            current = glm::vec2( glm::sin( ent->ori ), glm::cos( ent->ori ) );
+                        }
+
+                        f32 fullSteers = glm::acos( glm::clamp( glm::dot( glm::normalize( desiredVel ), glm::normalize( current ) ), -1.0f, 1.0f ) ) / maxSteerAngle;
+                        f32 angl = glm::clamp( glm::sign( glm::dot( LeftPerp( desiredVel ), current ) ) * fullSteers, -1.0f, 1.0f );
+                        ent->ori += angl * maxSteerAngle;
+
+                        glm::vec2 face = glm::vec2( glm::sin( ent->ori ), glm::cos( ent->ori ) );
+                        desiredVel = face * playerSpeed;
+                    }
+                #endif
+
+                    if( glm::length2( ent->vel ) >= 1.0f ) {
+                        glm::vec2 nvel = glm::normalize( ent->vel );
+                        ent->ori = atan2f( nvel.x, nvel.y );
+                    }
+
+
+                    glm::vec2 steering = desiredVel - ent->vel;
+
+                    steering = Truncate( steering, maxForce );
+                    steering *= invMass;
+
+                    ent->vel = Truncate( ent->vel + steering, playerSpeed );
+                }
+
+                /*
+                f32 distToTarget = glm::length( desiredVel );
+                if( distToTarget < ent->navigator.slowRad ) {
+                    ent->acc = glm::vec2( 0.0f );
+                    ent->vel = glm::normalize( toTarget ) * playerSpeed * ( distToTarget / ent->navigator.slowRad );
                 }
                 else {
-                    desiredVel = glm::normalize( desiredVel ) * playerSpeed;
-                }
+                    ent->acc += glm::normalize( toTarget ) * playerSpeed;
+                }*/
 
-            #if 0
-                if( dist > ent->navigator.slowRad ) {
-                    constexpr f32 maxSteerAngle = glm::radians( 15.0f );
+                const i32 turretCount = unit.turrets.GetCount();
+                for( i32 turretIndex = 0; turretIndex < turretCount; turretIndex++ ) {
+                    UnitTurret & turret = unit.turrets[ turretIndex ];
+                    glm::vec2 worldPos = ent->pos + glm::rotate( turret.posOffset, -ent->ori );
 
-                    glm::vec2 current = ent->vel;
-                    if( glm::length2( current ) < 1.0f ) {
-                        current = glm::vec2( glm::sin( ent->ori ), glm::cos( ent->ori ) );
+                    turret.fireTimer -= SIM_DT;
+                    if( turret.fireTimer < 0.0f ) {
+                        turret.fireTimer = 0.0f;
                     }
 
-                    f32 fullSteers = glm::acos( glm::clamp( glm::dot( glm::normalize( desiredVel ), glm::normalize( current ) ), -1.0f, 1.0f ) ) / maxSteerAngle;
-                    f32 angl = glm::clamp( glm::sign( glm::dot( LeftPerp( desiredVel ), current ) ) * fullSteers, -1.0f, 1.0f );
-                    ent->ori += angl * maxSteerAngle;
+                    bool hasTarget = false;
+                    for( i32 entityIndexB = 0; entityIndexB < entities->GetCount(); entityIndexB++ ) {
+                        if( entityIndexB == index ) {
+                            continue;
+                        }
 
-                    glm::vec2 face = glm::vec2( glm::sin( ent->ori ), glm::cos( ent->ori ) );
-                    desiredVel = face * playerSpeed;
+                        const SimEntity * otherEnt = *entities->Get( entityIndexB );
+                        if( IsUnitType( otherEnt->type ) == false ) {
+                            continue;
+                        }
+
+                        if( otherEnt->teamNumber == ent->teamNumber ) {
+                            continue;
+                        }
+
+                        f32 dist2 = glm::distance2( worldPos, otherEnt->pos );
+                        if( dist2 <= turret.fireRange * turret.fireRange ) {
+                            glm::vec2 dir = glm::normalize( otherEnt->pos - worldPos );
+                            turret.ori = atan2f( dir.x, dir.y );
+                            hasTarget = true;
+
+                            if( turret.fireTimer == 0.0f ) {
+                                turret.fireTimer = turret.fireRate;
+                                EntityType btype = turret.size == WeaponSize::SMALL ? EntityType::Make( EntityType::BULLET_SMOL ) : EntityType::Make( EntityType::BULLET_MED );
+                                glm::vec2 spawnPos = turret.size == WeaponSize::SMALL ? worldPos : worldPos + dir * 10.0f;
+                                ent->actions.AddAction( MapActionType::SIM_ENTITY_SPAWN, (i32)btype, ent->playerNumber, ent->teamNumber, spawnPos, turret.ori, dir * 250.0f );
+                                break;
+                            }
+                        }
+                    }
+
+                    if( hasTarget == false ) {
+                        turret.ori = ent->ori;
+                    }
                 }
-            #endif
-
-                if( glm::length2( ent->vel ) >= 1.0f ) {
-                    glm::vec2 nvel = glm::normalize( ent->vel );
-                    ent->ori = atan2f( nvel.x, nvel.y );
+            } break;
+            case EntityType::BULLET_SMOL: // Fall 
+            case EntityType::BULLET_MED:
+            { 
+                Bullet & bullet = ent->bullet;
+                bullet.aliveTimer += SIM_DT;
+                if( bullet.aliveTimer > bullet.aliveTime ) {
+                    ent->actions.AddAction( MapActionType::SIM_ENTITY_DESTROY, ent->handle );
+                    break;
                 }
 
+                if( ent->spriteAnimator.loopCount >= 1 ) {
+                    ent->actions.AddAction( MapActionType::SIM_ENTITY_DESTROY, ent->handle );
+                    break;
+                }
 
-                glm::vec2 steering = desiredVel - ent->vel;
-
-                steering = Truncate( steering, maxForce );
-                steering *= invMass;
-
-                ent->vel = Truncate( ent->vel + steering, playerSpeed );
-            }
-
-            /*
-            f32 distToTarget = glm::length( desiredVel );
-            if( distToTarget < ent->navigator.slowRad ) {
-                ent->acc = glm::vec2( 0.0f );
-                ent->vel = glm::normalize( toTarget ) * playerSpeed * ( distToTarget / ent->navigator.slowRad );
-            }
-            else {
-                ent->acc += glm::normalize( toTarget ) * playerSpeed;
-            }*/
-
-            Unit & unit = ent->unit;
-            const i32 turretCount = unit.turrets.GetCount();
-            for( i32 turretIndex = 0; turretIndex < turretCount; turretIndex++ ) {
-                UnitTurret & turret = unit.turrets[ turretIndex ];
-                glm::vec2 worldPos = ent->pos + glm::rotate( turret.posOffset, -ent->ori );
-
-                bool hasTarget = false;
                 for( i32 entityIndexB = 0; entityIndexB < entities->GetCount(); entityIndexB++ ) {
                     if( entityIndexB == index ) {
                         continue;
                     }
 
                     const SimEntity * otherEnt = *entities->Get( entityIndexB );
+                    if( IsUnitType( otherEnt->type ) == false ) {
+                        continue;
+                    }
 
-                    f32 dist2 = glm::distance2( worldPos, otherEnt->pos );
-                    if( dist2 <= turret.fireRange * turret.fireRange ) {
-                        glm::vec2 nvel = glm::normalize( otherEnt->pos - worldPos );
-                        turret.ori = atan2f( nvel.x, nvel.y );
-                        hasTarget = true;
-                        
-                        if( turret.fireTimer == 0.0f ) {
-                            turret.fireTimer = turret.fireRate;
-                            ent->actions.AddAction( MapActionType::SIM_ENTITY_SPAWN, (i32)EntityType::BULLET_SMOL, ent->playerNumber, ent->teamNumber, worldPos, glm::vec2( 0.0f ) );
-                            break;
+                    if( otherEnt->teamNumber == ent->teamNumber ) {
+                        continue;
+                    }
+
+                    f32 dist2 = glm::distance2( ent->pos, otherEnt->pos );
+                    f32 r = ent->handle.idx * 10.0f;
+                    if( dist2 <= 36.0f * 36.0f + r) {
+                        bool changed = ent->spriteAnimator.SetSpriteIfDifferent( bullet.sprVFX_SmallExplody, false );
+                        ent->vel = glm::vec2( 0.0f );
+                        if( changed == true ) {
+                            ent->actions.AddAction( MapActionType::SIM_ENTITY_UNIT_APPLY_DAMAGE, bullet.damage, otherEnt->handle );
                         }
+                        break;
                     }
                 }
-
-                if( hasTarget == false ) {
-                    turret.ori = ent->ori;
-                }
-            }
+            } break;
         }
-
         //ent->acc.x -= ent->vel.x * ent->resistance;
         //ent->acc.y -= ent->vel.y * ent->resistance;
-        ent->vel += ent->acc * TURNS_DELTA;
-        ent->pos += ent->vel * TURNS_DELTA;
+        ent->vel += ent->acc * SIM_DT;
+        ent->pos += ent->vel * SIM_DT;
     }
 
     class SimMap_UpdateTask : public enki::ITaskSet {
@@ -570,7 +708,7 @@ namespace atto {
         entityPool.GatherActiveObjs( entities );
         entityPool.GatherActiveObjs_MemCopy( entityCache );
 
-    #if 0
+    #if 1
         const i32 entityCount = entities->GetCount();
         const i32 threadCount = (i32)core->taskScheduler.GetNumTaskThreads();
         const i32 partitonCount = ( entityCount + threadCount - 1 ) / threadCount;
@@ -596,18 +734,18 @@ namespace atto {
         }
     #endif
 
+        for( i32 entityIndex = 0; entityIndex < entityCount; entityIndex++ ) {
+            SimEntity * cachedEnt = entityCache->Get( entityIndex );
+            SimEntity * readEnt = const_cast< SimEntity * > ( *entities->Get( entityIndex ) ); // @NOTE: Being very sneaky here by const casting away the const.
+            *readEnt = *cachedEnt;
+        }
+
         // Apply map actions
         for( i32 entityIndex = 0; entityIndex < entityCount; entityIndex++ ) {
             SimEntity * ent = entityCache->Get( entityIndex );
             if( ent->actions.data.GetSize() != 0 ) {
                 Sim_ApplyActions( &ent->actions );
             }
-        }
-
-        for( i32 entityIndex = 0; entityIndex < entityCount; entityIndex++ ) {
-            SimEntity * cachedEnt = entityCache->Get( entityIndex );
-            SimEntity * readEnt = const_cast< SimEntity * > ( *entities->Get( entityIndex ) ); // @NOTE: Being very sneaky here by const casting away the const.
-            *readEnt = *cachedEnt;
         }
 
         turnNumber++;
@@ -711,67 +849,6 @@ namespace atto {
         player2Turns.Dequeue();
     }
 
-
-
-    void SpriteAnimator::SetFrameRate( f32 fps ) {
-        frameDuration = 1.0f / fps;
-    }
-
-    bool SpriteAnimator::SetSpriteIfDifferent( Core * core, SpriteResource * sprite, bool loops ) {
-        if( this->sprite != sprite ) {
-            this->sprite = sprite;
-            SetFrameRate( (f32)sprite->frameRate );
-            frameIndex = 0;
-            frameTimer = 0;
-            loopCount = 0;
-            this->loops = loops;
-            TestFrameActuations( core );
-            return true;
-        }
-        return false;
-    }
-
-    void SpriteAnimator::Update( Core * core, f32 dt ) {
-        if( sprite != nullptr && sprite->frameCount > 1 ) {
-            frameTimer += dt;
-            if( frameTimer >= frameDuration ) {
-                frameTimer -= frameDuration;
-                if( frameDelaySkip == 0 ) {
-                    frameIndex++;
-
-                    TestFrameActuations( core );
-
-                    if( frameIndex >= sprite->frameCount ) {
-                        if( loops == true ) {
-                            frameIndex = 0;
-                            loopCount++;
-                        }
-                        else {
-                            if( frameIndex >= sprite->frameCount ) {
-                                frameIndex = sprite->frameCount - 1;
-                                loopCount = 1;
-                            }
-                        }
-                    }
-                }
-                else {
-                    frameDelaySkip--;
-                }
-            }
-        }
-    }
-
-    void SpriteAnimator::TestFrameActuations( Core * core ) {
-        const i32 frameActuationCount = sprite->frameActuations.GetCount();
-        for( i32 frameActuationIndex = 0; frameActuationIndex < frameActuationCount; frameActuationIndex++ ) {
-            SpriteActuation & frameActuation = sprite->frameActuations[ frameActuationIndex ];
-            if( frameActuation.frameIndex == frameIndex ) {
-                if( frameActuation.audioResources.GetCount() > 0 ) {
-                    core->AudioPlayRandom( frameActuation.audioResources );
-                }
-            }
-        }
-    }
 
 }
 

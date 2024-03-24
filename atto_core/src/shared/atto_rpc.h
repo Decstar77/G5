@@ -31,7 +31,7 @@ namespace atto {
 
         template<typename _ret_, typename ... _args_>
         inline bool AreParamtersTheSame() {
-            i32 count = RpcBase<_ret_, _args_... >::instances.GetCount();
+            const i32 count = RpcBase<_ret_, _args_... >::instances.GetCount();
             for( i32 i = 0; i < count; i++ ) {
                 if( RpcBase<_ret_, _args_... >::instances[ i ] == this ) {
                     return true;
@@ -160,5 +160,4 @@ namespace atto {
             return ( objectPtr->*functionPtr )( std::forward<_args_>( args )... );
         }
     };
-
 }

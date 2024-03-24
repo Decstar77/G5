@@ -104,6 +104,25 @@ namespace atto {
         REFLECT();
     };
 
+    class SpriteAnimator {
+    public:
+        SpriteResource *    sprite;
+        i32                 frameIndex;
+        f32                 frameTimer;
+        f32                 frameDuration;
+        i32                 loopCount;
+        i32                 frameDelaySkip;
+        bool                loops;
+
+    public:
+        void                SetFrameRate( f32 fps );
+        bool                SetSpriteIfDifferent( SpriteResource * sprite, bool loops );
+        void                Update( Core * core, f32 dt );
+        void                TestFrameActuations( Core * core );
+
+        REFLECT();
+    };
+
     struct StaticMeshResource {
         SmallString name;
         BoxBounds boundingBox;
@@ -351,8 +370,6 @@ namespace atto {
         virtual SpriteResource *            ResourceGetAndCreateSprite( const char * spriteName, i32 frameCount, i32 frameWidth, i32 frameHeight, i32 frameRate ) = 0;
         virtual SpriteResource *            ResourceGetAndLoadSprite( const char * spriteName ) = 0;
         virtual SpriteResource *            ResourceGetLoadedSprite( i64 spriteId ) = 0; 
-
-        
 
         virtual FontHandle                  ResourceGetFont( const char * name ) = 0;
         

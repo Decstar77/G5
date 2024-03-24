@@ -731,6 +731,70 @@ namespace atto {
         return spriteName;
     }
 
+
+    void SpriteAnimator::SetFrameRate( f32 fps ) {
+        frameDuration = 1.0f / fps;
+    }
+
+    bool SpriteAnimator::SetSpriteIfDifferent( SpriteResource * sprite, bool loops ) {
+        if( this->sprite != sprite ) {
+            this->sprite = sprite;
+            SetFrameRate( (f32)sprite->frameRate );
+            frameIndex = 0;
+            frameTimer = 0;
+            loopCount = 0;
+            this->loops = loops;
+            return true;
+        }
+        return false;
+    }
+
+    void SpriteAnimator::Update( Core * core, f32 dt ) {
+        if( sprite != nullptr && sprite->frameCount > 1 ) {
+            if( frameTimer == 0.0f && frameIndex == 0 ) { // test to see if we have just started and neeed to play something
+                TestFrameActuations( core );
+            }
+
+            frameTimer += dt;
+            if( frameTimer >= frameDuration ) {
+                frameTimer -= frameDuration;
+                if( frameDelaySkip == 0 ) {
+                    frameIndex++;
+
+                    TestFrameActuations( core );
+
+                    if( frameIndex >= sprite->frameCount ) {
+                        if( loops == true ) {
+                            frameIndex = 0;
+                            loopCount++;
+                        }
+                        else {
+                            if( frameIndex >= sprite->frameCount ) {
+                                frameIndex = sprite->frameCount - 1;
+                                loopCount = 1;
+                            }
+                        }
+                    }
+                }
+                else {
+                    frameDelaySkip--;
+                }
+            }
+        }
+    }
+
+    void SpriteAnimator::TestFrameActuations( Core * core ) {
+        const i32 frameActuationCount = sprite->frameActuations.GetCount();
+        for( i32 frameActuationIndex = 0; frameActuationIndex < frameActuationCount; frameActuationIndex++ ) {
+            SpriteActuation & frameActuation = sprite->frameActuations[ frameActuationIndex ];
+            if( frameActuation.frameIndex == frameIndex ) {
+                if( frameActuation.audioResources.GetCount() > 0 ) {
+                    core->AudioPlayRandom( frameActuation.audioResources );
+                }
+            }
+        }
+    }
+
     LargeString Resource::GetShortName() const {
         LargeString result = {};
         result.Add( name.GetFilePart() );

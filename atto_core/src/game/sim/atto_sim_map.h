@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../shared/atto_math.h"
+#include "../../shared/atto_core.h"
 
 namespace atto {
     
@@ -8,7 +8,7 @@ namespace atto {
     constexpr static i32 MAX_PLAYERS = 4;
 
     constexpr i32 TURNS_PER_SECOND = 16;
-    constexpr f32 TURNS_DELTA = 1.0f / TURNS_PER_SECOND;
+    constexpr f32 SIM_DT = 1.0f / TURNS_PER_SECOND;
 
     constexpr f32 MAX_MAP_SIZE = 3000.0f;
 
@@ -29,10 +29,12 @@ namespace atto {
                 UNIT_TEST,
                 UNITS_END,
 
-               BULLETS_BEGIN,
-               BULLET_SMOL,
-               BULLET_MED,
-               BULLETS_END,
+                BULLETS_BEGIN,
+                BULLET_SMOL,
+                BULLET_MED,
+                BULLETS_END,
+
+                PLANET,
 
                TYPE_PROP
     );
@@ -54,24 +56,6 @@ namespace atto {
         f32                 slowRad;
     };
 
-    class SpriteResource; // @HACK: SimEntity should not know about this
-    struct SpriteAnimator {
-        SpriteResource *    sprite;
-        i32                 frameIndex;
-        f32                 frameTimer;
-        f32                 frameDuration;
-        i32                 loopCount;
-        i32                 frameDelaySkip;
-        bool                loops;
-
-        void                SetFrameRate( f32 fps );
-        bool                SetSpriteIfDifferent( Core * core, SpriteResource * sprite, bool loops );
-        void                Update( Core * core, f32 dt );
-        void                TestFrameActuations( Core * core );
-
-        REFLECT();
-    };
-
     enum class WeaponSize {
         SMALL,
         MEDIUM,
@@ -86,7 +70,6 @@ namespace atto {
         f32                 fireTimer;
         f32                 fireRate;
         f32                 fireRange;
-        f32                 fireDamage;
     };
 
     struct Unit {
@@ -102,6 +85,9 @@ namespace atto {
         WeaponSize                  size;
         i32                         damage;
         f32                         speed;
+        f32                         aliveTimer;
+        f32                         aliveTime;
+        SpriteResource *            sprVFX_SmallExplody;
     };
 
     inline FixedList<RpcHolder *, 256>         rpcTable = {};
@@ -116,12 +102,14 @@ namespace atto {
 
         // These are all the actions that can be taken by the simulation, they are not serialized across the network. It's expected that the determinism of the simulation will be the same across all clients.
         SIM_ENTITY_SPAWN,
+        SIM_ENTITY_DESTROY,
+        SIM_ENTITY_UNIT_APPLY_DAMAGE
     };
 
     class MapActionBuffer {
     public:
         template<typename... _types_>
-        void AddAction( MapActionType type, _types_... args ) {
+        inline void AddAction( MapActionType type, _types_... args ) {
             static_assert( is_present<EntityType, _types_...>::value == false, "AddAction :: Must pass EntityType as i32" );
             static_assert( is_present<EntityType::_enumerated, _types_...>::value == false, "AddAction :: Must pass EntityType as i32" );
         #if ATTO_GAME_CHECK_RPC_FUNCTION_TYPES
@@ -137,13 +125,13 @@ namespace atto {
 
     private:
         template< typename _type_ >
-        void DoSimSerialize( _type_ type ) {
+        inline void DoSimSerialize( _type_ type ) {
             static_assert( std::is_pointer<_type_>::value == false, "AddAction :: Cannot take pointers" );
             data.Write( &type );
         }
 
         template< typename _type_, typename... _types_ >
-        void DoSimSerialize( _type_ type, _types_... args ) {
+        inline void DoSimSerialize( _type_ type, _types_... args ) {
             static_assert( std::is_pointer<_type_>::value == false, "AddAction :: Cannot take pointers" );
             data.Write( &type );
             DoSimSerialize( args... );
@@ -244,16 +232,19 @@ namespace atto {
     public:
         void                                        Initialize( Core * core );
         void                                        Update( Core * core, f32 dt );
-        SimEntity *                                 SpawnEntity( EntityType type, i32 playerNumber, i32 teamNumber, glm::vec2 pos, glm::vec2 vel );
+        
+        SimEntity *                                 SpawnEntity( EntityType type, i32 playerNumber, i32 teamNumber, glm::vec2 pos, f32 ori, glm::vec2 vel );
+        void                                        DestroyEntity( SimEntity * entity );
 
         void                                        SimTick( MapTurn * turn1, MapTurn * turn2 );
         void                                        Sim_ApplyActions( MapActionBuffer * actionBuffer );
         
-        void                                        SimAction_SpawnEntity( i32 * type, i32 * playerNumber, i32 * teamNumber, glm::vec2 * pos, glm::vec2 * vel );
+        void                                        SimAction_SpawnEntity( i32 * type, i32 * playerNumber, i32 * teamNumber, glm::vec2 * pos, f32 * ori, glm::vec2 * vel );
+        void                                        SimAction_DestroyEntity( EntityHandle * handle );
         void                                        SimAction_Select( i32 * playerNumber, EntHandleList * selection, EntitySelectionChange * change );
         void                                        SimAction_Move( i32 * playerNumber, glm::vec2 * pos );
         void                                        SimAction_Attack( i32 * playerNumber, EntityHandle * target );
-
+        void                                        SimAction_ApplyDamage( i32 * damage, EntityHandle * target );
         
 
    
