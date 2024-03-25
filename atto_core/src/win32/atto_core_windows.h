@@ -127,8 +127,7 @@ namespace atto {
         virtual AudioSpeaker            AudioPlay( AudioResource * audioResource, glm::vec2 * pos ) override;
         virtual void                    AudioSetListener( glm::vec2 pos ) override;
 
-        virtual float                   FontGetTextBounds( FontHandle font, f32 fontSize, const char * text, glm::vec2 pos, BoxBounds2D & bounds ) override;
-        virtual void                    RenderSetCameraDims( f32 width, f32 height ) override;
+        virtual float                   FontGetTextBounds( FontHandle font, f32 fontSize, const char * text, glm::vec2 pos, BoxBounds2D & bounds, TextAlignment_H hA, TextAlignment_V vA ) override;
         virtual void                    RenderSubmit( DrawContext * dcxt, bool clearBackBuffers ) override;
         
         virtual void                    InputDisableMouse() override;
@@ -142,7 +141,8 @@ namespace atto {
         virtual bool                    WindowOpenNativeFileDialog( const char * basePath, const char * filter, LargeString & res ) override;
         virtual bool                    WindowOpenNativeFolderDialog( const char * basePath, LargeString & res ) override;
 
-        void                            GLResetSurface(f32 w, f32 h);
+        void                            GLResetSurface( f32 w, f32 h, f32 cameraWidth, f32 cameraHeight );
+        void                            GLSetCamera( f32 width, f32 height );
 
         static void                     WinBoyoWriteTextFile( const char * path, const char * text );
         static void                     WinBoyoReadTextFile( const char * path, char * text, i32 maxLen );

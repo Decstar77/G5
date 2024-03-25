@@ -19,10 +19,7 @@ namespace atto {
     static GLFWmonitor * monitor = nullptr;
     static LargeString                 monitorName = LargeString::FromLiteral( "" );
     static f64                         monitorRefreshRate = 0;
-    static GLFWwindow * window = nullptr;
-    static i32                         windowWidth = 0;
-    static i32                         windowHeight = 0;
-    static f32                         windowAspect = 0;
+    static GLFWwindow *                window = nullptr;
     static SmallString                 windowTitle = SmallString::FromLiteral( "Game" );
     static bool                        windowFullscreen = false;
     static bool                        shouldClose = false;
@@ -65,31 +62,6 @@ namespace atto {
     }
 
     static void FramebufferCallback( GLFWwindow * window, i32 w, i32 h ) {
-        WindowsCore * core = (WindowsCore *)glfwGetWindowUserPointer( window );
-        windowWidth = w;
-        windowHeight = h;
-        windowAspect = (f32)w / (f32)h;
-
-        core->GLResetSurface( (f32)w, (f32)h );
-    #if 0
-            // Maintain aspect ratio with black bars
-        mainSurfaceWidth = (i32)( 1280.0 * 1.6f );
-        mainSurfaceHeight = (i32)( 720.0 * 1.6f );
-        //mainSurfaceWidth = 480;
-        //mainSurfaceHeight = 360;
-
-        f32 ratioX = (f32)w / (f32)mainSurfaceWidth;
-        f32 ratioY = (f32)h / (f32)mainSurfaceHeight;
-        f32 ratio = ratioX < ratioY ? ratioX : ratioY;
-
-        i32 viewWidth = (i32)( mainSurfaceWidth * ratio );
-        i32 viewHeight = (i32)( mainSurfaceHeight * ratio );
-
-        i32 viewX = (i32)( ( w - mainSurfaceWidth * ratio ) / 2 );
-        i32 viewY = (i32)( ( h - mainSurfaceHeight * ratio ) / 2 );
-
-        glViewport( viewX, viewY, viewWidth, viewHeight );
-    #endif
     }
 
     void WindowsCore::Run( int argc, char ** argv ) {
@@ -125,8 +97,8 @@ namespace atto {
             //ATTOINFO("Using monitor name %s", os.monitorName.GetCStr());
         }
 
-        windowWidth = theGameSettings.windowWidth;
-        windowHeight = theGameSettings.windowHeight;
+        i32 windowWidth = theGameSettings.windowWidth;
+        i32 windowHeight = theGameSettings.windowHeight;
         //windowFullscreen = true;
         window = glfwCreateWindow( windowWidth, windowHeight, windowTitle.GetCStr(), windowFullscreen ? monitor : nullptr, 0 );
 
@@ -162,7 +134,7 @@ namespace atto {
 
         //RenderSetCameraDims( 320, 180 );
         //RenderSetCamera( 320 * 1.5f, 180 * 1.5f );
-        RenderSetCameraDims( 640, 360 );
+        GLSetCamera( 640, 360 );
         //RenderSetCamera( 1280, 720 );
         GLCheckCapablities();
         GLInitializeShapeRendering();
@@ -262,13 +234,11 @@ namespace atto {
         return glfwGetTime();
     }
 
-    void WindowsCore::RenderSetCameraDims( f32 width, f32 height ) {
-        cameraWidth = width;
-        cameraHeight = height;
+    void WindowsCore::GLSetCamera( f32 width, f32 height ) {
         i32 w = 0;
         i32 h = 0;
         glfwGetFramebufferSize( window, &w, &h );
-        GLResetSurface( (f32)w, (f32)h );
+        GLResetSurface( (f32)w, (f32)h, width, height );
     }
 
     void WindowsCore::RenderSubmit( DrawContext * dcxt, bool clearBackBuffers ) {
@@ -281,6 +251,10 @@ namespace atto {
             //glClearColor( 1.0f, 0.0f, 1.0f, 1.0f );
             glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
         }
+
+        f32 cameraWidth = dcxt->GetCameraWidth();
+        f32 cameraHeight = dcxt->GetCameraHeight();
+        GLSetCamera( cameraWidth, cameraHeight );
 
         const i32 drawCount = dcxt->drawList.GetCount();
         for( i32 i = 0; i < drawCount; i++ ) {
@@ -471,7 +445,7 @@ namespace atto {
                     m = glm::scale( m, glm::vec3( cmd.plane.dim, 1.0f ) );
 
                     glm::mat4 v = dcxt->cameraView;
-                    glm::mat4 p = dcxt->cameraProj;
+                    glm::mat4 p = dcxt->cameraProjection;
                     glm::mat4 pvm = p * v * m;
 
                     GLShaderProgramBind( staticMeshUnlitProgram );
@@ -492,7 +466,7 @@ namespace atto {
                     m = glm::scale( m, glm::vec3( cmd.sphere.r ) );
 
                     glm::mat4 v = dcxt->cameraView;
-                    glm::mat4 p = dcxt->cameraProj;
+                    glm::mat4 p = dcxt->cameraProjection;
                     glm::mat4 pvm = p * v * m;
 
                     GLShaderProgramBind( staticMeshUnlitProgram );
@@ -510,7 +484,7 @@ namespace atto {
                 case DrawCommandType::BOX:
                 {
                     glm::mat4 v = dcxt->cameraView;
-                    glm::mat4 p = dcxt->cameraProj;
+                    glm::mat4 p = dcxt->cameraProjection;
                     glm::mat4 pvm = p * v * cmd.box.m;
 
                     GLShaderProgramBind( staticMeshUnlitProgram );
@@ -534,7 +508,7 @@ namespace atto {
                     };
 
                     glm::mat4 v = dcxt->cameraView;
-                    glm::mat4 p = dcxt->cameraProj;
+                    glm::mat4 p = dcxt->cameraProjection;
                     glm::mat4 pvm = p * v;
 
                     GLShaderProgramBind( staticMeshUnlitProgram );
@@ -559,7 +533,7 @@ namespace atto {
                     };
 
                     glm::mat4 v = dcxt->cameraView;
-                    glm::mat4 p = dcxt->cameraProj;
+                    glm::mat4 p = dcxt->cameraProjection;
                     glm::mat4 pvm = p * v;
 
                     GLShaderProgramBind( staticMeshUnlitProgram );
@@ -593,7 +567,7 @@ namespace atto {
                     }
 
                     glm::mat4 v = dcxt->cameraView;
-                    glm::mat4 p = dcxt->cameraProj;
+                    glm::mat4 p = dcxt->cameraProjection;
                     glm::mat4 pvm = p * v * cmd.mesh.m;
 
                     GLShaderProgramBind( staticMeshUnlitProgram );
@@ -1285,7 +1259,7 @@ namespace atto {
         glBindBuffer( GL_ARRAY_BUFFER, 0 );
     }
 
-    void WindowsCore::GLResetSurface( f32 w, f32 h ) {
+    void WindowsCore::GLResetSurface( f32 w, f32 h, f32 cameraWidth, f32 cameraHeight ) {
         f32 ratioX = (f32)w / (f32)cameraWidth;
         f32 ratioY = (f32)h / (f32)cameraHeight;
         f32 ratio = ratioX < ratioY ? ratioX : ratioY;
@@ -1301,8 +1275,7 @@ namespace atto {
         mainSurfaceWidth = w;
         mainSurfaceHeight = h;
         viewport = glm::vec4( viewX, viewY, viewWidth, viewHeight );
-        cameraProjection = glm::ortho( 0.0f, cameraWidth, 0.0f, cameraHeight, -1.0f, 1.0f );
-        screenProjection = glm::ortho( 0.0f, (f32)w, (f32)h, 0.0f, -1.0f, 1.0f );
+        screenProjection = glm::ortho( 0.0f, (f32)w, 0.0f, h, -1.0f, 1.0f );
     }
 
 #if ATTO_EDITOR

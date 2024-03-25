@@ -23,7 +23,6 @@ namespace atto {
         }
 
         if( core->InputKeyJustPressed( KEY_CODE_F5 ) == true ) {
-            core->RenderSetCameraDims( 320, 180 );
             inGame = !inGame;
             GameStartParams parms = {};
             parms.isMutliplayer = false;
@@ -61,27 +60,6 @@ namespace atto {
             CanvasEditor( core, game );
 
             bool inputHandled = ImGui::GetIO().WantCaptureMouse;
-
-            if( inputHandled == false ) {
-                f32 cameraSpeed = 100.0f;
-                if( core->InputKeyDown( KeyCode::KEY_CODE_W ) ) {
-                    cameraPos.y += cameraSpeed * dt;
-                }
-                if( core->InputKeyDown( KeyCode::KEY_CODE_S ) ) {
-                    cameraPos.y -= cameraSpeed * dt;
-                }
-                if( core->InputKeyDown( KeyCode::KEY_CODE_A ) ) {
-                    cameraPos.x -= cameraSpeed * dt;
-                }
-                if( core->InputKeyDown( KeyCode::KEY_CODE_D ) ) {
-                    cameraPos.x += cameraSpeed * dt;
-                }
-
-                f32 zoomDelta = core->InputMouseWheelDelta() * 4.0f;
-                cameraWidth -= zoomDelta;
-                cameraHeight -= zoomDelta;
-                core->RenderSetCameraDims( cameraWidth, cameraHeight );
-            }
 
             // Get the draw contexts that the game filled
             DrawContext * spriteDrawContext = core->RenderGetDrawContext( 0, false );

@@ -47,7 +47,7 @@ namespace atto {
         }
 
 
-        ui.BeginBox( core->RenderGetMainSurfaceWidth() / 2, 250, true );
+        ui.BeginBox( core->RenderGetMainSurfaceWidth() / 2, core->RenderGetMainSurfaceHeight() - 250, true );
         if( ui.AddButton( "Loner" ) ) {
             GameStartParams parms = {};
             parms.isMutliplayer = false;

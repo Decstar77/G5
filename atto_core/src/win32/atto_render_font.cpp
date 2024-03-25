@@ -36,12 +36,12 @@ namespace atto {
         core->GLFontsRenderDelete();
     }
 
-    float WindowsCore::FontGetTextBounds( FontHandle font, f32 fontSize, const char * text, glm::vec2 pos, BoxBounds2D & bounds ) {
+    float WindowsCore::FontGetTextBounds( FontHandle font, f32 fontSize, const char * text, glm::vec2 pos, BoxBounds2D & bounds, TextAlignment_H hA, TextAlignment_V vA ) {
         FontContext fs = resources.fontContext;
         float fbounds[ 4 ] = {};
         fonsSetFont( fs, font.idx );
         fonsSetSize( fs, fontSize );
-        fonsSetAlign( fs, FONS_ALIGN_CENTER | FONS_ALIGN_BASELINE );
+        fonsSetAlign( fs, (i32)hA | (i32)vA ); //FONS_ALIGN_CENTER | FONS_ALIGN_BASELINE
         float r = fonsTextBounds( fs, pos.x, pos.y, text, NULL, fbounds );
         bounds.min.x = fbounds[ 0 ];
         bounds.min.y = fbounds[ 1 ];
@@ -52,15 +52,17 @@ namespace atto {
 
     void WindowsCore::RenderDrawCommandText( DrawCommand & cmd ) {
         FontContext fs = resources.fontContext;
+
         GLEnableAlphaBlending();
         GLShaderProgramBind( fontProgram );
         GLShaderProgramSetSampler( "TextureSampler", 0 );
-        GLShaderProgramSetMat4( "p", screenProjection );
+        GLShaderProgramSetTexture( "TextureSampler", fontTextureHandle, 0 );
+        GLShaderProgramSetMat4( "p", cmd.proj );
 
         u32 color = Colors::VecToU32( cmd.color );
         fonsSetFont( fs, cmd.text.font.idx );
         fonsSetSize( fs, cmd.text.fontSize );
-        fonsSetAlign( fs, FONS_ALIGN_CENTER | FONS_ALIGN_BASELINE );
+        fonsSetAlign( fs, cmd.text.align );
         fonsSetColor( fs, color );
         fonsDrawText( fs, cmd.text.bl.x, cmd.text.bl.y, cmd.text.text.GetCStr(), NULL );
     }
@@ -68,7 +70,7 @@ namespace atto {
     void WindowsCore::GLInitializeTextRendering() {
         i32 textureWidth = 512;
         i32 textureHeight = 512;
-        i32 textureFlags = FONS_ZERO_TOPLEFT;
+        i32 textureFlags = FONS_ZERO_BOTTOMLEFT;
 
         FONSparams params = {};
         params.width = textureWidth;
@@ -202,10 +204,6 @@ namespace atto {
 
             vertices[ i ].colour = colors[ i ];
         }
-
-        GLShaderProgramBind( fontProgram );
-        GLShaderProgramSetMat4( "p", screenProjection );
-        GLShaderProgramSetTexture( "TextureSampler", fontTextureHandle, 0 );
 
         glBindVertexArray( fontVertexBuffer.vao );
         GLVertexBufferUpdate( fontVertexBuffer, 0, size, vertices );

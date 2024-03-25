@@ -8,16 +8,18 @@ using namespace atto;
 /*
 MEMES:
     An ability that scrambles your opponesnts selections.... :D :D :D
-
+    ACHIVEMTN: You've been granted a random perk: Dead.
+    ACHIVEMTN: Hey, real quick, whats the radius on that?: "Yes."
 */
 
 /*
+* @TODO: Move to fixed point
+* @TODO: Y-sorting
 * @TODO: Fix circle rendering
-* @TODO: Fix alpha padding issue
 * @TODO: Live resource reloading.
 * @TODO: Store all resources in a single file.
 * @TODO: 3D Audio support.
-* @TODO: Fix bullet despawning
+* @TODO: Move to vulkan rendering
 */
 
 /*
@@ -72,10 +74,6 @@ IDEAS:
             Enemies:
                     -
 
-
-FUNNY:
-ACHIVEMTN: You've been granted a random perk: Dead.
-ACHIVEMTN: Hey, real quick, whats the radius on that?: "Yes."
 */
 
 

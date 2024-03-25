@@ -2,8 +2,13 @@
 #include "../atto_map_communicator.h"
 
 #include "../../shared/atto_rpc.h"
+#include "../../shared/atto_colors.h"
 
 namespace atto {
+
+    static FixedList<glm::vec2, 5 * 3> ui_LeftPanelCenters;
+    static FixedList<glm::vec2, 5 * 3> ui_RightPanelCenters;
+
     void SimMap::Initialize( Core * core ) {
         if( rpcTable[ 1 ] == nullptr ) {
             rpcTable[ (i32)MapActionType::PLAYER_SELECTION ]   = new RpcMemberFunction( this, &SimMap::SimAction_Select );
@@ -15,11 +20,30 @@ namespace atto {
             rpcTable[ (i32)MapActionType::SIM_ENTITY_UNIT_APPLY_DAMAGE ] = new RpcMemberFunction( this, &SimMap::SimAction_ApplyDamage );
         }
 
+        const f32 panelDim = 16 + 1;
+        const glm::vec2 ui_LeftFirst = glm::vec2( 193, 44 );
+        for( i32 x = 0; x < 5; x++ ) {
+            for( i32 y = 0; y < 3; y++ ) {
+                i32 flatIndex = x + y * 5;
+                ui_LeftPanelCenters[ flatIndex ] = ui_LeftFirst + glm::vec2( x * panelDim, -y * panelDim ) + glm::vec2( 0.5f, -0.5f );
+            }
+        }
+
+        const glm::vec2 ui_RightFirst = glm::vec2( 378, 44 );
+        for( i32 x = 0; x < 5; x++ ) {
+            for( i32 y = 0; y < 3; y++ ) {
+                i32 flatIndex = x + y * 5;
+                ui_RightPanelCenters[ flatIndex ] = ui_RightFirst + glm::vec2( x * panelDim, -y * panelDim ) + glm::vec2( 0.5f, -0.5f );
+            }
+        }
+
         this->core = core;
         syncQueues.Start();
-        //SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), 1, 1, glm::vec2( 100.0f ), 0.0f, glm::vec2( 0.0f ) );
-        //SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), 1, 1, glm::vec2( 500.0f ), 0.0f, glm::vec2( 0.0f ) );
-        SpawnEntity( EntityType::Make( EntityType::PLANET ), 2, 2, glm::vec2( 700.0f ), 0.0f, glm::vec2( 0.0f ) );
+        SpawnEntity( EntityType::Make( EntityType::PLANET ), 1, 1, glm::vec2( 500.0f, 700.0f ), 0.0f, glm::vec2( 0.0f ) );
+        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), 1, 1, glm::vec2( 600.0f ,700.0f ), 0.0f, glm::vec2( 0.0f ) );
+        
+        SpawnEntity( EntityType::Make( EntityType::PLANET ), 2, 2, glm::vec2( 2500.0f, 700.0f ), 0.0f, glm::vec2( 0.0f ) );
+        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), 2, 2, glm::vec2( 2400.0f, 700.0f ), 0.0f, glm::vec2( 0.0f ) );
     }
 
     void SimMap::Update( Core * core, f32 dt ) {
@@ -106,6 +130,7 @@ namespace atto {
         static TextureResource * background = core->ResourceGetAndLoadTexture( "res/maps/dark_blue.png" );
         static TextureResource * sprTurretSmol = core->ResourceGetAndLoadTexture( "res/ents/test/turret_smol.png" );
         static TextureResource * sprTurretMed = core->ResourceGetAndLoadTexture( "res/ents/test/turret_med.png" );
+        static TextureResource * sprUIMock = core->ResourceGetAndLoadTexture( "res/ents/test/ui_mock_01.png" );
 
         const f32 cameraSpeed = 20.0f;
         if( core->InputKeyDown( KEY_CODE_W ) == true ) {
@@ -150,19 +175,19 @@ namespace atto {
 
         localCameraPos -= ( localCameraZoomLerp - oldCameraWidth ) * 0.5f;
 
-        core->RenderSetCameraDims( localCameraZoomLerp.x, localCameraZoomLerp.y );
-
         DrawContext * spriteDrawContext = core->RenderGetDrawContext( 0, true );
         DrawContext * backgroundDrawContext = core->RenderGetDrawContext( 1, true );
-        DrawContext * debugDrawContext = core->RenderGetDrawContext( 2, true );
-        
+        DrawContext * uiDrawContext = core->RenderGetDrawContext( 2, true );
+
+        spriteDrawContext->SetCameraDims( localCameraZoomLerp.x, localCameraZoomLerp.y );
+        backgroundDrawContext->SetCameraDims( localCameraZoomLerp.x, localCameraZoomLerp.y );
+        uiDrawContext->SetCameraDims( 640, 360 );
+
         const glm::vec2 mapMin = glm::vec2( 0.0f );
         const glm::vec2 mapMax = glm::vec2( 3000.0f ) - glm::vec2( spriteDrawContext->GetCameraWidth(), spriteDrawContext->GetCameraHeight() );
         localCameraPos = glm::clamp( localCameraPos, mapMin, mapMax );
 
         spriteDrawContext->SetCameraPos( localCameraPos );
-        debugDrawContext->SetCameraPos( localCameraPos );
-
         spriteDrawContext->DrawTextureBL( background, glm::vec2( 0, 0 ) );
 
         const glm::vec2 mousePosPix = core->InputMousePosPixels();
@@ -171,6 +196,8 @@ namespace atto {
 
         EntList & entities = *core->MemoryAllocateTransient<EntList>();
         entityPool.GatherActiveObjs( entities );
+
+        bool inputMade = false;
 
         const i32 entityCount = entities.GetCount();
         for( i32 entityIndexA = 0; entityIndexA < entityCount; entityIndexA++ ) {
@@ -208,6 +235,98 @@ namespace atto {
                 }
             }
 
+            if( ent->type == EntityType::PLANET && ent->selectedBy.Contains( localPlayerNumber ) == true ) {
+                uiDrawContext->DrawTexture( sprUIMock, glm::vec2( 640 / 2, 360 / 2 ) );
+
+                const Planet & planet = ent->planet;
+
+                const glm::vec2 mousePosUISpace = uiDrawContext->ScreenPosToWorldPos( mousePosPix );
+
+                const i32 placementCount = planet.placements.GetCount();
+                for( i32 placementIndex = 0; placementIndex < placementCount; placementIndex++ ) {
+                    BoxBounds2D buttonBounds = {};
+                    buttonBounds.CreateFromCenterSize( ui_LeftPanelCenters[ placementIndex ], glm::vec2( 15 ) );
+
+                    bool isHovered = false;
+                    bool isClicked = false;
+
+                    const PlanetPlacementType & placementType = planet.placements[ placementIndex ];
+                    if( buttonBounds.Contains( mousePosUISpace ) == true ) {
+                        glm::vec4 col = glm::vec4( 0.2f, 0.4f, 0.4f, 0.5f );
+                        isHovered = true;
+
+                        if( core->InputMouseButtonDown( MOUSE_BUTTON_1 ) == true ) {
+                            col *= 1.3f;
+                        }
+
+                        uiDrawContext->DrawRect( buttonBounds.GetCenter(), buttonBounds.GetSize(), 0.0f, col );
+                        if( core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) == true ) { // @TODO: This is a bug, we need to check if the button was pressed to begin with.
+                            inputMade = true;
+                            isClicked = true;
+                        }
+                    }
+
+                    switch( placementType ) {
+                        case PlanetPlacementType::INVALID: break;
+                        case PlanetPlacementType::BLOCKED: break;
+                        case PlanetPlacementType::OPEN: {
+                            if( isHovered == true ) {
+                                glm::vec2 bl = buttonBounds.GetCenter() + glm::vec2( 8, 0 );
+                                glm::vec2 tr = buttonBounds.GetCenter() + glm::vec2( 64, 64 );
+                                glm::vec2 tl = glm::vec2( bl.x, tr.y );
+                                glm::vec4 col = Colors::SKY_BLUE;
+                                col.a = 0.9f;
+                                uiDrawContext->DrawRect( bl, tr, col );
+                                uiDrawContext->DrawTextCam( fontHandle, tl + glm::vec2( 2, -14 ), 12, "Open Slot" );
+                            }
+                        } break;
+                        case PlanetPlacementType::CREDIT_GENERATOR:
+                        {
+                            uiDrawContext->DrawTextCam( fontHandle, buttonBounds.GetCenter(), 14, "C", TextAlignment_H::FONS_ALIGN_CENTER, TextAlignment_V::FONS_ALIGN_MIDDLE );
+                        } break;
+                        case PlanetPlacementType::ENERGY_GENERATOR:
+                        {
+                            uiDrawContext->DrawTextCam( fontHandle, buttonBounds.GetCenter(), 14, "E", TextAlignment_H::FONS_ALIGN_CENTER, TextAlignment_V::FONS_ALIGN_MIDDLE );
+                        } break;
+                        case PlanetPlacementType::COMPUTE_GENERATOR:
+                        {
+                            uiDrawContext->DrawTextCam( fontHandle, buttonBounds.GetCenter(), 14, "O", TextAlignment_H::FONS_ALIGN_CENTER, TextAlignment_V::FONS_ALIGN_MIDDLE );
+                        } break;
+                    }
+
+                  
+                }
+
+                for( i32 rightPanelIndex = 0; rightPanelIndex < ui_RightPanelCenters.GetCapcity(); rightPanelIndex++ ) {
+                    //uiDrawContext->DrawRect( ui_RightPanelCenters[ rightPanelIndex ], glm::vec2( 15 ), 0.0f );
+                    BoxBounds2D buttonBounds = {};
+                    buttonBounds.CreateFromCenterSize( ui_RightPanelCenters[ rightPanelIndex ], glm::vec2( 15 ) );
+
+                    if( buttonBounds.Contains( mousePosUISpace ) == true ) {
+                        glm::vec4 col = glm::vec4( 0.2f, 0.4f, 0.4f, 0.5f );
+                        if( core->InputMouseButtonDown( MOUSE_BUTTON_1 ) == true ) {
+                            col *= 1.3f;
+                        }
+
+                        uiDrawContext->DrawRect( buttonBounds.GetCenter(), buttonBounds.GetSize(), 0.0f, col );
+                        if( core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) == true ) { // @TODO: This is a bug, we need to check if the button was pressed to begin with.
+                            inputMade = true;
+                            localActionBuffer.AddAction( MapActionType::SIM_ENTITY_SPAWN, (i32)EntityType::UNIT_TEST, 1, 1, ent->pos, 0.0f, glm::vec2( 0, 0 ) );
+                        }
+                    }
+                }
+                 
+
+                SmallString creditsStr = StringFormat::Small( "Credits: %d", playerMonies[ localPlayerNumber - 1 ].credits );
+                uiDrawContext->DrawTextCam( fontHandle, glm::vec2( 458, 34 ), 12, creditsStr.GetCStr(), TextAlignment_H::FONS_ALIGN_LEFT, TextAlignment_V::FONS_ALIGN_MIDDLE );
+
+                SmallString energyStr = StringFormat::Small( "Energy: %d", playerMonies[ localPlayerNumber - 1 ].energy );
+                uiDrawContext->DrawTextCam( fontHandle, glm::vec2( 458, 20 ), 12, energyStr.GetCStr(), TextAlignment_H::FONS_ALIGN_LEFT, TextAlignment_V::FONS_ALIGN_MIDDLE );
+
+                SmallString computeStr = StringFormat::Small( "Compute: %d", playerMonies[ localPlayerNumber - 1 ].compute );
+                uiDrawContext->DrawTextCam( fontHandle, glm::vec2( 458, 6 ), 12, computeStr.GetCStr(), TextAlignment_H::FONS_ALIGN_LEFT, TextAlignment_V::FONS_ALIGN_MIDDLE );
+            }
+
             if( ent->isSelectable == true && core->InputMouseButtonJustPressed( MOUSE_BUTTON_1 ) == true ) {
                 Collider2D selectionCollider = ent->GetWorldSelectionCollider();
                 if( selectionCollider.Contains( mousePosWorld ) ) {
@@ -218,8 +337,7 @@ namespace atto {
             }
         }
 
-        if( core->InputMouseButtonJustPressed( MOUSE_BUTTON_2 ) == true ) {
-            bool inputMade = false;
+        if( inputMade == false && core->InputMouseButtonJustPressed( MOUSE_BUTTON_2 ) == true ) {
             for( i32 entityIndexA = 0; entityIndexA < entityCount; entityIndexA++ ) {
                 const SimEntity * ent = entities[ entityIndexA ];
                 if( ent->isSelectable == true ) {
@@ -229,7 +347,8 @@ namespace atto {
                             localActionBuffer.AddAction( MapActionType::PLAYER_ATTACK, localPlayerNumber, ent->handle );
                         }
                         else {
-                         // Follow
+                            // @TODO: Follow
+                            localActionBuffer.AddAction( MapActionType::PLAYER_MOVE, localPlayerNumber, ent->pos );
                         }
 
                         inputMade = true;
@@ -250,9 +369,11 @@ namespace atto {
         s = StringFormat::Small( "fps=%f", 1.0f / dt );
         spriteDrawContext->DrawText2D( fontHandle, glm::vec2( 128, 200 ), 32, s.GetCStr() );
 
+ 
+
         core->RenderSubmit( spriteDrawContext, true );
         core->RenderSubmit( backgroundDrawContext, false );
-        core->RenderSubmit( debugDrawContext, false );
+        core->RenderSubmit( uiDrawContext, false );
     }
 
     SimEntity * SimMap::SpawnEntity( EntityType type, i32 playerNumber, i32 teamNumber, glm::vec2 pos, f32 ori, glm::vec2 vel ) {
@@ -277,7 +398,7 @@ namespace atto {
             switch( entity->type ) {
                 case EntityType::UNIT_TEST:
                 {
-                    static SpriteResource * blueSprite = core->ResourceGetAndCreateSprite( "res/ents/test/ship_blue.png", 1, 48, 48, 0 );
+                    static SpriteResource * blueSprite = core->ResourceGetAndCreateSprite( "res/ents/test/ship_big_test.png", 1, 64, 128, 0 );
                     static SpriteResource * redSprite = core->ResourceGetAndCreateSprite( "res/ents/test/ship_red.png", 1, 48, 48, 0 );
                     static SpriteResource * selectionSprite = core->ResourceGetAndCreateSprite( "res/ents/test/ship_selected.png", 1, 48, 48, 0 );
                     SpriteResource * mainSprite = teamNumber == 1 ? blueSprite : redSprite;
@@ -358,8 +479,14 @@ namespace atto {
                     entity->isSelectable = true;
                     entity->selectionCollider.type = COLLIDER_TYPE_CIRCLE;
                     entity->selectionCollider.circle.pos = glm::vec2( 0, 0 );
-                    entity->selectionCollider.circle.rad = 250.0f;
+                    entity->selectionCollider.circle.rad = 125.0f;
 
+                    entity->planet.placements.Add( PlanetPlacementType::CREDIT_GENERATOR );
+                    entity->planet.placements.Add( PlanetPlacementType::CREDIT_GENERATOR );
+                    entity->planet.placements.Add( PlanetPlacementType::ENERGY_GENERATOR );
+                    entity->planet.placements.Add( PlanetPlacementType::OPEN );
+                    entity->planet.placements.Add( PlanetPlacementType::OPEN );
+                    entity->planet.placements.SetCount( MAX_PLANET_PLACEMENTS );
                 } break;
             }
         }

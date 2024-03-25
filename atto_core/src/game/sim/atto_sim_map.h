@@ -11,6 +11,7 @@ namespace atto {
     constexpr f32 SIM_DT = 1.0f / TURNS_PER_SECOND;
 
     constexpr f32 MAX_MAP_SIZE = 3000.0f;
+    
 
     class Core;
     class SimMap;
@@ -90,6 +91,23 @@ namespace atto {
         SpriteResource *            sprVFX_SmallExplody;
     };
 
+    enum class PlanetPlacementType {
+        INVALID = 0,
+        BLOCKED = 1,
+        OPEN = 2,
+        // Generic names because each race will have a unique name for each
+        CREDIT_GENERATOR,
+        ENERGY_GENERATOR,
+        COMPUTE_GENERATOR,
+
+        //REPAIR_STATION, // That's a cool idea
+    };
+
+    constexpr i32 MAX_PLANET_PLACEMENTS = 5 * 3;
+    struct Planet {
+        FixedList<PlanetPlacementType, MAX_PLANET_PLACEMENTS> placements;
+    };
+
     inline FixedList<RpcHolder *, 256>         rpcTable = {};
 
     enum class MapActionType : u8 {
@@ -165,6 +183,7 @@ namespace atto {
         Unit                        unit;
         Bullet                      bullet;
         Navigator                   navigator;
+        Planet                      planet;
         MapActionBuffer             actions;
 
         // ============ Visual stuffies ============ 
@@ -203,6 +222,12 @@ namespace atto {
         FixedQueue<MapTurn, 10> player2Turns = {};
     };
 
+    struct PlayerMonies {
+        i32 playerNumber; 
+        i32 credits;
+        i32 energy;
+        i32 compute;
+    };
 
     class SimMap {
     public:
@@ -219,6 +244,7 @@ namespace atto {
         i32                                         syncWaitTurnCounter = {};
         SyncQueues                                  syncQueues = {};
         FixedList<i32, 4>                           playerNumbers = {};
+        FixedList<PlayerMonies, 4>                  playerMonies = {};
 
         i32                                         localPlayerNumber = -1;
         i32                                         localPlayerTeamNumber = -1;

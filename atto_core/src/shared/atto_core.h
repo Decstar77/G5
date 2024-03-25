@@ -224,6 +224,7 @@ namespace atto {
                     glm::mat4 proj;
                     SmallString text;
                     f32 fontSize;
+                    i32 align;
                     FontHandle font;
                 } text;
                 struct {
@@ -268,6 +269,19 @@ namespace atto {
         f32 zFar;
     };
 
+    enum class TextAlignment_H {
+        FONS_ALIGN_LEFT = 1 << 0, // Default
+        FONS_ALIGN_CENTER = 1 << 1,
+        FONS_ALIGN_RIGHT = 1 << 2,
+    };
+
+    enum class TextAlignment_V {
+        FONS_ALIGN_TOP = 1 << 3,
+        FONS_ALIGN_MIDDLE = 1 << 4,
+        FONS_ALIGN_BOTTOM = 1 << 5,
+        FONS_ALIGN_BASELINE = 1 << 6, // Default
+    };
+
     class DrawContext {
         friend class Core;
         friend class WindowsCore;
@@ -285,7 +299,8 @@ namespace atto {
         void DrawTextureScreen( TextureResource * texture, glm::vec2 bl, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
         void DrawSprite( SpriteResource * sprite, i32 frameIndex, glm::vec2 center, f32 rot = 0.0f, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
         void DrawSprite( SpriteResource * sprite, i32 tileX, i32 tileY, glm::vec2 center, f32 rot = 0.0f, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
-        void DrawText2D( FontHandle font, glm::vec2 tl, f32 fontSize, const char * text, glm::vec4 colour = glm::vec4( 1 ) );
+        void DrawTextCam( FontHandle font, glm::vec2 tl, f32 fontSize, const char * text, TextAlignment_H hA = TextAlignment_H::FONS_ALIGN_LEFT, TextAlignment_V vA = TextAlignment_V::FONS_ALIGN_BASELINE, glm::vec4 colour = glm::vec4( 1 ) );
+        void DrawText2D( FontHandle font, glm::vec2 tl, f32 fontSize, const char * text, TextAlignment_H hA = TextAlignment_H::FONS_ALIGN_LEFT, TextAlignment_V vA = TextAlignment_V::FONS_ALIGN_BASELINE, glm::vec4 colour = glm::vec4( 1 ) );
         void DrawPlane( glm::vec3 center, glm::vec3 normal, glm::vec2 dim, glm::vec4 colour = glm::vec4( 1 ) );
         void DrawSphere( glm::vec3 center, f32 r, glm::vec4 colour = glm::vec4( 1 ) );
         void DrawBox( glm::vec3 min, glm::vec3 max, glm::vec4 colour = glm::vec4( 1 ) );
@@ -295,17 +310,17 @@ namespace atto {
 
         void DrawMesh( StaticMeshResource * mesh, glm::mat4 m, TextureResource * albedo = nullptr );
 
-        glm::vec2 ScreenPosToWorldPos( glm::vec2 screenPos );
+        glm::vec2           ScreenPosToWorldPos( glm::vec2 screenPos );
 
         inline glm::vec2    GetMainSurfaceDims() const { return glm::vec2( mainSurfaceWidth, mainSurfaceHeight ); }
         inline f32          GetMainAspectRatio() const { return mainAspect; }
 
+        void                SetCameraDims( f32 w, f32 h );
         inline f32          GetCameraWidth() const { return cameraWidth; }
         inline f32          GetCameraHeight() const { return cameraHeight; }
         inline glm::vec2    GetCameraDims() const { return glm::vec2( cameraWidth, cameraHeight ); }
 
     private:
-        glm::mat4       cameraProj;
         glm::mat4       cameraView; // For 3D stuffies
         glm::vec2       cameraPos;
 
@@ -316,6 +331,7 @@ namespace atto {
         f32             cameraWidth;
         f32             cameraHeight;
         glm::mat4       screenProjection;
+        glm::mat4       cameraProjection;
         FixedList<DrawCommand, 4000> drawList;
     };
 
@@ -393,12 +409,11 @@ namespace atto {
         template< typename _type_>
         bool                                ResourceReadBinaryRefl( _type_ * obj, const char * path );
 
-        virtual float                       FontGetTextBounds( FontHandle font, f32 fontSize, const char * text, glm::vec2 pos, BoxBounds2D & bounds ) = 0;
+        virtual float                       FontGetTextBounds( FontHandle font, f32 fontSize, const char * text, glm::vec2 pos, BoxBounds2D & bounds, TextAlignment_H hA = TextAlignment_H::FONS_ALIGN_LEFT, TextAlignment_V vA = TextAlignment_V::FONS_ALIGN_BASELINE ) = 0;
 
         DrawContext *                       RenderGetDrawContext( i32 index, bool clear = true );
         f32                                 RenderGetMainSurfaceWidth() const { return mainSurfaceWidth; }
         f32                                 RenderGetMainSurfaceHeight() const { return mainSurfaceHeight; }
-        virtual void                        RenderSetCameraDims( f32 width, f32 height ) = 0;
         virtual void                        RenderSubmit( DrawContext * dcxt, bool clearBackBuffers ) = 0;
 
         virtual AudioSpeaker                AudioPlay( AudioResource * audioResource, glm::vec2 * pos = nullptr ) = 0;
@@ -477,20 +492,17 @@ namespace atto {
         FrameInput                          input = {};
         UIState                             uiState = {};
 
-        GameMode *                  currentGameMode = nullptr;
-        GameMode *                  nextGameMode = nullptr;
-        Editor *                    editor = nullptr;
-        NetClient *                 client = nullptr;
+        GameMode *                          currentGameMode = nullptr;
+        GameMode *                          nextGameMode = nullptr;
+        Editor *                            editor = nullptr;
+        NetClient *                         client = nullptr;
 
-        f32                 deltaTime = 0.0f;
+        f32                                 deltaTime = 0.0f;
 
-        f32                 mainSurfaceWidth;
-        f32                 mainSurfaceHeight;
-        glm::mat4           screenProjection;
-        f32                 cameraWidth;
-        f32                 cameraHeight;
-        glm::mat4           cameraProjection;
-        glm::vec4           viewport;
+        f32                                 mainSurfaceWidth;
+        f32                                 mainSurfaceHeight;
+        glm::mat4                           screenProjection;
+        glm::vec4                           viewport;
 
         glm::vec2           listenerPos;
 

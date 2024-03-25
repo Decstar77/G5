@@ -24,14 +24,14 @@ namespace atto {
         FontHandle fontHandle = core->ResourceGetFont( "default" );
         UIElement el = {};
         el.text = text;
-        core->FontGetTextBounds( fontHandle, 32, text, glm::vec2( startX, startY ), el.textBounds );
+        core->FontGetTextBounds( fontHandle, 32, text, glm::vec2( startX, startY ), el.textBounds, TextAlignment_H::FONS_ALIGN_CENTER );
 
         const f32 w = el.textBounds.GetWidth();
         const f32 h = el.textBounds.GetHeight();
 
         el.pos = glm::vec2( startX, startY );
 
-        startY += h + 13;
+        startY -= h + 13;
         bool clicked = false;
         glm::vec2 mousePos = core->InputMousePosPixels();
         if( el.textBounds.Contains( mousePos ) ) {
@@ -65,7 +65,7 @@ namespace atto {
             }
 
             drawContext->DrawRectScreen( el.textBounds.min, el.textBounds.max, backColor );
-            drawContext->DrawText2D( fontHandle, el.pos, 32, el.text.GetCStr() );
+            drawContext->DrawText2D( fontHandle, el.pos, 32, el.text.GetCStr(), TextAlignment_H::FONS_ALIGN_CENTER );
         }
 
         //drawContext->DrawRectScreen( glm::vec2( 50, 0 ), glm::vec2( 100, 100 ) );

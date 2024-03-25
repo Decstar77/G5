@@ -114,14 +114,15 @@ namespace atto {
         if( clear == true ) {
             ZeroStructPtr( d );
         }
-        d->cameraProj = cameraProjection;
-        d->screenProjection = screenProjection;
+
         d->mainSurfaceHeight = mainSurfaceHeight;
         d->mainSurfaceWidth = mainSurfaceWidth;
         d->mainAspect = mainSurfaceWidth / mainSurfaceHeight;
-        d->cameraWidth = cameraWidth;
-        d->cameraHeight = cameraHeight;
+        d->cameraWidth = 640;
+        d->cameraHeight = 360;
         d->viewport = viewport;
+        d->screenProjection = screenProjection;
+        d->cameraProjection = glm::ortho( 0.0f, 640.0f, 0.0f, 360.0f, -1.0f, 1.0f );
 
         return d;
     }
@@ -143,7 +144,7 @@ namespace atto {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::RECT;
         cmd.color = colour;
-        cmd.proj = cameraProj;
+        cmd.proj = cameraProjection;
         cmd.rect.bl = bl;
         cmd.rect.br = glm::vec2( tr.x, bl.y );
         cmd.rect.tr = tr;
@@ -157,7 +158,7 @@ namespace atto {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::RECT;
         cmd.color = color;
-        cmd.proj = cameraProj;
+        cmd.proj = cameraProjection;
 
         cmd.rect.bl = -dim / 2.0f;
         cmd.rect.tr = dim / 2.0f;
@@ -207,7 +208,7 @@ namespace atto {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::LINE2D;
         cmd.color = color;
-        cmd.proj = cameraProj;
+        cmd.proj = cameraProjection;
         cmd.line2D.p1 = points[ 0 ];
         cmd.line2D.p2 = points[ 1 ];
         cmd.line2D.p3 = points[ 2 ];
@@ -226,7 +227,7 @@ namespace atto {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::TEXTURE;
         cmd.color = colour;
-        cmd.proj = cameraProj;
+        cmd.proj = cameraProjection;
         cmd.texture.textureRes = texture;
 
         glm::vec2 dim = glm::vec2( texture->width, texture->height ) * size;
@@ -253,7 +254,7 @@ namespace atto {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::TEXTURE;
         cmd.color = colour;
-        cmd.proj = cameraProj;
+        cmd.proj = cameraProjection;
         cmd.texture.textureRes = texture;
 
         glm::vec2 dim = glm::vec2( texture->width, texture->height ) * size;
@@ -270,7 +271,7 @@ namespace atto {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::TEXTURE;
         cmd.color = colour;
-        cmd.proj = cameraProj;
+        cmd.proj = cameraProjection;
         cmd.texture.textureRes = texture;
 
         glm::vec2 dim = glm::vec2( texture->width, texture->height ) * size;
@@ -303,7 +304,7 @@ namespace atto {
         cmd.type = DrawCommandType::SPRITE;
         cmd.color = colour;
         cmd.sprite.spriteRes = sprite;
-        cmd.proj = cameraProj;
+        cmd.proj = cameraProjection;
 
         glm::vec2 dim = glm::vec2( sprite->frameWidth, sprite->frameHeight ) * size;
         cmd.sprite.bl = -dim / 2.0f;
@@ -338,7 +339,7 @@ namespace atto {
         cmd.type = DrawCommandType::SPRITE;
         cmd.color = colour;
         cmd.sprite.spriteRes = sprite;
-        cmd.proj = cameraProj;
+        cmd.proj = cameraProjection;
 
         glm::vec2 dim = glm::vec2( sprite->tileWidth, sprite->tileHeight ) * size;
         cmd.sprite.bl = -dim / 2.0f;
@@ -374,14 +375,31 @@ namespace atto {
         drawList.Add( cmd );
     }
 
-    void DrawContext::DrawText2D( FontHandle font, glm::vec2 bl, f32 fontSize, const char * text, glm::vec4 colour /*= glm::vec4( 1 ) */ ) {
+
+    void DrawContext::DrawTextCam( FontHandle font, glm::vec2 tl, f32 fontSize, const char * text, TextAlignment_H hA, TextAlignment_V vA , glm::vec4 colour ) {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::TEXT;
         cmd.color = colour;
+        cmd.proj = cameraProjection;
+        cmd.text.font = font;
+        cmd.text.text = text;
+        cmd.text.bl = tl;
+        cmd.text.fontSize = fontSize;
+        cmd.text.align = (i32)hA | (i32)vA;
+
+        drawList.Add( cmd );
+    }
+
+    void DrawContext::DrawText2D( FontHandle font, glm::vec2 bl, f32 fontSize, const char * text, TextAlignment_H hA, TextAlignment_V vA, glm::vec4 colour ) {
+        DrawCommand cmd = {};
+        cmd.type = DrawCommandType::TEXT;
+        cmd.color = colour;
+        cmd.proj = screenProjection;
         cmd.text.font = font;
         cmd.text.text = text;
         cmd.text.bl = bl;
         cmd.text.fontSize = fontSize;
+        cmd.text.align = (i32)hA | (i32)vA;
 
         drawList.Add( cmd );
     }
@@ -467,8 +485,6 @@ namespace atto {
     }
 
     glm::vec2 DrawContext::ScreenPosToWorldPos( glm::vec2 screenPos ) {
-        screenPos.y = mainSurfaceHeight - screenPos.y;
-
         // @NOTE: Convert to [ 0, 1] not NDC[-1, 1] because 
         // @NOTE: we're doing a small optimization here by not doing the inverse of the camera matrix
         // @NOTE: but instead just using the camera width and height
@@ -485,6 +501,12 @@ namespace atto {
         f32 wy = ny * cameraHeight;
 
         return glm::vec2( wx, wy ) + cameraPos;
+    }
+
+    void DrawContext::SetCameraDims( f32 w, f32 h ) {
+        cameraWidth = w;
+        cameraHeight = h;
+        cameraProjection = glm::ortho( 0.0f, cameraWidth, 0.0f, cameraHeight, -1.0f, 1.0f );
     }
 
     void Core::NetConnect() {
@@ -584,7 +606,9 @@ namespace atto {
     }
 
     glm::vec2 Core::InputMousePosPixels() {
-        return input.mousePosPixels;
+        glm::vec2 screenPos = input.mousePosPixels;
+        screenPos.y = mainSurfaceHeight - screenPos.y;
+        return screenPos;
     }
 
     glm::vec2 Core::InputMouseDeltaPixels() {
