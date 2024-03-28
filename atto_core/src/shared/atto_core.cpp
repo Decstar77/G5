@@ -137,6 +137,7 @@ namespace atto {
         cmd.color = colour;
         cmd.circle.c = pos;
         cmd.circle.r = radius;
+        cmd.proj = cameraProjection;
         drawList.Add( cmd );
     }
 
@@ -152,7 +153,6 @@ namespace atto {
 
         drawList.Add( cmd );
     }
-   
 
     void DrawContext::DrawRect( glm::vec2 center, glm::vec2 dim, f32 rot, const glm::vec4 & color /*= glm::vec4(1)*/ ) {
         DrawCommand cmd = {};
@@ -768,6 +768,7 @@ namespace atto {
             frameTimer = 0;
             loopCount = 0;
             this->loops = loops;
+            color = glm::vec4( 1 );
             return true;
         }
         return false;

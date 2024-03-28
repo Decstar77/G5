@@ -74,7 +74,7 @@ namespace atto {
     };
 
     class VertexLayoutStaticModel : public VertexLayout {
-        
+    public:
         void Layout() override;
         i32 SizeBytes() override;
         i32 StrideBytes() override;
@@ -160,17 +160,17 @@ namespace atto {
 
         ShaderProgram *             boundProgram;
 
-        ShaderProgram               shapeProgram;
-        VertexBuffer                shapeVertexBuffer;
-        ShaderProgram               spriteProgram;
-        VertexBuffer                spriteVertexBuffer;
+        ShaderProgram                       shapeProgram;
+        VertexBuffer                        shapeVertexBuffer;
+        ShaderProgram                       spriteProgram;
+        VertexBuffer                        spriteVertexBuffer;
         
-        ShaderProgram                     staticMeshUnlitProgram;
-        Win32StaticMeshResource *         staticMeshTriangle;
-        Win32StaticMeshResource *         staticMeshPlane;
-        Win32StaticMeshResource *         staticMeshBox;
-        Win32StaticMeshResource *         staticMeshSphere;
-        Win32StaticMeshResource *         staticMeshCylinder;
+        ShaderProgram                       staticMeshUnlitProgram;
+        Win32StaticMeshResource *           staticMeshTriangle;
+        Win32StaticMeshResource *           staticMeshPlane;
+        Win32StaticMeshResource *           staticMeshBox;
+        Win32StaticMeshResource *           staticMeshSphere;
+        Win32StaticMeshResource *           staticMeshCylinder;
 
         FMOD::ChannelGroup *            fmodMasterGroup;
         FMOD::System *                  fmodSystem;
@@ -183,6 +183,9 @@ namespace atto {
         u32                         fontTextureHandle = 0;
         i32                         arialFontHandle;
         i32                         kenFontHandle;
+
+        FixedList<glm::vec2, 96>        shapeCirleBase;
+        FixedList<glm::vec2, 96>        shapeCirle;
 
         void            RenderDrawCommandText( DrawCommand & cmd );
 

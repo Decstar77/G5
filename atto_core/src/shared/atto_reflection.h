@@ -394,10 +394,10 @@ namespace atto {
 #define MAP32(m, x, ...) m(x) IDENTITY(MAP31(m, __VA_ARGS__))
 #define MAP33(m, x, ...) m(x) IDENTITY(MAP32(m, __VA_ARGS__))
 
-#define EVALUATE_COUNT(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, count, ...) count
+#define EVALUATE_COUNT(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, count, ...) count
 
 #define COUNT(...) \
-    IDENTITY(EVALUATE_COUNT(__VA_ARGS__, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1))
+    IDENTITY(EVALUATE_COUNT(__VA_ARGS__, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1))
 
 
     struct ignore_assign {

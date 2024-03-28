@@ -18,6 +18,8 @@ namespace atto {
             rpcTable[ (i32)MapActionType::SIM_ENTITY_SPAWN ]   = new RpcMemberFunction( this, &SimMap::SimAction_SpawnEntity );
             rpcTable[ (i32)MapActionType::SIM_ENTITY_DESTROY ] = new RpcMemberFunction( this, &SimMap::SimAction_DestroyEntity );
             rpcTable[ (i32)MapActionType::SIM_ENTITY_UNIT_APPLY_DAMAGE ] = new RpcMemberFunction( this, &SimMap::SimAction_ApplyDamage );
+
+            rpcTable[ (i32)MapActionType::SIM_MAP_MONIES_GIVE_ENERGY ] = new RpcMemberFunction( this, &SimMap::SimAction_GiveEnergy );
         }
 
         const f32 panelDim = 16 + 1;
@@ -30,8 +32,8 @@ namespace atto {
         }
 
         const glm::vec2 ui_RightFirst = glm::vec2( 378, 44 );
-        for( i32 x = 0; x < 5; x++ ) {
-            for( i32 y = 0; y < 3; y++ ) {
+        for ( i32 x = 0; x < 5; x++ ) {
+            for ( i32 y = 0; y < 3; y++ ) {
                 i32 flatIndex = x + y * 5;
                 ui_RightPanelCenters[ flatIndex ] = ui_RightFirst + glm::vec2( x * panelDim, -y * panelDim ) + glm::vec2( 0.5f, -0.5f );
             }
@@ -40,10 +42,25 @@ namespace atto {
         this->core = core;
         syncQueues.Start();
         SpawnEntity( EntityType::Make( EntityType::PLANET ), 1, 1, glm::vec2( 500.0f, 700.0f ), 0.0f, glm::vec2( 0.0f ) );
-        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), 1, 1, glm::vec2( 600.0f ,700.0f ), 0.0f, glm::vec2( 0.0f ) );
-        
+        SpawnEntity( EntityType::Make( EntityType::UNIT_WORKER ), 1, 1, glm::vec2( 700.0f ,700.0f ), 0.0f, glm::vec2( 0.0f ) );
+
         SpawnEntity( EntityType::Make( EntityType::PLANET ), 2, 2, glm::vec2( 2500.0f, 700.0f ), 0.0f, glm::vec2( 0.0f ) );
-        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), 2, 2, glm::vec2( 2400.0f, 700.0f ), 0.0f, glm::vec2( 0.0f ) );
+        SpawnEntity( EntityType::Make( EntityType::UNIT_WORKER ), 2, 2, glm::vec2( 2400.0f, 700.0f ), 0.0f, glm::vec2( 0.0f ) );
+
+        SpawnEntity( EntityType::Make( EntityType::STAR ), 0, 0, glm::vec2( 1500.0f, 1200.0f ), 0.0f, glm::vec2( 0.0f ) );
+
+        SpawnEntity( EntityType::Make( EntityType::BUILDING_SOLAR_ARRAY ), 1, 1, glm::vec2( 500.0f, 1000.0f ), 0.0f, glm::vec2( 0.0f ) )->building.isBuilding = false;
+
+        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), 1, 1, glm::vec2( 800.0f ,700.0f ), 0.0f, glm::vec2( 0.0f ) );
+        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), 1, 1, glm::vec2( 900.0f ,700.0f ), 0.0f, glm::vec2( 0.0f ) );
+        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), 1, 1, glm::vec2( 1000.0f ,700.0f ), 0.0f, glm::vec2( 0.0f ) );
+        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), 1, 1, glm::vec2( 1100.0f ,700.0f ), 0.0f, glm::vec2( 0.0f ) );
+
+        
+        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), 2, 2, glm::vec2( 2300.0f ,700.0f ), 0.0f, glm::vec2( 0.0f ) );
+        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), 2, 2, glm::vec2( 2200.0f ,700.0f ), 0.0f, glm::vec2( 0.0f ) );
+        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), 2, 2, glm::vec2( 2100.0f ,700.0f ), 0.0f, glm::vec2( 0.0f ) );
+        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), 2, 2, glm::vec2( 2000.0f ,700.0f ), 0.0f, glm::vec2( 0.0f ) );
     }
 
     void SimMap::Update( Core * core, f32 dt ) {
@@ -77,7 +94,7 @@ namespace atto {
                     return;
                 }
 
-                if( syncWaitTurnCounter > 0 ) {
+                if ( syncWaitTurnCounter > 0 ) {
                     syncWaitTurnCounter--;
                     core->LogOutput( LogLevel::WARN, "Waiting for %d turns", syncWaitTurnCounter );
                     return;
@@ -111,7 +128,7 @@ namespace atto {
         }
         else {
             dtAccumulator += dt;
-            if( dtAccumulator > SIM_DT ) {
+            if ( dtAccumulator > SIM_DT ) {
                 dtAccumulator -= SIM_DT;
 
                 localMapTurn.playerNumber = localPlayerNumber;
@@ -133,16 +150,16 @@ namespace atto {
         static TextureResource * sprUIMock = core->ResourceGetAndLoadTexture( "res/ents/test/ui_mock_01.png" );
 
         const f32 cameraSpeed = 20.0f;
-        if( core->InputKeyDown( KEY_CODE_W ) == true ) {
+        if ( core->InputKeyDown( KEY_CODE_W ) == true ) {
             localCameraPos.y += cameraSpeed;
         }
-        if( core->InputKeyDown( KEY_CODE_S ) == true ) {
+        if ( core->InputKeyDown( KEY_CODE_S ) == true ) {
             localCameraPos.y -= cameraSpeed;
         }
-        if( core->InputKeyDown( KEY_CODE_A ) == true ) {
+        if ( core->InputKeyDown( KEY_CODE_A ) == true ) {
             localCameraPos.x -= cameraSpeed;
         }
-        if( core->InputKeyDown( KEY_CODE_D ) == true ) {
+        if ( core->InputKeyDown( KEY_CODE_D ) == true ) {
             localCameraPos.x += cameraSpeed;
         }
 
@@ -176,28 +193,74 @@ namespace atto {
         localCameraPos -= ( localCameraZoomLerp - oldCameraWidth ) * 0.5f;
 
         DrawContext * spriteDrawContext = core->RenderGetDrawContext( 0, true );
-        DrawContext * backgroundDrawContext = core->RenderGetDrawContext( 1, true );
+        //DrawContext * backgroundDrawContext = core->RenderGetDrawContext( 1, true );
         DrawContext * uiDrawContext = core->RenderGetDrawContext( 2, true );
+        DrawContext * debugDrawContext = core->RenderGetDrawContext( 3, true );
 
         spriteDrawContext->SetCameraDims( localCameraZoomLerp.x, localCameraZoomLerp.y );
-        backgroundDrawContext->SetCameraDims( localCameraZoomLerp.x, localCameraZoomLerp.y );
         uiDrawContext->SetCameraDims( 640, 360 );
+        debugDrawContext->SetCameraDims( localCameraZoomLerp.x, localCameraZoomLerp.y );
 
         const glm::vec2 mapMin = glm::vec2( 0.0f );
         const glm::vec2 mapMax = glm::vec2( 3000.0f ) - glm::vec2( spriteDrawContext->GetCameraWidth(), spriteDrawContext->GetCameraHeight() );
         localCameraPos = glm::clamp( localCameraPos, mapMin, mapMax );
 
         spriteDrawContext->SetCameraPos( localCameraPos );
+        debugDrawContext->SetCameraPos( localCameraPos );
         spriteDrawContext->DrawTextureBL( background, glm::vec2( 0, 0 ) );
+
+        uiDrawContext->DrawTexture( sprUIMock, glm::vec2( 640 / 2, 360 / 2 ) );
+        SmallString creditsStr = StringFormat::Small( "Credits: %d", playerMonies[ localPlayerNumber - 1 ].credits );
+        uiDrawContext->DrawTextCam( fontHandle, glm::vec2( 458, 34 ), 12, creditsStr.GetCStr(), TextAlignment_H::FONS_ALIGN_LEFT, TextAlignment_V::FONS_ALIGN_MIDDLE );
+        SmallString energyStr = StringFormat::Small( "Energy: %d", playerMonies[ localPlayerNumber - 1 ].energy );
+        uiDrawContext->DrawTextCam( fontHandle, glm::vec2( 458, 20 ), 12, energyStr.GetCStr(), TextAlignment_H::FONS_ALIGN_LEFT, TextAlignment_V::FONS_ALIGN_MIDDLE );
+        SmallString computeStr = StringFormat::Small( "Compute: %d", playerMonies[ localPlayerNumber - 1 ].compute );
+        uiDrawContext->DrawTextCam( fontHandle, glm::vec2( 458, 6 ), 12, computeStr.GetCStr(), TextAlignment_H::FONS_ALIGN_LEFT, TextAlignment_V::FONS_ALIGN_MIDDLE );
 
         const glm::vec2 mousePosPix = core->InputMousePosPixels();
         const glm::vec2 mousePosWorld = spriteDrawContext->ScreenPosToWorldPos( mousePosPix );
-        const double currentTime = core->GetTheCurrentTime();
+        const glm::vec2 mousePosUISpace = uiDrawContext->ScreenPosToWorldPos( mousePosPix );
+
+        BoxBounds2D uiBounds = {};
+        uiBounds.min = glm::vec2( 114, 0 );
+        uiBounds.max = glm::vec2( 524, 60 );
+        const bool isMouseOverUI = uiBounds.Contains( mousePosUISpace );
+
+        if( isMouseOverUI == false && isPlacingBuilding == true ) {
+            if( core->InputMouseButtonJustReleased( MOUSE_BUTTON_2 ) == true ) {
+                isPlacingBuilding = false;
+            }
+
+            if( core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) == true ) {
+                isPlacingBuilding = false;
+                localActionBuffer.AddAction( MapActionType::SIM_ENTITY_SPAWN, (i32)EntityType::BUILDING_SOLAR_ARRAY, localPlayerNumber, localPlayerTeamNumber, mousePosWorld, 0.0f, glm::vec2( 0, 0 ) );
+            }
+        }
+
+        if ( isMouseOverUI == false && isPlacingBuilding == false ) {
+            if ( core->InputMouseButtonJustPressed( MOUSE_BUTTON_1 ) == true ) {
+                localIsDragging = true;
+                localStartDrag = mousePosWorld;
+                localEndDrag = mousePosWorld;
+                localNewSelection.Clear();
+            }
+        }
+
+        if ( localIsDragging == true ) {
+            localEndDrag = mousePosWorld;
+            if ( core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) == true ) {
+                localIsDragging = false;
+                localActionBuffer.AddAction( MapActionType::PLAYER_SELECTION, localPlayerNumber, localNewSelection, EntitySelectionChange::SET );
+            }
+        }
+
+        BoxBounds2D selectionBounds = {};
+        selectionBounds.min = glm::min( localStartDrag, localEndDrag );
+        selectionBounds.max = glm::max( localStartDrag, localEndDrag );
+       
 
         EntList & entities = *core->MemoryAllocateTransient<EntList>();
         entityPool.GatherActiveObjs( entities );
-
-        bool inputMade = false;
 
         const i32 entityCount = entities.GetCount();
         for( i32 entityIndexA = 0; entityIndexA < entityCount; entityIndexA++ ) {
@@ -216,7 +279,7 @@ namespace atto {
 
             ent->spriteAnimator.Update( core, dt );
             if( ent->spriteAnimator.sprite != nullptr ) {
-                spriteDrawContext->DrawSprite( ent->spriteAnimator.sprite, ent->spriteAnimator.frameIndex, drawPos, drawOri );
+                spriteDrawContext->DrawSprite( ent->spriteAnimator.sprite, ent->spriteAnimator.frameIndex, drawPos, drawOri, glm::vec2( 1 ), ent->spriteAnimator.color );
             }
 
             if( IsUnitType( ent->type ) ) {
@@ -234,13 +297,20 @@ namespace atto {
                     }
                 }
             }
+            else if ( IsBuildingType( ent->type ) ) {
+                const Building & building = ent->building;
+                if ( building.isBuilding == true ) {
+                    const f32 f = ( f32 ) building.turn / building.timeToBuildTurns;
+                    glm::vec2 bl = ent->pos + glm::vec2( -50, 20 );
+                    glm::vec2 tr = ent->pos + glm::vec2( 50, 30 );
+                    spriteDrawContext->DrawRect( bl, tr, glm::vec4( 0.7f ) );
+                    tr.x = glm::mix( bl.x, tr.x, f );
+                    spriteDrawContext->DrawRect( bl, tr, glm::vec4( 0.9f ) );
+                }
+            }
 
-            if( ent->type == EntityType::PLANET && ent->selectedBy.Contains( localPlayerNumber ) == true ) {
-                uiDrawContext->DrawTexture( sprUIMock, glm::vec2( 640 / 2, 360 / 2 ) );
-
+            if( localIsDragging == false && isPlacingBuilding == false && ent->type == EntityType::PLANET && ent->selectedBy.Contains( localPlayerNumber ) == true ) {
                 const Planet & planet = ent->planet;
-
-                const glm::vec2 mousePosUISpace = uiDrawContext->ScreenPosToWorldPos( mousePosPix );
 
                 const i32 placementCount = planet.placements.GetCount();
                 for( i32 placementIndex = 0; placementIndex < placementCount; placementIndex++ ) {
@@ -261,7 +331,6 @@ namespace atto {
 
                         uiDrawContext->DrawRect( buttonBounds.GetCenter(), buttonBounds.GetSize(), 0.0f, col );
                         if( core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) == true ) { // @TODO: This is a bug, we need to check if the button was pressed to begin with.
-                            inputMade = true;
                             isClicked = true;
                         }
                     }
@@ -293,8 +362,6 @@ namespace atto {
                             uiDrawContext->DrawTextCam( fontHandle, buttonBounds.GetCenter(), 14, "O", TextAlignment_H::FONS_ALIGN_CENTER, TextAlignment_V::FONS_ALIGN_MIDDLE );
                         } break;
                     }
-
-                  
                 }
 
                 for( i32 rightPanelIndex = 0; rightPanelIndex < ui_RightPanelCenters.GetCapcity(); rightPanelIndex++ ) {
@@ -310,34 +377,70 @@ namespace atto {
 
                         uiDrawContext->DrawRect( buttonBounds.GetCenter(), buttonBounds.GetSize(), 0.0f, col );
                         if( core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) == true ) { // @TODO: This is a bug, we need to check if the button was pressed to begin with.
-                            inputMade = true;
                             localActionBuffer.AddAction( MapActionType::SIM_ENTITY_SPAWN, (i32)EntityType::UNIT_TEST, 1, 1, ent->pos, 0.0f, glm::vec2( 0, 0 ) );
                         }
                     }
                 }
-                 
-
-                SmallString creditsStr = StringFormat::Small( "Credits: %d", playerMonies[ localPlayerNumber - 1 ].credits );
-                uiDrawContext->DrawTextCam( fontHandle, glm::vec2( 458, 34 ), 12, creditsStr.GetCStr(), TextAlignment_H::FONS_ALIGN_LEFT, TextAlignment_V::FONS_ALIGN_MIDDLE );
-
-                SmallString energyStr = StringFormat::Small( "Energy: %d", playerMonies[ localPlayerNumber - 1 ].energy );
-                uiDrawContext->DrawTextCam( fontHandle, glm::vec2( 458, 20 ), 12, energyStr.GetCStr(), TextAlignment_H::FONS_ALIGN_LEFT, TextAlignment_V::FONS_ALIGN_MIDDLE );
-
-                SmallString computeStr = StringFormat::Small( "Compute: %d", playerMonies[ localPlayerNumber - 1 ].compute );
-                uiDrawContext->DrawTextCam( fontHandle, glm::vec2( 458, 6 ), 12, computeStr.GetCStr(), TextAlignment_H::FONS_ALIGN_LEFT, TextAlignment_V::FONS_ALIGN_MIDDLE );
             }
+            else if( localIsDragging == false && isPlacingBuilding == false && ent->type == EntityType::UNIT_WORKER && ent->selectedBy.Contains( localPlayerNumber ) == true ) {
+                for( i32 rightPanelIndex = 0; rightPanelIndex < ui_RightPanelCenters.GetCapcity(); rightPanelIndex++ ) {
+                    BoxBounds2D buttonBounds = {};
+                    buttonBounds.CreateFromCenterSize( ui_RightPanelCenters[ rightPanelIndex ], glm::vec2( 15 ) );
+                    
+                    if( rightPanelIndex == 0 ) {
+                        uiDrawContext->DrawTextCam( fontHandle, buttonBounds.GetCenter(), 14, "T", TextAlignment_H::FONS_ALIGN_CENTER, TextAlignment_V::FONS_ALIGN_MIDDLE );
+                    }
+                    else if( rightPanelIndex == 1 ) {
+                        uiDrawContext->DrawTextCam( fontHandle, buttonBounds.GetCenter(), 14, "S", TextAlignment_H::FONS_ALIGN_CENTER, TextAlignment_V::FONS_ALIGN_MIDDLE );
+                    }
+                    else if( rightPanelIndex == 2 ) {
+                        uiDrawContext->DrawTextCam( fontHandle, buttonBounds.GetCenter(), 14, "C", TextAlignment_H::FONS_ALIGN_CENTER, TextAlignment_V::FONS_ALIGN_MIDDLE );
+                    }
+                    
+                    if( buttonBounds.Contains( mousePosUISpace ) == true ) {
+                        glm::vec4 col = glm::vec4( 0.2f, 0.4f, 0.4f, 0.5f );
+                        if( core->InputMouseButtonDown( MOUSE_BUTTON_1 ) == true ) {
+                            col *= 1.3f;
+                        }
 
-            if( ent->isSelectable == true && core->InputMouseButtonJustPressed( MOUSE_BUTTON_1 ) == true ) {
-                Collider2D selectionCollider = ent->GetWorldSelectionCollider();
-                if( selectionCollider.Contains( mousePosWorld ) ) {
-                    EntHandleList & selection = *core->MemoryAllocateTransient<EntHandleList>();
-                    selection.Add( ent->handle );
-                    localActionBuffer.AddAction( MapActionType::PLAYER_SELECTION, localPlayerNumber, selection, EntitySelectionChange::SET );
+                        uiDrawContext->DrawRect( buttonBounds.GetCenter(), buttonBounds.GetSize(), 0.0f, col );
+                        if( core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) == true ) { // @TODO: This is a bug, we need to check if the button was pressed to begin with.
+
+                            if( rightPanelIndex == 0 ) {
+                            }
+                            else if( rightPanelIndex == 1 ) {
+                                isPlacingBuilding = true;
+                            }
+                            else if( rightPanelIndex == 2 ) {
+                            }
+                        }
+                    }
                 }
             }
+
+            if ( localIsDragging == true && ent->isSelectable == true ) {
+                Collider2D collider = ent->GetWorldSelectionCollider();
+                if ( collider.Intersects( selectionBounds ) == true ) {
+                    localNewSelection.AddUnique( ent->handle );
+                }
+            }
+
+            // DEBUG
+            #if ATTO_DEBUG
+            if ( true ) {
+                if ( ent->selectionCollider.type == ColliderType::COLLIDER_TYPE_CIRCLE ) {
+                    debugDrawContext->DrawCircle( ent->pos, ent->selectionCollider.circle.rad );
+                } else if (ent->selectionCollider.type == ColliderType::COLLIDER_TYPE_BOX ) {
+                    Collider2D c = ent->GetWorldSelectionCollider();
+                    debugDrawContext->DrawRect( c.box.min, c.box.max );
+                }
+            }
+
+            #endif
         }
 
-        if( inputMade == false && core->InputMouseButtonJustPressed( MOUSE_BUTTON_2 ) == true ) {
+        if( isMouseOverUI == false && core->InputMouseButtonJustPressed( MOUSE_BUTTON_2 ) == true ) {
+            bool inputMade = false;
             for( i32 entityIndexA = 0; entityIndexA < entityCount; entityIndexA++ ) {
                 const SimEntity * ent = entities[ entityIndexA ];
                 if( ent->isSelectable == true ) {
@@ -361,6 +464,12 @@ namespace atto {
                 localActionBuffer.AddAction( MapActionType::PLAYER_MOVE, localPlayerNumber, mousePosWorld );
             }
         }
+
+        if ( localIsDragging == true ) {
+            glm::vec2 minBox = glm::min( localStartDrag, localEndDrag );
+            glm::vec2 maxBox = glm::max( localStartDrag, localEndDrag );
+            spriteDrawContext->DrawRect( minBox, maxBox, Colors::BOX_SELECTION_COLOR );
+        }
         
         SmallString s = StringFormat::Small( "ping=%d", (i32)core->NetworkGetPing() );
         spriteDrawContext->DrawText2D( fontHandle, glm::vec2( 128, 128 ), 32, s.GetCStr() );
@@ -369,11 +478,10 @@ namespace atto {
         s = StringFormat::Small( "fps=%f", 1.0f / dt );
         spriteDrawContext->DrawText2D( fontHandle, glm::vec2( 128, 200 ), 32, s.GetCStr() );
 
- 
-
         core->RenderSubmit( spriteDrawContext, true );
-        core->RenderSubmit( backgroundDrawContext, false );
+        //core->RenderSubmit( backgroundDrawContext, false );
         core->RenderSubmit( uiDrawContext, false );
+        core->RenderSubmit( debugDrawContext, false );
     }
 
     SimEntity * SimMap::SpawnEntity( EntityType type, i32 playerNumber, i32 teamNumber, glm::vec2 pos, f32 ori, glm::vec2 vel ) {
@@ -396,9 +504,26 @@ namespace atto {
             entity->playerNumber = playerNumber;
 
             switch( entity->type ) {
+                case EntityType::UNIT_WORKER: {
+                    static SpriteResource * blueSprite = core->ResourceGetAndCreateSprite( "res/ents/test/worker_blue.png", 1, 32, 32, 0 );
+                    static SpriteResource * redSprite = core->ResourceGetAndCreateSprite( "res/ents/test/worker_red.png", 1, 32, 32, 0 );
+                    static SpriteResource * selectionSprite = core->ResourceGetAndCreateSprite( "res/ents/test/ship_selected.png", 1, 48, 48, 0 );
+                    SpriteResource * mainSprite = teamNumber == 1 ? blueSprite : redSprite;
+                    entity->spriteAnimator.SetSpriteIfDifferent( mainSprite, false );
+                    entity->selectionAnimator.SetSpriteIfDifferent( selectionSprite, false );
+
+                    entity->isSelectable = true;
+                    entity->selectionCollider.type = COLLIDER_TYPE_CIRCLE;
+                    entity->selectionCollider.circle.pos = glm::vec2( 0, 0 );
+                    entity->selectionCollider.circle.rad = 16.0f;
+
+                    entity->unit.averageRange = 40.0f;
+                    entity->unit.maxHealth = 50;
+                    entity->unit.currentHealth = entity->unit.maxHealth;
+                } break;
                 case EntityType::UNIT_TEST:
                 {
-                    static SpriteResource * blueSprite = core->ResourceGetAndCreateSprite( "res/ents/test/ship_big_test.png", 1, 64, 128, 0 );
+                    static SpriteResource * blueSprite = core->ResourceGetAndCreateSprite( "res/ents/test/ship_blue.png", 1, 48, 48, 0 );
                     static SpriteResource * redSprite = core->ResourceGetAndCreateSprite( "res/ents/test/ship_red.png", 1, 48, 48, 0 );
                     static SpriteResource * selectionSprite = core->ResourceGetAndCreateSprite( "res/ents/test/ship_selected.png", 1, 48, 48, 0 );
                     SpriteResource * mainSprite = teamNumber == 1 ? blueSprite : redSprite;
@@ -409,7 +534,7 @@ namespace atto {
                     entity->selectionCollider.type = COLLIDER_TYPE_BOX;
                     entity->selectionCollider.box.CreateFromCenterSize( glm::vec2( 0 ), glm::vec2( 26, 36 ) );
 
-                    entity->unit.averageFiringRange = 400.0f;
+                    entity->unit.averageRange = 400.0f;
                     entity->unit.maxHealth = 100;
                     entity->unit.currentHealth = entity->unit.maxHealth;
 
@@ -447,12 +572,12 @@ namespace atto {
                     static SpriteResource * sprVFX_SmallExplody = core->ResourceGetAndCreateSprite( "res/ents/test/bullet_hit_smol.png", 3, 16, 16, 10 );
                     static AudioResource * audVFX_SmallExplody = core->ResourceGetAndCreateAudio( "res/sounds/tomwinandysfx_explosions_volume_i_closeexplosion_01.wav", true, false, 400.0f, 1000.0f );
 
-                    //if( sprVFX_SmallExplody->frameActuations.GetCount() == 0 ) {
-                    //    SpriteActuation a1 = {};
-                    //    a1.audioResources.Add( audVFX_SmallExplody );
-                    //    a1.frameIndex = 0;
-                    //    sprVFX_SmallExplody->frameActuations.Add( a1 );
-                    //}
+                    if( sprVFX_SmallExplody->frameActuations.GetCount() == 0 ) {
+                        SpriteActuation a1 = {};
+                        a1.audioResources.Add( audVFX_SmallExplody );
+                        a1.frameIndex = 0;
+                        sprVFX_SmallExplody->frameActuations.Add( a1 );
+                    }
                     
                     entity->spriteAnimator.SetSpriteIfDifferent( mainSprite, false );
                     entity->bullet.sprVFX_SmallExplody = sprVFX_SmallExplody;
@@ -468,6 +593,11 @@ namespace atto {
                     entity->bullet.sprVFX_SmallExplody = sprVFX_SmallExplody;
                     entity->bullet.aliveTime = 3.0f;
                     entity->bullet.damage = 8;
+                } break;
+                case EntityType::STAR:
+                {
+                    static SpriteResource * mainSprite = core->ResourceGetAndCreateSprite( "res/ents/test/star.png", 1, 500, 500, 0 );
+                    entity->spriteAnimator.SetSpriteIfDifferent( mainSprite, true );
                 } break;
                 case EntityType::PLANET:
                 {
@@ -487,6 +617,42 @@ namespace atto {
                     entity->planet.placements.Add( PlanetPlacementType::OPEN );
                     entity->planet.placements.Add( PlanetPlacementType::OPEN );
                     entity->planet.placements.SetCount( MAX_PLANET_PLACEMENTS );
+                } break;
+                case EntityType::BUILDING_SOLAR_ARRAY:
+                {
+                    static SpriteResource * blueSprite = core->ResourceGetAndCreateSprite( "res/ents/test/building_solar_array_blue.png", 1, 64, 32, 0 );
+                    static SpriteResource * redSprite = core->ResourceGetAndCreateSprite( "res/ents/test/building_solar_array_red.png", 1, 64, 32, 0 );
+                    static SpriteResource * selectionSprite = core->ResourceGetAndCreateSprite( "res/ents/test/ship_selected.png", 1, 48, 48, 0 );
+                    SpriteResource * mainSprite = teamNumber == 1 ? blueSprite : redSprite;
+                    entity->spriteAnimator.SetSpriteIfDifferent( mainSprite, false );
+                    entity->selectionAnimator.SetSpriteIfDifferent( selectionSprite, false );
+
+                    entity->isSelectable = true;
+                    entity->selectionCollider.type = COLLIDER_TYPE_BOX;
+                    entity->selectionCollider.box.CreateFromCenterSize( glm::vec2( 0 ), glm::vec2( 64, 32 ) );
+
+                    // @SPEED:
+                    activeEntities.Clear( false );
+                    entityPool.GatherActiveObjs( activeEntities );
+                    for( i32 starIndex = 0; starIndex < activeEntities.GetCount(); starIndex++ ) {
+                        if( activeEntities[ starIndex ]->type == EntityType::STAR ) {
+                            glm::vec2 dir = activeEntities[ starIndex ]->pos - pos;
+                            entity->ori = atan2f( dir.x, dir.y );
+
+                            // @SPEED:
+                            const f32 dist = glm::length( dir );
+                            const f32 minDist = 600.0f; // @NOTE: Based of start 500
+                            const f32 maxDist = 1250.0f;
+                            const f32 t = glm::clamp( dist, minDist, maxDist );
+                            // Make 0 - 1
+                            const f32 t01 = ( t - minDist ) / ( maxDist - minDist );
+                            entity->building.giveEnergyAmount = (i32)( 1.0f + 4.0f * glm::cos( t01 ) );
+                            entity->building.isBuilding = true;
+                            entity->building.timeToBuildTurns = SecondsToTurns( 45 );
+                            break;
+                        }
+                    }
+
                 } break;
             }
         }
@@ -567,7 +733,7 @@ namespace atto {
         const i32 entityCount = activeEntities.GetCount();
         for( i32 entityIndex = 0; entityIndex < entityCount; entityIndex++ ) {
             SimEntity * ent = activeEntities[ entityIndex ];
-            if( ent->playerNumber == playerNumber && ent->selectedBy.Contains( playerNumber ) ) {
+            if ( ent->playerNumber == playerNumber && IsUnitType( ent->type ) && ent->selectedBy.Contains( playerNumber ) ) {
                 ent->navigator.hasDest = true;
                 ent->navigator.dest = pos;
                 ent->navigator.slowRad = 100.0f;
@@ -596,14 +762,32 @@ namespace atto {
                 glm::vec2 d = ( ent->pos - targetEnt->pos );
                 f32 dist = glm::length( d );
 
-                 if( dist > ent->unit.averageFiringRange - 10.0f ) {
+                 if( dist > ent->unit.averageRange - 10.0f ) {
                      glm::vec2 dir = d / dist;
-                     ent->navigator.dest = targetEnt->pos + dir * ent->unit.averageFiringRange - 10.0f; // @HACK: The 10 is because firing range is from center ent so move in more forward for cannons at the back
+                     ent->navigator.dest = targetEnt->pos + dir * ent->unit.averageRange - 10.0f; // @HACK: The 10 is because firing range is from center ent so move in more forward for cannons at the back
                  } else {
                      ent->navigator.dest = ent->pos;
                  }
 
                 ent->navigator.slowRad = 100.0f;
+            }
+        }
+    }
+
+    void SimMap::SimAction_ContructBuilding( i32 * playerNumberPtr, EntityHandle * targetPtr ) {
+        i32 playerNumber = *playerNumberPtr;
+        EntityHandle target = *targetPtr;
+
+        SimEntity * targetEnt = entityPool.Get( target );
+        if( targetEnt == nullptr ) {
+            return;
+        }
+        const i32 entityCount = activeEntities.GetCount();
+        for ( i32 entityIndex = 0; entityIndex < entityCount; entityIndex++ ) {
+            SimEntity * ent = activeEntities[ entityIndex ];
+            if ( ent->playerNumber == playerNumber && ent->type == EntityType::UNIT_WORKER && ent->selectedBy.Contains( playerNumber ) ) {
+                ent->unit.command.type = UnitCommandType::CONTRUCT_BUILDING;
+                ent->unit.command.targetEnt = target;
             }
         }
     }
@@ -621,7 +805,15 @@ namespace atto {
         //core->LogOutput( LogLevel::INFO, "SimAction_ApplyDamage: Applying damage %d to %d, %d", damage, target.idx, target.gen );
     }
 
-    static void SimTick_SelfUpdate( const ConstEntList * entities, i32 index, SimEntity * ent ) {
+    void SimMap::SimAction_GiveEnergy( i32 * playerNumberPtr, i32 * amountPtr ) {
+        const i32 playerNumber = *playerNumberPtr;
+        const i32 amount = *amountPtr;
+        Assert( playerNumber != 0 );
+        playerMonies[ playerNumber - 1 ].energy += amount;
+        //core->LogOutput( LogLevel::INFO, "SimAction_GiveEnergy: Giving %d energy to player %d", amount, playerNumber );
+    }
+
+    static void SimTick_SelfUpdate( const ConstEntList * entities, const EntPool * entityPool, i32 index, SimEntity * ent ) {
         const f32 playerSpeed = 2500.0f / 100.0f;
         const f32 maxForce = 20.0f;
         const f32 invMass = 1.0f / 10.0f;
@@ -629,6 +821,7 @@ namespace atto {
         ZeroStruct( ent->actions );
 
         switch( ent->type ) {
+            case EntityType::UNIT_WORKER:
             case EntityType::UNIT_TEST:
             {
                 Unit & unit = ent->unit;
@@ -636,6 +829,20 @@ namespace atto {
                 if( unit.currentHealth == 0 ) {
                     ent->actions.AddAction( MapActionType::SIM_ENTITY_DESTROY, ent->handle );
                     break;
+                }
+
+                if ( ent->type == EntityType::UNIT_WORKER ) {
+                    if ( unit.command.type == UnitCommandType::CONTRUCT_BUILDING ) {
+                        const SimEntity * target = entityPool->Get( unit.command.targetEnt );
+                        if ( target != nullptr ) {
+                            f32 dist2 = glm::distance2( target->pos, ent->pos );
+                            if ( dist2 < unit.averageRange * unit.averageRange ) {
+                                // Build
+                            } else {
+                                
+                            }
+                        }
+                    }
                 }
 
                 if( ent->navigator.hasDest == true ) {
@@ -673,18 +880,32 @@ namespace atto {
                     }
                 #endif
 
-                    if( glm::length2( ent->vel ) >= 1.0f ) {
-                        glm::vec2 nvel = glm::normalize( ent->vel );
-                        ent->ori = atan2f( nvel.x, nvel.y );
-                    }
-
-
                     glm::vec2 steering = desiredVel - ent->vel;
+
+                    // Avoidance
+                    for ( i32 entityIndexB = 0; entityIndexB < entities->GetCount(); entityIndexB++ ) {
+                        const SimEntity * otherEnt = *entities->Get( entityIndexB );
+                        const bool correctType = IsUnitType( otherEnt->type ) == true || IsBuildingType( otherEnt->type );
+                        if ( entityIndexB != index && correctType && otherEnt->teamNumber == ent->teamNumber ) {
+                            f32 dist = glm::distance( otherEnt->pos, ent->pos );
+                            if ( dist < 100.0f && dist > 1.0f ) {
+                                glm::vec2 dir = ( ent->pos - otherEnt->pos ) / dist;
+                                //steering += dir * playerSpeed * 0.2f;
+                                steering += dir * playerSpeed * glm::clamp( ( 1 - dist / 50.0f ), 0.0f, 1.0f );
+                            }
+                        }
+                    }
 
                     steering = Truncate( steering, maxForce );
                     steering *= invMass;
 
                     ent->vel = Truncate( ent->vel + steering, playerSpeed );
+                }
+
+                // Update orientation
+                if( glm::length2( ent->vel ) >= 1.0f ) {
+                    glm::vec2 nvel = glm::normalize( ent->vel );
+                    ent->ori = atan2f( nvel.x, nvel.y );
                 }
 
                 /*
@@ -784,33 +1005,57 @@ namespace atto {
                     }
                 }
             } break;
+            case EntityType::BUILDING_STATION:
+            {
+            } break;
+            case EntityType::BUILDING_SOLAR_ARRAY: {
+                ent->building.turn++;
+                if ( ent->building.isBuilding == true ) {
+                    if ( ent->building.turn >= ent->building.timeToBuildTurns ) {
+                        ent->building.turn = 0;
+                        ent->building.isBuilding = false;
+                    }
+                } else if( ent->building.turn == 60 ) {
+                    ent->building.turn = 0;
+                    ent->actions.AddAction( MapActionType::SIM_MAP_MONIES_GIVE_ENERGY, ent->playerNumber, ent->building.giveEnergyAmount );
+                }
+            } break;
+            case EntityType::BUILDING_COMPUTE:
+            {
+            } break;
         }
         //ent->acc.x -= ent->vel.x * ent->resistance;
         //ent->acc.y -= ent->vel.y * ent->resistance;
         ent->vel += ent->acc * SIM_DT;
         ent->pos += ent->vel * SIM_DT;
     }
-
-    class SimMap_UpdateTask : public enki::ITaskSet {
-    public:
+    
+    struct SimMap_UpdateTaskContext {
         i32                                         startIndex = 0;
         i32                                         endIndex = 0;
         ConstEntList *                              entities = nullptr;
         EntCacheList *                              entityCache = nullptr;
+        const EntPool *                             entityPool = nullptr;
+    };
 
+    class SimMap_UpdateTask : public enki::ITaskSet {
+    public:
+        SimMap_UpdateTaskContext ctx;
         SimMap_UpdateTask() {}
         
-        SimMap_UpdateTask( const SimMap_UpdateTask & other ) 
-        { entities = other.entities;  entityCache = other.entityCache; startIndex = other.startIndex; endIndex = other.endIndex; };
+        SimMap_UpdateTask( const SimMap_UpdateTask & other ) {
+            this->ctx = other.ctx;
+        };
         
-        SimMap_UpdateTask( EntCacheList * entityCache, ConstEntList * entities, i32 startIndex, i32 endIndex ) :
-            entityCache( entityCache ), entities( entities ), startIndex( startIndex ), endIndex( endIndex ) {}
+        SimMap_UpdateTask( SimMap_UpdateTaskContext c ) {
+            this->ctx = c;
+        }
 
         virtual void ExecuteRange( enki::TaskSetPartition range_, uint32_t threadnum_ ) override {
-            for( i32 entityIndex = startIndex; entityIndex < endIndex; entityIndex++ ) {
-                const SimEntity * ent = *entities->Get( entityIndex );
-                SimEntity * cachedEnt = entityCache->Set_MemCpyPtr( entityIndex, ent );
-                SimTick_SelfUpdate( entities, entityIndex, cachedEnt );
+            for( i32 entityIndex = ctx.startIndex; entityIndex < ctx.endIndex; entityIndex++ ) {
+                const SimEntity * ent = *ctx.entities->Get( entityIndex );
+                SimEntity * cachedEnt = ctx.entityCache->Set_MemCpyPtr( entityIndex, ent );
+                SimTick_SelfUpdate( ctx.entities, ctx.entityPool, entityIndex, cachedEnt );
             }
         }
     };
@@ -845,7 +1090,15 @@ namespace atto {
         for( i32 threadIndex = 0; threadIndex < threadCount; threadIndex++ ) {
             i32 start = threadIndex * partitonCount;
             i32 end = glm::min( start + partitonCount, entityCount );
-            updateTasks.emplace_back( entityCache, entities, start, end );
+
+            SimMap_UpdateTaskContext context = {};
+            context.startIndex = start;
+            context.endIndex = end;
+            context.entities = entities;
+            context.entityCache = entityCache;
+            context.entityPool = &entityPool;
+
+            updateTasks.emplace_back( context );
             core->taskScheduler.AddTaskSetToPipe( &updateTasks[ threadIndex ] );
         }
 

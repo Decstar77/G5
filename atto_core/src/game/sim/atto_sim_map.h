@@ -11,7 +11,10 @@ namespace atto {
     constexpr f32 SIM_DT = 1.0f / TURNS_PER_SECOND;
 
     constexpr f32 MAX_MAP_SIZE = 3000.0f;
-    
+
+    inline i32 SecondsToTurns( i32 s ) {
+        return s * TURNS_PER_SECOND;
+    }
 
     class Core;
     class SimMap;
@@ -23,10 +26,12 @@ namespace atto {
     typedef FixedList<const SimEntity *, MAX_ENTITIES>  ConstEntList;
     typedef FixedList<SimEntity, MAX_ENTITIES>          EntCacheList;
     typedef FixedList<EntityHandle, MAX_ENTITIES>       EntHandleList;
+    typedef FixedObjectPool<SimEntity, MAX_ENTITIES>    EntPool;
 
     REFL_ENUM(  EntityType,
                 INVALID = 0,
                 UNITS_BEGIN,
+                UNIT_WORKER,
                 UNIT_TEST,
                 UNITS_END,
 
@@ -35,13 +40,24 @@ namespace atto {
                 BULLET_MED,
                 BULLETS_END,
 
+                STAR,
                 PLANET,
+
+               BUILDING_BEGIN,
+               BUILDING_STATION,
+               BUILDING_SOLAR_ARRAY,
+               BUILDING_COMPUTE,
+               BUILDING_END,
 
                TYPE_PROP
     );
 
     inline bool IsUnitType( EntityType type ) {
         return type > EntityType::UNITS_BEGIN && type < EntityType::UNITS_END;
+    }
+
+    inline bool IsBuildingType( EntityType type ) {
+        return type > EntityType::BUILDING_BEGIN && type < EntityType::BUILDING_END;
     }
 
     enum class EntitySelectionChange : u8 {
@@ -53,7 +69,6 @@ namespace atto {
     struct Navigator {
         bool                hasDest;
         glm::vec2           dest;
-
         f32                 slowRad;
     };
 
@@ -73,11 +88,26 @@ namespace atto {
         f32                 fireRange;
     };
 
+    enum class UnitCommandType {
+        IDLE = 0,
+        MOVE,
+        ATTACK,
+        FOLLOW,
+        CONTRUCT_BUILDING,
+    };
+
+    struct UnitCommand {
+        UnitCommandType type;
+        glm::vec2       targetPos;
+        EntityHandle    targetEnt;
+    };
+
     struct Unit {
+        UnitCommand                 command;
         i32                         maxHealth;
         i32                         currentHealth;
 
-        f32                         averageFiringRange;
+        f32                         averageRange;
 
         FixedList<UnitTurret, 4>    turrets;
     };
@@ -108,6 +138,13 @@ namespace atto {
         FixedList<PlanetPlacementType, MAX_PLANET_PLACEMENTS> placements;
     };
 
+    struct Building {
+        bool isBuilding;
+        i32 timeToBuildTurns;
+        i32 turn;
+        i32 giveEnergyAmount;
+    };
+
     inline FixedList<RpcHolder *, 256>         rpcTable = {};
 
     enum class MapActionType : u8 {
@@ -121,7 +158,9 @@ namespace atto {
         // These are all the actions that can be taken by the simulation, they are not serialized across the network. It's expected that the determinism of the simulation will be the same across all clients.
         SIM_ENTITY_SPAWN,
         SIM_ENTITY_DESTROY,
-        SIM_ENTITY_UNIT_APPLY_DAMAGE
+        SIM_ENTITY_UNIT_APPLY_DAMAGE,
+
+        SIM_MAP_MONIES_GIVE_ENERGY
     };
 
     class MapActionBuffer {
@@ -184,6 +223,7 @@ namespace atto {
         Bullet                      bullet;
         Navigator                   navigator;
         Planet                      planet;
+        Building                    building;
         MapActionBuffer             actions;
 
         // ============ Visual stuffies ============ 
@@ -223,7 +263,6 @@ namespace atto {
     };
 
     struct PlayerMonies {
-        i32 playerNumber; 
         i32 credits;
         i32 energy;
         i32 compute;
@@ -236,7 +275,7 @@ namespace atto {
 
         bool                                        runSim = false;
         LargeString                                 mapName = {};
-        FixedObjectPool< SimEntity, MAX_ENTITIES >  entityPool = {};
+        EntPool                                     entityPool = {};
 
         f32                                         dtAccumulator = 0.0f;
 
@@ -254,6 +293,13 @@ namespace atto {
         MapTurn                                     localMapTurn = {};
         MapActionBuffer                             localActionBuffer = {}; // Player inputs
         bool                                        localMapTurnWriting = false;
+        bool                                        localIsDragging = false;
+        glm::vec2                                   localStartDrag = glm::vec2( 0.0f );
+        glm::vec2                                   localEndDrag = glm::vec2( 0.0f );
+        EntHandleList                               localNewSelection = {};
+
+        // @HACK:
+        bool isPlacingBuilding = false;
 
     public:
         void                                        Initialize( Core * core );
@@ -264,16 +310,15 @@ namespace atto {
 
         void                                        SimTick( MapTurn * turn1, MapTurn * turn2 );
         void                                        Sim_ApplyActions( MapActionBuffer * actionBuffer );
-        
+
         void                                        SimAction_SpawnEntity( i32 * type, i32 * playerNumber, i32 * teamNumber, glm::vec2 * pos, f32 * ori, glm::vec2 * vel );
         void                                        SimAction_DestroyEntity( EntityHandle * handle );
         void                                        SimAction_Select( i32 * playerNumber, EntHandleList * selection, EntitySelectionChange * change );
         void                                        SimAction_Move( i32 * playerNumber, glm::vec2 * pos );
         void                                        SimAction_Attack( i32 * playerNumber, EntityHandle * target );
+        void                                        SimAction_ContructBuilding( i32 * playerNumber, EntityHandle * target );
         void                                        SimAction_ApplyDamage( i32 * damage, EntityHandle * target );
-        
-
-   
+        void                                        SimAction_GiveEnergy( i32 * playerNumber, i32 * amount );
 
         REFLECT();
 

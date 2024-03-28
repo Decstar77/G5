@@ -113,6 +113,7 @@ namespace atto {
         i32                 loopCount;
         i32                 frameDelaySkip;
         bool                loops;
+        glm::vec4           color;
 
     public:
         void                SetFrameRate( f32 fps );

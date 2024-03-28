@@ -1443,13 +1443,14 @@ namespace atto {
     template<typename _type_, i32 capcity>
     class FixedObjectPool {
     public:
-        _type_ *    Add( ObjectHandle<_type_> & hdl );
-        _type_ *    Get( ObjectHandle<_type_> hdlt );
-        bool        Remove( ObjectHandle<_type_> hdlt );
-        void        GatherActiveObjs( FixedList<_type_ *, capcity> & inList );
-        void        GatherActiveObjs( FixedList<_type_ *, capcity> * inList );
-        void        GatherActiveObjs( FixedList< const _type_ *, capcity > * inList );
-        void        GatherActiveObjs_MemCopy( FixedList<_type_, capcity> * inList );
+        _type_ *        Add( ObjectHandle<_type_> & hdl );
+        _type_ *        Get( ObjectHandle<_type_> hdlt );
+        const _type_ *  Get( ObjectHandle<_type_> hdlt ) const;
+        bool            Remove( ObjectHandle<_type_> hdlt );
+        void            GatherActiveObjs( FixedList<_type_ *, capcity> & inList );
+        void            GatherActiveObjs( FixedList<_type_ *, capcity> * inList );
+        void            GatherActiveObjs( FixedList< const _type_ *, capcity > * inList );
+        void            GatherActiveObjs_MemCopy( FixedList<_type_, capcity> * inList );
 
     private:
         void        Initialize();
@@ -1499,7 +1500,8 @@ namespace atto {
         hdl.idx = idx;
         hdl.gen = gens[ idx ];
 
-        _type_ * obj = &objs[ idx ];
+        _type_ * obj = objs.Get( idx );
+
         return obj;
     }
 
@@ -1526,7 +1528,35 @@ namespace atto {
             }
         }
 
-        return &objs[ hdlt.idx ];
+        return objs.Get( hdlt.idx );
+    }
+
+    template<typename _type_, i32 capcity>
+    const _type_ * FixedObjectPool<_type_, capcity>::Get( ObjectHandle<_type_> hdlt ) const {
+        Assert( initialized == true );
+
+        if( hdlt.idx == 0 || hdlt.idx >= capcity ) {
+            return nullptr;
+        }
+
+        if( hdlt.gen == 0 ) {
+            return nullptr;
+        }
+
+        if( gens[ hdlt.idx ] != hdlt.gen ) {
+            return nullptr;
+        }
+
+        const i32 freeCount = idxs.GetCount();
+        for( i32 i = 0; i < freeCount; i++ ) {
+            if( idxs[ i ] == hdlt.idx ) {
+                return nullptr;
+            }
+        }
+
+        const _type_ * obj = objs.Get( hdlt.idx );
+
+        return obj;
     }
 
     template<typename _type_, i32 capcity>
@@ -1570,7 +1600,7 @@ namespace atto {
         i32 count = 0;
         for( i32 i = 1; i < capcity; i++ ) {                // @NOTE: Start at 1 because we don't want to include the first element
             if( activeList[ i ] ) {
-                _type_ * t = &objs[ i ];
+                _type_ * t = objs.Get( i );
                 inList.Add( t );
                 count++;
             }
@@ -1598,7 +1628,7 @@ namespace atto {
         i32 count = 0;
         for( i32 i = 1; i < capcity; i++ ) {                // @NOTE: Start at 1 because we don't want to include the first element
             if( activeList[ i ] ) {
-                _type_ * t = &objs[ i ];
+                _type_ * t = objs.Get( i );
                 inList->Add( t );
                 count++;
             }
@@ -1626,7 +1656,7 @@ namespace atto {
         i32 count = 0;
         for( i32 i = 1; i < capcity; i++ ) {                // @NOTE: Start at 1 because we don't want to include the first element
             if( activeList[ i ] ) {
-                _type_ * t = &objs[ i ];
+                _type_ * t = objs.Get( i );
                 inList->Add( t );
                 count++;
             }
@@ -1654,7 +1684,7 @@ namespace atto {
         i32 count = 0;
         for( i32 i = 1; i < capcity; i++ ) {                // @NOTE: Start at 1 because we don't want to include the first element
             if( activeList[ i ] ) {
-                _type_ * t = &objs[ i ];
+                _type_ * t = objs.Get( i );
                 inList->Add_MemCpyPtr( t );
                 count++;
             }

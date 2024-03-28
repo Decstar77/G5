@@ -262,35 +262,25 @@ namespace atto {
             switch( cmd.type ) {
                 case DrawCommandType::CIRCLE:
                 {
-                    //cmd.circle.c = WorldPosToScreenPos( cmd.circle.c );
-                    //cmd.circle.r = WorldLengthToScreenLength( cmd.circle.r );
+                    cmd.circle.c -= dcxt->cameraPos;
 
-                    f32 x1 = cmd.circle.c.x - cmd.circle.r;
-                    f32 y1 = cmd.circle.c.y - cmd.circle.r;
-                    f32 x2 = cmd.circle.c.x + cmd.circle.r;
-                    f32 y2 = cmd.circle.c.y + cmd.circle.r;
-
-                    f32 vertices[ 6 ][ 2 ] = {
-                        { x1, y2 },
-                        { x1, y1 },
-                        { x2, y1 },
-                        { x1, y2 },
-                        { x2, y1 },
-                        { x2, y2 }
-                    };
+                    shapeCirle.Clear();
+                    const i32 vertexCount = shapeCirleBase.GetCount();
+                    for ( i32 i = 0; i < vertexCount; i++ ) {
+                        glm::vec2 pos = shapeCirleBase[ i ] * cmd.circle.r + cmd.circle.c;
+                        shapeCirle.Add( pos );
+                    }
 
                     GLEnableAlphaBlending();
                     GLShaderProgramBind( shapeProgram );
-                    GLShaderProgramSetMat4( "p", screenProjection );
+                    GLShaderProgramSetMat4( "p", cmd.proj );
                     GLShaderProgramSetInt( "mode", 1 );
                     GLShaderProgramSetVec4( "color", cmd.color );
-                    GLShaderProgramSetVec4( "shapePosAndSize", glm::vec4( cmd.circle.c.x, (f32)viewport.w - cmd.circle.c.y, cmd.circle.r, cmd.circle.r ) );
-                    GLShaderProgramSetVec4( "shapeRadius", glm::vec4( cmd.circle.r - 2, 0, 0, 0 ) ); // The 4 here is to stop the circle from being cut of from the edges
 
                     glDisable( GL_CULL_FACE );
                     glBindVertexArray( shapeVertexBuffer.vao );
-                    GLVertexBufferUpdate( shapeVertexBuffer, 0, sizeof( vertices ), vertices );
-                    glDrawArrays( GL_TRIANGLES, 0, 6 );
+                    GLVertexBufferUpdate( shapeVertexBuffer, 0, shapeCirle.GetCount() * sizeof( glm::vec2 ), shapeCirle.GetData() );
+                    glDrawArrays( GL_TRIANGLES, 0, shapeCirle.GetCount() );
                     glBindVertexArray( 0 );
                 } break;
                 case DrawCommandType::RECT:
@@ -832,9 +822,7 @@ namespace atto {
                 if (mode == 0) {
                     FragColor = color;
                 } else if (mode == 1) {
-                    float d = CircleSDF(r, p, shapeRadius.x);
-                    d = clamp(d, 0.0, 1.0);
-                    FragColor = color * d; //vec4(color.xyz, color.w * d);
+                    FragColor = color;
                 } else if (mode == 2) {
                     float d = RoundedBoxSDF(r, p, s / 2, shapeRadius.x);
                     d = clamp(d, 0.0, 1.0);
@@ -847,7 +835,22 @@ namespace atto {
 
         VertexLayoutShape shape = {};
         shapeProgram = GLCreateShaderProgram( vertexShaderSource, fragmentShaderSource );
-        shapeVertexBuffer = GLCreateVertexBuffer( &shape, 6, nullptr, true );
+        shapeVertexBuffer = GLCreateVertexBuffer( &shape, 96, nullptr, true );
+
+        const i32 circleEdges = 32;
+        float angleIncrement = 2.0f * PI / circleEdges;
+        for (int i = 0; i < circleEdges; i++ ) {
+            float angle1 = i * angleIncrement;
+            float angle2 = ( i + 1 ) * angleIncrement;
+            float x1 = cos( angle1 );
+            float y1 = sin( angle1 );
+            float x2 = cos( angle2 );
+            float y2 = sin( angle2 );
+
+            shapeCirleBase.Add( glm::vec2( 0.0f, 0.0f ) );
+            shapeCirleBase.Add( glm::vec2( x1, y1 ) );
+            shapeCirleBase.Add( glm::vec2( x2, y2 ) );
+        }
     }
 
     void WindowsCore::GLInitializeSpriteRendering() {
@@ -939,10 +942,10 @@ namespace atto {
 
             void main() {
                 ivec2 tSize = textureSize(texture0, 0);
-                vec2 uv = uv_cstantos(vertexTexCoord, vec2(tSize.x, tSize.y));
+                //vec2 uv = uv_cstantos(vertexTexCoord, vec2(tSize.x, tSize.y));
                 //vec2 uv = uv_iq(vertexTexCoord, tSize);
                 //vec2 uv = uv_fat_pixel(vertexTexCoord, tSize);
-                //vec2 uv = uv_aa_smoothstep(vertexTexCoord, vec2(tSize.x, tSize.y), 1);
+                vec2 uv = uv_aa_smoothstep(vertexTexCoord, vec2(tSize.x, tSize.y), 1);
                 vec4 sampled = texture(texture0, uv);
                 //vec4 sampled = texture(texture0, vertexTexCoord);
                 //sampled.rgb *= sampled.a;
