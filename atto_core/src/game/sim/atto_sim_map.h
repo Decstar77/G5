@@ -318,6 +318,7 @@ namespace atto {
 
         void                                        SimTick( MapTurn * turn1, MapTurn * turn2 );
         void                                        Sim_ApplyActions( MapActionBuffer * actionBuffer );
+        i64                                         Sim_CheckSum();
 
         void                                        SimAction_SpawnEntity( i32 * type, PlayerNumber * playerNumberPtr, TeamNumber * teamNumber, fp2 * pos, fp * ori, fp2 * vel );
         void                                        SimAction_DestroyEntity( EntityHandle * handle );
@@ -332,18 +333,11 @@ namespace atto {
         void                                        SimAction_ApplyContruction( EntityHandle * target );
         void                                        SimAction_GiveEnergy( PlayerNumber * playerNumberPtr, i32 * amount );
 
-
         REFLECT();
 
     private:
-        
         EntList                                     localCacheSelection = {};
         EntList                                     activeEntities = {};
     };
-
-    constexpr size_t SIZE_OF_ENT_LIST = sizeof( EntList );
-    constexpr size_t SIZE_OF_ENT_CACHE_LIST = sizeof( EntCacheList );
-
-
 }
 

@@ -24,11 +24,9 @@ namespace atto {
     void GameMode_SinglePlayerGame::Shutdown( Core * core ) {
     }
 
-
     GameModeType GameMode_MultiplayerGame::GetGameModeType() {
         return GameModeType::IN_GAME;
     }
-
 
     bool GameMode_MultiplayerGame::IsInitialized() {
         return true;

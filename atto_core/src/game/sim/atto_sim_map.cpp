@@ -124,7 +124,7 @@ namespace atto {
 
                 localMapTurn.playerNumber = localPlayerNumber;
                 localMapTurn.turnNumber = turnNumber + syncQueues.GetSlidingWindowWidth();
-                localMapTurn.checkSum = 0;
+                localMapTurn.checkSum = Sim_CheckSum();
                 localMapTurn.actions = localActionBuffer; // TODO: Use a memcpy ?
 
                 syncQueues.AddTurn( localPlayerNumber, localMapTurn );
@@ -663,7 +663,7 @@ namespace atto {
                     entityPool.GatherActiveObjs( activeEntities );
                     for( i32 starIndex = 0; starIndex < activeEntities.GetCount(); starIndex++ ) {
                         if( activeEntities[ starIndex ]->type == EntityType::STAR ) {
-                            fp2 dir = activeEntities[ starIndex ]->pos - pos; // @HACK: FPM
+                            fp2 dir = activeEntities[ starIndex ]->pos - pos;
                             entity->ori = FpATan2( dir.x, dir.y );
 
                             // @SPEED:
@@ -987,7 +987,7 @@ namespace atto {
                 // Update orientation
                 if( FpLength2( ent->vel ) >= Fp( 1 ) ) {
                     fp2 nvel = FpNormalize( ent->vel );
-                    ent->ori = Fp( atan2f( ToFloat( nvel.x ), ToFloat( nvel.y ) ) );// @HACK: FPM
+                    ent->ori = FpATan2( nvel.x, nvel.y );
                 }
 
                 /*
@@ -1056,11 +1056,6 @@ namespace atto {
                     break;
                 }
 
-                if( ent->spriteAnimator.loopCount >= 1 ) {
-                    ent->actions.AddAction( MapActionType::SIM_ENTITY_DESTROY, ent->handle );
-                    break;
-                }
-
                 for( i32 entityIndexB = 0; entityIndexB < entities->GetCount(); entityIndexB++ ) {
                     if( entityIndexB == index ) {
                         continue;
@@ -1077,11 +1072,12 @@ namespace atto {
 
                     fp dist2 = FpDistance2( ent->pos, otherEnt->pos );
                     fp r = ent->handle.idx * Fp( 10 );
-                    if( dist2 <= Fp( 36.0f * 36.0f ) + r ) {
+                    if( dist2 <= Fp( 36 * 36 ) + r ) {
                         bool changed = ent->spriteAnimator.SetSpriteIfDifferent( bullet.sprVFX_SmallExplody, false );
                         ent->vel = Fp2( 0, 0 );
                         if( changed == true ) {
                             ent->actions.AddAction( MapActionType::SIM_ENTITY_APPLY_DAMAGE, bullet.damage, otherEnt->handle );
+                            ent->actions.AddAction( MapActionType::SIM_ENTITY_DESTROY, ent->handle );
                         }
                         break;
                     }
@@ -1142,8 +1138,10 @@ namespace atto {
     void SimMap::SimTick( MapTurn * turn1, MapTurn * turn2 ) {
         //ScopedClock timer( "SimTick", core );
 
-        if( turn2 != nullptr ) {
-           //core->LogOutput( LogLevel::INFO, "Ticking %d, p1=%d, p2=%d", turnNumber, turn1->turnNumber, turn2->turnNumber );
+        if ( turn1->checkSum != turn2->checkSum ) {
+            core->LogOutput( LogLevel::INFO, "We have a desync :(" );
+
+            INVALID_CODE_PATH;
         }
 
         if( turn1 != nullptr ) {
@@ -1230,6 +1228,27 @@ namespace atto {
         }
     }
 
+    i64 SimMap::Sim_CheckSum() {
+        // @SPEED:
+        activeEntities.Clear( false );
+        entityPool.GatherActiveObjs( activeEntities );
+
+        i64 checkSum = 0;
+
+        const i32 entityCount = activeEntities.GetCount();
+        for ( i32 entityIndex = 0; entityIndex < entityCount; entityIndex++ ) {
+            SimEntity * ent = activeEntities[ entityIndex ];
+            #if 0
+            checkSum += ent->handle.idx;
+            checkSum -= ent->handle.gen;
+            #endif
+            checkSum += ToInt( ent->pos.x );
+            checkSum -= ToInt( ent->pos.y );
+        }
+
+        return checkSum;
+    }
+
     inline static Collider2D ColliderForSpace( const Collider2D & base, glm::vec2 p ) {
         Collider2D c = base;
         switch( base.type ) {
@@ -1278,7 +1297,6 @@ namespace atto {
             MapTurn * player1Turn = player1Turns.Peek();
             MapTurn * player2Turn = player2Turns.Peek();
             Assert( player1Turn->turnNumber == player2Turn->turnNumber );
-            Assert( player1Turn->checkSum == player2Turn->checkSum );
             return true;
         }
 
