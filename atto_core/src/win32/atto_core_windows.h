@@ -144,6 +144,7 @@ namespace atto {
         void                            GLResetSurface( f32 w, f32 h, f32 cameraWidth, f32 cameraHeight );
         void                            GLSetCamera( f32 width, f32 height );
 
+        static void                     Win32SetupCrashReporting();
         static void                     WinBoyoWriteTextFile( const char * path, const char * text );
         static void                     WinBoyoReadTextFile( const char * path, char * text, i32 maxLen );
         static void                     WinBoyoWriteBinaryFile( const char * path, const char * data, i64 size );

@@ -69,6 +69,8 @@ namespace atto {
 
         OsParseStartArgs( argc, argv );
 
+        Win32SetupCrashReporting();
+
         MemoryMakePermanent( Megabytes( 128 ) );
         MemoryMakeTransient( Megabytes( 128 ) );
         

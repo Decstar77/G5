@@ -3,7 +3,8 @@
 #include "atto_reflection.h"
 
 namespace atto {
-    glm::vec2 ToVec2( const fp2& v ) {
+
+    glm::vec2 ToVec2( const fp2 & v ) {
         return glm::vec2( static_cast<float>( v.x ), static_cast<float>( v.y ) );
     }
 
@@ -85,7 +86,17 @@ namespace atto {
         return { -v.y, v.x };
     }
 
-    fp2 operator+( const fp2& a, const fp2& b ) {
+    fp2 FpRotate( fp2 v, fp angle ) {
+        fp2 result;
+        fp c = FpCos( angle );
+        fp s = FpSin( angle );
+
+        result.x = v.x * c - v.y * s;
+        result.y = v.x * s + v.y * c;
+        return result;
+    }
+
+    fp2 operator+( const fp2 & a, const fp2 & b ) {
         return { a.x + b.x, a.y + b.y };
     }
 
@@ -93,7 +104,19 @@ namespace atto {
         return { a.x - b.x, a.y - b.y };
     }
 
-    fp2 operator*( const fp2& a, const fp& b ) {
+    fp2 operator-( const fp2 & a ) {
+        return { -a.x, -a.y };
+    }
+
+    bool operator==( const fp2 & a, const fp2 & b ) {
+        return a.x == b.x && a.y == b.y;
+    }
+
+    bool operator!=( const fp2 & a, const fp2 & b ) {
+        return a.x != b.x || a.y != b.y;
+    }
+
+    fp2 operator*( const fp2 & a, const fp & b ) {
         return { a.x * b, a.y * b };
     }
 

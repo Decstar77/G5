@@ -7,9 +7,12 @@ namespace atto {
     constexpr static i32 MAX_PLAYERS = 4;
 
     constexpr i32 TURNS_PER_SECOND = 16;
-    constexpr f32 SIM_DT = 1.0f / TURNS_PER_SECOND;
-
-    constexpr f32 MAX_MAP_SIZE = 3000.0f;
+    constexpr float SIM_DT_FLOAT = 1.0f / TURNS_PER_SECOND;
+    constexpr fp SIM_DT = Fp( 1.0f / TURNS_PER_SECOND );
+    
+    
+    //inline static i32 MAX_MAP_SIZE = (i32)glm::sqrt( ToFloat( FP_MAX ) );// @NOTE: This comes to +5000
+    inline static i32 MAX_MAP_SIZE = 3000;
 
     inline i32 SecondsToTurns( i32 s ) {
         return s * TURNS_PER_SECOND;
@@ -69,8 +72,8 @@ namespace atto {
 
     struct Navigator {
         bool                hasDest;
-        glm::vec2           dest;
-        f32                 slowRad;
+        fp2                 dest;
+        fp                  slowRad;
     };
 
     enum class WeaponSize {
@@ -82,11 +85,11 @@ namespace atto {
     struct UnitTurret {
         WeaponSize          size;
         i32                 idx;
-        glm::vec2           posOffset; // @NOTE: In Local Space
-        f32                 ori;
-        f32                 fireTimer;
-        f32                 fireRate;
-        f32                 fireRange;
+        fp2                 posOffset; // @NOTE: In Local Space
+        fp                  ori;
+        fp                  fireTimer;
+        fp                  fireRate;
+        fp                  fireRange;
     };
 
     enum class UnitCommandType {
@@ -99,7 +102,7 @@ namespace atto {
 
     struct UnitCommand {
         UnitCommandType type;
-        glm::vec2       targetPos;
+        fp2             targetPos;
         EntityHandle    targetEnt;
     };
 
@@ -108,7 +111,7 @@ namespace atto {
         i32                         maxHealth;
         i32                         currentHealth;
 
-        f32                         averageRange;
+        fp                          averageRange;
 
         FixedList<UnitTurret, 4>    turrets;
     };
@@ -116,9 +119,9 @@ namespace atto {
     struct Bullet {
         WeaponSize                  size;
         i32                         damage;
-        f32                         speed;
-        f32                         aliveTimer;
-        f32                         aliveTime;
+        fp                          speed;
+        fp                          aliveTimer;
+        fp                          aliveTime;
         SpriteResource *            sprVFX_SmallExplody;
     };
 
@@ -209,11 +212,11 @@ namespace atto {
 
         bool                        active;
 
-        glm::vec2                   pos;
-        glm::vec2                   vel;
-        glm::vec2                   acc;
-        f32                         resistance;
-        f32                         ori;
+        fp2                   pos;
+        fp2                   vel;
+        fp2                   acc;
+        fp                    resistance;
+        fp                    ori;
 
         // Make these flags
         bool                        hasHitCollision;
@@ -310,20 +313,20 @@ namespace atto {
         void                                        Initialize( Core * core );
         void                                        Update( Core * core, f32 dt );
         
-        SimEntity *                                 SpawnEntity( EntityType type, PlayerNumber playerNumber, TeamNumber teamNumber, glm::vec2 pos, f32 ori, glm::vec2 vel );
+        SimEntity *                                 SpawnEntity( EntityType type, PlayerNumber playerNumber, TeamNumber teamNumber, fp2 pos, fp ori, fp2 vel );
         void                                        DestroyEntity( SimEntity * entity );
 
         void                                        SimTick( MapTurn * turn1, MapTurn * turn2 );
         void                                        Sim_ApplyActions( MapActionBuffer * actionBuffer );
 
-        void                                        SimAction_SpawnEntity( i32 * type, PlayerNumber * playerNumberPtr, TeamNumber * teamNumber, glm::vec2 * pos, f32 * ori, glm::vec2 * vel );
+        void                                        SimAction_SpawnEntity( i32 * type, PlayerNumber * playerNumberPtr, TeamNumber * teamNumber, fp2 * pos, fp * ori, fp2 * vel );
         void                                        SimAction_DestroyEntity( EntityHandle * handle );
         void                                        SimAction_PlayerSelect( PlayerNumber * playerNumberPtr, EntHandleList * selection, EntitySelectionChange * change );
         //void                                        SimAction_PlayerWorldCommand( i32 * playerNumber, glm::vec2 targetPos, EntityHandle * targetEnt ); // Right clicking in the world
 
-        void                                        SimAction_Move( PlayerNumber * playerNumberPtr, glm::vec2 * pos );
+        void                                        SimAction_Move( PlayerNumber * playerNumberPtr, fp2 * pos );
         void                                        SimAction_Attack( PlayerNumber * playerNumberPtr, EntityHandle * target );
-        void                                        SimAction_ContructBuilding( PlayerNumber * playerNumberPtr, i32 * typePtr, glm::vec2 * posPtr );
+        void                                        SimAction_ContructBuilding( PlayerNumber * playerNumberPtr, i32 * typePtr, fp2 * posPtr );
         void                                        SimAction_ContructExistingBuilding( PlayerNumber * playerNumberPtr, EntityHandle * target );
         void                                        SimAction_ApplyDamage( i32 * damage, EntityHandle * target );
         void                                        SimAction_ApplyContruction( EntityHandle * target );

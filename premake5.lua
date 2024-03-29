@@ -12,6 +12,7 @@ local ABSOLUTE_SOL_PATH = path.getabsolute(".")
 local IMGUI_DIR = path.join(ABSOLUTE_SOL_PATH, "atto_core/src/editor/imgui")
 local FMOD_DIR = "vendor/fmod"
 local FPM = "vendor/fpm"
+local BACKWARD = "vendor/backward"
 
 solution "Atto"
     location("")
@@ -69,6 +70,7 @@ project "atto_core"
         JSON_DIR,
         STB_DIR,
         FPM,
+        BACKWARD,
         path.join(FONTSTASH_DIR, "src"),
         GLM_DIR,
         AUDIO_FILE_DIR,
@@ -92,7 +94,7 @@ project "atto_core"
     links { "opengl32", "glfw", "glad", "fmod_vc" }
 
     filter "system:windows"
-        links { "kernel32", "user32"  }
+        links { "kernel32", "user32","Dbghelp"  }
 
     dependson { "AttoTypeGen", "atto_game" }
 

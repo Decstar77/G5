@@ -10,6 +10,6 @@ namespace atto {
         f64 endTime = core->GetTheCurrentTime();
         f64 seconds = endTime - startTime;
         f64 dt = seconds * 1000.0;
-        core->LogOutput( LogLevel::INFO, "ScopedClock '%s' time = %f", name.GetCStr(), (f32)dt );
+        core->LogOutput( LogLevel::INFO, "ScopedClock '%s' time ms = %f", name.GetCStr(), (f32)dt );
     }
 }

@@ -2,8 +2,11 @@
 
 #include "native_file_dialog/nfd.h"
 
+#include <backward/backward.hpp>
+
 #include <string>
 #include <fstream>
+#include <sstream>
 #include <iostream>
 #include <Windows.h>
 
@@ -76,6 +79,92 @@ namespace atto {
         return FileTimeToUInt64(lastWriteTime);
     }
 
+    // Function to write the call stack to a file
+    //static void WriteMiniDump( EXCEPTION_POINTERS * pExceptionPointers ) {
+    //    HANDLE hFile = CreateFile( L"crash_report.txt", GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL );
+    //    if( hFile != INVALID_HANDLE_VALUE ) {
+    //        // Write the exception information
+    //        EXCEPTION_RECORD * pExceptionRecord = pExceptionPointers->ExceptionRecord;
+    //        CONTEXT * pContextRecord = pExceptionPointers->ContextRecord;
+
+    //        std::wofstream fileStream( L"crash_report.txt" ); // Use wofstream constructor directly
+    //        fileStream << L"Exception Code: 0x" << std::hex << pExceptionRecord->ExceptionCode << std::endl;
+
+    //        // Write the call stack
+    //        STACKFRAME64 stackFrame = {};
+    //        CONTEXT context = *pContextRecord;
+    //        HANDLE process = GetCurrentProcess();
+    //        HANDLE thread = GetCurrentThread();
+    //        DWORD machineType = IMAGE_FILE_MACHINE_AMD64; // Assuming 64-bit
+
+    //        stackFrame.AddrPC.Mode = AddrModeFlat;
+    //        stackFrame.AddrStack.Mode = AddrModeFlat;
+    //        stackFrame.AddrFrame.Mode = AddrModeFlat;
+
+    //        while( StackWalk64( machineType, process, thread, &stackFrame, &context, NULL, SymFunctionTableAccess64, SymGetModuleBase64, NULL ) ) {
+    //            DWORD64 address = stackFrame.AddrPC.Offset;
+    //            if( address == 0 ) {
+    //                break;
+    //            }
+    //            fileStream << L"0x" << std::hex << address << std::endl;
+    //        }
+
+    //        // Close file
+    //        CloseHandle( hFile );
+    //    }
+    //}
+
+    //// Function to create a minidump file
+    //bool CreateMiniDump( EXCEPTION_POINTERS * pExceptionPointers, const std::wstring & dumpFileName ) {
+    //    HANDLE hFile = CreateFileW( dumpFileName.c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL );
+    //    if( hFile == INVALID_HANDLE_VALUE ) {
+    //        std::wcerr << L"Failed to create minidump file: " << dumpFileName << L". Error code: " << GetLastError() << std::endl;
+    //        return false;
+    //    }
+
+    //    MINIDUMP_EXCEPTION_INFORMATION exceptInfo;
+    //    exceptInfo.ThreadId = GetCurrentThreadId();
+    //    exceptInfo.ExceptionPointers = pExceptionPointers;
+    //    exceptInfo.ClientPointers = FALSE;
+
+    //    BOOL success = MiniDumpWriteDump( GetCurrentProcess(), GetCurrentProcessId(), hFile, MiniDumpNormal, &exceptInfo, NULL, NULL );
+    //    CloseHandle( hFile );
+
+    //    if( !success ) {
+    //        std::wcerr << L"Failed to write minidump file: " << dumpFileName << L". Error code: " << GetLastError() << std::endl;
+    //        return false;
+    //    }
+
+    //    return true;
+    //}
+
+    //LONG WINAPI CustomExceptionHandler( EXCEPTION_POINTERS * pExceptionPointers ) {
+    //    std::wstring dumpFileName = L"crash_dump.dmp";
+    //    if( CreateMiniDump( pExceptionPointers, dumpFileName ) ) {
+    //        std::wcout << L"Minidump created: " << dumpFileName << std::endl;
+    //    }
+    //    else {
+    //        std::wcerr << L"Failed to create minidump." << std::endl;
+    //    }
+
+    //    // Let the system handle the exception
+    //    return EXCEPTION_CONTINUE_SEARCH;
+    //}
+
+    static void onUnhandledException() {
+        std::cerr << "Unhandled exception occurred! Generating crash dump..." << std::endl;
+
+        backward::StackTrace st;
+        st.load_here();
+
+        backward::Printer p;
+        p.print( st );
+    }
+
+    void WindowsCore::Win32SetupCrashReporting() {
+        static backward::SignalHandling sh;
+        
+    }
 
     void WindowsCore::WinBoyoWriteTextFile( const char * path, const char * text ) {
         std::ofstream file( path );

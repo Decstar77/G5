@@ -53,29 +53,30 @@ namespace atto {
         PlayerNumber p2 = PlayerNumber::Create( 2 );
         TeamNumber t2 = TeamNumber::Create( 2 );
 
-        SpawnEntity( EntityType::Make( EntityType::PLANET ), p1, t1, glm::vec2( 500.0f, 700.0f ), 0.0f, glm::vec2( 0.0f ) );
-        SpawnEntity( EntityType::Make( EntityType::UNIT_WORKER ), p1, t1, glm::vec2( 700.0f ,700.0f ), 0.0f, glm::vec2( 0.0f ) );
-
-        SpawnEntity( EntityType::Make( EntityType::PLANET ), p2, t2, glm::vec2( 2500.0f, 700.0f ), 0.0f, glm::vec2( 0.0f ) );
-        SpawnEntity( EntityType::Make( EntityType::UNIT_WORKER ), p2, t2, glm::vec2( 2400.0f, 700.0f ), 0.0f, glm::vec2( 0.0f ) );
-
-        SpawnEntity( EntityType::Make( EntityType::STAR ), p0, t0, glm::vec2( 1500.0f, 1200.0f ), 0.0f, glm::vec2( 0.0f ) );
-
-        SpawnEntity( EntityType::Make( EntityType::BUILDING_SOLAR_ARRAY ), p1, t1, glm::vec2( 500.0f, 1000.0f ), 0.0f, glm::vec2( 0.0f ) )->building.isBuilding = false;
-
-        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p1, t1, glm::vec2( 800.0f ,700.0f ), 0.0f, glm::vec2( 0.0f ) );
-        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p1, t1, glm::vec2( 900.0f ,700.0f ), 0.0f, glm::vec2( 0.0f ) );
-        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p1, t1, glm::vec2( 1000.0f ,700.0f ), 0.0f, glm::vec2( 0.0f ) );
-        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p1, t1, glm::vec2( 1100.0f ,700.0f ), 0.0f, glm::vec2( 0.0f ) );
-
+        SpawnEntity( EntityType::Make( EntityType::PLANET ), p1, t1, Fp2( 500.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
+        SpawnEntity( EntityType::Make( EntityType::UNIT_WORKER ), p1, t1, Fp2( 700.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
         
-        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p2, t2, glm::vec2( 2300.0f ,700.0f ), 0.0f, glm::vec2( 0.0f ) );
-        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p2, t2, glm::vec2( 2200.0f ,700.0f ), 0.0f, glm::vec2( 0.0f ) );
-        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p2, t2, glm::vec2( 2100.0f ,700.0f ), 0.0f, glm::vec2( 0.0f ) );
-        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p2, t2, glm::vec2( 2000.0f ,700.0f ), 0.0f, glm::vec2( 0.0f ) );
+        SpawnEntity( EntityType::Make( EntityType::PLANET ), p2, t2, Fp2( 2500.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
+        SpawnEntity( EntityType::Make( EntityType::UNIT_WORKER ), p2, t2, Fp2( 2400.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
+        
+        SpawnEntity( EntityType::Make( EntityType::STAR ), p0, t0, Fp2( 1500.0f, 1200.0f ), Fp( 0 ), Fp2( 0, 0 ) );
+        
+        SpawnEntity( EntityType::Make( EntityType::BUILDING_SOLAR_ARRAY ), p1, t1, Fp2( 500.0f, 1000.0f ), Fp( 0 ), Fp2( 0, 0 ) )->building.isBuilding = false;
+        
+        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p1, t1, Fp2( 800.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
+        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p1, t1, Fp2( 900.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
+        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p1, t1, Fp2( 1000.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
+        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p1, t1, Fp2( 1100.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
+
+        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p2, t2, Fp2( 2300.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
+        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p2, t2, Fp2( 2200.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
+        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p2, t2, Fp2( 2100.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
+        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p2, t2, Fp2( 2000.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
     }
 
     void SimMap::Update( Core * core, f32 dt ) {
+        //ScopedClock timer( "Update", core );
+
         if( core->NetworkIsConnected() == true ) {
             NetworkMessage & msg = *core->MemoryAllocateTransient< NetworkMessage >();
             while( core->NetworkRecieve( msg ) ) {
@@ -92,8 +93,8 @@ namespace atto {
             }
 
             dtAccumulator += dt;
-            if( dtAccumulator > SIM_DT ) {
-                dtAccumulator -= SIM_DT;
+            if( dtAccumulator > SIM_DT_FLOAT ) {
+                dtAccumulator -= SIM_DT_FLOAT;
                 if( syncQueues.CanTurn() == false ) {
                     syncTurnAttempts++;
 
@@ -140,8 +141,8 @@ namespace atto {
         }
         else {
             dtAccumulator += dt;
-            if ( dtAccumulator > SIM_DT ) {
-                dtAccumulator -= SIM_DT;
+            if ( dtAccumulator > SIM_DT_FLOAT ) {
+                dtAccumulator -= SIM_DT_FLOAT;
 
                 localMapTurn.playerNumber = localPlayerNumber;
                 localMapTurn.turnNumber = turnNumber;
@@ -214,7 +215,7 @@ namespace atto {
         debugDrawContext->SetCameraDims( localCameraZoomLerp.x, localCameraZoomLerp.y );
 
         const glm::vec2 mapMin = glm::vec2( 0.0f );
-        const glm::vec2 mapMax = glm::vec2( 3000.0f ) - glm::vec2( spriteDrawContext->GetCameraWidth(), spriteDrawContext->GetCameraHeight() );
+        const glm::vec2 mapMax = glm::vec2( (f32)MAX_MAP_SIZE ) - glm::vec2( spriteDrawContext->GetCameraWidth(), spriteDrawContext->GetCameraHeight() );
         localCameraPos = glm::clamp( localCameraPos, mapMin, mapMax );
 
         spriteDrawContext->SetCameraPos( localCameraPos );
@@ -232,6 +233,7 @@ namespace atto {
         const glm::vec2 mousePosPix = core->InputMousePosPixels();
         const glm::vec2 mousePosWorld = spriteDrawContext->ScreenPosToWorldPos( mousePosPix );
         const glm::vec2 mousePosUISpace = uiDrawContext->ScreenPosToWorldPos( mousePosPix );
+        const fp2 mousePosWorldFp = Fp2( mousePosWorld );
 
         BoxBounds2D uiBounds = {};
         uiBounds.min = glm::vec2( 114, 0 );
@@ -245,7 +247,7 @@ namespace atto {
 
             if( core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) == true ) {
                 isPlacingBuilding = false;
-                localActionBuffer.AddAction( MapActionType::SIM_ENTITY_UNIT_COMMAND_CONSTRUCT_BUILDING, localPlayerNumber, ( i32 )EntityType::BUILDING_SOLAR_ARRAY, mousePosWorld );
+                localActionBuffer.AddAction( MapActionType::SIM_ENTITY_UNIT_COMMAND_CONSTRUCT_BUILDING, localPlayerNumber, ( i32 )EntityType::BUILDING_SOLAR_ARRAY, mousePosWorldFp );
             }
         }
 
@@ -277,8 +279,8 @@ namespace atto {
         for( i32 entityIndexA = 0; entityIndexA < entityCount; entityIndexA++ ) {
             SimEntity * ent = entities[ entityIndexA ];
 
-            ent->visPos = glm::mix( ent->visPos, ent->pos, dt * 7.0f );
-            ent->visOri = glm::mix( ent->visOri, ent->ori, dt * 7.0f );
+            ent->visPos = glm::mix( ent->visPos, ToVec2( ent->pos ), dt * 7.0f );
+            ent->visOri = glm::mix( ent->visOri, ToFloat( ent->ori ), dt * 7.0f );
 
             glm::vec2 drawPos = ent->visPos;
             f32 drawOri = ent->visOri;
@@ -298,13 +300,13 @@ namespace atto {
                 const i32 turretCount = unit.turrets.GetCount();
                 for( i32 turretIndex = 0; turretIndex < turretCount; turretIndex++ ) {
                     UnitTurret & turret = unit.turrets[ turretIndex ];
-                    glm::vec2 worldPos = ent->visPos + glm::rotate( turret.posOffset, -ent->visOri );
+                    glm::vec2 worldPos = ent->visPos + glm::rotate( ToVec2( turret.posOffset ), -ent->visOri );
 
                     if( turret.size == WeaponSize::SMALL ) {
-                        spriteDrawContext->DrawTexture( sprTurretSmol, worldPos, turret.ori );
+                        spriteDrawContext->DrawTexture( sprTurretSmol, worldPos, ToFloat( turret.ori ) );
                     }
                     else if( turret.size == WeaponSize::MEDIUM ) {
-                        spriteDrawContext->DrawTexture( sprTurretMed, worldPos, turret.ori );
+                        spriteDrawContext->DrawTexture( sprTurretMed, worldPos, ToFloat( turret.ori ) );
                     }
                 }
             }
@@ -312,8 +314,8 @@ namespace atto {
                 const Building & building = ent->building;
                 if ( building.isBuilding == true ) {
                     const f32 f = ( f32 ) building.turn / building.timeToBuildTurns;
-                    glm::vec2 bl = ent->pos + glm::vec2( -50, 20 );
-                    glm::vec2 tr = ent->pos + glm::vec2( 50, 30 );
+                    glm::vec2 bl = ent->visPos + glm::vec2( -50, 20 );
+                    glm::vec2 tr = ent->visPos + glm::vec2( 50, 30 );
                     spriteDrawContext->DrawRect( bl, tr, glm::vec4( 0.7f ) );
                     tr.x = glm::mix( bl.x, tr.x, f );
                     spriteDrawContext->DrawRect( bl, tr, glm::vec4( 0.9f ) );
@@ -440,7 +442,7 @@ namespace atto {
             #if ATTO_DEBUG
             if ( false ) {
                 if ( ent->selectionCollider.type == ColliderType::COLLIDER_TYPE_CIRCLE ) {
-                    debugDrawContext->DrawCircle( ent->pos, ent->selectionCollider.circle.rad );
+                    debugDrawContext->DrawCircle( ent->visPos, ent->selectionCollider.circle.rad );
                 } else if (ent->selectionCollider.type == ColliderType::COLLIDER_TYPE_AXIS_BOX ) {
                     Collider2D c = ent->GetWorldSelectionCollider();
                     debugDrawContext->DrawRect( c.box.min, c.box.max );
@@ -486,7 +488,7 @@ namespace atto {
             }
 
             if( inputMade == false ) {
-                localActionBuffer.AddAction( MapActionType::SIM_ENTITY_UNIT_COMMAND_MOVE, localPlayerNumber, mousePosWorld );
+                localActionBuffer.AddAction( MapActionType::SIM_ENTITY_UNIT_COMMAND_MOVE, localPlayerNumber, mousePosWorldFp );
             }
         }
 
@@ -509,7 +511,7 @@ namespace atto {
         core->RenderSubmit( debugDrawContext, false );
     }
 
-    SimEntity * SimMap::SpawnEntity( EntityType type, PlayerNumber playerNumber, TeamNumber teamNumber, glm::vec2 pos, f32 ori, glm::vec2 vel ) {
+    SimEntity * SimMap::SpawnEntity( EntityType type, PlayerNumber playerNumber, TeamNumber teamNumber, fp2 pos, fp ori, fp2 vel ) {
         EntityHandle handle = {};
         SimEntity * entity = entityPool.Add( handle );
         AssertMsg( entity != nullptr, "Spawn Entity is nullptr" );
@@ -519,11 +521,11 @@ namespace atto {
 
             entity->active = true;
             entity->type = type;
-            entity->resistance = 14.0f;
+            entity->resistance = ToFP( 14.0f );
             entity->pos = pos;
-            entity->visPos = pos;
+            entity->visPos = ToVec2( pos );
             entity->ori = ori;
-            entity->visOri = ori;
+            entity->visOri = ToFloat( ori );
             entity->vel = vel;
             entity->teamNumber = teamNumber;
             entity->playerNumber = playerNumber;
@@ -541,8 +543,8 @@ namespace atto {
                     entity->selectionCollider.type = COLLIDER_TYPE_CIRCLE;
                     entity->selectionCollider.circle.pos = glm::vec2( 0, 0 );
                     entity->selectionCollider.circle.rad = 16.0f;
-
-                    entity->unit.averageRange = 40.0f;
+                    
+                    entity->unit.averageRange = ToFP( 40 );
                     entity->unit.maxHealth = 50;
                     entity->unit.currentHealth = entity->unit.maxHealth;
                 } break;
@@ -559,36 +561,36 @@ namespace atto {
                     entity->selectionCollider.type = COLLIDER_TYPE_AXIS_BOX;
                     entity->selectionCollider.box.CreateFromCenterSize( glm::vec2( 0 ), glm::vec2( 26, 36 ) );
 
-                    entity->unit.averageRange = 400.0f;
+                    entity->unit.averageRange = ToFP( 400 );
                     entity->unit.maxHealth = 100;
                     entity->unit.currentHealth = entity->unit.maxHealth;
 
                     UnitTurret turret1 = {};
                     turret1.size = WeaponSize::SMALL;
-                    turret1.posOffset = glm::vec2( -4, 7 );
-                    turret1.fireRate = 1.25f;
-                    turret1.fireRange = 400.0f;
+                    turret1.posOffset = Fp2( -4, 7 );
+                    turret1.fireRate = Fp( 1.25f );
+                    turret1.fireRange = Fp( 400 );
                     entity->unit.turrets.Add( turret1 );
 
                     UnitTurret turret2 = {};
                     turret2.size = WeaponSize::SMALL;
-                    turret2.posOffset = glm::vec2( 4, 7 );
-                    turret2.fireRate = 1.25f;
-                    turret2.fireRange = 400.0f;
+                    turret2.posOffset = Fp2( 4, 7 );
+                    turret2.fireRate = Fp( 1.25f );
+                    turret2.fireRange = Fp( 400 );
                     entity->unit.turrets.Add( turret2 );
 
                     UnitTurret turret3 = {};
                     turret3.size = WeaponSize::MEDIUM;
-                    turret3.posOffset = glm::vec2( -7, -5 );
-                    turret3.fireRate = 4.5f;
-                    turret3.fireRange = 400.0f;
+                    turret3.posOffset = Fp2( -7, -5 );
+                    turret3.fireRate = Fp( 1.25f );
+                    turret3.fireRange = Fp( 400 );
                     entity->unit.turrets.Add( turret3 );
 
                     UnitTurret turret4 = {};
                     turret4.size = WeaponSize::MEDIUM;
-                    turret4.posOffset = glm::vec2( 7, -5 );
-                    turret4.fireRate = 4.5f;
-                    turret4.fireRange = 400.0f;
+                    turret4.posOffset = Fp2( 7, -5 );
+                    turret4.fireRate = Fp( 1.25f );
+                    turret4.fireRange = Fp( 400 );
                     entity->unit.turrets.Add( turret4 );
                 } break;
                 case EntityType::BULLET_SMOL:
@@ -606,7 +608,7 @@ namespace atto {
                     
                     entity->spriteAnimator.SetSpriteIfDifferent( mainSprite, false );
                     entity->bullet.sprVFX_SmallExplody = sprVFX_SmallExplody;
-                    entity->bullet.aliveTime = 1.87f;
+                    entity->bullet.aliveTime = Fp( 1.87f );
                     entity->bullet.damage = 5;
                 } break;
                 case EntityType::BULLET_MED:
@@ -616,7 +618,7 @@ namespace atto {
                     entity->spriteAnimator.SetSpriteIfDifferent( mainSprite, false );
 
                     entity->bullet.sprVFX_SmallExplody = sprVFX_SmallExplody;
-                    entity->bullet.aliveTime = 3.0f;
+                    entity->bullet.aliveTime = Fp( 3 );
                     entity->bullet.damage = 8;
                 } break;
                 case EntityType::STAR:
@@ -661,17 +663,17 @@ namespace atto {
                     entityPool.GatherActiveObjs( activeEntities );
                     for( i32 starIndex = 0; starIndex < activeEntities.GetCount(); starIndex++ ) {
                         if( activeEntities[ starIndex ]->type == EntityType::STAR ) {
-                            glm::vec2 dir = activeEntities[ starIndex ]->pos - pos;
-                            entity->ori = atan2f( dir.x, dir.y );
+                            fp2 dir = activeEntities[ starIndex ]->pos - pos; // @HACK: FPM
+                            entity->ori = FpATan2( dir.x, dir.y );
 
                             // @SPEED:
-                            const f32 dist = glm::length( dir );
-                            const f32 minDist = 600.0f; // @NOTE: Based of start 500
-                            const f32 maxDist = 1250.0f;
-                            const f32 t = glm::clamp( dist, minDist, maxDist );
+                            const fp dist = FpLength( dir );
+                            const fp minDist = Fp( 600 ); // @NOTE: Based of start 500
+                            const fp maxDist = Fp( 1250 );
+                            const fp t = FpClamp( dist, minDist, maxDist );
                             // Make 0 - 1
-                            const f32 t01 = ( t - minDist ) / ( maxDist - minDist );
-                            entity->building.giveEnergyAmount = (i32)( 1.0f + 4.0f * glm::cos( t01 ) );
+                            const fp t01 = ( t - minDist ) / ( maxDist - minDist );
+                            entity->building.giveEnergyAmount = (i32)( Fp( 1 ) + Fp( 4 ) * FpCos( t01 ) );
                             entity->building.isBuilding = true;
                             entity->building.timeToBuildTurns = SecondsToTurns( 45 );
                             break;
@@ -685,13 +687,13 @@ namespace atto {
         return entity;
     }
 
-    void SimMap::SimAction_SpawnEntity( i32 * typePtr, PlayerNumber * playerNumberPtr, TeamNumber * teamNumberPtr, glm::vec2 * posPtr, f32 * oriPtr, glm::vec2 * velPtr ) {
+    void SimMap::SimAction_SpawnEntity( i32 * typePtr, PlayerNumber * playerNumberPtr, TeamNumber * teamNumberPtr, fp2 * posPtr, fp * oriPtr, fp2 * velPtr ) {
         EntityType type = EntityType::Make( (EntityType::_enumerated)( * typePtr) );
         PlayerNumber playerNumber = *playerNumberPtr;
         TeamNumber teamNumber = *teamNumberPtr;
-        f32 ori = *oriPtr;
-        glm::vec2 pos = *posPtr;
-        glm::vec2 vel = *velPtr;
+        fp ori = *oriPtr;
+        fp2 pos = *posPtr;
+        fp2 vel = *velPtr;
         SpawnEntity( type, playerNumber, teamNumber, pos, ori, vel );
         //core->LogOutput( LogLevel::INFO, "SimAction_SpawnEntity: type=%s, playerNumber=%d, teamNumber=%d, pos=(%f,%f), vel=(%f,%f)", type.ToString(), playerNumber, teamNumber, pos.x, pos.y, vel.x, vel.y );
     }
@@ -747,9 +749,9 @@ namespace atto {
         }
     }
 
-    void SimMap::SimAction_Move( PlayerNumber * playerNumberPtr, glm::vec2 * posPtr ) {
+    void SimMap::SimAction_Move( PlayerNumber * playerNumberPtr, fp2 * posPtr ) {
         PlayerNumber playerNumber = *playerNumberPtr;
-        glm::vec2 pos = *posPtr;
+        fp2 pos = *posPtr;
 
         // @SPEED:
         activeEntities.Clear( false );
@@ -784,31 +786,31 @@ namespace atto {
             SimEntity * ent = activeEntities[ entityIndex ];
             if( ent->playerNumber == playerNumber && ent->selectedBy.Contains( playerNumber ) ) {
                 ent->navigator.hasDest = true;
-                glm::vec2 d = ( ent->pos - targetEnt->pos );
-                f32 dist = glm::length( d );
+                fp2 d = ( ent->pos - targetEnt->pos );
+                fp dist = FpLength( d );
 
-                 if( dist > ent->unit.averageRange - 10.0f ) {
-                     glm::vec2 dir = d / dist;
-                     ent->navigator.dest = targetEnt->pos + dir * ent->unit.averageRange - 10.0f; // @HACK: The 10 is because firing range is from center ent so move in more forward for cannons at the back
+                if( dist > ent->unit.averageRange - Fp( 10 ) ) {
+                     fp2 dir = d / dist;
+                     ent->navigator.dest = targetEnt->pos + dir * ent->unit.averageRange; // @HACK: The 10 is because firing range is from center ent so move in more forward for cannons at the back
                  } else {
                      ent->navigator.dest = ent->pos;
                  }
 
-                ent->navigator.slowRad = 100.0f;
+                ent->navigator.slowRad = Fp( 100 );
             }
         }
     }
 
-    void SimMap::SimAction_ContructBuilding( PlayerNumber * playerNumberPtr, i32 * typePtr, glm::vec2 * posPtr ) {
+    void SimMap::SimAction_ContructBuilding( PlayerNumber * playerNumberPtr, i32 * typePtr, fp2 * posPtr ) {
         PlayerNumber playerNumber = *playerNumberPtr;
         EntityType type = EntityType::Make( (EntityType::_enumerated)( * typePtr) );
-        glm::vec2 pos = *posPtr;
+        fp2 pos = *posPtr;
 
         const i32 entityCount = activeEntities.GetCount();
         for ( i32 entityIndex = 0; entityIndex < entityCount; entityIndex++ ) {
             SimEntity * ent = activeEntities[ entityIndex ];
             if ( ent->playerNumber == playerNumber && ent->type == EntityType::UNIT_WORKER && ent->selectedBy.Contains( playerNumber ) ) {
-                SimEntity * structure = SpawnEntity( type, playerNumber, ent->teamNumber, pos, 0.0f, glm::vec2( 0.0f ) );
+                SimEntity * structure = SpawnEntity( type, playerNumber, ent->teamNumber, pos, Fp( 0 ), Fp2( 0, 0 ) );
                 ent->unit.command.type = UnitCommandType::CONTRUCT_BUILDING;
                 ent->unit.command.targetEnt = structure->handle;
                 break;
@@ -873,9 +875,9 @@ namespace atto {
     }
 
     static void SimTick_SelfUpdate( const ConstEntList * entities, const EntPool * entityPool, i32 index, SimEntity * ent ) {
-        const f32 playerSpeed = 2500.0f / 100.0f;
-        const f32 maxForce = 20.0f;
-        const f32 invMass = 1.0f / 10.0f;
+        const fp playerSpeed = Fp( 2500.0f / 100.0f );
+        const fp maxForce = Fp( 20.0f );
+        const fp invMass = Fp( 1.0f / 10.0f );
 
         ZeroStruct( ent->actions );
 
@@ -895,7 +897,7 @@ namespace atto {
                 else if ( unit.command.type == UnitCommandType::MOVE ) {
                     ent->navigator.hasDest = true;
                     ent->navigator.dest = unit.command.targetPos;
-                    ent->navigator.slowRad = 100.0f;
+                    ent->navigator.slowRad = Fp( 100 );
                 }
                 else if ( unit.command.type == UnitCommandType::ATTACK ) {
                 }
@@ -905,7 +907,7 @@ namespace atto {
                     if ( ent->type == EntityType::UNIT_WORKER ) {
                         const SimEntity * target = entityPool->Get( unit.command.targetEnt );
                         if ( target != nullptr ) {
-                            f32 dist2 = glm::distance2( target->pos, ent->pos );
+                            fp dist2 = FpDistance2( target->pos, ent->pos );
                             if ( dist2 < unit.averageRange * unit.averageRange ) {
                                 // Build
                                 ent->navigator.hasDest = false;
@@ -914,27 +916,27 @@ namespace atto {
                                 // Move towards building
                                 ent->navigator.hasDest = true;
                                 ent->navigator.dest = target->pos;
-                                ent->navigator.slowRad = 100.0f;
+                                ent->navigator.slowRad = Fp( 100 );
                             }
                         }
                     }
                 }
 
                 if( ent->navigator.hasDest == true ) {
-                    const glm::vec2 targetPos = ent->navigator.dest;
-                    glm::vec2 desiredVel = ( targetPos - ent->pos );
-                    f32 dist = glm::length( desiredVel );
+                    fp2 targetPos = ent->navigator.dest;
+                    fp2 desiredVel = ( targetPos - ent->pos );
+                    fp dist = FpLength( desiredVel );
 
                     if( dist < ent->navigator.slowRad ) {
-                        if( dist < 5 ) {
-                            desiredVel = glm::vec2( 0.0f );
+                        if( dist < Fp(5 )) {
+                            desiredVel = Fp2( 0, 0 );
                         }
                         else {
-                            desiredVel = glm::normalize( desiredVel ) * playerSpeed * ( dist / ent->navigator.slowRad );
+                            desiredVel = FpNormalize( desiredVel ) * playerSpeed * ( dist / ent->navigator.slowRad );
                         }
                     }
                     else {
-                        desiredVel = glm::normalize( desiredVel ) * playerSpeed;
+                        desiredVel = FpNormalize( desiredVel ) * playerSpeed;
                     }
 
                 #if 0
@@ -955,37 +957,37 @@ namespace atto {
                     }
                 #endif
 
-                    glm::vec2 steering = desiredVel - ent->vel;
+                    fp2 steering = desiredVel - ent->vel;
 
                     // Avoidance
                     for ( i32 entityIndexB = 0; entityIndexB < entities->GetCount(); entityIndexB++ ) {
                         const SimEntity * otherEnt = *entities->Get( entityIndexB );
                         const bool correctType = IsUnitType( otherEnt->type ) == true || IsBuildingType( otherEnt->type );
                         if ( entityIndexB != index && correctType && otherEnt->teamNumber == ent->teamNumber ) {
-                            f32 dist = glm::distance( otherEnt->pos, ent->pos );
-                            if ( dist < 100.0f && dist > 1.0f ) {
-                                glm::vec2 dir = ( ent->pos - otherEnt->pos ) / dist;
+                            fp dist = FpDistance( otherEnt->pos, ent->pos );
+                            if( dist < Fp( 100 ) && dist > Fp( 1 ) ) {
+                                fp2 dir = ( ent->pos - otherEnt->pos ) / dist;
                                 //steering += dir * playerSpeed * 0.2f;
-                                steering += dir * playerSpeed * glm::clamp( ( 1 - dist / 50.0f ), 0.0f, 1.0f );
+                                steering = steering + dir * playerSpeed * FpClamp( ( 1 - dist / Fp( 50 ) ), Fp( 0 ), Fp( 1 ) );
                             }
                         }
                     }
 
-                    steering = Truncate( steering, maxForce );
-                    steering *= invMass;
+                    steering = FpTruncateLength( steering, maxForce );
+                    steering = steering * invMass;
 
-                    ent->vel = Truncate( ent->vel + steering, playerSpeed );
+                    ent->vel = FpTruncateLength( ent->vel + steering, playerSpeed );
                 } else {
-                    ent->vel *= 0.95f;
-                    if ( ent->vel != glm::vec2( 0 ) && glm::length( ent->vel ) < 1 ) {
-                        ent->vel != glm::vec2( 0 );
+                    ent->vel = ent->vel * Fp( 0.95f );
+                    if( ent->vel != Fp2( 0, 0 ) && FpLength( ent->vel ) < Fp( 1 ) ) {
+                        //ent->vel = glm::vec2( 0 );
                     }
                 }
 
                 // Update orientation
-                if( glm::length2( ent->vel ) >= 1.0f ) {
-                    glm::vec2 nvel = glm::normalize( ent->vel );
-                    ent->ori = atan2f( nvel.x, nvel.y );
+                if( FpLength2( ent->vel ) >= Fp( 1 ) ) {
+                    fp2 nvel = FpNormalize( ent->vel );
+                    ent->ori = Fp( atan2f( ToFloat( nvel.x ), ToFloat( nvel.y ) ) );// @HACK: FPM
                 }
 
                 /*
@@ -1001,11 +1003,11 @@ namespace atto {
                 const i32 turretCount = unit.turrets.GetCount();
                 for( i32 turretIndex = 0; turretIndex < turretCount; turretIndex++ ) {
                     UnitTurret & turret = unit.turrets[ turretIndex ];
-                    glm::vec2 worldPos = ent->pos + glm::rotate( turret.posOffset, -ent->ori );
+                    fp2 worldPos = ent->pos + FpRotate( turret.posOffset, -ent->ori );
 
                     turret.fireTimer -= SIM_DT;
-                    if( turret.fireTimer < 0.0f ) {
-                        turret.fireTimer = 0.0f;
+                    if( turret.fireTimer < Fp(0) ) {
+                        turret.fireTimer = Fp( 0 );
                     }
 
                     bool hasTarget = false;
@@ -1023,17 +1025,17 @@ namespace atto {
                             continue;
                         }
 
-                        f32 dist2 = glm::distance2( worldPos, otherEnt->pos );
+                        fp dist2 = FpDistance2( worldPos, otherEnt->pos );
                         if( dist2 <= turret.fireRange * turret.fireRange ) {
-                            glm::vec2 dir = glm::normalize( otherEnt->pos - worldPos );
-                            turret.ori = atan2f( dir.x, dir.y );
+                            fp2 dir = FpNormalize( otherEnt->pos - worldPos );
+                            turret.ori = FpATan2( dir.x, dir.y );
                             hasTarget = true;
 
-                            if( turret.fireTimer == 0.0f ) {
+                            if( turret.fireTimer == Fp( 0 ) ) {
                                 turret.fireTimer = turret.fireRate;
                                 EntityType btype = turret.size == WeaponSize::SMALL ? EntityType::Make( EntityType::BULLET_SMOL ) : EntityType::Make( EntityType::BULLET_MED );
-                                glm::vec2 spawnPos = turret.size == WeaponSize::SMALL ? worldPos : worldPos + dir * 10.0f;
-                                ent->actions.AddAction( MapActionType::SIM_ENTITY_SPAWN, (i32)btype, ent->playerNumber, ent->teamNumber, spawnPos, turret.ori, dir * 250.0f );
+                                fp2 spawnPos = turret.size == WeaponSize::SMALL ? worldPos : worldPos + dir * Fp( 10 );
+                                ent->actions.AddAction( MapActionType::SIM_ENTITY_SPAWN, (i32)btype, ent->playerNumber, ent->teamNumber, spawnPos, turret.ori, dir * Fp( 250 ) );
                                 break;
                             }
                         }
@@ -1073,11 +1075,11 @@ namespace atto {
                         continue;
                     }
 
-                    f32 dist2 = glm::distance2( ent->pos, otherEnt->pos );
-                    f32 r = ent->handle.idx * 10.0f;
-                    if( dist2 <= 36.0f * 36.0f + r) {
+                    fp dist2 = FpDistance2( ent->pos, otherEnt->pos );
+                    fp r = ent->handle.idx * Fp( 10 );
+                    if( dist2 <= Fp( 36.0f * 36.0f ) + r ) {
                         bool changed = ent->spriteAnimator.SetSpriteIfDifferent( bullet.sprVFX_SmallExplody, false );
-                        ent->vel = glm::vec2( 0.0f );
+                        ent->vel = Fp2( 0, 0 );
                         if( changed == true ) {
                             ent->actions.AddAction( MapActionType::SIM_ENTITY_APPLY_DAMAGE, bullet.damage, otherEnt->handle );
                         }
@@ -1103,8 +1105,8 @@ namespace atto {
         }
         //ent->acc.x -= ent->vel.x * ent->resistance;
         //ent->acc.y -= ent->vel.y * ent->resistance;
-        ent->vel += ent->acc * SIM_DT;
-        ent->pos += ent->vel * SIM_DT;
+        ent->vel = ent->vel + ent->acc * SIM_DT;
+        ent->pos = ent->pos + ent->vel * SIM_DT;
     }
     
     struct SimMap_UpdateTaskContext {
@@ -1249,11 +1251,11 @@ namespace atto {
     }
 
     Collider2D SimEntity::GetWorldCollisionCollider() const {
-        return ColliderForSpace( collisionCollider, pos );
+        return ColliderForSpace( collisionCollider, ToVec2(pos) );//@HACK: FPM
     }
 
     Collider2D SimEntity::GetWorldSelectionCollider() const {
-        return ColliderForSpace( selectionCollider, pos );
+        return ColliderForSpace( selectionCollider, ToVec2( pos )); //@HACK: FPM
     }
 
     void SyncQueues::Start() {

@@ -48,12 +48,35 @@ namespace atto {
         return glm::vec2( -v.y, v.x );
     }
 
-    typedef fpm::fixed_24_8 fp;
+    typedef fpm::fixed<std::int32_t, std::int64_t, 6> fp;
+
+    constexpr fp FP_MAX = ( std::numeric_limits<fp>::max() );
+    constexpr fp FP_MIN = ( std::numeric_limits<fp>::min() );
+    constexpr fp FP_EPI = ( std::numeric_limits<fp>::epsilon() ); // @NOTE: 0.01.
+    constexpr fp FP_E = fp::e();
+    constexpr fp FP_PI = fp::pi();
+    constexpr fp FP_2PI = fp::two_pi();
+    constexpr fp FP_HALF_PI = fp::half_pi();
+
+    inline constexpr fp Fp( f32 f ) { return fp( f ); }
+    inline constexpr fp Fp( i32 f ) { return fp( f ); }
+    inline constexpr fp ToFP( f32 f ) { return fp( f ); }
+    inline constexpr fp ToFP( i32 f ) { return fp( f ); }
+    inline constexpr i32 ToInt( fp f ) { return static_cast<i32>( f ); }
+    inline constexpr f32 ToFloat( fp f ) { return static_cast<f32>( f ); }
+
+    constexpr i32 FP_EPI_MAX = ToInt( FP_MAX );
+    constexpr float FP_EPI_FLOAT = ToFloat( FP_EPI );
 
     struct fp2 {
         fp x;
         fp y;
     };
+
+    inline constexpr fp2 Fp2( f32 x, f32 y ) { return { Fp( x ), Fp( y ) }; }
+    inline constexpr fp2 Fp2( i32 x, i32 y ) { return { Fp( x ), Fp( y ) }; }
+    inline constexpr fp2 Fp2( glm::vec2 v ) { return { Fp( v.x ), Fp( v.y ) }; }
+
 
     glm::vec2   ToVec2( const fp2 & v );
     fp2         ToFP2( const glm::vec2 & v );
@@ -73,6 +96,7 @@ namespace atto {
     fp2         FpNormalize( fp2 v );
     fp2         FpTruncateLength( fp2, fp max );
     fp2         FpLeftPerp( fp2 v );
+    fp2         FpRotate( fp2 v, fp angle );
 
     fp2         operator+( const fp2 & a, const fp2 & b );
     fp2         operator-( const fp2 & a, const fp2 & b );
@@ -80,6 +104,10 @@ namespace atto {
     fp2         operator/( const fp2 & a, const fp & b );
     fp2         operator*( const fp & a, const fp2 & b );
     fp2         operator/( const fp & a, const fp2 & b );
+    fp2         operator-( const fp2 & a );
+    bool        operator==( const fp2 & a, const fp2 & b );
+    bool        operator!=( const fp2 & a, const fp2 & b );
+    
 
     enum ColliderType {
         COLLIDER_TYPE_NONE,
