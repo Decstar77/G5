@@ -11,7 +11,7 @@ namespace atto {
 
     void SimMap::Initialize( Core * core ) {
         if( rpcTable[ 1 ] == nullptr ) {
-            rpcTable[ ( i32 )MapActionType::PLAYER_SELECTION ]                          = new RpcMemberFunction( this, &SimMap::SimAction_Select );
+            rpcTable[ ( i32 )MapActionType::PLAYER_SELECTION ]                          = new RpcMemberFunction( this, &SimMap::SimAction_PlayerSelect );
             rpcTable[ ( i32 )MapActionType::SIM_ENTITY_UNIT_COMMAND_MOVE ]              = new RpcMemberFunction( this, &SimMap::SimAction_Move );
             rpcTable[ ( i32 )MapActionType::SIM_ENTITY_UNIT_COMMAND_ATTACK ]            = new RpcMemberFunction( this, &SimMap::SimAction_Attack );
             rpcTable[ ( i32 )MapActionType::SIM_ENTITY_UNIT_COMMAND_CONSTRUCT_BUILDING ] = new RpcMemberFunction( this, &SimMap::SimAction_ContructBuilding );
@@ -261,7 +261,6 @@ namespace atto {
         BoxBounds2D selectionBounds = {};
         selectionBounds.min = glm::min( localStartDrag, localEndDrag );
         selectionBounds.max = glm::max( localStartDrag, localEndDrag );
-       
 
         EntList & entities = *core->MemoryAllocateTransient<EntList>();
         entityPool.GatherActiveObjs( entities );
@@ -458,11 +457,17 @@ namespace atto {
                                 // @TODO: Follow
                                 localActionBuffer.AddAction( MapActionType::SIM_ENTITY_UNIT_COMMAND_MOVE, localPlayerNumber, ent->pos );
                             }
-                        } else if ( IsBuildingType( ent->type ) == true ) {
+                        } else if ( IsBuildingType( ent->type ) == true && ent->building.isBuilding == true ) {
                             if ( ent->teamNumber != localPlayerTeamNumber ) {
                                 localActionBuffer.AddAction( MapActionType::SIM_ENTITY_UNIT_COMMAND_ATTACK, localPlayerNumber, ent->handle );
                             } else {
-
+                                for ( i32 entityIndexB = 0; entityIndexB < entities.GetCount(); entityIndexB++ ) {
+                                    const SimEntity * otherEnt = *entities.Get( entityIndexB );
+                                    if ( otherEnt->playerNumber == localPlayerNumber && otherEnt->type == EntityType::UNIT_WORKER ) {
+                                        localActionBuffer.AddAction( MapActionType::SIM_ENTITY_UNIT_COMMAND_CONSTRUCT_EXISTING_BUILDING, localPlayerNumber, ent->handle );
+                                        break;
+                                    }
+                                }
                             }
                         }
 
@@ -696,7 +701,7 @@ namespace atto {
         //core->LogOutput( LogLevel::INFO, "SimAction_DestroyEntity: %d, %d", handle.idx, handle.gen );
     }
 
-    void SimMap::SimAction_Select( i32 * playerNumberPtr, EntHandleList * selection, EntitySelectionChange * changePtr ) {
+    void SimMap::SimAction_PlayerSelect( i32 * playerNumberPtr, EntHandleList * selection, EntitySelectionChange * changePtr ) {
         i32 playerNumber = *playerNumberPtr;
         EntitySelectionChange change = *changePtr;
 

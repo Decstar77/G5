@@ -369,8 +369,9 @@ namespace atto {
 
     class Core {
     public:
-
         void                                LogOutput( LogLevel level, const char * message, ... );
+        //template<typename... _types_>
+        //void                                LogOutput2( LogLevel level, _types_... args );
 
         f32                                 GetDeltaTime() const;
         virtual f64                         GetTheCurrentTime() const = 0;

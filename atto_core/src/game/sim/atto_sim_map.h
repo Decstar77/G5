@@ -317,7 +317,9 @@ namespace atto {
 
         void                                        SimAction_SpawnEntity( i32 * type, i32 * playerNumber, i32 * teamNumber, glm::vec2 * pos, f32 * ori, glm::vec2 * vel );
         void                                        SimAction_DestroyEntity( EntityHandle * handle );
-        void                                        SimAction_Select( i32 * playerNumber, EntHandleList * selection, EntitySelectionChange * change );
+        void                                        SimAction_PlayerSelect( i32 * playerNumber, EntHandleList * selection, EntitySelectionChange * change );
+        //void                                        SimAction_PlayerWorldCommand( i32 * playerNumber, glm::vec2 targetPos, EntityHandle * targetEnt ); // Right clicking in the world
+
         void                                        SimAction_Move( i32 * playerNumber, glm::vec2 * pos );
         void                                        SimAction_Attack( i32 * playerNumber, EntityHandle * target );
         void                                        SimAction_ContructBuilding( i32 * playerNumberPtr, i32 * typePtr, glm::vec2 * posPtr );
@@ -326,11 +328,12 @@ namespace atto {
         void                                        SimAction_ApplyContruction( EntityHandle * target );
         void                                        SimAction_GiveEnergy( i32 * playerNumber, i32 * amount );
 
+
         REFLECT();
 
     private:
         
-
+        EntList                                     localCacheSelection = {};
         EntList                                     activeEntities = {};
     };
 
