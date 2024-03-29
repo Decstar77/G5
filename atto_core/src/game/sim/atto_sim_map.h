@@ -43,13 +43,13 @@ namespace atto {
                 STAR,
                 PLANET,
 
-               BUILDING_BEGIN,
-               BUILDING_STATION,
-               BUILDING_SOLAR_ARRAY,
-               BUILDING_COMPUTE,
-               BUILDING_END,
+                BUILDING_BEGIN,
+                BUILDING_STATION,
+                BUILDING_SOLAR_ARRAY,
+                BUILDING_COMPUTE,
+                BUILDING_END,
 
-               TYPE_PROP
+                TYPE_PROP
     );
 
     inline bool IsUnitType( EntityType type ) {
@@ -152,13 +152,17 @@ namespace atto {
 
         // These are all the actions that can be taken by the player and serialized across the network.
         PLAYER_SELECTION,
-        PLAYER_MOVE,
-        PLAYER_ATTACK,
+        SIM_ENTITY_UNIT_COMMAND_MOVE,
+        SIM_ENTITY_UNIT_COMMAND_ATTACK,
+        SIM_ENTITY_UNIT_COMMAND_CONSTRUCT_BUILDING,
+        SIM_ENTITY_UNIT_COMMAND_CONSTRUCT_EXISTING_BUILDING,
 
         // These are all the actions that can be taken by the simulation, they are not serialized across the network. It's expected that the determinism of the simulation will be the same across all clients.
         SIM_ENTITY_SPAWN,
         SIM_ENTITY_DESTROY,
-        SIM_ENTITY_UNIT_APPLY_DAMAGE,
+
+        SIM_ENTITY_APPLY_DAMAGE,
+        SIM_ENTITY_APPLY_CONSTRUCTION,
 
         SIM_MAP_MONIES_GIVE_ENERGY
     };
@@ -316,8 +320,10 @@ namespace atto {
         void                                        SimAction_Select( i32 * playerNumber, EntHandleList * selection, EntitySelectionChange * change );
         void                                        SimAction_Move( i32 * playerNumber, glm::vec2 * pos );
         void                                        SimAction_Attack( i32 * playerNumber, EntityHandle * target );
-        void                                        SimAction_ContructBuilding( i32 * playerNumber, EntityHandle * target );
+        void                                        SimAction_ContructBuilding( i32 * playerNumberPtr, i32 * typePtr, glm::vec2 * posPtr );
+        void                                        SimAction_ContructExistingBuilding( i32 * playerNumberPtr, EntityHandle * target );
         void                                        SimAction_ApplyDamage( i32 * damage, EntityHandle * target );
+        void                                        SimAction_ApplyContruction( EntityHandle * target );
         void                                        SimAction_GiveEnergy( i32 * playerNumber, i32 * amount );
 
         REFLECT();

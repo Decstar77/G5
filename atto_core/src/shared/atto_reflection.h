@@ -1,7 +1,7 @@
 #pragma once
 
 #include "atto_containers.h"
-#include "atto_random.h"
+#include "atto_math.h"
 #include "atto_binary_file.h"
 
 #include <vector>

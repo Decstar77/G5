@@ -1,4 +1,4 @@
-#include "atto_random.h"
+#include "atto_math.h"
 
 namespace atto {
 
@@ -251,5 +251,11 @@ namespace atto {
     }
 
     static_assert( TesterMester(), "Random number array is not valid" );
+
+
+    void RNGCreate( RNG * rng, i32 seed ) {
+
+    }
+
 
 }

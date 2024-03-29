@@ -51,9 +51,4 @@ namespace atto {
         REFLECT_STRUCT_MEMBER( frameActuations )
         REFLECT_STRUCT_END()
 
-        REFLECT_STRUCT_BEGIN( BoxBounds2D )
-        REFLECT_STRUCT_MEMBER( min )
-        REFLECT_STRUCT_MEMBER( max )
-        REFLECT_STRUCT_END()
-
 }

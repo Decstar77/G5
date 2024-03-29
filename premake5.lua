@@ -11,6 +11,7 @@ local FONTSTASH_DIR = "vendor/fontstash"
 local ABSOLUTE_SOL_PATH = path.getabsolute(".")
 local IMGUI_DIR = path.join(ABSOLUTE_SOL_PATH, "atto_core/src/editor/imgui")
 local FMOD_DIR = "vendor/fmod"
+local FPM = "vendor/fpm"
 
 solution "Atto"
     location("")
@@ -67,7 +68,8 @@ project "atto_core"
         path.join(ENET_DIR, "include"),
         JSON_DIR,
         STB_DIR,
-		path.join(FONTSTASH_DIR, "src"),
+        FPM,
+        path.join(FONTSTASH_DIR, "src"),
         GLM_DIR,
         AUDIO_FILE_DIR,
         "atto/src/",

@@ -583,7 +583,7 @@ namespace atto {
                     j[ "c" ] = atto::JSON_Write( collider->sphere.c );
                     j[ "r" ] = collider->sphere.r;
                 } break;
-                case COLLIDER_TYPE_BOX:
+                case COLLIDER_TYPE_AXIS_BOX:
                 {
                     j[ "min" ] = atto::JSON_Write( collider->box.min );
                     j[ "max" ] = atto::JSON_Write( collider->box.max );
@@ -622,7 +622,7 @@ namespace atto {
                     atto::JSON_Read( j[ "c" ], collider->sphere.c );
                     atto::JSON_Read( j[ "r" ], collider->sphere.r );
                 } break;
-                case COLLIDER_TYPE_BOX:
+                case COLLIDER_TYPE_AXIS_BOX:
                 {
                     atto::JSON_Read( j[ "min" ], collider->box.min );
                     atto::JSON_Read( j[ "max" ], collider->box.max );
@@ -690,7 +690,7 @@ namespace atto {
                 {
                     INVALID_CODE_PATH;
                 } break;
-                case COLLIDER_TYPE_BOX:
+                case COLLIDER_TYPE_AXIS_BOX:
                 {
                     j[ "min" ] = atto::JSON_Write( collider->box.min );
                     j[ "max" ] = atto::JSON_Write( collider->box.max );
@@ -729,7 +729,7 @@ namespace atto {
                 {
                     INVALID_CODE_PATH;
                 } break;
-                case COLLIDER_TYPE_BOX:
+                case COLLIDER_TYPE_AXIS_BOX:
                 {
                     atto::JSON_Read( j[ "min" ], collider->box.min );
                     atto::JSON_Read( j[ "max" ], collider->box.max );
@@ -766,7 +766,7 @@ namespace atto {
                     {
                         INVALID_CODE_PATH;
                     } break;
-                    case COLLIDER_TYPE_BOX:
+                    case COLLIDER_TYPE_AXIS_BOX:
                     {
                         ImGui::InputFloat2( "Min", &collider->box.min.x );
                         ImGui::InputFloat2( "Max", &collider->box.max.x );

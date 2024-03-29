@@ -11,15 +11,19 @@ namespace atto {
 
     void SimMap::Initialize( Core * core ) {
         if( rpcTable[ 1 ] == nullptr ) {
-            rpcTable[ (i32)MapActionType::PLAYER_SELECTION ]   = new RpcMemberFunction( this, &SimMap::SimAction_Select );
-            rpcTable[ (i32)MapActionType::PLAYER_MOVE ]        = new RpcMemberFunction( this, &SimMap::SimAction_Move );
-            rpcTable[ (i32)MapActionType::PLAYER_ATTACK ]      = new RpcMemberFunction( this, &SimMap::SimAction_Attack );
+            rpcTable[ ( i32 )MapActionType::PLAYER_SELECTION ]                          = new RpcMemberFunction( this, &SimMap::SimAction_Select );
+            rpcTable[ ( i32 )MapActionType::SIM_ENTITY_UNIT_COMMAND_MOVE ]              = new RpcMemberFunction( this, &SimMap::SimAction_Move );
+            rpcTable[ ( i32 )MapActionType::SIM_ENTITY_UNIT_COMMAND_ATTACK ]            = new RpcMemberFunction( this, &SimMap::SimAction_Attack );
+            rpcTable[ ( i32 )MapActionType::SIM_ENTITY_UNIT_COMMAND_CONSTRUCT_BUILDING ] = new RpcMemberFunction( this, &SimMap::SimAction_ContructBuilding );
+            rpcTable[ ( i32 )MapActionType::SIM_ENTITY_UNIT_COMMAND_CONSTRUCT_EXISTING_BUILDING ] = new RpcMemberFunction( this, &SimMap::SimAction_ContructExistingBuilding );
 
-            rpcTable[ (i32)MapActionType::SIM_ENTITY_SPAWN ]   = new RpcMemberFunction( this, &SimMap::SimAction_SpawnEntity );
-            rpcTable[ (i32)MapActionType::SIM_ENTITY_DESTROY ] = new RpcMemberFunction( this, &SimMap::SimAction_DestroyEntity );
-            rpcTable[ (i32)MapActionType::SIM_ENTITY_UNIT_APPLY_DAMAGE ] = new RpcMemberFunction( this, &SimMap::SimAction_ApplyDamage );
+            rpcTable[ ( i32 )MapActionType::SIM_ENTITY_SPAWN ]                          = new RpcMemberFunction( this, &SimMap::SimAction_SpawnEntity );
+            rpcTable[ ( i32 )MapActionType::SIM_ENTITY_DESTROY ]                        = new RpcMemberFunction( this, &SimMap::SimAction_DestroyEntity );
 
-            rpcTable[ (i32)MapActionType::SIM_MAP_MONIES_GIVE_ENERGY ] = new RpcMemberFunction( this, &SimMap::SimAction_GiveEnergy );
+            rpcTable[ ( i32 )MapActionType::SIM_ENTITY_APPLY_DAMAGE ]                   = new RpcMemberFunction( this, &SimMap::SimAction_ApplyDamage );
+            rpcTable[ ( i32 )MapActionType::SIM_ENTITY_APPLY_CONSTRUCTION ]             = new RpcMemberFunction( this, &SimMap::SimAction_ApplyContruction );
+
+            rpcTable[ ( i32 )MapActionType::SIM_MAP_MONIES_GIVE_ENERGY ]                = new RpcMemberFunction( this, &SimMap::SimAction_GiveEnergy );
         }
 
         const f32 panelDim = 16 + 1;
@@ -233,7 +237,7 @@ namespace atto {
 
             if( core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) == true ) {
                 isPlacingBuilding = false;
-                localActionBuffer.AddAction( MapActionType::SIM_ENTITY_SPAWN, (i32)EntityType::BUILDING_SOLAR_ARRAY, localPlayerNumber, localPlayerTeamNumber, mousePosWorld, 0.0f, glm::vec2( 0, 0 ) );
+                localActionBuffer.AddAction( MapActionType::SIM_ENTITY_UNIT_COMMAND_CONSTRUCT_BUILDING, localPlayerNumber, ( i32 )EntityType::BUILDING_SOLAR_ARRAY, mousePosWorld );
             }
         }
 
@@ -427,10 +431,10 @@ namespace atto {
 
             // DEBUG
             #if ATTO_DEBUG
-            if ( true ) {
+            if ( false ) {
                 if ( ent->selectionCollider.type == ColliderType::COLLIDER_TYPE_CIRCLE ) {
                     debugDrawContext->DrawCircle( ent->pos, ent->selectionCollider.circle.rad );
-                } else if (ent->selectionCollider.type == ColliderType::COLLIDER_TYPE_BOX ) {
+                } else if (ent->selectionCollider.type == ColliderType::COLLIDER_TYPE_AXIS_BOX ) {
                     Collider2D c = ent->GetWorldSelectionCollider();
                     debugDrawContext->DrawRect( c.box.min, c.box.max );
                 }
@@ -446,12 +450,20 @@ namespace atto {
                 if( ent->isSelectable == true ) {
                     const Collider2D selectionCollider = ent->GetWorldSelectionCollider();
                     if( selectionCollider.Contains( mousePosWorld ) ) {
-                        if( ent->teamNumber != localPlayerTeamNumber ) {
-                            localActionBuffer.AddAction( MapActionType::PLAYER_ATTACK, localPlayerNumber, ent->handle );
-                        }
-                        else {
-                            // @TODO: Follow
-                            localActionBuffer.AddAction( MapActionType::PLAYER_MOVE, localPlayerNumber, ent->pos );
+                        if ( IsUnitType( ent->type ) ) {
+                            if ( ent->teamNumber != localPlayerTeamNumber ) {
+                                localActionBuffer.AddAction( MapActionType::SIM_ENTITY_UNIT_COMMAND_ATTACK, localPlayerNumber, ent->handle );
+                            }
+                            else {
+                                // @TODO: Follow
+                                localActionBuffer.AddAction( MapActionType::SIM_ENTITY_UNIT_COMMAND_MOVE, localPlayerNumber, ent->pos );
+                            }
+                        } else if ( IsBuildingType( ent->type ) == true ) {
+                            if ( ent->teamNumber != localPlayerTeamNumber ) {
+                                localActionBuffer.AddAction( MapActionType::SIM_ENTITY_UNIT_COMMAND_ATTACK, localPlayerNumber, ent->handle );
+                            } else {
+
+                            }
                         }
 
                         inputMade = true;
@@ -461,7 +473,7 @@ namespace atto {
             }
 
             if( inputMade == false ) {
-                localActionBuffer.AddAction( MapActionType::PLAYER_MOVE, localPlayerNumber, mousePosWorld );
+                localActionBuffer.AddAction( MapActionType::SIM_ENTITY_UNIT_COMMAND_MOVE, localPlayerNumber, mousePosWorld );
             }
         }
 
@@ -531,7 +543,7 @@ namespace atto {
                     entity->selectionAnimator.SetSpriteIfDifferent( selectionSprite, false );
 
                     entity->isSelectable = true;
-                    entity->selectionCollider.type = COLLIDER_TYPE_BOX;
+                    entity->selectionCollider.type = COLLIDER_TYPE_AXIS_BOX;
                     entity->selectionCollider.box.CreateFromCenterSize( glm::vec2( 0 ), glm::vec2( 26, 36 ) );
 
                     entity->unit.averageRange = 400.0f;
@@ -628,7 +640,7 @@ namespace atto {
                     entity->selectionAnimator.SetSpriteIfDifferent( selectionSprite, false );
 
                     entity->isSelectable = true;
-                    entity->selectionCollider.type = COLLIDER_TYPE_BOX;
+                    entity->selectionCollider.type = COLLIDER_TYPE_AXIS_BOX;
                     entity->selectionCollider.box.CreateFromCenterSize( glm::vec2( 0 ), glm::vec2( 64, 32 ) );
 
                     // @SPEED:
@@ -734,9 +746,9 @@ namespace atto {
         for( i32 entityIndex = 0; entityIndex < entityCount; entityIndex++ ) {
             SimEntity * ent = activeEntities[ entityIndex ];
             if ( ent->playerNumber == playerNumber && IsUnitType( ent->type ) && ent->selectedBy.Contains( playerNumber ) ) {
-                ent->navigator.hasDest = true;
-                ent->navigator.dest = pos;
-                ent->navigator.slowRad = 100.0f;
+                ent->unit.command.type = UnitCommandType::MOVE;
+                ent->unit.command.targetPos = pos;
+                ent->unit.command.targetEnt = EntityHandle::INVALID;
             }
         }
     }
@@ -774,20 +786,39 @@ namespace atto {
         }
     }
 
-    void SimMap::SimAction_ContructBuilding( i32 * playerNumberPtr, EntityHandle * targetPtr ) {
+    void SimMap::SimAction_ContructBuilding( i32 * playerNumberPtr, i32 * typePtr, glm::vec2 * posPtr ) {
         i32 playerNumber = *playerNumberPtr;
-        EntityHandle target = *targetPtr;
+        EntityType type = EntityType::Make( (EntityType::_enumerated)( * typePtr) );
+        glm::vec2 pos = *posPtr;
 
-        SimEntity * targetEnt = entityPool.Get( target );
-        if( targetEnt == nullptr ) {
-            return;
-        }
         const i32 entityCount = activeEntities.GetCount();
         for ( i32 entityIndex = 0; entityIndex < entityCount; entityIndex++ ) {
             SimEntity * ent = activeEntities[ entityIndex ];
             if ( ent->playerNumber == playerNumber && ent->type == EntityType::UNIT_WORKER && ent->selectedBy.Contains( playerNumber ) ) {
+                SimEntity * structure = SpawnEntity( type, playerNumber, ent->teamNumber, pos, 0.0f, glm::vec2( 0.0f ) );
                 ent->unit.command.type = UnitCommandType::CONTRUCT_BUILDING;
-                ent->unit.command.targetEnt = target;
+                ent->unit.command.targetEnt = structure->handle;
+                break;
+            }
+        }
+    }
+
+    void SimMap::SimAction_ContructExistingBuilding( i32 * playerNumberPtr, EntityHandle * targetPtr ) {
+        i32 playerNumber = *playerNumberPtr;
+        const EntityHandle target = *targetPtr;
+        SimEntity * targetEnt = entityPool.Get( target );
+        if ( targetEnt != nullptr ) {
+            Assert( IsBuildingType( targetEnt->type ) == true );
+            if ( targetEnt->building.isBuilding == true ) {
+                const i32 entityCount = activeEntities.GetCount();
+                for ( i32 entityIndex = 0; entityIndex < entityCount; entityIndex++ ) {
+                    SimEntity * ent = activeEntities[ entityIndex ];
+                    if ( ent->playerNumber == playerNumber && ent->type == EntityType::UNIT_WORKER && ent->selectedBy.Contains( playerNumber ) ) {
+                        ent->unit.command.type = UnitCommandType::CONTRUCT_BUILDING;
+                        ent->unit.command.targetEnt = targetEnt->handle;
+                        break;
+                    }
+                }
             }
         }
     }
@@ -803,6 +834,21 @@ namespace atto {
             }
         }
         //core->LogOutput( LogLevel::INFO, "SimAction_ApplyDamage: Applying damage %d to %d, %d", damage, target.idx, target.gen );
+    }
+
+    void SimMap::SimAction_ApplyContruction( EntityHandle * targetPtr ) {
+        const EntityHandle target = *targetPtr;
+        SimEntity * targetEnt = entityPool.Get( target );
+        if ( targetEnt != nullptr ) {
+            Assert( IsBuildingType( targetEnt->type ) == true );
+            if ( targetEnt->building.isBuilding == true ) {
+                targetEnt->building.turn++;
+                if ( targetEnt->building.turn >= targetEnt->building.timeToBuildTurns ) {
+                    targetEnt->building.turn = 0;
+                    targetEnt->building.isBuilding = false;
+                }
+            }
+        }
     }
 
     void SimMap::SimAction_GiveEnergy( i32 * playerNumberPtr, i32 * amountPtr ) {
@@ -831,15 +877,31 @@ namespace atto {
                     break;
                 }
 
-                if ( ent->type == EntityType::UNIT_WORKER ) {
-                    if ( unit.command.type == UnitCommandType::CONTRUCT_BUILDING ) {
+                if ( unit.command.type == UnitCommandType::IDLE ) {
+                }
+                else if ( unit.command.type == UnitCommandType::MOVE ) {
+                    ent->navigator.hasDest = true;
+                    ent->navigator.dest = unit.command.targetPos;
+                    ent->navigator.slowRad = 100.0f;
+                }
+                else if ( unit.command.type == UnitCommandType::ATTACK ) {
+                }
+                else if ( unit.command.type == UnitCommandType::FOLLOW ) {
+                }
+                else if ( unit.command.type == UnitCommandType::CONTRUCT_BUILDING ) {
+                    if ( ent->type == EntityType::UNIT_WORKER ) {
                         const SimEntity * target = entityPool->Get( unit.command.targetEnt );
                         if ( target != nullptr ) {
                             f32 dist2 = glm::distance2( target->pos, ent->pos );
                             if ( dist2 < unit.averageRange * unit.averageRange ) {
                                 // Build
+                                ent->navigator.hasDest = false;
+                                ent->actions.AddAction( MapActionType::SIM_ENTITY_APPLY_CONSTRUCTION, target->handle );
                             } else {
-                                
+                                // Move towards building
+                                ent->navigator.hasDest = true;
+                                ent->navigator.dest = target->pos;
+                                ent->navigator.slowRad = 100.0f;
                             }
                         }
                     }
@@ -900,6 +962,11 @@ namespace atto {
                     steering *= invMass;
 
                     ent->vel = Truncate( ent->vel + steering, playerSpeed );
+                } else {
+                    ent->vel *= 0.95f;
+                    if ( ent->vel != glm::vec2( 0 ) && glm::length( ent->vel ) < 1 ) {
+                        ent->vel != glm::vec2( 0 );
+                    }
                 }
 
                 // Update orientation
@@ -999,7 +1066,7 @@ namespace atto {
                         bool changed = ent->spriteAnimator.SetSpriteIfDifferent( bullet.sprVFX_SmallExplody, false );
                         ent->vel = glm::vec2( 0.0f );
                         if( changed == true ) {
-                            ent->actions.AddAction( MapActionType::SIM_ENTITY_UNIT_APPLY_DAMAGE, bullet.damage, otherEnt->handle );
+                            ent->actions.AddAction( MapActionType::SIM_ENTITY_APPLY_DAMAGE, bullet.damage, otherEnt->handle );
                         }
                         break;
                     }
@@ -1009,15 +1076,12 @@ namespace atto {
             {
             } break;
             case EntityType::BUILDING_SOLAR_ARRAY: {
-                ent->building.turn++;
-                if ( ent->building.isBuilding == true ) {
-                    if ( ent->building.turn >= ent->building.timeToBuildTurns ) {
+                if ( ent->building.isBuilding == false ) {
+                    ent->building.turn++;
+                    if ( ent->building.turn == 60 ) {
                         ent->building.turn = 0;
-                        ent->building.isBuilding = false;
+                        ent->actions.AddAction( MapActionType::SIM_MAP_MONIES_GIVE_ENERGY, ent->playerNumber, ent->building.giveEnergyAmount );
                     }
-                } else if( ent->building.turn == 60 ) {
-                    ent->building.turn = 0;
-                    ent->actions.AddAction( MapActionType::SIM_MAP_MONIES_GIVE_ENERGY, ent->playerNumber, ent->building.giveEnergyAmount );
                 }
             } break;
             case EntityType::BUILDING_COMPUTE:
@@ -1158,7 +1222,7 @@ namespace atto {
             {
                 c.circle.pos += p;
             } break;
-            case COLLIDER_TYPE_BOX:
+            case COLLIDER_TYPE_AXIS_BOX:
             {
                 c.box.Translate( p );
             } break;

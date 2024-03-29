@@ -3,6 +3,112 @@
 #include "atto_reflection.h"
 
 namespace atto {
+    glm::vec2 ToVec2( const fp2& v ) {
+        return glm::vec2( static_cast<float>( v.x ), static_cast<float>( v.y ) );
+    }
+
+    fp2 ToFP2( const glm::vec2& v ) {
+        return { fp( v.x ), fp( v.y ) };
+    }
+
+    fp FpSin( fp f ) {
+        return fpm::sin( f );
+    }
+
+    fp FpCos( fp f ) {
+        return fpm::cos( f );
+    }
+
+    fp FpTan( fp f ) {
+        return fpm::tan( f );
+    }
+
+    fp FpASin( fp f ) {
+        return fpm::asin( f );
+    }
+
+    fp FpACos( fp f ) {
+        return fpm::acos( f );
+    }
+
+    fp FpATan2( fp y, fp x ) {
+        return fpm::atan2( y, x );
+    }
+
+    fp FpClamp( fp f, fp min, fp max ) {
+        if ( f < min ) {
+            f = min;
+        }
+        if ( f > max ) {
+            f = max;
+        }
+        return f;
+    }
+
+    fp FpLerp( fp a, fp b, fp t ) {
+        return b * t + a * ( 1 - t );
+    }
+
+    fp FpLength( fp2 v ) {
+        return fpm::sqrt( v.x * v.x + v.y * v.y );
+    }
+
+    fp FpLength2( fp2 v ) {
+        return v.x * v.x + v.y * v.y;
+    }
+
+    fp FpDistance( fp2 v1, fp2 v2 ) {
+        return FpLength( v1 - v2 );
+    }
+
+    fp FpDistance2( fp2 v1, fp2 v2 ) {
+        return FpLength2( v1 - v2 );
+    }
+
+    fp2 FpNormalize( fp2 v ) {
+        fp len = FpLength( v );
+        if (len == fp( 0 ) ) {
+            return { fp( 0 ), fp( 0 ) };
+        }
+        return { v.x / len, v.y / len };
+    }
+
+    fp2 FpTruncateLength( fp2 v, fp max ) {
+        fp len = FpLength( v );
+        if (len <= max ) {
+            return v;
+        }
+        return FpNormalize( v ) * max;
+    }
+
+    fp2 FpLeftPerp( fp2 v ) {
+        return { -v.y, v.x };
+    }
+
+    fp2 operator+( const fp2& a, const fp2& b ) {
+        return { a.x + b.x, a.y + b.y };
+    }
+
+    fp2 operator-( const fp2& a, const fp2& b ) {
+        return { a.x - b.x, a.y - b.y };
+    }
+
+    fp2 operator*( const fp2& a, const fp& b ) {
+        return { a.x * b, a.y * b };
+    }
+
+    fp2 operator/( const fp2& a, const fp& b ) {
+        return { a.x / b, a.y / b };
+    }
+    
+    fp2 operator*( const fp & a, const fp2 & b ) {
+        return { b.x * a, b.y * a };
+    }
+
+    fp2 operator/( const fp & a, const fp2 & b ) {
+        return { b.x / a, b.y / a };
+    }
+
     bool Circle::Intersects( const Circle & circle ) const {
         f32 distSqrd = glm::distance2( pos, circle.pos );
         f32 radSum = rad + circle.rad;
@@ -170,7 +276,7 @@ namespace atto {
     void Collider2D::Translate( const glm::vec2 & translation ) {
         switch( type ) {
             case COLLIDER_TYPE_CIRCLE: circle.pos += translation; return;
-            case COLLIDER_TYPE_BOX: box.Translate( translation ); return;
+            case COLLIDER_TYPE_AXIS_BOX: box.Translate( translation ); return;
         }
         Assert( false );
     }
@@ -178,7 +284,7 @@ namespace atto {
     bool Collider2D::Contains( const glm::vec2 & point ) const {
         switch( type ) {
             case COLLIDER_TYPE_CIRCLE: return circle.Contains( point );
-            case COLLIDER_TYPE_BOX: return box.Contains( point );
+            case COLLIDER_TYPE_AXIS_BOX: return box.Contains( point );
         }
         Assert( false );
         return false;
@@ -194,21 +300,21 @@ namespace atto {
                     {
                         return circle.Intersects( other.circle );
                     }
-                    case COLLIDER_TYPE_BOX:
+                    case COLLIDER_TYPE_AXIS_BOX:
                     {
                         return other.box.Intersects( circle );
                     }
                 }
             }
 
-            case COLLIDER_TYPE_BOX:
+            case COLLIDER_TYPE_AXIS_BOX:
             {
                 switch( other.type ) {
                     case COLLIDER_TYPE_CIRCLE:
                     {
                         return box.Intersects( other.circle );
                     }
-                    case COLLIDER_TYPE_BOX:
+                    case COLLIDER_TYPE_AXIS_BOX:
                     {
                         return box.Intersects( other.box );
                     }
@@ -227,7 +333,7 @@ namespace atto {
                 return bounds.Intersects( circle );
             }
 
-            case COLLIDER_TYPE_BOX:
+            case COLLIDER_TYPE_AXIS_BOX:
             {
                 return bounds.Intersects( box );
             }
@@ -246,14 +352,14 @@ namespace atto {
                     {
                         return circle.Collision( other.circle, manifold );
                     }
-                    case COLLIDER_TYPE_BOX:
+                    case COLLIDER_TYPE_AXIS_BOX:
                     {
                         return other.box.Collision( circle, manifold );
                     }
                 }
             }
 
-            case COLLIDER_TYPE_BOX:
+            case COLLIDER_TYPE_AXIS_BOX:
             {
                 switch( other.type ) {
                     case COLLIDER_TYPE_CIRCLE:
@@ -262,7 +368,7 @@ namespace atto {
                         manifold.Flip();
                         return r;
                     }
-                    case COLLIDER_TYPE_BOX:
+                    case COLLIDER_TYPE_AXIS_BOX:
                     {
                         return box.Collision( other.box, manifold );
                     }
@@ -277,7 +383,7 @@ namespace atto {
     bool Collider2D::Collision( const BoxBounds2D & box, Manifold2D & manifold ) const {
         switch( type ) {
             case COLLIDER_TYPE_CIRCLE: return this->box.Collision( circle, manifold );
-            case COLLIDER_TYPE_BOX: return this->box.Collision( box, manifold );
+            case COLLIDER_TYPE_AXIS_BOX: return this->box.Collision( box, manifold );
         }
         
         Assert( false );
@@ -496,7 +602,7 @@ namespace atto {
             {
                 sphere.c += p;
             } break;
-            case COLLIDER_TYPE_BOX:
+            case COLLIDER_TYPE_AXIS_BOX:
             {
                 box.min += p;
                 box.max += p;

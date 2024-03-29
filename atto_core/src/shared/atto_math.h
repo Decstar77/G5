@@ -1,11 +1,18 @@
 #pragma once
 
 #include "atto_defines.h"
-#include "atto_random.h"
-#include "atto_reflection.h"
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/vector_angle.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/norm.hpp>
+
+#include <fpm/fixed.hpp>
+#include <fpm/math.hpp>
+#include <fpm/ios.hpp>
 
 namespace atto {
-
     inline i16 NormalizedF64ToI16( f64 v ) {
         return static_cast<i16>( v * 32767.0 );
     }
@@ -41,6 +48,113 @@ namespace atto {
         return glm::vec2( -v.y, v.x );
     }
 
+    typedef fpm::fixed_24_8 fp;
+
+    struct fp2 {
+        fp x;
+        fp y;
+    };
+
+    glm::vec2   ToVec2( const fp2 & v );
+    fp2         ToFP2( const glm::vec2 & v );
+
+    fp          FpSin( fp f );
+    fp          FpCos( fp f );
+    fp          FpTan( fp f );
+    fp          FpASin( fp f );
+    fp          FpACos( fp f );
+    fp          FpATan2( fp y, fp x );
+    fp          FpClamp( fp f, fp min, fp max );
+    fp          FpLerp( fp a, fp b, fp t );
+    fp          FpLength( fp2 v );
+    fp          FpLength2( fp2 v );
+    fp          FpDistance( fp2 v1, fp2 v2 );
+    fp          FpDistance2( fp2 v1, fp2 v2 );
+    fp2         FpNormalize( fp2 v );
+    fp2         FpTruncateLength( fp2, fp max );
+    fp2         FpLeftPerp( fp2 v );
+
+    fp2         operator+( const fp2 & a, const fp2 & b );
+    fp2         operator-( const fp2 & a, const fp2 & b );
+    fp2         operator*( const fp2 & a, const fp & b );
+    fp2         operator/( const fp2 & a, const fp & b );
+    fp2         operator*( const fp & a, const fp2 & b );
+    fp2         operator/( const fp & a, const fp2 & b );
+
+    enum ColliderType {
+        COLLIDER_TYPE_NONE,
+        COLLIDER_TYPE_CIRCLE,
+        COLLIDER_TYPE_SPHERE,
+        COLLIDER_TYPE_AXIS_BOX,
+        COLLIDER_TYPE_PLANE,
+        COLLIDER_TYPE_TRIANGLE,
+    };
+
+    struct FpCircle {
+        fp  rad;
+        fp2 pos;
+    };
+
+    struct FpAxisBox {
+        fp2 min;
+        fp2 max;
+    };
+
+    struct FpManifold {
+        fp penetration;
+        fp2 pointA;
+        fp2 pointB;
+        fp2 normal;
+    };
+
+    struct FpCollider {
+        ColliderType type;
+        union {
+            FpCircle circle;
+            FpAxisBox box;
+        };
+    };
+
+    FpCircle        FpCircleCreate( fp2 pos, fp rad );
+    bool            FpCircleIntersects( FpCircle other );
+    bool            FpCircleCollision( FpCircle other, FpManifold & manifold );
+    bool            FpCircleContains( fp2 point );
+
+    FpAxisBox       FpAxisBoxCreateFromMinMax( fp2 min, fp2 max );
+    FpAxisBox       FpAxisBoxCreateFromCenterSize( fp2 center, fp2 size );
+    fp              FpAxisBoxGetWidth( FpAxisBox b );
+    fp              FpAxisBoxGetHeight( FpAxisBox b );
+    fp2             FpAxisBoxGetCenter( FpAxisBox b );
+    fp2             FpAxisBoxGetSize( FpAxisBox b );
+    void            FpAxisBoxTranslate( FpAxisBox * b, fp2 translation );
+    bool            FpAxisBoxIntersects( FpAxisBox a, FpAxisBox b );
+    bool            FpAxisBoxIntersects( FpCircle c );
+    bool            FpAxisBoxCollision( FpAxisBox a, FpAxisBox b, FpManifold & manifold );
+    bool            FpAxisBoxCollision( FpCircle other, FpManifold & manifold );
+    bool            FpAxisBoxContains( fp p );
+
+    struct RNG {
+        i32 index;
+        i32 numbers[1000];
+    };
+
+    void    RNGCreate( RNG * rng, i32 seed );
+    i32     RNGInt( RNG * rng, i32 min, i32 max );
+    i32     RNGInt( RNG * rng, i32 max );
+    fp      RNGFp( RNG * rng );
+    fp      RNGFp( RNG * rng, fp min, fp max );
+    fp2     RNGFp2( RNG * rng, fp min, fp max );
+
+    class Random {
+    public:
+        static f32 Float();
+        static f32 Float( f32 min, f32 max );
+        static i32 Int( i32 min, i32 max );
+        static i32 Int( i32 max );
+
+        static glm::vec2 Vec2( glm::vec2 min, glm::vec2 max );
+    };
+
     struct Manifold2D {
         f32 penetration;
         glm::vec2 pointA;
@@ -54,7 +168,6 @@ namespace atto {
             pointB = temp;
         }
     };
-
 
     struct Circle {
         glm::vec2   pos;
@@ -88,8 +201,6 @@ namespace atto {
         void                    Expand( f32 mul );
 
         void                    CreateFromCenterSize( const glm::vec2 & center, const glm::vec2 & size );
-
-        REFLECT();
     };
     
     struct BoxBounds {
@@ -108,14 +219,6 @@ namespace atto {
         void                    CreateFromCenterSize( glm::vec3 center, glm::vec3  size );
     };
 
-    enum ColliderType {
-        COLLIDER_TYPE_NONE,
-        COLLIDER_TYPE_CIRCLE,
-        COLLIDER_TYPE_SPHERE,
-        COLLIDER_TYPE_BOX,
-        COLLIDER_TYPE_PLANE,
-        COLLIDER_TYPE_TRIANGLE,
-    };
 
     struct Collider2D {
         ColliderType type;
