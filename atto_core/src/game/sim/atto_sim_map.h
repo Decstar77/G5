@@ -1,23 +1,9 @@
 #pragma once
 
-#include "../../shared/atto_core.h"
+#include "atto_sim_base.h"
+#include "atto_sim_sync_queues.h"
 
 namespace atto {
-    constexpr static i32 MAX_ENTITIES = 1024;
-    constexpr static i32 MAX_PLAYERS = 4;
-
-    constexpr i32 TURNS_PER_SECOND = 16;
-    constexpr float SIM_DT_FLOAT = 1.0f / TURNS_PER_SECOND;
-    constexpr fp SIM_DT = Fp( 1.0f / TURNS_PER_SECOND );
-    
-    
-    //inline static i32 MAX_MAP_SIZE = (i32)glm::sqrt( ToFloat( FP_MAX ) );// @NOTE: This comes to +5000
-    inline static i32 MAX_MAP_SIZE = 3000;
-
-    inline i32 SecondsToTurns( i32 s ) {
-        return s * TURNS_PER_SECOND;
-    }
-
     class Core;
     class SimMap;
     struct SimEntity;
@@ -29,8 +15,6 @@ namespace atto {
     typedef FixedList<SimEntity, MAX_ENTITIES>          EntCacheList;
     typedef FixedList<EntityHandle, MAX_ENTITIES>       EntHandleList;
     typedef FixedObjectPool<SimEntity, MAX_ENTITIES>    EntPool;
-    typedef TypeSafeNumber<i32, class PlayerNumberType> PlayerNumber;
-    typedef TypeSafeNumber<i32, class TeamNumberType>   TeamNumber;
 
     REFL_ENUM(  EntityType,
                 INVALID = 0,
@@ -151,58 +135,6 @@ namespace atto {
 
     inline FixedList<RpcHolder *, 256>         rpcTable = {};
 
-    enum class MapActionType : u8 {
-        NONE = 0,
-
-        // These are all the actions that can be taken by the player and serialized across the network.
-        PLAYER_SELECTION,
-        SIM_ENTITY_UNIT_COMMAND_MOVE,
-        SIM_ENTITY_UNIT_COMMAND_ATTACK,
-        SIM_ENTITY_UNIT_COMMAND_CONSTRUCT_BUILDING,
-        SIM_ENTITY_UNIT_COMMAND_CONSTRUCT_EXISTING_BUILDING,
-
-        // These are all the actions that can be taken by the simulation, they are not serialized across the network. It's expected that the determinism of the simulation will be the same across all clients.
-        SIM_ENTITY_SPAWN,
-        SIM_ENTITY_DESTROY,
-
-        SIM_ENTITY_APPLY_DAMAGE,
-        SIM_ENTITY_APPLY_CONSTRUCTION,
-
-        SIM_MAP_MONIES_GIVE_ENERGY
-    };
-
-    class MapActionBuffer {
-    public:
-        template<typename... _types_>
-        inline void AddAction( MapActionType type, _types_... args ) {
-            static_assert( is_present<EntityType, _types_...>::value == false, "AddAction :: Must pass EntityType as i32" );
-            static_assert( is_present<EntityType::_enumerated, _types_...>::value == false, "AddAction :: Must pass EntityType as i32" );
-        #if ATTO_GAME_CHECK_RPC_FUNCTION_TYPES
-            bool sameParms = rpcTable[ (i32)type ]->AreParamtersTheSame<void, std::add_pointer_t< _types_ >...>();
-            AssertMsg( sameParms, "AddAction :: Adding an action with no corrasponding RPC function, most likey the parameters are not the same. ");
-        #endif
-            data.Write( &type );
-            DoSimSerialize( args... );
-        }
-
-    public:
-        FixedBinaryBlob<256>    data;
-
-    private:
-        template< typename _type_ >
-        inline void DoSimSerialize( _type_ type ) {
-            static_assert( std::is_pointer<_type_>::value == false, "AddAction :: Cannot take pointers" );
-            data.Write( &type );
-        }
-
-        template< typename _type_, typename... _types_ >
-        inline void DoSimSerialize( _type_ type, _types_... args ) {
-            static_assert( std::is_pointer<_type_>::value == false, "AddAction :: Cannot take pointers" );
-            data.Write( &type );
-            DoSimSerialize( args... );
-        }
-    };
-
     struct SimEntity {
         EntityHandle                handle;
         EntityType                  type;
@@ -248,27 +180,6 @@ namespace atto {
         REFLECT();
     };
 
-    struct MapTurn {
-        i64                     checkSum;
-        i32                     turnNumber;
-        PlayerNumber            playerNumber;
-        MapActionBuffer         actions;
-    };
-
-    class SyncQueues {
-    public:
-        void      Start();
-        bool      CanTurn();
-        void      AddTurn( PlayerNumber playerNumber, const MapTurn & turn );
-        MapTurn * GetNextTurn( PlayerNumber playerNumber );
-        void      FinishTurn();
-        i32       GetSlidingWindowWidth() { return slidingWindowWidth; }
-
-    private:
-        i32                     slidingWindowWidth = 4;
-        FixedQueue<MapTurn, 10> player1Turns = {};
-        FixedQueue<MapTurn, 10> player2Turns = {};
-    };
 
     struct PlayerMonies {
         i32 credits;

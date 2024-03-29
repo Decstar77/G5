@@ -3,6 +3,8 @@
 #include "atto_defines.h"
 
 namespace atto {
+  
+
     template<typename _type_>
     void Swap( _type_ & a, _type_ & b ) {
         _type_ tmp = a;
@@ -1254,6 +1256,15 @@ namespace atto {
     typedef FixedStringBase<256>          LargeString;
     typedef FixedStringBase<Megabytes( 4 )> VeryLargeString;
 
+    SmallString ToString( bool v );
+    SmallString ToString( i32 v );
+    SmallString ToString( i64 v );
+    SmallString ToString( u8 v );
+    SmallString ToString( u32 v );
+    SmallString ToString( u64 v );
+    SmallString ToString( f32 v );
+    SmallString ToString( f64 v );
+
     class StringFormat {
     public:
         static SmallString Small( const char * format, ... );
@@ -1693,4 +1704,5 @@ namespace atto {
             }
         }
     }
+
 }

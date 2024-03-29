@@ -1,12 +1,10 @@
 #pragma once
 
 #include "../atto_game.h"
-#include "../vis/atto_vis_map.h"
-#include "../atto_map_communicator.h"
+#include "../sim/atto_sim_map.h"
 
 namespace atto {
     
-
     struct GameStartParams {
         SmallString mapName;
         bool        isMutliplayer;

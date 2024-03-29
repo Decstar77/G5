@@ -5,6 +5,58 @@
 
 namespace atto
 {
+    SmallString ToString( bool v ) {
+        SmallString res = {};
+        if ( v == true ) {
+            res.Add( "true" );
+        } else {
+            res.Add( "false" );
+        }
+        return res;
+    }
+
+    SmallString ToString( i32 v ) {
+        SmallString res = {};
+        res.Add( std::to_string( v ).c_str() );
+        return res;
+    }
+
+    SmallString ToString( i64 v ) {
+        SmallString res = {};
+        res.Add( std::to_string( v ).c_str() );
+        return res;
+    }
+
+    SmallString ToString( u8 v ) {
+        SmallString res = {};
+        res.Add( std::to_string( v ).c_str() );
+        return res;
+    }
+
+    SmallString ToString( u32 v ) {
+        SmallString res = {};
+        res.Add( std::to_string( v ).c_str() );
+        return res;
+    }
+
+    SmallString ToString( u64 v ) {
+        SmallString res = {};
+        res.Add( std::to_string( v ).c_str() );
+        return res;
+    }
+
+    SmallString ToString( f32 v ) {
+        SmallString res = {};
+        res.Add( std::to_string( v ).c_str() );
+        return res;
+    }
+
+    SmallString ToString( f64 v ) {
+        SmallString res = {};
+        res.Add( std::to_string( v ).c_str() );
+        return res;
+    }
+
     static void StringFormatV(char* dest, size_t size, const char* format, va_list va_listp) {
         vsnprintf(dest, size, format, va_listp);
     }
