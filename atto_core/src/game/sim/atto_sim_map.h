@@ -3,7 +3,6 @@
 #include "../../shared/atto_core.h"
 
 namespace atto {
-    
     constexpr static i32 MAX_ENTITIES = 1024;
     constexpr static i32 MAX_PLAYERS = 4;
 
@@ -27,6 +26,8 @@ namespace atto {
     typedef FixedList<SimEntity, MAX_ENTITIES>          EntCacheList;
     typedef FixedList<EntityHandle, MAX_ENTITIES>       EntHandleList;
     typedef FixedObjectPool<SimEntity, MAX_ENTITIES>    EntPool;
+    typedef TypeSafeNumber<i32, class PlayerNumberType> PlayerNumber;
+    typedef TypeSafeNumber<i32, class TeamNumberType>   TeamNumber;
 
     REFL_ENUM(  EntityType,
                 INVALID = 0,
@@ -203,8 +204,8 @@ namespace atto {
         EntityHandle                handle;
         EntityType                  type;
 
-        i32                         playerNumber;
-        i32                         teamNumber;
+        PlayerNumber                playerNumber;
+        TeamNumber                  teamNumber;
 
         bool                        active;
 
@@ -220,7 +221,7 @@ namespace atto {
         Collider2D                  collisionCollider;  // @NOTE: Used for movement | In Local Space
 
         bool                        isSelectable;
-        FixedList<i32, MAX_PLAYERS> selectedBy;
+        FixedList<PlayerNumber, MAX_PLAYERS> selectedBy;
         Collider2D                  selectionCollider;
 
         Unit                        unit;
@@ -247,7 +248,7 @@ namespace atto {
     struct MapTurn {
         i64                     checkSum;
         i32                     turnNumber;
-        i32                     playerNumber;
+        PlayerNumber            playerNumber;
         MapActionBuffer         actions;
     };
 
@@ -255,8 +256,8 @@ namespace atto {
     public:
         void      Start();
         bool      CanTurn();
-        void      AddTurn( i32 playerNumber, const MapTurn & turn );
-        MapTurn * GetNextTurn( i32 playerNumber );
+        void      AddTurn( PlayerNumber playerNumber, const MapTurn & turn );
+        MapTurn * GetNextTurn( PlayerNumber playerNumber );
         void      FinishTurn();
         i32       GetSlidingWindowWidth() { return slidingWindowWidth; }
 
@@ -286,11 +287,11 @@ namespace atto {
         i32                                         syncTurnAttempts = {};
         i32                                         syncWaitTurnCounter = {};
         SyncQueues                                  syncQueues = {};
-        FixedList<i32, 4>                           playerNumbers = {};
+        FixedList<PlayerNumber, 4>                  playerNumbers = {};
         FixedList<PlayerMonies, 4>                  playerMonies = {};
 
-        i32                                         localPlayerNumber = -1;
-        i32                                         localPlayerTeamNumber = -1;
+        PlayerNumber                                localPlayerNumber = PlayerNumber::Create( -1 );
+        TeamNumber                                  localPlayerTeamNumber = TeamNumber::Create( -1 );
         glm::vec2                                   localCameraPos = glm::vec2( 0.0f );
         i32                                         localCameraZoomIndex = 0;
         glm::vec2                                   localCameraZoomLerp = glm::vec2( 0.0f );
@@ -309,24 +310,24 @@ namespace atto {
         void                                        Initialize( Core * core );
         void                                        Update( Core * core, f32 dt );
         
-        SimEntity *                                 SpawnEntity( EntityType type, i32 playerNumber, i32 teamNumber, glm::vec2 pos, f32 ori, glm::vec2 vel );
+        SimEntity *                                 SpawnEntity( EntityType type, PlayerNumber playerNumber, TeamNumber teamNumber, glm::vec2 pos, f32 ori, glm::vec2 vel );
         void                                        DestroyEntity( SimEntity * entity );
 
         void                                        SimTick( MapTurn * turn1, MapTurn * turn2 );
         void                                        Sim_ApplyActions( MapActionBuffer * actionBuffer );
 
-        void                                        SimAction_SpawnEntity( i32 * type, i32 * playerNumber, i32 * teamNumber, glm::vec2 * pos, f32 * ori, glm::vec2 * vel );
+        void                                        SimAction_SpawnEntity( i32 * type, PlayerNumber * playerNumberPtr, TeamNumber * teamNumber, glm::vec2 * pos, f32 * ori, glm::vec2 * vel );
         void                                        SimAction_DestroyEntity( EntityHandle * handle );
-        void                                        SimAction_PlayerSelect( i32 * playerNumber, EntHandleList * selection, EntitySelectionChange * change );
+        void                                        SimAction_PlayerSelect( PlayerNumber * playerNumberPtr, EntHandleList * selection, EntitySelectionChange * change );
         //void                                        SimAction_PlayerWorldCommand( i32 * playerNumber, glm::vec2 targetPos, EntityHandle * targetEnt ); // Right clicking in the world
 
-        void                                        SimAction_Move( i32 * playerNumber, glm::vec2 * pos );
-        void                                        SimAction_Attack( i32 * playerNumber, EntityHandle * target );
-        void                                        SimAction_ContructBuilding( i32 * playerNumberPtr, i32 * typePtr, glm::vec2 * posPtr );
-        void                                        SimAction_ContructExistingBuilding( i32 * playerNumberPtr, EntityHandle * target );
+        void                                        SimAction_Move( PlayerNumber * playerNumberPtr, glm::vec2 * pos );
+        void                                        SimAction_Attack( PlayerNumber * playerNumberPtr, EntityHandle * target );
+        void                                        SimAction_ContructBuilding( PlayerNumber * playerNumberPtr, i32 * typePtr, glm::vec2 * posPtr );
+        void                                        SimAction_ContructExistingBuilding( PlayerNumber * playerNumberPtr, EntityHandle * target );
         void                                        SimAction_ApplyDamage( i32 * damage, EntityHandle * target );
         void                                        SimAction_ApplyContruction( EntityHandle * target );
-        void                                        SimAction_GiveEnergy( i32 * playerNumber, i32 * amount );
+        void                                        SimAction_GiveEnergy( PlayerNumber * playerNumberPtr, i32 * amount );
 
 
         REFLECT();

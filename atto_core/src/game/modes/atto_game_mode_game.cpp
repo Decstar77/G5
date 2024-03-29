@@ -13,8 +13,8 @@ namespace atto {
 
     void GameMode_SinglePlayerGame::Initialize( Core * core ) {
         simMap.Initialize( core );
-        simMap.localPlayerNumber = 1;
-        simMap.localPlayerTeamNumber = 1;
+        simMap.localPlayerNumber.value = 1;
+        simMap.localPlayerTeamNumber.value = 1;
     }
 
     void GameMode_SinglePlayerGame::UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags updateAndRenderFlags ) {
@@ -40,15 +40,15 @@ namespace atto {
         if( startParms.localPlayerNumber == 1 ) {
             core->LogOutput( LogLevel::INFO, "I am the host" );
             isHost = true;
-            simMap.localPlayerTeamNumber = 1;
+            simMap.localPlayerTeamNumber.value = 1;
         }
         else {
             core->LogOutput( LogLevel::INFO, "I am a peer" );
             isHost = false;
-            simMap.localPlayerTeamNumber = 2;
+            simMap.localPlayerTeamNumber.value = 2;
         }
 
-        simMap.localPlayerNumber = startParms.localPlayerNumber;
+        simMap.localPlayerNumber.value = startParms.localPlayerNumber;
     }
 
     void GameMode_MultiplayerGame::UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags ) {

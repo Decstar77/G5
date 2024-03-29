@@ -95,6 +95,150 @@ namespace atto
     static_assert(sizeof(f32) == 4, "Expected real32 to be 4 bytes.");
     static_assert(sizeof(f64) == 8, "Expected real64 to be 8 bytes.");
 
+    template<typename T, typename _type_>
+    struct TypeSafeNumber {
+        T value;
+        
+        inline static TypeSafeNumber<T, _type_> Create( T value ) {
+            TypeSafeNumber<T, _type_> result = {};
+            result.value = (T)value;
+            return result;
+        }
+    };
+
+    template<typename T, typename _type_>
+    inline TypeSafeNumber<T, _type_> operator+(TypeSafeNumber<T, _type_> a, TypeSafeNumber<T, _type_> b) {
+        TypeSafeNumber<T, _type_> result = {};
+        result.value = a.value + b.value;
+        return result;
+    }
+    
+    template<typename T, typename _type_>
+    inline TypeSafeNumber<T, _type_> operator-( TypeSafeNumber<T, _type_> a, TypeSafeNumber<T, _type_> b ) {
+        TypeSafeNumber<T, _type_> result = {};
+        result.value = a.value - b.value;
+        return result;
+    }
+    
+    template<typename T, typename _type_>
+    inline TypeSafeNumber<T, _type_> operator*( TypeSafeNumber<T, _type_> a, TypeSafeNumber<T, _type_>  b ) {
+        TypeSafeNumber<T, _type_> result = {};
+        result.value = a.value * b.value;
+        return result;
+    }
+    
+    template<typename T, typename _type_>
+    inline TypeSafeNumber<T, _type_> operator/( TypeSafeNumber<T, _type_> a, TypeSafeNumber<T, _type_>  b ) {
+        TypeSafeNumber<T, _type_> result = {};
+        result.value = a.value / b.value;
+        return result;
+    }
+    
+    template<typename T, typename _type_>
+    inline TypeSafeNumber<T, _type_> operator%( TypeSafeNumber<T, _type_> a, TypeSafeNumber<T, _type_>  b ) {
+        TypeSafeNumber<T, _type_> result = {};
+        result.value = a.value % b.value;
+        return result;
+    }
+    
+    template<typename T, typename _type_>
+    inline TypeSafeNumber<T, _type_> operator+=( TypeSafeNumber<T, _type_> a, TypeSafeNumber<T, _type_>  b ) {
+        a.value += b.value;
+        return a;
+    }
+
+    template<typename T, typename _type_>
+    inline TypeSafeNumber<T, _type_> operator-=( TypeSafeNumber<T, _type_> a, TypeSafeNumber<T, _type_>  b ) {
+        a.value -= b.value;
+        return a;
+    }
+    
+    template<typename T, typename _type_>
+    inline TypeSafeNumber<T, _type_> operator*=( TypeSafeNumber<T, _type_> a, TypeSafeNumber<T, _type_>  b ) {
+        a.value *= b.value;
+        return a;
+    }
+    
+    template<typename T, typename _type_>
+    inline TypeSafeNumber<T, _type_> operator/=( TypeSafeNumber<T, _type_> a, TypeSafeNumber<T, _type_>  b ) {
+        a.value /= b.value;
+        return a;
+    }
+    
+    template<typename T, typename _type_>
+    inline TypeSafeNumber<T, _type_> operator%=( TypeSafeNumber<T, _type_> a, TypeSafeNumber<T, _type_>  b ) {
+        a.value %= b.value;
+        return a;
+    }
+
+    template<typename T, typename _type_>
+    inline TypeSafeNumber<T, _type_> operator++( TypeSafeNumber<T, _type_> a ) {
+        a.value++;
+        return a;
+    }
+    
+    template<typename T, typename _type_>
+    inline TypeSafeNumber<T, _type_> operator--( TypeSafeNumber<T, _type_> a ) {
+        a.value--;
+        return a;
+    }
+    
+    template<typename T, typename _type_>
+    inline TypeSafeNumber<T, _type_> operator++( TypeSafeNumber<T, _type_> a, int ) {
+        TypeSafeNumber<T, _type_> result = a;
+        a.value++;
+        return result;
+    }
+    
+    template<typename T, typename _type_>
+    inline TypeSafeNumber<T, _type_> operator--( TypeSafeNumber<T, _type_> a, int ) {
+        TypeSafeNumber<T, _type_> result = a;
+        a.value--;
+        return result;
+    }
+    
+    template<typename T, typename _type_>
+    inline bool operator==( TypeSafeNumber<T, _type_> a, TypeSafeNumber<T, _type_>  b ) {
+        return a.value == b.value;
+    }
+
+    template<typename T, typename _type_>
+    inline bool operator!=( TypeSafeNumber<T, _type_> a, TypeSafeNumber<T, _type_>  b ) {
+        return a.value != b.value;
+    }
+    
+    template<typename T, typename _type_>
+    inline bool operator<( TypeSafeNumber<T, _type_> a, TypeSafeNumber<T, _type_>  b ) {
+        return a.value < b.value;
+    }
+
+    template<typename T, typename _type_>
+    inline bool operator>( TypeSafeNumber<T, _type_> a, TypeSafeNumber<T, _type_>  b ) {
+        return a.value > b.value;
+    }
+    
+    template<typename T, typename _type_>
+    inline bool operator<=( TypeSafeNumber<T, _type_> a, TypeSafeNumber<T, _type_>  b ) {
+        return a.value <= b.value;
+    }
+    
+    template<typename T, typename _type_>
+    inline bool operator>=( TypeSafeNumber<T, _type_> a, TypeSafeNumber<T, _type_>  b ) {
+        return a.value >= b.value;
+    }
+    
+    template<typename T, typename _type_>
+    inline TypeSafeNumber<T, _type_> operator-( TypeSafeNumber<T, _type_> a ) {
+        TypeSafeNumber<T, _type_> result = {};
+        result.value = -a.value;
+        return result;
+    }
+    
+    template<typename T, typename _type_>
+    inline TypeSafeNumber<T, _type_> operator+( TypeSafeNumber<T, _type_> a ) {
+        return a;
+    }
+
     template <typename T>
     inline T AlignUpWithMask(T value, u64 mask) {
         return (T)(((u64)value + mask) & ~mask);

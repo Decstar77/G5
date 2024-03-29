@@ -45,26 +45,34 @@ namespace atto {
 
         this->core = core;
         syncQueues.Start();
-        SpawnEntity( EntityType::Make( EntityType::PLANET ), 1, 1, glm::vec2( 500.0f, 700.0f ), 0.0f, glm::vec2( 0.0f ) );
-        SpawnEntity( EntityType::Make( EntityType::UNIT_WORKER ), 1, 1, glm::vec2( 700.0f ,700.0f ), 0.0f, glm::vec2( 0.0f ) );
 
-        SpawnEntity( EntityType::Make( EntityType::PLANET ), 2, 2, glm::vec2( 2500.0f, 700.0f ), 0.0f, glm::vec2( 0.0f ) );
-        SpawnEntity( EntityType::Make( EntityType::UNIT_WORKER ), 2, 2, glm::vec2( 2400.0f, 700.0f ), 0.0f, glm::vec2( 0.0f ) );
+        PlayerNumber p0 = PlayerNumber::Create( 0 );
+        TeamNumber t0 = TeamNumber::Create( 0 );
+        PlayerNumber p1 = PlayerNumber::Create( 1 );
+        TeamNumber t1 = TeamNumber::Create( 1 );
+        PlayerNumber p2 = PlayerNumber::Create( 2 );
+        TeamNumber t2 = TeamNumber::Create( 2 );
 
-        SpawnEntity( EntityType::Make( EntityType::STAR ), 0, 0, glm::vec2( 1500.0f, 1200.0f ), 0.0f, glm::vec2( 0.0f ) );
+        SpawnEntity( EntityType::Make( EntityType::PLANET ), p1, t1, glm::vec2( 500.0f, 700.0f ), 0.0f, glm::vec2( 0.0f ) );
+        SpawnEntity( EntityType::Make( EntityType::UNIT_WORKER ), p1, t1, glm::vec2( 700.0f ,700.0f ), 0.0f, glm::vec2( 0.0f ) );
 
-        SpawnEntity( EntityType::Make( EntityType::BUILDING_SOLAR_ARRAY ), 1, 1, glm::vec2( 500.0f, 1000.0f ), 0.0f, glm::vec2( 0.0f ) )->building.isBuilding = false;
+        SpawnEntity( EntityType::Make( EntityType::PLANET ), p2, t2, glm::vec2( 2500.0f, 700.0f ), 0.0f, glm::vec2( 0.0f ) );
+        SpawnEntity( EntityType::Make( EntityType::UNIT_WORKER ), p2, t2, glm::vec2( 2400.0f, 700.0f ), 0.0f, glm::vec2( 0.0f ) );
 
-        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), 1, 1, glm::vec2( 800.0f ,700.0f ), 0.0f, glm::vec2( 0.0f ) );
-        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), 1, 1, glm::vec2( 900.0f ,700.0f ), 0.0f, glm::vec2( 0.0f ) );
-        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), 1, 1, glm::vec2( 1000.0f ,700.0f ), 0.0f, glm::vec2( 0.0f ) );
-        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), 1, 1, glm::vec2( 1100.0f ,700.0f ), 0.0f, glm::vec2( 0.0f ) );
+        SpawnEntity( EntityType::Make( EntityType::STAR ), p0, t0, glm::vec2( 1500.0f, 1200.0f ), 0.0f, glm::vec2( 0.0f ) );
+
+        SpawnEntity( EntityType::Make( EntityType::BUILDING_SOLAR_ARRAY ), p1, t1, glm::vec2( 500.0f, 1000.0f ), 0.0f, glm::vec2( 0.0f ) )->building.isBuilding = false;
+
+        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p1, t1, glm::vec2( 800.0f ,700.0f ), 0.0f, glm::vec2( 0.0f ) );
+        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p1, t1, glm::vec2( 900.0f ,700.0f ), 0.0f, glm::vec2( 0.0f ) );
+        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p1, t1, glm::vec2( 1000.0f ,700.0f ), 0.0f, glm::vec2( 0.0f ) );
+        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p1, t1, glm::vec2( 1100.0f ,700.0f ), 0.0f, glm::vec2( 0.0f ) );
 
         
-        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), 2, 2, glm::vec2( 2300.0f ,700.0f ), 0.0f, glm::vec2( 0.0f ) );
-        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), 2, 2, glm::vec2( 2200.0f ,700.0f ), 0.0f, glm::vec2( 0.0f ) );
-        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), 2, 2, glm::vec2( 2100.0f ,700.0f ), 0.0f, glm::vec2( 0.0f ) );
-        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), 2, 2, glm::vec2( 2000.0f ,700.0f ), 0.0f, glm::vec2( 0.0f ) );
+        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p2, t2, glm::vec2( 2300.0f ,700.0f ), 0.0f, glm::vec2( 0.0f ) );
+        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p2, t2, glm::vec2( 2200.0f ,700.0f ), 0.0f, glm::vec2( 0.0f ) );
+        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p2, t2, glm::vec2( 2100.0f ,700.0f ), 0.0f, glm::vec2( 0.0f ) );
+        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p2, t2, glm::vec2( 2000.0f ,700.0f ), 0.0f, glm::vec2( 0.0f ) );
     }
 
     void SimMap::Update( Core * core, f32 dt ) {
@@ -106,8 +114,8 @@ namespace atto {
 
                 syncTurnAttempts = 0;
 
-                MapTurn * playerOneTurn = syncQueues.GetNextTurn( 1 );
-                MapTurn * playerTwoTurn = syncQueues.GetNextTurn( 2 );
+                MapTurn * playerOneTurn = syncQueues.GetNextTurn( PlayerNumber::Create( 1 ) );
+                MapTurn * playerTwoTurn = syncQueues.GetNextTurn( PlayerNumber::Create( 2 ) );
 
                 SimTick( playerOneTurn, playerTwoTurn );
 
@@ -214,11 +222,11 @@ namespace atto {
         spriteDrawContext->DrawTextureBL( background, glm::vec2( 0, 0 ) );
 
         uiDrawContext->DrawTexture( sprUIMock, glm::vec2( 640 / 2, 360 / 2 ) );
-        SmallString creditsStr = StringFormat::Small( "Credits: %d", playerMonies[ localPlayerNumber - 1 ].credits );
+        SmallString creditsStr = StringFormat::Small( "Credits: %d", playerMonies[ ( localPlayerNumber - PlayerNumber::Create( 1 ) ).value ].credits );
         uiDrawContext->DrawTextCam( fontHandle, glm::vec2( 458, 34 ), 12, creditsStr.GetCStr(), TextAlignment_H::FONS_ALIGN_LEFT, TextAlignment_V::FONS_ALIGN_MIDDLE );
-        SmallString energyStr = StringFormat::Small( "Energy: %d", playerMonies[ localPlayerNumber - 1 ].energy );
+        SmallString energyStr = StringFormat::Small( "Energy: %d", playerMonies[ ( localPlayerNumber - PlayerNumber::Create( 1 ) ).value ].energy );
         uiDrawContext->DrawTextCam( fontHandle, glm::vec2( 458, 20 ), 12, energyStr.GetCStr(), TextAlignment_H::FONS_ALIGN_LEFT, TextAlignment_V::FONS_ALIGN_MIDDLE );
-        SmallString computeStr = StringFormat::Small( "Compute: %d", playerMonies[ localPlayerNumber - 1 ].compute );
+        SmallString computeStr = StringFormat::Small( "Compute: %d", playerMonies[ (localPlayerNumber - PlayerNumber::Create( 1 )).value ].compute );
         uiDrawContext->DrawTextCam( fontHandle, glm::vec2( 458, 6 ), 12, computeStr.GetCStr(), TextAlignment_H::FONS_ALIGN_LEFT, TextAlignment_V::FONS_ALIGN_MIDDLE );
 
         const glm::vec2 mousePosPix = core->InputMousePosPixels();
@@ -501,7 +509,7 @@ namespace atto {
         core->RenderSubmit( debugDrawContext, false );
     }
 
-    SimEntity * SimMap::SpawnEntity( EntityType type, i32 playerNumber, i32 teamNumber, glm::vec2 pos, f32 ori, glm::vec2 vel ) {
+    SimEntity * SimMap::SpawnEntity( EntityType type, PlayerNumber playerNumber, TeamNumber teamNumber, glm::vec2 pos, f32 ori, glm::vec2 vel ) {
         EntityHandle handle = {};
         SimEntity * entity = entityPool.Add( handle );
         AssertMsg( entity != nullptr, "Spawn Entity is nullptr" );
@@ -525,7 +533,7 @@ namespace atto {
                     static SpriteResource * blueSprite = core->ResourceGetAndCreateSprite( "res/ents/test/worker_blue.png", 1, 32, 32, 0 );
                     static SpriteResource * redSprite = core->ResourceGetAndCreateSprite( "res/ents/test/worker_red.png", 1, 32, 32, 0 );
                     static SpriteResource * selectionSprite = core->ResourceGetAndCreateSprite( "res/ents/test/ship_selected.png", 1, 48, 48, 0 );
-                    SpriteResource * mainSprite = teamNumber == 1 ? blueSprite : redSprite;
+                    SpriteResource * mainSprite = teamNumber.value == 1 ? blueSprite : redSprite;
                     entity->spriteAnimator.SetSpriteIfDifferent( mainSprite, false );
                     entity->selectionAnimator.SetSpriteIfDifferent( selectionSprite, false );
 
@@ -543,7 +551,7 @@ namespace atto {
                     static SpriteResource * blueSprite = core->ResourceGetAndCreateSprite( "res/ents/test/ship_blue.png", 1, 48, 48, 0 );
                     static SpriteResource * redSprite = core->ResourceGetAndCreateSprite( "res/ents/test/ship_red.png", 1, 48, 48, 0 );
                     static SpriteResource * selectionSprite = core->ResourceGetAndCreateSprite( "res/ents/test/ship_selected.png", 1, 48, 48, 0 );
-                    SpriteResource * mainSprite = teamNumber == 1 ? blueSprite : redSprite;
+                    SpriteResource * mainSprite = teamNumber.value == 1 ? blueSprite : redSprite;
                     entity->spriteAnimator.SetSpriteIfDifferent( mainSprite, false );
                     entity->selectionAnimator.SetSpriteIfDifferent( selectionSprite, false );
 
@@ -640,7 +648,7 @@ namespace atto {
                     static SpriteResource * blueSprite = core->ResourceGetAndCreateSprite( "res/ents/test/building_solar_array_blue.png", 1, 64, 32, 0 );
                     static SpriteResource * redSprite = core->ResourceGetAndCreateSprite( "res/ents/test/building_solar_array_red.png", 1, 64, 32, 0 );
                     static SpriteResource * selectionSprite = core->ResourceGetAndCreateSprite( "res/ents/test/ship_selected.png", 1, 48, 48, 0 );
-                    SpriteResource * mainSprite = teamNumber == 1 ? blueSprite : redSprite;
+                    SpriteResource * mainSprite = teamNumber.value == 1 ? blueSprite : redSprite;
                     entity->spriteAnimator.SetSpriteIfDifferent( mainSprite, false );
                     entity->selectionAnimator.SetSpriteIfDifferent( selectionSprite, false );
 
@@ -677,10 +685,10 @@ namespace atto {
         return entity;
     }
 
-    void SimMap::SimAction_SpawnEntity( i32 * typePtr, i32 * playerNumberPtr, i32 * teamNumberPtr, glm::vec2 * posPtr, f32 * oriPtr, glm::vec2 * velPtr ) {
+    void SimMap::SimAction_SpawnEntity( i32 * typePtr, PlayerNumber * playerNumberPtr, TeamNumber * teamNumberPtr, glm::vec2 * posPtr, f32 * oriPtr, glm::vec2 * velPtr ) {
         EntityType type = EntityType::Make( (EntityType::_enumerated)( * typePtr) );
-        i32 playerNumber = *playerNumberPtr;
-        i32 teamNumber = *teamNumberPtr;
+        PlayerNumber playerNumber = *playerNumberPtr;
+        TeamNumber teamNumber = *teamNumberPtr;
         f32 ori = *oriPtr;
         glm::vec2 pos = *posPtr;
         glm::vec2 vel = *velPtr;
@@ -701,8 +709,8 @@ namespace atto {
         //core->LogOutput( LogLevel::INFO, "SimAction_DestroyEntity: %d, %d", handle.idx, handle.gen );
     }
 
-    void SimMap::SimAction_PlayerSelect( i32 * playerNumberPtr, EntHandleList * selection, EntitySelectionChange * changePtr ) {
-        i32 playerNumber = *playerNumberPtr;
+    void SimMap::SimAction_PlayerSelect( PlayerNumber * playerNumberPtr, EntHandleList * selection, EntitySelectionChange * changePtr ) {
+        PlayerNumber playerNumber = *playerNumberPtr;
         EntitySelectionChange change = *changePtr;
 
         // @SPEED:
@@ -739,8 +747,8 @@ namespace atto {
         }
     }
 
-    void SimMap::SimAction_Move( i32 * playerNumberPtr, glm::vec2 * posPtr ) {
-        i32 playerNumber = *playerNumberPtr;
+    void SimMap::SimAction_Move( PlayerNumber * playerNumberPtr, glm::vec2 * posPtr ) {
+        PlayerNumber playerNumber = *playerNumberPtr;
         glm::vec2 pos = *posPtr;
 
         // @SPEED:
@@ -758,8 +766,8 @@ namespace atto {
         }
     }
 
-    void SimMap::SimAction_Attack( i32 * playerNumberPtr, EntityHandle * targetPtr ) {
-        i32 playerNumber = *playerNumberPtr;
+    void SimMap::SimAction_Attack( PlayerNumber * playerNumberPtr, EntityHandle * targetPtr ) {
+        PlayerNumber playerNumber = *playerNumberPtr;
         EntityHandle target = *targetPtr;
 
         // @SPEED:
@@ -791,8 +799,8 @@ namespace atto {
         }
     }
 
-    void SimMap::SimAction_ContructBuilding( i32 * playerNumberPtr, i32 * typePtr, glm::vec2 * posPtr ) {
-        i32 playerNumber = *playerNumberPtr;
+    void SimMap::SimAction_ContructBuilding( PlayerNumber * playerNumberPtr, i32 * typePtr, glm::vec2 * posPtr ) {
+        PlayerNumber playerNumber = *playerNumberPtr;
         EntityType type = EntityType::Make( (EntityType::_enumerated)( * typePtr) );
         glm::vec2 pos = *posPtr;
 
@@ -808,8 +816,8 @@ namespace atto {
         }
     }
 
-    void SimMap::SimAction_ContructExistingBuilding( i32 * playerNumberPtr, EntityHandle * targetPtr ) {
-        i32 playerNumber = *playerNumberPtr;
+    void SimMap::SimAction_ContructExistingBuilding( PlayerNumber * playerNumberPtr, EntityHandle * targetPtr ) {
+        PlayerNumber playerNumber = *playerNumberPtr;
         const EntityHandle target = *targetPtr;
         SimEntity * targetEnt = entityPool.Get( target );
         if ( targetEnt != nullptr ) {
@@ -856,11 +864,11 @@ namespace atto {
         }
     }
 
-    void SimMap::SimAction_GiveEnergy( i32 * playerNumberPtr, i32 * amountPtr ) {
-        const i32 playerNumber = *playerNumberPtr;
+    void SimMap::SimAction_GiveEnergy( PlayerNumber * playerNumberPtr, i32 * amountPtr ) {
+        const PlayerNumber playerNumber = *playerNumberPtr;
         const i32 amount = *amountPtr;
-        Assert( playerNumber != 0 );
-        playerMonies[ playerNumber - 1 ].energy += amount;
+        Assert( playerNumber.value != 0 );
+        playerMonies[ playerNumber.value - 1 ].energy += amount;
         //core->LogOutput( LogLevel::INFO, "SimAction_GiveEnergy: Giving %d energy to player %d", amount, playerNumber );
     }
 
@@ -1275,8 +1283,8 @@ namespace atto {
         return false;
     }
 
-    void SyncQueues::AddTurn( i32 playerNumber, const MapTurn & turn ) {
-        if( playerNumber == 1 ) {
+    void SyncQueues::AddTurn( PlayerNumber playerNumber, const MapTurn & turn ) {
+        if( playerNumber.value == 1 ) {
             player1Turns.Enqueue( turn );
         }
         else {
@@ -1284,8 +1292,8 @@ namespace atto {
         }
     }
 
-    MapTurn * SyncQueues::GetNextTurn( i32 playerNumber ) {
-        if( playerNumber == 1 ) {
+    MapTurn * SyncQueues::GetNextTurn( PlayerNumber playerNumber ) {
+        if( playerNumber.value == 1 ) {
             return player1Turns.Peek();
         }
         else {

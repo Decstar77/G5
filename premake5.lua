@@ -116,6 +116,7 @@ project "atto_server"
     {
         JSON_DIR,
         GLM_DIR,
+        FPM,
         path.join(ENET_DIR, "include")
     }
 
