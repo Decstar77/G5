@@ -1355,6 +1355,80 @@ namespace atto {
         return false;
     }
 
+    template<typename T, i32 capcity>
+    class FixedStack {
+    public:
+        bool            IsEmpty() const;
+        void            Clear( bool zeroOut = false );
+        T *             Push( const T & value );
+        T               Pop();
+        T *             Peek();
+        bool            Contains( const T & value );
+        inline i32      GetCount() { return count; }
+
+    private:
+        T data[ capcity ];
+        i32 count;
+    };
+
+    template<typename T, i32 capcity>
+    bool FixedStack<T, capcity>::IsEmpty() const {
+        return count == 0;
+    }
+    
+    template<typename T, i32 capcity>
+    void FixedStack<T, capcity>::Clear( bool zeroOut ) {
+        count = 0;
+        if( zeroOut ) {
+            memset( data, 0, sizeof( T ) * capcity );
+        }
+    }
+    
+    template<typename T, i32 capcity>
+    T * FixedStack<T, capcity>::Push( const T & value ) {
+        AssertMsg( count < capcity, "FixedStack, stack is full" );
+        if( count == capcity ) {
+            return nullptr;
+        }
+
+        data[ count ] = value;
+        T * stored = &data[ count ];
+        count++;
+        return stored;
+    }
+
+    template<typename T, i32 capcity>
+    T FixedStack<T, capcity>::Pop() {
+        AssertMsg( count > 0, "FixedStack, stack is empty" );
+        if( count == 0 ) {
+            return {};
+        }
+
+        count--;
+        return data[ count ];
+    }
+
+    template<typename T, i32 capcity>
+    T * FixedStack<T, capcity>::Peek() {
+        AssertMsg( count > 0, "FixedStack, stack is empty" );
+        if( count == 0 ) {
+            return nullptr;
+        }
+
+        return &data[ count - 1 ];
+    }
+    
+    template<typename T, i32 capcity>
+    bool FixedStack<T, capcity>::Contains( const T & value ) {
+        for( i32 i = 0; i < count; i++ ) {
+            if( data[ i ] == value ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     template<i32 capacity>
     class ByteBuffer {
     public:

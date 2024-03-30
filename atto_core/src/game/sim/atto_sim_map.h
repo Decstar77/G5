@@ -16,6 +16,46 @@ namespace atto {
     typedef FixedList<EntityHandle, MAX_ENTITIES>       EntHandleList;
     typedef FixedObjectPool<SimEntity, MAX_ENTITIES>    EntPool;
 
+    struct GameUIWidget {
+        i32 id;
+
+        glm::vec2   pos;
+        glm::vec2   size;
+        glm::vec4   col;
+
+        glm::vec2   computedPos;
+        glm::vec2   computedSize;
+        BoxBounds2D bounds;
+
+        SmallString text;
+
+        GameUIWidget * parent;
+        FixedList<GameUIWidget *, 32> child; // @NOTE: Probably shouldn't do this...
+    };
+
+    class GameUI {
+    public:
+        void Begin();
+        void End();
+        bool Button( i32 id, const char * text, glm::vec2 center, glm::vec2 size, glm::vec4 col = glm::vec4( 1 ) );
+        bool BeginPopup( i32 id, const char * text, glm::vec2 center, glm::vec2 size, glm::vec4 col = glm::vec4( 1 ) );
+        void EndPopup( i32 id );
+        
+
+        GameUIWidget * AllocWidget( i32 id );
+        GameUIWidget * FindWidgetWithId( i32 id );
+        void TraversalPostOrder( GameUIWidget * widget );
+        void UpdateAndRender( Core * core, DrawContext * uiDraw, glm::vec2 mousePos, bool mouseClicked );
+
+        i32 clickedId = -1;
+        i32 lastClickedId = -1;
+        i32 popupOpen = -1;
+        
+        FixedList< GameUIWidget, 32 > widgets;
+        FixedQueue< GameUIWidget *, 32 > traversalQueue;
+        FixedStack< i32, 32 > idStack;
+    };
+
     REFL_ENUM(  EntityType,
                 INVALID = 0,
                 UNITS_BEGIN,
@@ -156,7 +196,7 @@ namespace atto {
         Collider2D                  collisionCollider;  // @NOTE: Used for movement | In Local Space
 
         bool                        isSelectable;
-        FixedList<PlayerNumber, MAX_PLAYERS> selectedBy;
+        FixedList<PlayerNumber, MAX_PLAYERS> selectedBy; // @TODO: Could be optimized to be a espcially if player number is bit 8, could store all of the state in i32 or i64 for 8 playes
         Collider2D                  selectionCollider;
 
         Unit                        unit;
@@ -180,6 +220,21 @@ namespace atto {
         REFLECT();
     };
 
+    class EntityListFilter {
+    public:
+        EntList     result;
+
+        EntityListFilter * Begin( EntList * activeEntities );
+        EntityListFilter * OwnedBy( PlayerNumber playerNumber );
+        EntityListFilter * SelectedBy( PlayerNumber playerNumber );
+        EntityListFilter * Type( EntityType::_enumerated type );
+        EntityListFilter * IsTypeRange( EntityType::_enumerated start, EntityType::_enumerated end );
+        EntityListFilter * End();
+
+    private:
+        EntList *                       activeEntities;
+        FixedList<bool, MAX_ENTITIES>   marks;
+    };
 
     struct PlayerMonies {
         i32 credits;
@@ -198,12 +253,7 @@ namespace atto {
 
         f32                                         dtAccumulator = 0.0f;
 
-        i32                                         syncTurnAttempts = {};
-        i32                                         syncWaitTurnCounter = {};
-        SyncQueues                                  syncQueues = {};
-        FixedList<PlayerNumber, 4>                  playerNumbers = {};
-        FixedList<PlayerMonies, 4>                  playerMonies = {};
-
+        // ============  Local Player   ============
         PlayerNumber                                localPlayerNumber = PlayerNumber::Create( -1 );
         TeamNumber                                  localPlayerTeamNumber = TeamNumber::Create( -1 );
         glm::vec2                                   localCameraPos = glm::vec2( 0.0f );
@@ -211,11 +261,23 @@ namespace atto {
         glm::vec2                                   localCameraZoomLerp = glm::vec2( 0.0f );
         MapTurn                                     localMapTurn = {};
         MapActionBuffer                             localActionBuffer = {}; // Player inputs
-        bool                                        localMapTurnWriting = false;
+
+        // ============ Syncing Stuffies ============
+        i32                                         syncTurnAttempts = {};
+        i32                                         syncWaitTurnCounter = {};
+        SyncQueues                                  syncQueues = {};
+
+        // ============ Player Stuffies ============
+        FixedList< PlayerNumber, 4 >                playerNumbers = {};
+        FixedList< PlayerMonies, 4 >                playerMonies = {};
+
+        // ============ Visual Stuffies ============
         bool                                        localIsDragging = false;
         glm::vec2                                   localStartDrag = glm::vec2( 0.0f );
         glm::vec2                                   localEndDrag = glm::vec2( 0.0f );
-        EntHandleList                               localNewSelection = {};
+        EntHandleList                               localDragSelection = {};
+
+        GameUI                                      gameUI = {};
 
         // @HACK:
         bool isPlacingBuilding = false;

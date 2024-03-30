@@ -1,13 +1,198 @@
 #include "atto_sim_map.h"
-#include "../atto_map_communicator.h"
 
 #include "../../shared/atto_rpc.h"
 #include "../../shared/atto_colors.h"
 
 namespace atto {
+    void GameUI::Begin() {
+        idStack.Push( 0 );
+    }
+
+    void GameUI::End() {
+        widgets.Clear();
+        idStack.Clear();
+    }
+    
+    bool GameUI::Button( i32 id, const char * text, glm::vec2 center, glm::vec2 size, glm::vec4 col ) {
+        GameUIWidget * w = AllocWidget( id );
+        w->id = id;
+        w->pos = center;
+        w->size = size;
+        w->col = col;
+        w->text = SmallString::FromLiteral( text );
+        w->bounds.CreateFromCenterSize( center, size );
+        w->parent = FindWidgetWithId( *idStack.Peek() );
+        Assert( w->parent != nullptr );
+        if ( w->parent != nullptr ) {
+            w->parent->child.Add( w );
+        }
+
+        return id == clickedId;
+    }
+
+    bool GameUI::BeginPopup( i32 id, const char * text, glm::vec2 center, glm::vec2 size, glm::vec4 col ) {
+        bool c = Button( id, text, center, size, col );
+        GameUIWidget * w = FindWidgetWithId( id );
+
+        idStack.Push( id );
+
+        if ( c ) {
+            popupOpen = w->id;
+        }
+
+        return popupOpen == w->id;
+    }
+
+    void GameUI::EndPopup( i32 id ) {
+        GameUIWidget * w = FindWidgetWithId( id );
+        if ( lastClickedId != w->id ) {
+            popupOpen = -1;
+        }
+
+        idStack.Pop();
+    }
+
+    GameUIWidget * GameUI::AllocWidget( i32 id ) {
+        // Make root
+        if ( widgets.IsEmpty() == true ) {
+            widgets.AddEmpty();
+        }
+
+        return &widgets.AddEmpty();
+    }
+
+    GameUIWidget * GameUI::FindWidgetWithId( i32 id ) {
+        const i32 widgetCount = widgets.GetCount();
+        for ( i32 widgetIndex = 0; widgetIndex < widgetCount; widgetIndex++ ) {
+            GameUIWidget * widget = &widgets[ widgetIndex ];
+            if ( widget->id == id ) {
+                return widget;
+            }
+        }
+
+        return nullptr;
+    }
+
+    void TraversalPostOrder( GameUIWidget * widget ) {
+        for ( i32 i = 0; i < widget->child.GetCount(); i++ ) {
+            GameUIWidget * child = widget->child[ i ];
+            TraversalPostOrder( child );
+        }
+    }
+
+    void GameUI::UpdateAndRender( Core * core, DrawContext * uiDraw, glm::vec2 mousePos, bool mouseClicked ) {
+        static FontHandle fontHandle = core->ResourceGetFont( "default" ); // @HACK
+
+        if ( widgets.IsEmpty() == true ) {
+            return;
+        }
+
+        GameUIWidget * root = &widgets[ 0 ];
+
+        clickedId = -1;
+        traversalQueue.Clear();
+        traversalQueue.Enqueue( root );
+        while ( traversalQueue.IsEmpty() == false ) {
+            GameUIWidget * widget = traversalQueue.Dequeue();
+            for ( i32 i = 0; i < widget->child.GetCount(); i++ ) {
+                GameUIWidget * child = widget->child[ i ];
+
+                glm::vec4 col = child->col;
+                if ( child->bounds.Contains( mousePos ) == true ) {
+                    col *= 1.1f;
+                    if ( mouseClicked == true ) {
+                        clickedId = child->id;
+                        lastClickedId = child->id;
+                    }
+                }
+
+                uiDraw->DrawRect( child->bounds.min, child->bounds.max, col );
+                if ( child->text.GetLength() != 0 ) {
+                    uiDraw->DrawTextCam( fontHandle, child->pos, 12, child->text.GetCStr(), TextAlignment_H::FONS_ALIGN_CENTER, TextAlignment_V::FONS_ALIGN_MIDDLE );
+                }
+
+                traversalQueue.Enqueue( child );
+            }
+        }
+    }
 
     static FixedList<glm::vec2, 5 * 3> ui_LeftPanelCenters;
     static FixedList<glm::vec2, 5 * 3> ui_RightPanelCenters;
+
+    EntityListFilter * EntityListFilter::Begin( EntList * activeEntities ) {
+        this->activeEntities = activeEntities;
+        const i32 entCount = activeEntities->GetCount();
+        this->marks.SetCount( entCount );
+        for ( i32 i = 0; i < entCount; i++ ) {
+            this->marks[ i ] = true;
+        }
+        return this;
+    }
+
+    EntityListFilter * EntityListFilter::OwnedBy( PlayerNumber playerNumber ) {
+        const i32 entCount = activeEntities->GetCount();
+        for ( i32 entityIndex = 0; entityIndex < entCount; entityIndex++ ) {
+            if ( marks[ entityIndex ] == true ) {
+                SimEntity * ent = *activeEntities->Get( entityIndex );
+                if ( ent->playerNumber != playerNumber ) {
+                    marks[ entityIndex ] = false;
+                }
+            }
+        }
+
+        return this;
+    }
+
+    EntityListFilter * EntityListFilter::SelectedBy( PlayerNumber playerNumber ) {
+        const i32 entCount = activeEntities->GetCount();
+        for ( i32 entityIndex = 0; entityIndex < entCount; entityIndex++ ) {
+            if ( marks[ entityIndex ] == true ) {
+                SimEntity * ent = *activeEntities->Get( entityIndex );
+                if ( ent->selectedBy.Contains( playerNumber ) == false ) {
+                    marks[ entityIndex ] = false;
+                }
+            }
+        }
+
+        return this;
+    }
+
+    EntityListFilter * EntityListFilter::Type( EntityType::_enumerated type ) {
+        const i32 entCount = activeEntities->GetCount();
+        for ( i32 entityIndex = 0; entityIndex < entCount; entityIndex++ ) {
+            if ( marks[ entityIndex ] == true ) {
+                SimEntity * ent = *activeEntities->Get( entityIndex );
+                if ( ent->type != type ) {
+                    marks[ entityIndex ] = false;
+                }
+            }
+        }
+        return this;
+    }
+
+    EntityListFilter * EntityListFilter::IsTypeRange( EntityType::_enumerated start, EntityType::_enumerated end ) {
+        const i32 entCount = activeEntities->GetCount();
+        for ( i32 entityIndex = 0; entityIndex < entCount; entityIndex++ ) {
+            if ( marks[ entityIndex ] == true ) {
+                SimEntity * ent = *activeEntities->Get( entityIndex );
+                if( !( ent->type > start && ent->type < end ) ) {
+                    marks[ entityIndex ] = false;
+                }
+            }
+        }
+        return this;
+    }
+
+    EntityListFilter * EntityListFilter::End() {
+        result.Clear();
+        const i32 entCount = activeEntities->GetCount();
+        for ( i32 entityIndex = 0; entityIndex < entCount; entityIndex++ ) {
+            if ( marks[ entityIndex ] == true ) {
+                result.Add ( *activeEntities->Get( entityIndex ) );
+            }
+        }
+        return this;
+    }
 
     void SimMap::Initialize( Core * core ) {
         if( rpcTable[ 1 ] == nullptr ) {
@@ -238,25 +423,88 @@ namespace atto {
         BoxBounds2D uiBounds = {};
         uiBounds.min = glm::vec2( 114, 0 );
         uiBounds.max = glm::vec2( 524, 60 );
-        const bool isMouseOverUI = uiBounds.Contains( mousePosUISpace );
+        bool isMouseOverUI = uiBounds.Contains( mousePosUISpace );
 
-        if( isMouseOverUI == false && isPlacingBuilding == true ) {
-            if( core->InputMouseButtonJustReleased( MOUSE_BUTTON_2 ) == true ) {
-                isPlacingBuilding = false;
+        EntList & entities = *core->MemoryAllocateTransient<EntList>();
+        entityPool.GatherActiveObjs( entities );
+
+        EntityListFilter * entityFilter = core->MemoryAllocateTransient<EntityListFilter>();
+
+        const bool singlePlanetSelected = entityFilter->Begin( &entities )->
+                                                        OwnedBy( localPlayerNumber )->
+                                                        SelectedBy( localPlayerNumber )->
+                                                        Type( EntityType::PLANET )->
+                                                        End()->
+                                                        result.GetCount() == 1;
+
+        if ( singlePlanetSelected == true ) {
+            SimEntity * ent = entityFilter->result[ 0 ];
+            Planet & planet = ent->planet;
+
+            gameUI.Begin();
+
+            const i32 placementCount = planet.placements.GetCapcity();
+            for ( i32 placementIndex = 0; placementIndex < placementCount; placementIndex++ ) {
+                const PlanetPlacementType & placementType = planet.placements[ placementIndex ];
+
+                switch( placementType ) {
+                    case PlanetPlacementType::INVALID: {
+                        if ( gameUI.Button( placementIndex, "", ui_LeftPanelCenters[ placementIndex ], glm::vec2( 15 ), Colors::AMETHYST ) == true ) {
+                            
+                        }
+                    } break;
+                    case PlanetPlacementType::BLOCKED: {
+                        if ( gameUI.Button( placementIndex, "", ui_LeftPanelCenters[ placementIndex ], glm::vec2( 15 ), Colors::ALIZARIN ) == true ) {
+                            
+                        }
+                    } break;
+                    case PlanetPlacementType::OPEN: {
+                        if ( gameUI.BeginPopup( placementIndex, "O", ui_LeftPanelCenters[ placementIndex ], glm::vec2( 15 ), Colors::SKY_BLUE ) == true ) {
+                            if ( gameUI.Button( 9834275, "Energy", glm::vec2( 300, 200 ), glm::vec2( 50 ) ) == true ) {
+                                core->LogOutput( LogLevel::INFO, "HERE2" );
+                            }
+                            gameUI.EndPopup( placementIndex );
+                        }
+                    } break;
+                    case PlanetPlacementType::CREDIT_GENERATOR: {
+                        if ( gameUI.Button( placementIndex, "M", ui_LeftPanelCenters[ placementIndex ], glm::vec2( 15 ), Colors::SKY_BLUE ) == true ) {
+                            
+                        }
+                    } break;
+                    case PlanetPlacementType::ENERGY_GENERATOR: {
+                        if ( gameUI.Button( placementIndex, "E", ui_LeftPanelCenters[ placementIndex ], glm::vec2( 15 ), Colors::SKY_BLUE ) == true ) {
+                            
+                        }
+                    } break;
+                    case PlanetPlacementType::COMPUTE_GENERATOR: {
+                        if ( gameUI.Button( placementIndex, "C", ui_LeftPanelCenters[ placementIndex ], glm::vec2( 15 ), Colors::SKY_BLUE ) == true ) {
+                            
+                        }
+                    } break;
+                }
             }
 
-            if( core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) == true ) {
-                isPlacingBuilding = false;
-                localActionBuffer.AddAction( MapActionType::SIM_ENTITY_UNIT_COMMAND_CONSTRUCT_BUILDING, localPlayerNumber, ( i32 )EntityType::BUILDING_SOLAR_ARRAY, mousePosWorldFp );
-            }
+            gameUI.UpdateAndRender( core, uiDrawContext, mousePosUISpace, core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) );
+            gameUI.End();
         }
 
-        if ( isMouseOverUI == false && isPlacingBuilding == false ) {
-            if ( core->InputMouseButtonJustPressed( MOUSE_BUTTON_1 ) == true ) {
-                localIsDragging = true;
-                localStartDrag = mousePosWorld;
-                localEndDrag = mousePosWorld;
-                localNewSelection.Clear();
+        if( isMouseOverUI == false ) {
+            if ( isPlacingBuilding == true ) {
+                if ( core->InputMouseButtonJustReleased( MOUSE_BUTTON_2 ) == true ) {
+                    isPlacingBuilding = false;
+                }
+
+                if ( core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) == true ) {
+                    isPlacingBuilding = false;
+                    localActionBuffer.AddAction( MapActionType::SIM_ENTITY_UNIT_COMMAND_CONSTRUCT_BUILDING, localPlayerNumber, ( i32 )EntityType::BUILDING_SOLAR_ARRAY, mousePosWorldFp );
+                }
+            } else {
+                if ( core->InputMouseButtonJustPressed( MOUSE_BUTTON_1 ) == true ) {
+                    localIsDragging = true;
+                    localStartDrag = mousePosWorld;
+                    localEndDrag = mousePosWorld;
+                    localDragSelection.Clear();
+                }
             }
         }
 
@@ -264,16 +512,13 @@ namespace atto {
             localEndDrag = mousePosWorld;
             if ( core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) == true ) {
                 localIsDragging = false;
-                localActionBuffer.AddAction( MapActionType::PLAYER_SELECTION, localPlayerNumber, localNewSelection, EntitySelectionChange::SET );
+                localActionBuffer.AddAction( MapActionType::PLAYER_SELECTION, localPlayerNumber, localDragSelection, EntitySelectionChange::SET );
             }
         }
 
         BoxBounds2D selectionBounds = {};
         selectionBounds.min = glm::min( localStartDrag, localEndDrag );
         selectionBounds.max = glm::max( localStartDrag, localEndDrag );
-
-        EntList & entities = *core->MemoryAllocateTransient<EntList>();
-        entityPool.GatherActiveObjs( entities );
 
         const i32 entityCount = entities.GetCount();
         for( i32 entityIndexA = 0; entityIndexA < entityCount; entityIndexA++ ) {
@@ -322,119 +567,143 @@ namespace atto {
                 }
             }
 
-            if( localIsDragging == false && isPlacingBuilding == false && ent->type == EntityType::PLANET && ent->selectedBy.Contains( localPlayerNumber ) == true ) {
-                const Planet & planet = ent->planet;
-
-                const i32 placementCount = planet.placements.GetCount();
-                for( i32 placementIndex = 0; placementIndex < placementCount; placementIndex++ ) {
-                    BoxBounds2D buttonBounds = {};
-                    buttonBounds.CreateFromCenterSize( ui_LeftPanelCenters[ placementIndex ], glm::vec2( 15 ) );
-
-                    bool isHovered = false;
-                    bool isClicked = false;
-
-                    const PlanetPlacementType & placementType = planet.placements[ placementIndex ];
-                    if( buttonBounds.Contains( mousePosUISpace ) == true ) {
-                        glm::vec4 col = glm::vec4( 0.2f, 0.4f, 0.4f, 0.5f );
-                        isHovered = true;
-
-                        if( core->InputMouseButtonDown( MOUSE_BUTTON_1 ) == true ) {
-                            col *= 1.3f;
-                        }
-
-                        uiDrawContext->DrawRect( buttonBounds.GetCenter(), buttonBounds.GetSize(), 0.0f, col );
-                        if( core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) == true ) { // @TODO: This is a bug, we need to check if the button was pressed to begin with.
-                            isClicked = true;
-                        }
-                    }
-
-                    switch( placementType ) {
-                        case PlanetPlacementType::INVALID: break;
-                        case PlanetPlacementType::BLOCKED: break;
-                        case PlanetPlacementType::OPEN: {
-                            if( isHovered == true ) {
-                                glm::vec2 bl = buttonBounds.GetCenter() + glm::vec2( 8, 0 );
-                                glm::vec2 tr = buttonBounds.GetCenter() + glm::vec2( 64, 64 );
-                                glm::vec2 tl = glm::vec2( bl.x, tr.y );
-                                glm::vec4 col = Colors::SKY_BLUE;
-                                col.a = 0.9f;
-                                uiDrawContext->DrawRect( bl, tr, col );
-                                uiDrawContext->DrawTextCam( fontHandle, tl + glm::vec2( 2, -14 ), 12, "Open Slot" );
-                            }
-                        } break;
-                        case PlanetPlacementType::CREDIT_GENERATOR:
-                        {
-                            uiDrawContext->DrawTextCam( fontHandle, buttonBounds.GetCenter(), 14, "C", TextAlignment_H::FONS_ALIGN_CENTER, TextAlignment_V::FONS_ALIGN_MIDDLE );
-                        } break;
-                        case PlanetPlacementType::ENERGY_GENERATOR:
-                        {
-                            uiDrawContext->DrawTextCam( fontHandle, buttonBounds.GetCenter(), 14, "E", TextAlignment_H::FONS_ALIGN_CENTER, TextAlignment_V::FONS_ALIGN_MIDDLE );
-                        } break;
-                        case PlanetPlacementType::COMPUTE_GENERATOR:
-                        {
-                            uiDrawContext->DrawTextCam( fontHandle, buttonBounds.GetCenter(), 14, "O", TextAlignment_H::FONS_ALIGN_CENTER, TextAlignment_V::FONS_ALIGN_MIDDLE );
-                        } break;
-                    }
-                }
-
-                for( i32 rightPanelIndex = 0; rightPanelIndex < ui_RightPanelCenters.GetCapcity(); rightPanelIndex++ ) {
-                    //uiDrawContext->DrawRect( ui_RightPanelCenters[ rightPanelIndex ], glm::vec2( 15 ), 0.0f );
-                    BoxBounds2D buttonBounds = {};
-                    buttonBounds.CreateFromCenterSize( ui_RightPanelCenters[ rightPanelIndex ], glm::vec2( 15 ) );
-
-                    if( buttonBounds.Contains( mousePosUISpace ) == true ) {
-                        glm::vec4 col = glm::vec4( 0.2f, 0.4f, 0.4f, 0.5f );
-                        if( core->InputMouseButtonDown( MOUSE_BUTTON_1 ) == true ) {
-                            col *= 1.3f;
-                        }
-
-                        uiDrawContext->DrawRect( buttonBounds.GetCenter(), buttonBounds.GetSize(), 0.0f, col );
-                        if( core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) == true ) { // @TODO: This is a bug, we need to check if the button was pressed to begin with.
-                            localActionBuffer.AddAction( MapActionType::SIM_ENTITY_SPAWN, (i32)EntityType::UNIT_TEST, 1, 1, ent->pos, 0.0f, glm::vec2( 0, 0 ) );
-                        }
-                    }
-                }
-            }
-            else if( localIsDragging == false && isPlacingBuilding == false && ent->type == EntityType::UNIT_WORKER && ent->selectedBy.Contains( localPlayerNumber ) == true ) {
-                for( i32 rightPanelIndex = 0; rightPanelIndex < ui_RightPanelCenters.GetCapcity(); rightPanelIndex++ ) {
-                    BoxBounds2D buttonBounds = {};
-                    buttonBounds.CreateFromCenterSize( ui_RightPanelCenters[ rightPanelIndex ], glm::vec2( 15 ) );
-                    
-                    if( rightPanelIndex == 0 ) {
-                        uiDrawContext->DrawTextCam( fontHandle, buttonBounds.GetCenter(), 14, "T", TextAlignment_H::FONS_ALIGN_CENTER, TextAlignment_V::FONS_ALIGN_MIDDLE );
-                    }
-                    else if( rightPanelIndex == 1 ) {
-                        uiDrawContext->DrawTextCam( fontHandle, buttonBounds.GetCenter(), 14, "S", TextAlignment_H::FONS_ALIGN_CENTER, TextAlignment_V::FONS_ALIGN_MIDDLE );
-                    }
-                    else if( rightPanelIndex == 2 ) {
-                        uiDrawContext->DrawTextCam( fontHandle, buttonBounds.GetCenter(), 14, "C", TextAlignment_H::FONS_ALIGN_CENTER, TextAlignment_V::FONS_ALIGN_MIDDLE );
-                    }
-                    
-                    if( buttonBounds.Contains( mousePosUISpace ) == true ) {
-                        glm::vec4 col = glm::vec4( 0.2f, 0.4f, 0.4f, 0.5f );
-                        if( core->InputMouseButtonDown( MOUSE_BUTTON_1 ) == true ) {
-                            col *= 1.3f;
-                        }
-
-                        uiDrawContext->DrawRect( buttonBounds.GetCenter(), buttonBounds.GetSize(), 0.0f, col );
-                        if( core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) == true ) { // @TODO: This is a bug, we need to check if the button was pressed to begin with.
-
-                            if( rightPanelIndex == 0 ) {
-                            }
-                            else if( rightPanelIndex == 1 ) {
-                                isPlacingBuilding = true;
-                            }
-                            else if( rightPanelIndex == 2 ) {
-                            }
-                        }
-                    }
-                }
-            }
+            //if( localIsDragging == false && isPlacingBuilding == false && ent->type == EntityType::PLANET && ent->selectedBy.Contains( localPlayerNumber ) == true ) {
+            //    const Planet & planet = ent->planet;
+//
+            //    const i32 placementCount = planet.placements.GetCapcity();
+            //    for( i32 placementIndex = 0; placementIndex < placementCount; placementIndex++ ) {
+            //        BoxBounds2D buttonBounds = {};
+            //        buttonBounds.CreateFromCenterSize( ui_LeftPanelCenters[ placementIndex ], glm::vec2( 15 ) );
+//
+            //        bool isHovered = false;
+            //        bool isClicked = false;
+//
+            //        const PlanetPlacementType & placementType = planet.placements[ placementIndex ];
+            //        if( buttonBounds.Contains( mousePosUISpace ) == true ) {
+            //            glm::vec4 col = glm::vec4( 0.2f, 0.4f, 0.4f, 0.5f );
+            //            isHovered = true;
+//
+            //            if ( placementType != PlanetPlacementType::INVALID || placementType != PlanetPlacementType::BLOCKED ) {
+            //                if ( core->InputMouseButtonDown( MOUSE_BUTTON_1 ) == true ) {
+            //                    col *= 1.3f;
+            //                }
+//
+            //                uiDrawContext->DrawRect( buttonBounds.GetCenter(), buttonBounds.GetSize(), 0.0f, col );
+            //                if ( core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) == true ) { // @TODO: This is a bug, we need to check if the button was pressed to begin with.
+            //                    isClicked = true;
+            //                }
+            //            }
+            //        }
+//
+            //        switch( placementType ) {
+            //            case PlanetPlacementType::INVALID: uiDrawContext->DrawRect( buttonBounds.GetCenter(), buttonBounds.GetSize(), 0.0f, Colors::ALIZARIN ); break;
+            //            case PlanetPlacementType::BLOCKED: uiDrawContext->DrawRect( buttonBounds.GetCenter(), buttonBounds.GetSize(), 0.0f, Colors::ALIZARIN ); break;
+            //            case PlanetPlacementType::OPEN: {
+            //                if( isHovered == true ) {
+            //                    if ( isClicked == true ) {
+            //                    }
+            //                }
+            //            } break;
+            //            case PlanetPlacementType::CREDIT_GENERATOR:
+            //            {
+            //                uiDrawContext->DrawTextCam( fontHandle, buttonBounds.GetCenter(), 14, "C", TextAlignment_H::FONS_ALIGN_CENTER, TextAlignment_V::FONS_ALIGN_MIDDLE );
+            //                if( isHovered == true ) {
+            //                    glm::vec2 bl = buttonBounds.GetCenter() + glm::vec2( 8, 0 );
+            //                    glm::vec2 tr = buttonBounds.GetCenter() + glm::vec2( 64, 64 );
+            //                    glm::vec2 tl = glm::vec2( bl.x, tr.y );
+            //                    glm::vec4 col = Colors::SKY_BLUE;
+            //                    col.a = 0.9f;
+            //                    uiDrawContext->DrawRect( bl, tr, col );
+            //                    uiDrawContext->DrawTextCam( fontHandle, tl + glm::vec2( 2, -14 ), 12, "Monies Maker" );
+            //                }
+            //            } break;
+            //            case PlanetPlacementType::ENERGY_GENERATOR:
+            //            {
+            //                uiDrawContext->DrawTextCam( fontHandle, buttonBounds.GetCenter(), 14, "E", TextAlignment_H::FONS_ALIGN_CENTER, TextAlignment_V::FONS_ALIGN_MIDDLE );
+            //                if( isHovered == true ) {
+            //                    glm::vec2 bl = buttonBounds.GetCenter() + glm::vec2( 8, 0 );
+            //                    glm::vec2 tr = buttonBounds.GetCenter() + glm::vec2( 64, 64 );
+            //                    glm::vec2 tl = glm::vec2( bl.x, tr.y );
+            //                    glm::vec4 col = Colors::SKY_BLUE;
+            //                    col.a = 0.9f;
+            //                    uiDrawContext->DrawRect( bl, tr, col );
+            //                    uiDrawContext->DrawTextCam( fontHandle, tl + glm::vec2( 2, -14 ), 12, "Energy Gennie" );
+            //                }
+            //            } break;
+            //            case PlanetPlacementType::COMPUTE_GENERATOR:
+            //            {
+            //                uiDrawContext->DrawTextCam( fontHandle, buttonBounds.GetCenter(), 14, "O", TextAlignment_H::FONS_ALIGN_CENTER, TextAlignment_V::FONS_ALIGN_MIDDLE );
+            //                if( isHovered == true ) {
+            //                    glm::vec2 bl = buttonBounds.GetCenter() + glm::vec2( 8, 0 );
+            //                    glm::vec2 tr = buttonBounds.GetCenter() + glm::vec2( 64, 64 );
+            //                    glm::vec2 tl = glm::vec2( bl.x, tr.y );
+            //                    glm::vec4 col = Colors::SKY_BLUE;
+            //                    col.a = 0.9f;
+            //                    uiDrawContext->DrawRect( bl, tr, col );
+            //                    uiDrawContext->DrawTextCam( fontHandle, tl + glm::vec2( 2, -14 ), 12, "CPU" );
+            //                }
+            //            } break;
+            //        }
+            //    }
+//
+            //    for( i32 rightPanelIndex = 0; rightPanelIndex < ui_RightPanelCenters.GetCapcity(); rightPanelIndex++ ) {
+            //        //uiDrawContext->DrawRect( ui_RightPanelCenters[ rightPanelIndex ], glm::vec2( 15 ), 0.0f );
+            //        BoxBounds2D buttonBounds = {};
+            //        buttonBounds.CreateFromCenterSize( ui_RightPanelCenters[ rightPanelIndex ], glm::vec2( 15 ) );
+//
+            //        if( buttonBounds.Contains( mousePosUISpace ) == true ) {
+            //            glm::vec4 col = glm::vec4( 0.2f, 0.4f, 0.4f, 0.5f );
+            //            if( core->InputMouseButtonDown( MOUSE_BUTTON_1 ) == true ) {
+            //                col *= 1.3f;
+            //            }
+//
+            //            uiDrawContext->DrawRect( buttonBounds.GetCenter(), buttonBounds.GetSize(), 0.0f, col );
+            //            if( core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) == true ) { // @TODO: This is a bug, we need to check if the button was pressed to begin with.
+            //                localActionBuffer.AddAction( MapActionType::SIM_ENTITY_SPAWN, (i32)EntityType::UNIT_TEST, 1, 1, ent->pos, 0.0f, glm::vec2( 0, 0 ) );
+            //            }
+            //        }
+            //    }
+            //}
+            //else if( localIsDragging == false && isPlacingBuilding == false && ent->type == EntityType::UNIT_WORKER && ent->selectedBy.Contains( localPlayerNumber ) == true ) {
+            //    for( i32 rightPanelIndex = 0; rightPanelIndex < ui_RightPanelCenters.GetCapcity(); rightPanelIndex++ ) {
+            //        BoxBounds2D buttonBounds = {};
+            //        buttonBounds.CreateFromCenterSize( ui_RightPanelCenters[ rightPanelIndex ], glm::vec2( 15 ) );
+            //        
+            //        if( rightPanelIndex == 0 ) {
+            //            uiDrawContext->DrawTextCam( fontHandle, buttonBounds.GetCenter(), 14, "T", TextAlignment_H::FONS_ALIGN_CENTER, TextAlignment_V::FONS_ALIGN_MIDDLE );
+            //        }
+            //        else if( rightPanelIndex == 1 ) {
+            //            uiDrawContext->DrawTextCam( fontHandle, buttonBounds.GetCenter(), 14, "S", TextAlignment_H::FONS_ALIGN_CENTER, TextAlignment_V::FONS_ALIGN_MIDDLE );
+            //        }
+            //        else if( rightPanelIndex == 2 ) {
+            //            uiDrawContext->DrawTextCam( fontHandle, buttonBounds.GetCenter(), 14, "C", TextAlignment_H::FONS_ALIGN_CENTER, TextAlignment_V::FONS_ALIGN_MIDDLE );
+            //        }
+            //        
+            //        if( buttonBounds.Contains( mousePosUISpace ) == true ) {
+            //            glm::vec4 col = glm::vec4( 0.2f, 0.4f, 0.4f, 0.5f );
+            //            if( core->InputMouseButtonDown( MOUSE_BUTTON_1 ) == true ) {
+            //                col *= 1.3f;
+            //            }
+//
+            //            uiDrawContext->DrawRect( buttonBounds.GetCenter(), buttonBounds.GetSize(), 0.0f, col );
+            //            if( core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) == true ) { // @TODO: This is a bug, we need to check if the button was pressed to begin with.
+//
+            //                if( rightPanelIndex == 0 ) {
+            //                }
+            //                else if( rightPanelIndex == 1 ) {
+            //                    isPlacingBuilding = true;
+            //                }
+            //                else if( rightPanelIndex == 2 ) {
+            //                }
+            //            }
+            //        }
+            //    }
+            //}
 
             if ( localIsDragging == true && ent->isSelectable == true ) {
                 Collider2D collider = ent->GetWorldSelectionCollider();
                 if ( collider.Intersects( selectionBounds ) == true ) {
-                    localNewSelection.AddUnique( ent->handle );
+                    localDragSelection.AddUnique( ent->handle );
                 }
             }
 
@@ -638,12 +907,11 @@ namespace atto {
                     entity->selectionCollider.circle.pos = glm::vec2( 0, 0 );
                     entity->selectionCollider.circle.rad = 125.0f;
 
-                    entity->planet.placements.Add( PlanetPlacementType::CREDIT_GENERATOR );
-                    entity->planet.placements.Add( PlanetPlacementType::CREDIT_GENERATOR );
-                    entity->planet.placements.Add( PlanetPlacementType::ENERGY_GENERATOR );
                     entity->planet.placements.Add( PlanetPlacementType::OPEN );
                     entity->planet.placements.Add( PlanetPlacementType::OPEN );
-                    entity->planet.placements.SetCount( MAX_PLANET_PLACEMENTS );
+                    entity->planet.placements.Add( PlanetPlacementType::OPEN );
+                    entity->planet.placements.Add( PlanetPlacementType::OPEN );
+                    entity->planet.placements.Add( PlanetPlacementType::OPEN );
                 } break;
                 case EntityType::BUILDING_SOLAR_ARRAY:
                 {
@@ -1138,7 +1406,7 @@ namespace atto {
     void SimMap::SimTick( MapTurn * turn1, MapTurn * turn2 ) {
         //ScopedClock timer( "SimTick", core );
 
-        if ( turn1->checkSum != turn2->checkSum ) {
+        if ( turn2 != nullptr && turn1->checkSum != turn2->checkSum ) {
             core->LogOutput( LogLevel::INFO, "We have a desync :(" );
 
             INVALID_CODE_PATH;

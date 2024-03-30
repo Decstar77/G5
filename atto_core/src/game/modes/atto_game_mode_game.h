@@ -12,16 +12,6 @@ namespace atto {
         i32         otherPlayerNumber;
     };
 
-    struct GameGUI {
-        f32             startX;
-        f32             startY;
-        DrawContext *   drawContext;
-        Core *          core;
-
-        void BeginAbilityBar( Core * core, DrawContext * drawContext );
-        void EndAbilityBar();
-    };
-
     class GameMode_SinglePlayerGame : public GameMode {
     public:
         GameMode_SinglePlayerGame( GameStartParams parms ) : startParms( parms ) {};

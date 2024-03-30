@@ -76,6 +76,15 @@ namespace atto {
         MapActionBuffer         actions;
     };
 
+
+    //// @TODO: This is hardcoded to be 1 hours of game time for two players. We'll need a better system but for now this works.
+    //struct MapReplay {
+    //    static constexpr i64 Minutes = 120;
+    //    static constexpr i64 TurnCap = ( i64 )TURNS_PER_SECOND * Minutes * 60;
+    //    static constexpr i64 EstimatedSizeMB = ( ( ( sizeof( MapTurn ) * TurnCap ) / 1024 ) / 1024 );
+
+    //    FixedList<MapTurn, TurnCap> turns;
+    //};
 }
 
 
