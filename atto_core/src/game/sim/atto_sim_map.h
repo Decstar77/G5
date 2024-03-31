@@ -16,46 +16,6 @@ namespace atto {
     typedef FixedList<EntityHandle, MAX_ENTITIES>       EntHandleList;
     typedef FixedObjectPool<SimEntity, MAX_ENTITIES>    EntPool;
 
-    struct GameUIWidget {
-        i32 id;
-
-        glm::vec2   pos;
-        glm::vec2   size;
-        glm::vec4   col;
-
-        glm::vec2   computedPos;
-        glm::vec2   computedSize;
-        BoxBounds2D bounds;
-
-        SmallString text;
-
-        GameUIWidget * parent;
-        FixedList<GameUIWidget *, 32> child; // @NOTE: Probably shouldn't do this...
-    };
-
-    class GameUI {
-    public:
-        void Begin();
-        void End();
-        bool Button( i32 id, const char * text, glm::vec2 center, glm::vec2 size, glm::vec4 col = glm::vec4( 1 ) );
-        bool BeginPopup( i32 id, const char * text, glm::vec2 center, glm::vec2 size, glm::vec4 col = glm::vec4( 1 ) );
-        void EndPopup( i32 id );
-        
-
-        GameUIWidget * AllocWidget( i32 id );
-        GameUIWidget * FindWidgetWithId( i32 id );
-        void TraversalPostOrder( GameUIWidget * widget );
-        void UpdateAndRender( Core * core, DrawContext * uiDraw, glm::vec2 mousePos, bool mouseClicked );
-
-        i32 clickedId = -1;
-        i32 lastClickedId = -1;
-        i32 popupOpen = -1;
-        
-        FixedList< GameUIWidget, 32 > widgets;
-        FixedQueue< GameUIWidget *, 32 > traversalQueue;
-        FixedStack< i32, 32 > idStack;
-    };
-
     REFL_ENUM(  EntityType,
                 INVALID = 0,
                 UNITS_BEGIN,
@@ -277,10 +237,12 @@ namespace atto {
         glm::vec2                                   localEndDrag = glm::vec2( 0.0f );
         EntHandleList                               localDragSelection = {};
 
-        GameUI                                      gameUI = {};
+        UIContext                                   gameUI = {};
 
         // @HACK:
         bool isPlacingBuilding = false;
+        bool planetPlacementSubMenu = false;
+        i32 planetPlacementSubMenuIndex = -1;
 
     public:
         void                                        Initialize( Core * core );

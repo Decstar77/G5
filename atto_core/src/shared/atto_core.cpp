@@ -503,6 +503,27 @@ namespace atto {
         return glm::vec2( wx, wy ) + cameraPos;
     }
 
+    glm::vec2 DrawContext::WorldPosToScreenPos( glm::vec2 worldPos ) {
+        // Undo the translation by subtracting camera position
+        glm::vec2 localPos = worldPos - cameraPos;
+
+        // Calculate the normalized device coordinates (NDC) in the range [0, 1]
+        float nx = localPos.x / cameraWidth;
+        float ny = localPos.y / cameraHeight;
+
+        // Undo the normalization to get coordinates in viewport space
+        float l = viewport.x;
+        float r = viewport.x + viewport.z;
+        float screenX = l + nx * (r - l);
+
+        float b = viewport.y;
+        float t = viewport.y + viewport.w;
+        float screenY = b + ny * (t - b);
+
+        // Construct and return the screen position
+        return glm::vec2(screenX, screenY);
+    }
+
     void DrawContext::SetCameraDims( f32 w, f32 h ) {
         cameraWidth = w;
         cameraHeight = h;

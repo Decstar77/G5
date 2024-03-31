@@ -7,6 +7,7 @@
 #include "atto_input.h"
 #include "atto_network.h"
 #include "atto_clock.h"
+#include "atto_ui.h"
 
 #include "atto_reflection.h"
 #include "enki_task_scheduler.h"
@@ -159,9 +160,6 @@ namespace atto {
         i32             index;
     };
 
-    enum class RESOURCE_HANDLE_FONT {};
-    typedef ObjectHandle<RESOURCE_HANDLE_FONT> FontHandle;
-
     enum class DrawCommandType {
         NONE = 0,
         CIRCLE,
@@ -312,6 +310,7 @@ namespace atto {
         void DrawMesh( StaticMeshResource * mesh, glm::mat4 m, TextureResource * albedo = nullptr );
 
         glm::vec2           ScreenPosToWorldPos( glm::vec2 screenPos );
+        glm::vec2           WorldPosToScreenPos( glm::vec2 worldPos );
 
         inline glm::vec2    GetMainSurfaceDims() const { return glm::vec2( mainSurfaceWidth, mainSurfaceHeight ); }
         inline f32          GetMainAspectRatio() const { return mainAspect; }

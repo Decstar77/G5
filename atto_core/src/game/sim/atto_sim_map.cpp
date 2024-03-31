@@ -4,118 +4,6 @@
 #include "../../shared/atto_colors.h"
 
 namespace atto {
-    void GameUI::Begin() {
-        idStack.Push( 0 );
-    }
-
-    void GameUI::End() {
-        widgets.Clear();
-        idStack.Clear();
-    }
-    
-    bool GameUI::Button( i32 id, const char * text, glm::vec2 center, glm::vec2 size, glm::vec4 col ) {
-        GameUIWidget * w = AllocWidget( id );
-        w->id = id;
-        w->pos = center;
-        w->size = size;
-        w->col = col;
-        w->text = SmallString::FromLiteral( text );
-        w->bounds.CreateFromCenterSize( center, size );
-        w->parent = FindWidgetWithId( *idStack.Peek() );
-        Assert( w->parent != nullptr );
-        if ( w->parent != nullptr ) {
-            w->parent->child.Add( w );
-        }
-
-        return id == clickedId;
-    }
-
-    bool GameUI::BeginPopup( i32 id, const char * text, glm::vec2 center, glm::vec2 size, glm::vec4 col ) {
-        bool c = Button( id, text, center, size, col );
-        GameUIWidget * w = FindWidgetWithId( id );
-
-        idStack.Push( id );
-
-        if ( c ) {
-            popupOpen = w->id;
-        }
-
-        return popupOpen == w->id;
-    }
-
-    void GameUI::EndPopup( i32 id ) {
-        GameUIWidget * w = FindWidgetWithId( id );
-        if ( lastClickedId != w->id ) {
-            popupOpen = -1;
-        }
-
-        idStack.Pop();
-    }
-
-    GameUIWidget * GameUI::AllocWidget( i32 id ) {
-        // Make root
-        if ( widgets.IsEmpty() == true ) {
-            widgets.AddEmpty();
-        }
-
-        return &widgets.AddEmpty();
-    }
-
-    GameUIWidget * GameUI::FindWidgetWithId( i32 id ) {
-        const i32 widgetCount = widgets.GetCount();
-        for ( i32 widgetIndex = 0; widgetIndex < widgetCount; widgetIndex++ ) {
-            GameUIWidget * widget = &widgets[ widgetIndex ];
-            if ( widget->id == id ) {
-                return widget;
-            }
-        }
-
-        return nullptr;
-    }
-
-    void TraversalPostOrder( GameUIWidget * widget ) {
-        for ( i32 i = 0; i < widget->child.GetCount(); i++ ) {
-            GameUIWidget * child = widget->child[ i ];
-            TraversalPostOrder( child );
-        }
-    }
-
-    void GameUI::UpdateAndRender( Core * core, DrawContext * uiDraw, glm::vec2 mousePos, bool mouseClicked ) {
-        static FontHandle fontHandle = core->ResourceGetFont( "default" ); // @HACK
-
-        if ( widgets.IsEmpty() == true ) {
-            return;
-        }
-
-        GameUIWidget * root = &widgets[ 0 ];
-
-        clickedId = -1;
-        traversalQueue.Clear();
-        traversalQueue.Enqueue( root );
-        while ( traversalQueue.IsEmpty() == false ) {
-            GameUIWidget * widget = traversalQueue.Dequeue();
-            for ( i32 i = 0; i < widget->child.GetCount(); i++ ) {
-                GameUIWidget * child = widget->child[ i ];
-
-                glm::vec4 col = child->col;
-                if ( child->bounds.Contains( mousePos ) == true ) {
-                    col *= 1.1f;
-                    if ( mouseClicked == true ) {
-                        clickedId = child->id;
-                        lastClickedId = child->id;
-                    }
-                }
-
-                uiDraw->DrawRect( child->bounds.min, child->bounds.max, col );
-                if ( child->text.GetLength() != 0 ) {
-                    uiDraw->DrawTextCam( fontHandle, child->pos, 12, child->text.GetCStr(), TextAlignment_H::FONS_ALIGN_CENTER, TextAlignment_V::FONS_ALIGN_MIDDLE );
-                }
-
-                traversalQueue.Enqueue( child );
-            }
-        }
-    }
-
     static FixedList<glm::vec2, 5 * 3> ui_LeftPanelCenters;
     static FixedList<glm::vec2, 5 * 3> ui_RightPanelCenters;
 
@@ -407,14 +295,6 @@ namespace atto {
         debugDrawContext->SetCameraPos( localCameraPos );
         spriteDrawContext->DrawTextureBL( background, glm::vec2( 0, 0 ) );
 
-        uiDrawContext->DrawTexture( sprUIMock, glm::vec2( 640 / 2, 360 / 2 ) );
-        SmallString creditsStr = StringFormat::Small( "Credits: %d", playerMonies[ ( localPlayerNumber - PlayerNumber::Create( 1 ) ).value ].credits );
-        uiDrawContext->DrawTextCam( fontHandle, glm::vec2( 458, 34 ), 12, creditsStr.GetCStr(), TextAlignment_H::FONS_ALIGN_LEFT, TextAlignment_V::FONS_ALIGN_MIDDLE );
-        SmallString energyStr = StringFormat::Small( "Energy: %d", playerMonies[ ( localPlayerNumber - PlayerNumber::Create( 1 ) ).value ].energy );
-        uiDrawContext->DrawTextCam( fontHandle, glm::vec2( 458, 20 ), 12, energyStr.GetCStr(), TextAlignment_H::FONS_ALIGN_LEFT, TextAlignment_V::FONS_ALIGN_MIDDLE );
-        SmallString computeStr = StringFormat::Small( "Compute: %d", playerMonies[ (localPlayerNumber - PlayerNumber::Create( 1 )).value ].compute );
-        uiDrawContext->DrawTextCam( fontHandle, glm::vec2( 458, 6 ), 12, computeStr.GetCStr(), TextAlignment_H::FONS_ALIGN_LEFT, TextAlignment_V::FONS_ALIGN_MIDDLE );
-
         const glm::vec2 mousePosPix = core->InputMousePosPixels();
         const glm::vec2 mousePosWorld = spriteDrawContext->ScreenPosToWorldPos( mousePosPix );
         const glm::vec2 mousePosUISpace = uiDrawContext->ScreenPosToWorldPos( mousePosPix );
@@ -430,63 +310,110 @@ namespace atto {
 
         EntityListFilter * entityFilter = core->MemoryAllocateTransient<EntityListFilter>();
 
+        SmallString creditsStr = StringFormat::Small( "Credits: %d", playerMonies[ ( localPlayerNumber - PlayerNumber::Create( 1 ) ).value ].credits );
+        SmallString energyStr = StringFormat::Small( "Energy: %d", playerMonies[ ( localPlayerNumber - PlayerNumber::Create( 1 ) ).value ].energy );
+        SmallString computeStr = StringFormat::Small( "Compute: %d", playerMonies[ (localPlayerNumber - PlayerNumber::Create( 1 )).value ].compute );
+
+        uiDrawContext->DrawTexture( sprUIMock, glm::vec2( 640 / 2, 360 / 2 ) );
+        gameUI.Begin( uiDrawContext->GetCameraDims() );
+        gameUI.LablePix( 928374, "Planet.", glm::vec2( 228, 58 ) );
+        gameUI.LablePix( 928334, "Production.", glm::vec2( 420, 58 ) );
+
+        gameUI.LablePix( 626262, creditsStr.GetCStr(), glm::vec2( 488, 34 ) );
+        gameUI.LablePix( 626263, energyStr.GetCStr(), glm::vec2( 488, 34 - 12  ) );
+        gameUI.LablePix( 626264, computeStr.GetCStr(), glm::vec2( 488, 34 -12 -12 ) );
+
         const bool singlePlanetSelected = entityFilter->Begin( &entities )->
-                                                        OwnedBy( localPlayerNumber )->
-                                                        SelectedBy( localPlayerNumber )->
-                                                        Type( EntityType::PLANET )->
-                                                        End()->
-                                                        result.GetCount() == 1;
+            OwnedBy( localPlayerNumber )->
+            SelectedBy( localPlayerNumber )->
+            Type( EntityType::PLANET )->
+            End()->
+            result.GetCount() == 1;
+
+        const bool singleWorkerSelected = entityFilter->Begin( &entities )->
+            OwnedBy( localPlayerNumber )->
+            SelectedBy( localPlayerNumber )->
+            Type( EntityType::UNIT_WORKER )->
+            End()->
+            result.GetCount() == 1;
 
         if ( singlePlanetSelected == true ) {
             SimEntity * ent = entityFilter->result[ 0 ];
             Planet & planet = ent->planet;
+            if ( planetPlacementSubMenu == false ) {
+                const i32 placementCount = planet.placements.GetCapcity();
+                for ( i32 placementIndex = 0; placementIndex < placementCount; placementIndex++ ) {
+                    const PlanetPlacementType & placementType = planet.placements[ placementIndex ];
+                    const glm::vec2 pos = ui_LeftPanelCenters[ placementIndex ];
+                    const glm::vec2 size = glm::vec2( 15 );
 
-            gameUI.Begin();
-
-            const i32 placementCount = planet.placements.GetCapcity();
-            for ( i32 placementIndex = 0; placementIndex < placementCount; placementIndex++ ) {
-                const PlanetPlacementType & placementType = planet.placements[ placementIndex ];
-
-                switch( placementType ) {
-                    case PlanetPlacementType::INVALID: {
-                        if ( gameUI.Button( placementIndex, "", ui_LeftPanelCenters[ placementIndex ], glm::vec2( 15 ), Colors::AMETHYST ) == true ) {
-                            
-                        }
-                    } break;
-                    case PlanetPlacementType::BLOCKED: {
-                        if ( gameUI.Button( placementIndex, "", ui_LeftPanelCenters[ placementIndex ], glm::vec2( 15 ), Colors::ALIZARIN ) == true ) {
-                            
-                        }
-                    } break;
-                    case PlanetPlacementType::OPEN: {
-                        if ( gameUI.BeginPopup( placementIndex, "O", ui_LeftPanelCenters[ placementIndex ], glm::vec2( 15 ), Colors::SKY_BLUE ) == true ) {
-                            if ( gameUI.Button( 9834275, "Energy", glm::vec2( 300, 200 ), glm::vec2( 50 ) ) == true ) {
-                                core->LogOutput( LogLevel::INFO, "HERE2" );
+                    switch ( placementType ) {
+                        case PlanetPlacementType::INVALID: {
+                            gameUI.ColorBlockPix( placementIndex, pos, size, Colors::BLACK );
+                        } break;
+                        case PlanetPlacementType::BLOCKED: {
+                            gameUI.ColorBlockPix( placementIndex, pos, size, Colors::ALIZARIN );
+                        } break;
+                        case PlanetPlacementType::OPEN: {
+                            if ( gameUI.ButtonPix( placementIndex, "O", pos, size, Colors::MIDNIGHT_BLUE ) ) {
+                                planetPlacementSubMenu = true;
+                                planetPlacementSubMenuIndex = placementIndex;
                             }
-                            gameUI.EndPopup( placementIndex );
-                        }
-                    } break;
-                    case PlanetPlacementType::CREDIT_GENERATOR: {
-                        if ( gameUI.Button( placementIndex, "M", ui_LeftPanelCenters[ placementIndex ], glm::vec2( 15 ), Colors::SKY_BLUE ) == true ) {
-                            
-                        }
-                    } break;
-                    case PlanetPlacementType::ENERGY_GENERATOR: {
-                        if ( gameUI.Button( placementIndex, "E", ui_LeftPanelCenters[ placementIndex ], glm::vec2( 15 ), Colors::SKY_BLUE ) == true ) {
-                            
-                        }
-                    } break;
-                    case PlanetPlacementType::COMPUTE_GENERATOR: {
-                        if ( gameUI.Button( placementIndex, "C", ui_LeftPanelCenters[ placementIndex ], glm::vec2( 15 ), Colors::SKY_BLUE ) == true ) {
-                            
-                        }
-                    } break;
+                        } break;
+                        case PlanetPlacementType::CREDIT_GENERATOR: {
+                            gameUI.ColorBlockPix( placementIndex, pos, size, Colors::GREEN );
+                        } break;
+                        case PlanetPlacementType::ENERGY_GENERATOR: {
+                            gameUI.ColorBlockPix( placementIndex, pos, size, Colors::GOLD );
+                        } break;
+                        case PlanetPlacementType::COMPUTE_GENERATOR: {
+                            gameUI.ColorBlockPix( placementIndex, pos, size, Colors::SKY_BLUE );
+                        } break;
+                    }
+                }
+            } else {
+                const glm::vec2 s = glm::vec2( 15 );
+                if ( gameUI.ButtonPix( 145, "", ui_LeftPanelCenters[0], s, Colors::GREEN ) ) {
+                    planet.placements[ planetPlacementSubMenuIndex ] = PlanetPlacementType::CREDIT_GENERATOR;
+                    planetPlacementSubMenu = false;
+                    planetPlacementSubMenuIndex = -1;
+                }
+                if ( gameUI.ButtonPix( 146, "", ui_LeftPanelCenters[1], s, Colors::GOLD ) ) {
+                    planet.placements[ planetPlacementSubMenuIndex ] = PlanetPlacementType::ENERGY_GENERATOR;
+                    planetPlacementSubMenu = false;
+                    planetPlacementSubMenuIndex = -1;
+                }
+                if ( gameUI.ButtonPix( 147, "", ui_LeftPanelCenters[2], s, Colors::SKY_BLUE ) ) {
+                    planet.placements[ planetPlacementSubMenuIndex ] = PlanetPlacementType::COMPUTE_GENERATOR;
+                    planetPlacementSubMenu = false;
+                    planetPlacementSubMenuIndex = -1;
                 }
             }
-
-            gameUI.UpdateAndRender( core, uiDrawContext, mousePosUISpace, core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) );
-            gameUI.End();
+        } else {
+            planetPlacementSubMenu = false;
+            planetPlacementSubMenuIndex = -1;
         }
+
+        if ( singleWorkerSelected == true ) {
+            SimEntity * ent = entityFilter->result[ 0 ];
+            Unit & unit = ent->unit;
+
+            const glm::vec2 s = glm::vec2( 15 );
+            if ( gameUI.ButtonPix( 232, "S", ui_RightPanelCenters[0], s, Colors::SKY_BLUE ) ) {
+                
+            }
+            if ( gameUI.ButtonPix( 233, "E", ui_RightPanelCenters[1], s, Colors::SKY_BLUE ) ) {
+                isPlacingBuilding = true;
+            }
+            if ( gameUI.ButtonPix( 234, "C", ui_RightPanelCenters[2], s, Colors::SKY_BLUE ) ) {
+
+            }
+        }
+
+        gameUI.UpdateAndRender( core, uiDrawContext );
+        gameUI.End();
+
+        isMouseOverUI |= gameUI.mouseOverAnyElements;
 
         if( isMouseOverUI == false ) {
             if ( isPlacingBuilding == true ) {
@@ -566,139 +493,6 @@ namespace atto {
                     spriteDrawContext->DrawRect( bl, tr, glm::vec4( 0.9f ) );
                 }
             }
-
-            //if( localIsDragging == false && isPlacingBuilding == false && ent->type == EntityType::PLANET && ent->selectedBy.Contains( localPlayerNumber ) == true ) {
-            //    const Planet & planet = ent->planet;
-//
-            //    const i32 placementCount = planet.placements.GetCapcity();
-            //    for( i32 placementIndex = 0; placementIndex < placementCount; placementIndex++ ) {
-            //        BoxBounds2D buttonBounds = {};
-            //        buttonBounds.CreateFromCenterSize( ui_LeftPanelCenters[ placementIndex ], glm::vec2( 15 ) );
-//
-            //        bool isHovered = false;
-            //        bool isClicked = false;
-//
-            //        const PlanetPlacementType & placementType = planet.placements[ placementIndex ];
-            //        if( buttonBounds.Contains( mousePosUISpace ) == true ) {
-            //            glm::vec4 col = glm::vec4( 0.2f, 0.4f, 0.4f, 0.5f );
-            //            isHovered = true;
-//
-            //            if ( placementType != PlanetPlacementType::INVALID || placementType != PlanetPlacementType::BLOCKED ) {
-            //                if ( core->InputMouseButtonDown( MOUSE_BUTTON_1 ) == true ) {
-            //                    col *= 1.3f;
-            //                }
-//
-            //                uiDrawContext->DrawRect( buttonBounds.GetCenter(), buttonBounds.GetSize(), 0.0f, col );
-            //                if ( core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) == true ) { // @TODO: This is a bug, we need to check if the button was pressed to begin with.
-            //                    isClicked = true;
-            //                }
-            //            }
-            //        }
-//
-            //        switch( placementType ) {
-            //            case PlanetPlacementType::INVALID: uiDrawContext->DrawRect( buttonBounds.GetCenter(), buttonBounds.GetSize(), 0.0f, Colors::ALIZARIN ); break;
-            //            case PlanetPlacementType::BLOCKED: uiDrawContext->DrawRect( buttonBounds.GetCenter(), buttonBounds.GetSize(), 0.0f, Colors::ALIZARIN ); break;
-            //            case PlanetPlacementType::OPEN: {
-            //                if( isHovered == true ) {
-            //                    if ( isClicked == true ) {
-            //                    }
-            //                }
-            //            } break;
-            //            case PlanetPlacementType::CREDIT_GENERATOR:
-            //            {
-            //                uiDrawContext->DrawTextCam( fontHandle, buttonBounds.GetCenter(), 14, "C", TextAlignment_H::FONS_ALIGN_CENTER, TextAlignment_V::FONS_ALIGN_MIDDLE );
-            //                if( isHovered == true ) {
-            //                    glm::vec2 bl = buttonBounds.GetCenter() + glm::vec2( 8, 0 );
-            //                    glm::vec2 tr = buttonBounds.GetCenter() + glm::vec2( 64, 64 );
-            //                    glm::vec2 tl = glm::vec2( bl.x, tr.y );
-            //                    glm::vec4 col = Colors::SKY_BLUE;
-            //                    col.a = 0.9f;
-            //                    uiDrawContext->DrawRect( bl, tr, col );
-            //                    uiDrawContext->DrawTextCam( fontHandle, tl + glm::vec2( 2, -14 ), 12, "Monies Maker" );
-            //                }
-            //            } break;
-            //            case PlanetPlacementType::ENERGY_GENERATOR:
-            //            {
-            //                uiDrawContext->DrawTextCam( fontHandle, buttonBounds.GetCenter(), 14, "E", TextAlignment_H::FONS_ALIGN_CENTER, TextAlignment_V::FONS_ALIGN_MIDDLE );
-            //                if( isHovered == true ) {
-            //                    glm::vec2 bl = buttonBounds.GetCenter() + glm::vec2( 8, 0 );
-            //                    glm::vec2 tr = buttonBounds.GetCenter() + glm::vec2( 64, 64 );
-            //                    glm::vec2 tl = glm::vec2( bl.x, tr.y );
-            //                    glm::vec4 col = Colors::SKY_BLUE;
-            //                    col.a = 0.9f;
-            //                    uiDrawContext->DrawRect( bl, tr, col );
-            //                    uiDrawContext->DrawTextCam( fontHandle, tl + glm::vec2( 2, -14 ), 12, "Energy Gennie" );
-            //                }
-            //            } break;
-            //            case PlanetPlacementType::COMPUTE_GENERATOR:
-            //            {
-            //                uiDrawContext->DrawTextCam( fontHandle, buttonBounds.GetCenter(), 14, "O", TextAlignment_H::FONS_ALIGN_CENTER, TextAlignment_V::FONS_ALIGN_MIDDLE );
-            //                if( isHovered == true ) {
-            //                    glm::vec2 bl = buttonBounds.GetCenter() + glm::vec2( 8, 0 );
-            //                    glm::vec2 tr = buttonBounds.GetCenter() + glm::vec2( 64, 64 );
-            //                    glm::vec2 tl = glm::vec2( bl.x, tr.y );
-            //                    glm::vec4 col = Colors::SKY_BLUE;
-            //                    col.a = 0.9f;
-            //                    uiDrawContext->DrawRect( bl, tr, col );
-            //                    uiDrawContext->DrawTextCam( fontHandle, tl + glm::vec2( 2, -14 ), 12, "CPU" );
-            //                }
-            //            } break;
-            //        }
-            //    }
-//
-            //    for( i32 rightPanelIndex = 0; rightPanelIndex < ui_RightPanelCenters.GetCapcity(); rightPanelIndex++ ) {
-            //        //uiDrawContext->DrawRect( ui_RightPanelCenters[ rightPanelIndex ], glm::vec2( 15 ), 0.0f );
-            //        BoxBounds2D buttonBounds = {};
-            //        buttonBounds.CreateFromCenterSize( ui_RightPanelCenters[ rightPanelIndex ], glm::vec2( 15 ) );
-//
-            //        if( buttonBounds.Contains( mousePosUISpace ) == true ) {
-            //            glm::vec4 col = glm::vec4( 0.2f, 0.4f, 0.4f, 0.5f );
-            //            if( core->InputMouseButtonDown( MOUSE_BUTTON_1 ) == true ) {
-            //                col *= 1.3f;
-            //            }
-//
-            //            uiDrawContext->DrawRect( buttonBounds.GetCenter(), buttonBounds.GetSize(), 0.0f, col );
-            //            if( core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) == true ) { // @TODO: This is a bug, we need to check if the button was pressed to begin with.
-            //                localActionBuffer.AddAction( MapActionType::SIM_ENTITY_SPAWN, (i32)EntityType::UNIT_TEST, 1, 1, ent->pos, 0.0f, glm::vec2( 0, 0 ) );
-            //            }
-            //        }
-            //    }
-            //}
-            //else if( localIsDragging == false && isPlacingBuilding == false && ent->type == EntityType::UNIT_WORKER && ent->selectedBy.Contains( localPlayerNumber ) == true ) {
-            //    for( i32 rightPanelIndex = 0; rightPanelIndex < ui_RightPanelCenters.GetCapcity(); rightPanelIndex++ ) {
-            //        BoxBounds2D buttonBounds = {};
-            //        buttonBounds.CreateFromCenterSize( ui_RightPanelCenters[ rightPanelIndex ], glm::vec2( 15 ) );
-            //        
-            //        if( rightPanelIndex == 0 ) {
-            //            uiDrawContext->DrawTextCam( fontHandle, buttonBounds.GetCenter(), 14, "T", TextAlignment_H::FONS_ALIGN_CENTER, TextAlignment_V::FONS_ALIGN_MIDDLE );
-            //        }
-            //        else if( rightPanelIndex == 1 ) {
-            //            uiDrawContext->DrawTextCam( fontHandle, buttonBounds.GetCenter(), 14, "S", TextAlignment_H::FONS_ALIGN_CENTER, TextAlignment_V::FONS_ALIGN_MIDDLE );
-            //        }
-            //        else if( rightPanelIndex == 2 ) {
-            //            uiDrawContext->DrawTextCam( fontHandle, buttonBounds.GetCenter(), 14, "C", TextAlignment_H::FONS_ALIGN_CENTER, TextAlignment_V::FONS_ALIGN_MIDDLE );
-            //        }
-            //        
-            //        if( buttonBounds.Contains( mousePosUISpace ) == true ) {
-            //            glm::vec4 col = glm::vec4( 0.2f, 0.4f, 0.4f, 0.5f );
-            //            if( core->InputMouseButtonDown( MOUSE_BUTTON_1 ) == true ) {
-            //                col *= 1.3f;
-            //            }
-//
-            //            uiDrawContext->DrawRect( buttonBounds.GetCenter(), buttonBounds.GetSize(), 0.0f, col );
-            //            if( core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) == true ) { // @TODO: This is a bug, we need to check if the button was pressed to begin with.
-//
-            //                if( rightPanelIndex == 0 ) {
-            //                }
-            //                else if( rightPanelIndex == 1 ) {
-            //                    isPlacingBuilding = true;
-            //                }
-            //                else if( rightPanelIndex == 2 ) {
-            //                }
-            //            }
-            //        }
-            //    }
-            //}
 
             if ( localIsDragging == true && ent->isSelectable == true ) {
                 Collider2D collider = ent->GetWorldSelectionCollider();

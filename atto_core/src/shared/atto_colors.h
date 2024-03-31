@@ -27,7 +27,8 @@ namespace atto {
         inline static glm::vec4 CARROT = FromHex( "#e67e22" );
         inline static glm::vec4 ALIZARIN = FromHex( "#e74c3c" );
         inline static glm::vec4 SILVER = FromHex( "#bdc3c7" );
-
+        inline static glm::vec4 GOLD = FromHex( "#FFD700" );
+        
         
 
         // Game specific colors

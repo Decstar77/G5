@@ -1,5 +1,6 @@
 #include "atto_game_mode_main_menu.h"
 #include "atto_game_mode_game.h"
+#include "../../shared/atto_colors.h"
 
 namespace atto {
     GameModeType GameMode_MainMenu::GetGameModeType() {
@@ -11,7 +12,6 @@ namespace atto {
     }
 
     void GameMode_MainMenu::Initialize( Core * core ) {
-        ui.Initialize( core );
     }
 
     void GameMode_MainMenu::UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags /*= UPDATE_AND_RENDER_FLAG_NONE */ ) {
@@ -46,21 +46,57 @@ namespace atto {
             }
         }
 
+        glm::vec2 c = draw->GetCameraDims() / 2.0f;
 
-        ui.BeginBox( core->RenderGetMainSurfaceWidth() / 2, core->RenderGetMainSurfaceHeight() - 250, true );
-        if( ui.AddButton( "Loner" ) ) {
+        UIWidgetSize textSize = {};
+        textSize.type = UI_SizeType::TEXTCONTENT;
+        UIWidgetSize childSum = {};
+        childSum.type = UI_SizeType::CHILDRENSUM;
+        UIWidgetSize childMax = {};
+        childMax.type = UI_SizeType::CHILDRENMAX;
+        UIWidgetPos  centerPos = {};
+        centerPos.type = UI_PosType::CENTER;
+        UIWidgetSize paretPercent = {};
+        paretPercent.type = UI_SizeType::PERCENTOFPARENT;
+        paretPercent.value = 1.0f;
+
+        ui.Begin( draw->GetCameraDims() );
+        ui.BeginVBox( 1, centerPos, childMax, childSum, Colors::MIDNIGHT_BLUE );
+        ui.Button( 22, "The game name is here", centerPos, textSize, textSize, Colors::ALIZARIN );
+
+        ui.BeginVBox( 2, centerPos, paretPercent, childSum, Colors::SKY_BLUE );
+        //ui.Button( 33, "Tutorial", centerPos, paretPercent, textSize , Colors::ALIZARIN );
+        if ( ui.Button( 44, "Single Player",  centerPos, paretPercent, textSize, Colors::ALIZARIN ) ) {
             GameStartParams parms = {};
             parms.isMutliplayer = false;
             core->MoveToGameMode( new GameMode_SinglePlayerGame( parms ) );
         }
-        if( ui.AddButton( "Blessed" ) ) {
+        if ( ui.Button( 55, "Mutliplayer",  centerPos, paretPercent, textSize, Colors::ALIZARIN ) ) {
             core->NetConnect();
         }
-        if( ui.AddButton( "Soon" ) ) {
+        if ( ui.Button( 66, "Quit", centerPos, paretPercent, textSize, Colors::ALIZARIN ) ) {
             core->WindowClose();
         }
-        ui.EndBox();
-        ui.Draw( draw );
+        ui.EndVBox();
+
+        ui.EndVBox();
+        ui.UpdateAndRender( core, draw );
+        ui.End();
+
+//        ui.BeginBox( core->RenderGetMainSurfaceWidth() / 2, core->RenderGetMainSurfaceHeight() - 250, true );
+//        if( ui.AddButton( "Loner" ) ) {
+//            GameStartParams parms = {};
+//            parms.isMutliplayer = false;
+//            core->MoveToGameMode( new GameMode_SinglePlayerGame( parms ) );
+//        }
+//        if( ui.AddButton( "Blessed" ) ) {
+//            core->NetConnect();
+//        }
+//        if( ui.AddButton( "Soon" ) ) {
+//            core->WindowClose();
+//        }
+//        ui.EndBox();
+//        ui.Draw( draw );
 
         FontHandle fontHandle = core->ResourceGetFont( "default" );
         SmallString status = core->NetworkGetStatusText();

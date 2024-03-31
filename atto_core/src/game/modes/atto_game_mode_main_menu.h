@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../atto_game.h"
-#include "../../shared/atto_ui.h"
 
 namespace atto {
     
