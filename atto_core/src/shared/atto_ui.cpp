@@ -125,6 +125,7 @@ namespace atto {
 
         const glm::vec2 mousePosPix = core->InputMousePosPixels();
         const glm::vec2 mousePos = uiDraw->ScreenPosToWorldPos( mousePosPix );
+        const bool mousePressed = core->InputMouseButtonDown( MOUSE_BUTTON_1 );
         const bool mouseClicked = core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 );
 
 
@@ -150,12 +151,17 @@ namespace atto {
                 glm::vec4 col = child->col;
                 if ( EnumHasFlag( child->flags, UI_FLAG_HOVERABLE ) && child->computedBounds.Contains( mousePos ) == true ) {
                     mouseOverAnyElements = true;
-
                     col *= 1.1f;
+
+                    if ( EnumHasFlag( child->flags, UI_FLAG_CLICKABLE ) && mousePressed == true ) {
+                        col *= 1.1f;
+                    }
+
                     if ( EnumHasFlag( child->flags, UI_FLAG_CLICKABLE ) && mouseClicked == true ) {
                         clickedId = child->id;
                         lastClickedId = child->id;
                     }
+
                 }
                 if ( col.a != 0.0f ) {
                     uiDraw->DrawRect( child->computedBounds.min, child->computedBounds.max, col );

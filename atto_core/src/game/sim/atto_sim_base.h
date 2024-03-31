@@ -34,7 +34,9 @@ namespace atto {
         SIM_ENTITY_APPLY_DAMAGE,
         SIM_ENTITY_APPLY_CONSTRUCTION,
 
-        SIM_MAP_MONIES_GIVE_ENERGY
+        SIM_MAP_MONIES_GIVE_CREDITS,
+        SIM_MAP_MONIES_GIVE_ENERGY,
+        SIM_MAP_MONIES_GIVE_COMPUTE
     };
 
     class MapActionBuffer {

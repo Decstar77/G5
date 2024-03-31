@@ -123,6 +123,7 @@ namespace atto {
 
     constexpr i32 MAX_PLANET_PLACEMENTS = 5 * 3;
     struct Planet {
+        i32 turn;
         FixedList<PlanetPlacementType, MAX_PLANET_PLACEMENTS> placements;
     };
 
@@ -171,8 +172,9 @@ namespace atto {
         glm::vec2                   visPos;
         f32                         visOri;
 
-        SpriteAnimator              spriteAnimator;
-        SpriteAnimator              selectionAnimator;
+        SpriteAnimator                      spriteAnimator;
+        SpriteAnimator                      selectionAnimator;
+        FixedList< SpriteResource *, 8 >    spriteBank;
 
         Collider2D                  GetWorldCollisionCollider() const;
         Collider2D                  GetWorldSelectionCollider() const;
@@ -184,12 +186,15 @@ namespace atto {
     public:
         EntList     result;
 
-        EntityListFilter * Begin( EntList * activeEntities );
-        EntityListFilter * OwnedBy( PlayerNumber playerNumber );
-        EntityListFilter * SelectedBy( PlayerNumber playerNumber );
-        EntityListFilter * Type( EntityType::_enumerated type );
-        EntityListFilter * IsTypeRange( EntityType::_enumerated start, EntityType::_enumerated end );
-        EntityListFilter * End();
+        EntityListFilter *  Begin( EntList * activeEntities );
+        EntityListFilter *  OwnedBy( PlayerNumber playerNumber );
+        EntityListFilter *  SelectedBy( PlayerNumber playerNumber );
+        EntityListFilter *  Type( EntityType::_enumerated type );
+        EntityListFilter *  IsTypeRange( EntityType::_enumerated start, EntityType::_enumerated end );
+        EntityListFilter *  End();
+
+        bool                ContainsOnlyType( EntityType::_enumerated type );
+        bool                ContainsOnlyOneOfType( EntityType::_enumerated type );
 
     private:
         EntList *                       activeEntities;
@@ -241,6 +246,7 @@ namespace atto {
 
         // @HACK:
         bool isPlacingBuilding = false;
+        EntityType placingBuildingType = {};
         bool planetPlacementSubMenu = false;
         i32 planetPlacementSubMenuIndex = -1;
 
@@ -266,7 +272,9 @@ namespace atto {
         void                                        SimAction_ContructExistingBuilding( PlayerNumber * playerNumberPtr, EntityHandle * target );
         void                                        SimAction_ApplyDamage( i32 * damage, EntityHandle * target );
         void                                        SimAction_ApplyContruction( EntityHandle * target );
-        void                                        SimAction_GiveEnergy( PlayerNumber * playerNumberPtr, i32 * amount );
+        void                                        SimAction_GiveCredits( PlayerNumber * playerNumberPtr, i32 * amountPtr );
+        void                                        SimAction_GiveEnergy( PlayerNumber * playerNumberPtr, i32 * amountPtr );
+        void                                        SimAction_GiveCompute( PlayerNumber * playerNumberPtr, i32 * amountPtr );
 
         REFLECT();
 
