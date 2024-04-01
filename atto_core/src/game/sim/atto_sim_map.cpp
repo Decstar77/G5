@@ -122,6 +122,8 @@ namespace atto {
             rpcTable[ ( i32 )MapActionType::SIM_ENTITY_UNIT_COMMAND_CONSTRUCT_BUILDING ] = new RpcMemberFunction( this, &SimMap::SimAction_ContructBuilding );
             rpcTable[ ( i32 )MapActionType::SIM_ENTITY_UNIT_COMMAND_CONSTRUCT_EXISTING_BUILDING ] = new RpcMemberFunction( this, &SimMap::SimAction_ContructExistingBuilding );
 
+            rpcTable[ ( i32 )MapActionType::SIM_ENTITY_BUILDING_COMMAND_TRAIN_UNIT ]    = new RpcMemberFunction( this, &SimMap::SimAction_BuildingTrainUnit );
+
             rpcTable[ ( i32 )MapActionType::SIM_ENTITY_SPAWN ]                          = new RpcMemberFunction( this, &SimMap::SimAction_SpawnEntity );
             rpcTable[ ( i32 )MapActionType::SIM_ENTITY_DESTROY ]                        = new RpcMemberFunction( this, &SimMap::SimAction_DestroyEntity );
 
@@ -152,6 +154,9 @@ namespace atto {
 
         this->core = core;
         syncQueues.Start();
+
+        playerNumbers.Add( PlayerNumber::Create( 1 ) );
+        playerNumbers.Add( PlayerNumber::Create( 2 ) );
 
         PlayerNumber p0 = PlayerNumber::Create( 0 );
         TeamNumber t0 = TeamNumber::Create( 0 );
@@ -357,19 +362,25 @@ namespace atto {
         gameUI.LablePix( 626263, energyStr.GetCStr(), glm::vec2( 488, 34 - 12  ) );
         gameUI.LablePix( 626264, computeStr.GetCStr(), glm::vec2( 488, 34 -12 -12 ) );
 
-        const bool singlePlanetSelected = entityFilter->Begin( &entities )->
+        const bool onlyPlanetSelected = entityFilter->Begin( &entities )->
             OwnedBy( localPlayerNumber )->
             SelectedBy( localPlayerNumber )->
             End()->
-            ContainsOnlyType( EntityType::PLANET );
+            ContainsOnlyOneOfType( EntityType::PLANET );
 
-        const bool singleWorkerSelected = entityFilter->Begin( &entities )->
+        const bool onlyWorkerSelected = entityFilter->Begin( &entities )->
             OwnedBy( localPlayerNumber )->
             SelectedBy( localPlayerNumber )->
             End()->
             ContainsOnlyType( EntityType::UNIT_WORKER );
 
-        if ( singlePlanetSelected == true ) {
+        const bool onlyBuildingSelected = entityFilter->Begin( &entities )->
+            OwnedBy( localPlayerNumber )->
+            SelectedBy( localPlayerNumber )->
+            End()->
+            ContainsOnlyType( EntityType::BUILDING_STATION );
+
+        if ( onlyPlanetSelected == true ) {
             SimEntity * ent = entityFilter->result[ 0 ];
             Planet & planet = ent->planet;
             if ( planetPlacementSubMenu == false ) {
@@ -406,17 +417,17 @@ namespace atto {
             } else {
                 const glm::vec2 s = glm::vec2( 15 );
                 if ( gameUI.ButtonPix( 145, "", ui_LeftPanelCenters[0], s, Colors::GREEN ) ) {
-                    planet.placements[ planetPlacementSubMenuIndex ] = PlanetPlacementType::CREDIT_GENERATOR;
+                    //planet.placements[ planetPlacementSubMenuIndex ] = PlanetPlacementType::CREDIT_GENERATOR;
                     planetPlacementSubMenu = false;
                     planetPlacementSubMenuIndex = -1;
                 }
                 if ( gameUI.ButtonPix( 146, "", ui_LeftPanelCenters[1], s, Colors::GOLD ) ) {
-                    planet.placements[ planetPlacementSubMenuIndex ] = PlanetPlacementType::ENERGY_GENERATOR;
+                    //planet.placements[ planetPlacementSubMenuIndex ] = PlanetPlacementType::ENERGY_GENERATOR;
                     planetPlacementSubMenu = false;
                     planetPlacementSubMenuIndex = -1;
                 }
                 if ( gameUI.ButtonPix( 147, "", ui_LeftPanelCenters[2], s, Colors::SKY_BLUE ) ) {
-                    planet.placements[ planetPlacementSubMenuIndex ] = PlanetPlacementType::COMPUTE_GENERATOR;
+                    //planet.placements[ planetPlacementSubMenuIndex ] = PlanetPlacementType::COMPUTE_GENERATOR;
                     planetPlacementSubMenu = false;
                     planetPlacementSubMenuIndex = -1;
                 }
@@ -426,24 +437,34 @@ namespace atto {
             planetPlacementSubMenuIndex = -1;
         }
 
-        if ( singleWorkerSelected == true ) {
+        if ( onlyWorkerSelected == true ) {
             SimEntity * ent = entityFilter->result[ 0 ];
             Unit & unit = ent->unit;
 
             if ( isPlacingBuilding == false ) {
                 const glm::vec2 s = glm::vec2( 15 );
-                if ( gameUI.ButtonPix( 232, "S", ui_RightPanelCenters[0], s, Colors::SKY_BLUE ) ) {
+                if ( gameUI.ButtonPix( 232, "S", ui_RightPanelCenters[ 0 ], s, Colors::SKY_BLUE ) ) {
                     isPlacingBuilding = true;
                     placingBuildingType = EntityType::BUILDING_STATION;
                 }
-                if ( gameUI.ButtonPix( 233, "E", ui_RightPanelCenters[1], s, Colors::SKY_BLUE ) ) {
+                if ( gameUI.ButtonPix( 233, "E", ui_RightPanelCenters[ 1 ], s, Colors::SKY_BLUE ) ) {
                     isPlacingBuilding = true;
                     placingBuildingType = EntityType::BUILDING_SOLAR_ARRAY;
                 }
-                if ( gameUI.ButtonPix( 234, "C", ui_RightPanelCenters[2], s, Colors::SKY_BLUE ) ) {
+                if ( gameUI.ButtonPix( 234, "C", ui_RightPanelCenters[ 2 ], s, Colors::SKY_BLUE ) ) {
                     isPlacingBuilding = true;
                     placingBuildingType = EntityType::BUILDING_COMPUTE;
                 }
+            }
+        }
+
+        if ( onlyBuildingSelected == true ) {
+            const glm::vec2 s = glm::vec2( 15 );
+            if ( gameUI.ButtonPix( 242, "W", ui_RightPanelCenters[ 0 ], s, Colors::SKY_BLUE ) ) {
+                localActionBuffer.AddAction( MapActionType::SIM_ENTITY_BUILDING_COMMAND_TRAIN_UNIT, localPlayerNumber, (i32)EntityType::UNIT_WORKER );
+            }
+            if ( gameUI.ButtonPix( 243, "F", ui_RightPanelCenters[ 1 ], s, Colors::SKY_BLUE ) ) {
+                localActionBuffer.AddAction( MapActionType::SIM_ENTITY_BUILDING_COMMAND_TRAIN_UNIT, localPlayerNumber, (i32)EntityType::UNIT_TEST );
             }
         }
 
@@ -577,6 +598,16 @@ namespace atto {
                     spriteDrawContext->DrawRect( bl, tr, glm::vec4( 0.7f ) );
                     tr.x = glm::mix( bl.x, tr.x, f );
                     spriteDrawContext->DrawRect( bl, tr, glm::vec4( 0.9f ) );
+                } else if ( building.isTraining == true ) {
+                    ent->spriteAnimator.SetSpriteIfDifferent( ent->spriteBank[ 1 ], false );
+                    const f32 f = ( f32 ) building.turn / building.timeToTrainTurns;
+                    glm::vec2 bl = ent->visPos + glm::vec2( -50, 20 );
+                    glm::vec2 tr = ent->visPos + glm::vec2( 50, 30 );
+                    spriteDrawContext->DrawRect( bl, tr, glm::vec4( 0.7f ) );
+                    tr.x = glm::mix( bl.x, tr.x, f );
+                    spriteDrawContext->DrawRect( bl, tr, glm::vec4( 0.9f ) );
+                } else {
+                    ent->spriteAnimator.SetSpriteIfDifferent( ent->spriteBank[ 0 ], false );
                 }
             }
 
@@ -825,21 +856,31 @@ namespace atto {
                 {
                     static SpriteResource * blueSprite = core->ResourceGetAndCreateSprite( "res/ents/test/building_solar_array_blue.png", 1, 64, 32, 0 );
                     static SpriteResource * redSprite = core->ResourceGetAndCreateSprite( "res/ents/test/building_solar_array_red.png", 1, 64, 32, 0 );
+
                     static SpriteResource * selectionSprite = core->ResourceGetAndCreateSprite( "res/ents/test/ship_selected.png", 1, 48, 48, 0 );
+                    entity->selectionAnimator.SetSpriteIfDifferent( selectionSprite, false );
+
+                    if ( teamNumber.value == 1 ) {
+                        entity->spriteAnimator.SetSpriteIfDifferent( blueSprite, false );
+                        entity->spriteBank.Add( blueSprite );
+                    } else {
+                        entity->spriteAnimator.SetSpriteIfDifferent( redSprite, false );
+                        entity->spriteBank.Add( redSprite );
+                    }
+
                     SpriteResource * mainSprite = teamNumber.value == 1 ? blueSprite : redSprite;
                     entity->spriteAnimator.SetSpriteIfDifferent( mainSprite, false );
-                    entity->selectionAnimator.SetSpriteIfDifferent( selectionSprite, false );
 
                     entity->isSelectable = true;
                     entity->selectionCollider.type = COLLIDER_TYPE_AXIS_BOX;
                     entity->selectionCollider.box.CreateFromCenterSize( glm::vec2( 0 ), glm::vec2( 64, 32 ) );
 
                     // @SPEED:
-                    activeEntities.Clear( false );
-                    entityPool.GatherActiveObjs( activeEntities );
-                    for( i32 starIndex = 0; starIndex < activeEntities.GetCount(); starIndex++ ) {
-                        if( activeEntities[ starIndex ]->type == EntityType::STAR ) {
-                            fp2 dir = activeEntities[ starIndex ]->pos - pos;
+                    simAction_ActiveEntities.Clear( false );
+                    entityPool.GatherActiveObjs( simAction_ActiveEntities );
+                    for( i32 starIndex = 0; starIndex < simAction_ActiveEntities.GetCount(); starIndex++ ) {
+                        if( simAction_ActiveEntities[ starIndex ]->type == EntityType::STAR ) {
+                            fp2 dir = simAction_ActiveEntities[ starIndex ]->pos - pos;
                             entity->ori = FpATan2( dir.x, dir.y );
 
                             // @SPEED:
@@ -851,7 +892,7 @@ namespace atto {
                             const fp t01 = ( t - minDist ) / ( maxDist - minDist );
                             entity->building.giveEnergyAmount = (i32)( Fp( 1 ) + Fp( 4 ) * FpCos( t01 ) );
                             entity->building.isBuilding = true;
-                            entity->building.timeToBuildTurns = SecondsToTurns( 45 );
+                            entity->building.timeToBuildTurns = SecondsToTurns( 30 );
                             break;
                         }
                     }
@@ -862,8 +903,8 @@ namespace atto {
                     static SpriteResource * blueSpriteOn =  core->ResourceGetAndCreateSprite( "res/ents/test/building_cpu_blue_on.png", 1, 48, 48, 0 );
                     static SpriteResource * redSpriteOff = core->ResourceGetAndCreateSprite( "res/ents/test/building_cpu_red_off.png", 1, 48, 48, 0 );
                     static SpriteResource * redSpriteOn  = core->ResourceGetAndCreateSprite( "res/ents/test/building_cpu_red_on.png", 1, 48, 48, 0 );
-                    static SpriteResource * selectionSprite = core->ResourceGetAndCreateSprite( "res/ents/test/ship_selected.png", 1, 48, 48, 0 );
 
+                    static SpriteResource * selectionSprite = core->ResourceGetAndCreateSprite( "res/ents/test/ship_selected.png", 1, 48, 48, 0 );
                     entity->selectionAnimator.SetSpriteIfDifferent( selectionSprite, false );
 
                     if ( teamNumber.value == 1 ) {
@@ -881,12 +922,18 @@ namespace atto {
                     entity->selectionCollider.box.CreateFromCenterSize( glm::vec2( 0 ), glm::vec2( 64, 64 ) );
 
                     entity->building.isBuilding = true;
-                    entity->building.timeToBuildTurns = SecondsToTurns( 100 );
+                    entity->building.timeToBuildTurns = SecondsToTurns( 40 );
                 }
             }
         }
 
         return entity;
+    }
+
+    void SimMap::DestroyEntity( SimEntity * entity ) {
+        if( entity != nullptr ) {
+            entityPool.Remove( entity->handle );
+        }
     }
 
     void SimMap::SimAction_SpawnEntity( i32 * typePtr, PlayerNumber * playerNumberPtr, TeamNumber * teamNumberPtr, fp2 * posPtr, fp * oriPtr, fp2 * velPtr ) {
@@ -897,20 +944,12 @@ namespace atto {
         fp2 pos = *posPtr;
         fp2 vel = *velPtr;
         SpawnEntity( type, playerNumber, teamNumber, pos, ori, vel );
-        //core->LogOutput( LogLevel::INFO, "SimAction_SpawnEntity: type=%s, playerNumber=%d, teamNumber=%d, pos=(%f,%f), vel=(%f,%f)", type.ToString(), playerNumber, teamNumber, pos.x, pos.y, vel.x, vel.y );
-    }
-
-    void SimMap::DestroyEntity( SimEntity * entity ) {
-        if( entity != nullptr ) {
-            entityPool.Remove( entity->handle );
-        }
     }
 
     void SimMap::SimAction_DestroyEntity( EntityHandle * handlePtr ) {
         EntityHandle handle = *handlePtr;
         SimEntity * ent = entityPool.Get( handle );
         DestroyEntity( ent );
-        //core->LogOutput( LogLevel::INFO, "SimAction_DestroyEntity: %d, %d", handle.idx, handle.gen );
     }
 
     void SimMap::SimAction_PlayerSelect( PlayerNumber * playerNumberPtr, EntHandleList * selection, EntitySelectionChange * changePtr ) {
@@ -918,13 +957,13 @@ namespace atto {
         EntitySelectionChange change = *changePtr;
 
         // @SPEED:
-        activeEntities.Clear( false );
-        entityPool.GatherActiveObjs( activeEntities );
+        simAction_ActiveEntities.Clear( false );
+        entityPool.GatherActiveObjs( simAction_ActiveEntities );
 
         if( change == EntitySelectionChange::SET ) {
-            const i32 entityCount = activeEntities.GetCount();
+            const i32 entityCount = simAction_ActiveEntities.GetCount();
             for( i32 entityIndex = 0; entityIndex < entityCount; entityIndex++ ) {
-                SimEntity * ent = activeEntities[ entityIndex ];
+                SimEntity * ent = simAction_ActiveEntities[ entityIndex ];
                 ent->selectedBy.RemoveValue( playerNumber );
             }
         }
@@ -956,12 +995,12 @@ namespace atto {
         fp2 pos = *posPtr;
 
         // @SPEED:
-        activeEntities.Clear( false );
-        entityPool.GatherActiveObjs( activeEntities );
+        simAction_ActiveEntities.Clear( false );
+        entityPool.GatherActiveObjs( simAction_ActiveEntities );
 
-        const i32 entityCount = activeEntities.GetCount();
+        const i32 entityCount = simAction_ActiveEntities.GetCount();
         for( i32 entityIndex = 0; entityIndex < entityCount; entityIndex++ ) {
-            SimEntity * ent = activeEntities[ entityIndex ];
+            SimEntity * ent = simAction_ActiveEntities[ entityIndex ];
             if ( ent->playerNumber == playerNumber && IsUnitType( ent->type ) && ent->selectedBy.Contains( playerNumber ) ) {
                 ent->unit.command.type = UnitCommandType::MOVE;
                 ent->unit.command.targetPos = pos;
@@ -975,17 +1014,17 @@ namespace atto {
         EntityHandle target = *targetPtr;
 
         // @SPEED:
-        activeEntities.Clear( false );
-        entityPool.GatherActiveObjs( activeEntities );
+        simAction_ActiveEntities.Clear( false );
+        entityPool.GatherActiveObjs( simAction_ActiveEntities );
 
         SimEntity * targetEnt = entityPool.Get( target );
         if( targetEnt == nullptr ) {
             return;
         }
 
-        const i32 entityCount = activeEntities.GetCount();
+        const i32 entityCount = simAction_ActiveEntities.GetCount();
         for( i32 entityIndex = 0; entityIndex < entityCount; entityIndex++ ) {
-            SimEntity * ent = activeEntities[ entityIndex ];
+            SimEntity * ent = simAction_ActiveEntities[ entityIndex ];
             if( ent->playerNumber == playerNumber && ent->selectedBy.Contains( playerNumber ) ) {
                 ent->navigator.hasDest = true;
                 fp2 d = ( ent->pos - targetEnt->pos );
@@ -1008,9 +1047,13 @@ namespace atto {
         EntityType type = EntityType::Make( (EntityType::_enumerated)( * typePtr) );
         fp2 pos = *posPtr;
 
-        const i32 entityCount = activeEntities.GetCount();
+        // @SPEED:
+        simAction_ActiveEntities.Clear( false );
+        entityPool.GatherActiveObjs( simAction_ActiveEntities );
+
+        const i32 entityCount = simAction_ActiveEntities.GetCount();
         for ( i32 entityIndex = 0; entityIndex < entityCount; entityIndex++ ) {
-            SimEntity * ent = activeEntities[ entityIndex ];
+            SimEntity * ent = simAction_ActiveEntities[ entityIndex ];
             if ( ent->playerNumber == playerNumber && ent->type == EntityType::UNIT_WORKER && ent->selectedBy.Contains( playerNumber ) ) {
                 SimEntity * structure = SpawnEntity( type, playerNumber, ent->teamNumber, pos, Fp( 0 ), Fp2( 0, 0 ) );
                 ent->unit.command.type = UnitCommandType::CONTRUCT_BUILDING;
@@ -1023,19 +1066,60 @@ namespace atto {
     void SimMap::SimAction_ContructExistingBuilding( PlayerNumber * playerNumberPtr, EntityHandle * targetPtr ) {
         PlayerNumber playerNumber = *playerNumberPtr;
         const EntityHandle target = *targetPtr;
+        
         SimEntity * targetEnt = entityPool.Get( target );
+
         if ( targetEnt != nullptr ) {
+
+            // @SPEED:
+            simAction_ActiveEntities.Clear( false );
+            entityPool.GatherActiveObjs( simAction_ActiveEntities );
+
             Assert( IsBuildingType( targetEnt->type ) == true );
             if ( targetEnt->building.isBuilding == true ) {
-                const i32 entityCount = activeEntities.GetCount();
+                const i32 entityCount = simAction_ActiveEntities.GetCount();
                 for ( i32 entityIndex = 0; entityIndex < entityCount; entityIndex++ ) {
-                    SimEntity * ent = activeEntities[ entityIndex ];
+                    SimEntity * ent = simAction_ActiveEntities[ entityIndex ];
                     if ( ent->playerNumber == playerNumber && ent->type == EntityType::UNIT_WORKER && ent->selectedBy.Contains( playerNumber ) ) {
                         ent->unit.command.type = UnitCommandType::CONTRUCT_BUILDING;
                         ent->unit.command.targetEnt = targetEnt->handle;
                         break;
                     }
                 }
+            }
+        }
+    }
+
+    void SimMap::SimAction_BuildingTrainUnit( PlayerNumber * playerNumberPtr , i32 * typePtr ) {
+        PlayerNumber playerNumber = *playerNumberPtr;
+        EntityType type = EntityType::Make( (EntityType::_enumerated)( * typePtr) );
+
+        Assert( IsUnitType( type ) == true );
+
+        // @SPEED:
+        simAction_ActiveEntities.Clear( false );
+        entityPool.GatherActiveObjs( simAction_ActiveEntities );
+
+        simAction_EntityFilter.Begin( &simAction_ActiveEntities )->
+            SelectedBy( playerNumber )->
+            OwnedBy( playerNumber )->
+            Type( EntityType::BUILDING_STATION )->
+            End();
+
+        const i32 count = simAction_EntityFilter.result.GetCount();
+        for ( i32 i = 0; i < count; i++ ) {
+            SimEntity * ent = *simAction_EntityFilter.result.Get( i );
+            Assert( ent->type == EntityType::BUILDING_STATION );
+
+            Building & building = ent->building;
+
+            // @HACK:
+            // @TODO: We should have a queue here.
+            if ( building.isTraining == false ) {
+                building.turn = 0;
+                building.isTraining = true;
+                building.trainingEnt = type;
+                building.timeToTrainTurns = type == EntityType::UNIT_WORKER ? SecondsToTurns( 12 ) :SecondsToTurns( 38 ) ;
             }
         }
     }
@@ -1328,30 +1412,29 @@ namespace atto {
                 }
             } break;
             case EntityType::BUILDING_STATION:
-            {
-                if ( ent->building.isBuilding == false ) {
-                    ent->building.turn++;
-                    if ( ent->building.turn == 60 ) {
-                        ent->building.turn = 0;
-                    }
-                }
-            } break;
             case EntityType::BUILDING_SOLAR_ARRAY:
-            {
-                if ( ent->building.isBuilding == false ) {
-                    ent->building.turn++;
-                    if ( ent->building.turn == 60 ) {
-                        ent->building.turn = 0;
-                        ent->actions.AddAction( MapActionType::SIM_MAP_MONIES_GIVE_ENERGY, ent->playerNumber, ent->building.giveEnergyAmount );
-                    }
-                }
-            } break;
             case EntityType::BUILDING_COMPUTE:
             {
-                if ( ent->building.isBuilding == false ) {
-                    ent->building.turn++;
-                    if ( ent->building.turn == 60 ) {
-                        ent->building.turn = 0;
+                Building & building = ent->building;
+
+                if ( building.isBuilding == false ) {
+                    building.turn++;
+                    if ( ent->type == EntityType::BUILDING_SOLAR_ARRAY ) {
+                        if ( building.turn == 60 ) {
+                            building.turn = 0;
+                            ent->actions.AddAction( MapActionType::SIM_MAP_MONIES_GIVE_ENERGY, ent->playerNumber, ent->building.giveEnergyAmount );
+                        }
+                    }
+                    else if ( ent->type == EntityType::BUILDING_STATION ) {
+                        if ( building.isTraining == true && building.turn == building.timeToTrainTurns ) {
+                            fp2 p = ent->pos - Fp2( 0, 32 ); // @HACK
+                            fp o = FP_PI; // @HACK
+                            ent->actions.AddAction( MapActionType::SIM_ENTITY_SPAWN, ( i32 )building.trainingEnt, ent->playerNumber, ent->teamNumber, p, o, Fp2( 0, 0 ) );
+                            building.turn = 0;
+                            building.isTraining = false;
+                            building.trainingEnt = EntityType::INVALID;
+                            building.timeToTrainTurns = 0;
+                        }
                     }
                 }
             } break;
@@ -1487,20 +1570,27 @@ namespace atto {
 
     i64 SimMap::Sim_CheckSum() {
         // @SPEED:
-        activeEntities.Clear( false );
-        entityPool.GatherActiveObjs( activeEntities );
+        simAction_ActiveEntities.Clear( false );
+        entityPool.GatherActiveObjs( simAction_ActiveEntities );
 
         i64 checkSum = 0;
 
-        const i32 entityCount = activeEntities.GetCount();
+        const i32 entityCount = simAction_ActiveEntities.GetCount();
         for ( i32 entityIndex = 0; entityIndex < entityCount; entityIndex++ ) {
-            SimEntity * ent = activeEntities[ entityIndex ];
+            SimEntity * ent = simAction_ActiveEntities[ entityIndex ];
             #if 0
             checkSum += ent->handle.idx;
             checkSum -= ent->handle.gen;
             #endif
             checkSum += ToInt( ent->pos.x );
             checkSum -= ToInt( ent->pos.y );
+        }
+
+        const i32 playerCount = playerNumbers.GetCount();
+        for ( i32 playerIndex = 0; playerIndex < playerCount; playerIndex++ ) {
+            checkSum += playerMonies[playerIndex].credits;
+            checkSum -= playerMonies[playerIndex].energy;
+            checkSum -= playerMonies[playerIndex].compute;
         }
 
         return checkSum;
@@ -1537,4 +1627,5 @@ namespace atto {
 
 
 }
+
 

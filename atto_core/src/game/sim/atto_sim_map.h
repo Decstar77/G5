@@ -128,9 +128,12 @@ namespace atto {
     };
 
     struct Building {
+        i32 turn;
         bool isBuilding;
         i32 timeToBuildTurns;
-        i32 turn;
+        bool isTraining;
+        i32 timeToTrainTurns;
+        EntityType trainingEnt;
         i32 giveEnergyAmount;
     };
 
@@ -270,6 +273,7 @@ namespace atto {
         void                                        SimAction_Attack( PlayerNumber * playerNumberPtr, EntityHandle * target );
         void                                        SimAction_ContructBuilding( PlayerNumber * playerNumberPtr, i32 * typePtr, fp2 * posPtr );
         void                                        SimAction_ContructExistingBuilding( PlayerNumber * playerNumberPtr, EntityHandle * target );
+        void                                        SimAction_BuildingTrainUnit( PlayerNumber * playerNumberPtr , i32 * typePtr );
         void                                        SimAction_ApplyDamage( i32 * damage, EntityHandle * target );
         void                                        SimAction_ApplyContruction( EntityHandle * target );
         void                                        SimAction_GiveCredits( PlayerNumber * playerNumberPtr, i32 * amountPtr );
@@ -279,8 +283,8 @@ namespace atto {
         REFLECT();
 
     private:
-        EntList                                     localCacheSelection = {};
-        EntList                                     activeEntities = {};
+        EntList                                     simAction_ActiveEntities = {};
+        EntityListFilter                            simAction_EntityFilter = {};
     };
 }
 
