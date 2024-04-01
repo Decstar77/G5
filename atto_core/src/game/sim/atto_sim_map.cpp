@@ -121,7 +121,7 @@ namespace atto {
             rpcTable[ ( i32 )MapActionType::SIM_ENTITY_UNIT_COMMAND_ATTACK ]            = new RpcMemberFunction( this, &SimMap::SimAction_Attack );
             rpcTable[ ( i32 )MapActionType::SIM_ENTITY_UNIT_COMMAND_CONSTRUCT_BUILDING ] = new RpcMemberFunction( this, &SimMap::SimAction_ContructBuilding );
             rpcTable[ ( i32 )MapActionType::SIM_ENTITY_UNIT_COMMAND_CONSTRUCT_EXISTING_BUILDING ] = new RpcMemberFunction( this, &SimMap::SimAction_ContructExistingBuilding );
-
+            rpcTable[ ( i32 )MapActionType::SIM_ENTITY_PLANET_COMMAND_PLACE_PLACEMENT]  = new RpcMemberFunction( this, &SimMap::SimAction_PlanetPlacePlacement );
             rpcTable[ ( i32 )MapActionType::SIM_ENTITY_BUILDING_COMMAND_TRAIN_UNIT ]    = new RpcMemberFunction( this, &SimMap::SimAction_BuildingTrainUnit );
 
             rpcTable[ ( i32 )MapActionType::SIM_ENTITY_SPAWN ]                          = new RpcMemberFunction( this, &SimMap::SimAction_SpawnEntity );
@@ -417,17 +417,20 @@ namespace atto {
             } else {
                 const glm::vec2 s = glm::vec2( 15 );
                 if ( gameUI.ButtonPix( 145, "", ui_LeftPanelCenters[0], s, Colors::GREEN ) ) {
-                    //planet.placements[ planetPlacementSubMenuIndex ] = PlanetPlacementType::CREDIT_GENERATOR;
+                    localActionBuffer.AddAction( MapActionType::SIM_ENTITY_PLANET_COMMAND_PLACE_PLACEMENT,
+                                                localPlayerNumber, planetPlacementSubMenuIndex, PlanetPlacementType::CREDIT_GENERATOR );
                     planetPlacementSubMenu = false;
                     planetPlacementSubMenuIndex = -1;
                 }
                 if ( gameUI.ButtonPix( 146, "", ui_LeftPanelCenters[1], s, Colors::GOLD ) ) {
-                    //planet.placements[ planetPlacementSubMenuIndex ] = PlanetPlacementType::ENERGY_GENERATOR;
+                    localActionBuffer.AddAction( MapActionType::SIM_ENTITY_PLANET_COMMAND_PLACE_PLACEMENT,
+                                                localPlayerNumber, planetPlacementSubMenuIndex, PlanetPlacementType::ENERGY_GENERATOR );
                     planetPlacementSubMenu = false;
                     planetPlacementSubMenuIndex = -1;
                 }
                 if ( gameUI.ButtonPix( 147, "", ui_LeftPanelCenters[2], s, Colors::SKY_BLUE ) ) {
-                    //planet.placements[ planetPlacementSubMenuIndex ] = PlanetPlacementType::COMPUTE_GENERATOR;
+                    localActionBuffer.AddAction( MapActionType::SIM_ENTITY_PLANET_COMMAND_PLACE_PLACEMENT,
+                                                localPlayerNumber, planetPlacementSubMenuIndex, PlanetPlacementType::COMPUTE_GENERATOR );
                     planetPlacementSubMenu = false;
                     planetPlacementSubMenuIndex = -1;
                 }
@@ -1090,6 +1093,32 @@ namespace atto {
         }
     }
 
+    void SimMap::SimAction_PlanetPlacePlacement( PlayerNumber * playerNumberPtr, i32 * placementIndexPtr, PlanetPlacementType * placementTypePtr ) {
+        const PlayerNumber playerNumber = *playerNumberPtr;
+        const i32 placementIndex = *placementIndexPtr;
+        const PlanetPlacementType placementType = *placementTypePtr;
+
+        // @SPEED:
+        simAction_ActiveEntities.Clear( false );
+        entityPool.GatherActiveObjs( simAction_ActiveEntities );
+
+        simAction_EntityFilter.Begin( &simAction_ActiveEntities )->
+            SelectedBy( playerNumber )->
+            OwnedBy( playerNumber )->
+            Type( EntityType::PLANET )->
+            End();
+
+        const i32 count = simAction_EntityFilter.result.GetCount();
+        for ( i32 entityIndex = 0; entityIndex < count; entityIndex++ ) {
+            SimEntity * ent = *simAction_EntityFilter.result.Get( entityIndex );
+            if ( ent->type == EntityType::PLANET ) {
+                Planet & planet = ent->planet;
+                planet.placements[ placementIndex ] = placementType;
+                break;
+            }
+        }
+    }
+
     void SimMap::SimAction_BuildingTrainUnit( PlayerNumber * playerNumberPtr , i32 * typePtr ) {
         PlayerNumber playerNumber = *playerNumberPtr;
         EntityType type = EntityType::Make( (EntityType::_enumerated)( * typePtr) );
@@ -1107,8 +1136,8 @@ namespace atto {
             End();
 
         const i32 count = simAction_EntityFilter.result.GetCount();
-        for ( i32 i = 0; i < count; i++ ) {
-            SimEntity * ent = *simAction_EntityFilter.result.Get( i );
+        for ( i32 entityIndex = 0; entityIndex < count; entityIndex++ ) {
+            SimEntity * ent = *simAction_EntityFilter.result.Get( entityIndex );
             Assert( ent->type == EntityType::BUILDING_STATION );
 
             Building & building = ent->building;

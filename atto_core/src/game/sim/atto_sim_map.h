@@ -109,7 +109,7 @@ namespace atto {
         SpriteResource *            sprVFX_SmallExplody;
     };
 
-    enum class PlanetPlacementType {
+    enum class PlanetPlacementType : u8 {
         INVALID = 0,
         BLOCKED = 1,
         OPEN = 2,
@@ -254,31 +254,32 @@ namespace atto {
         i32 planetPlacementSubMenuIndex = -1;
 
     public:
-        void                                        Initialize( Core * core );
-        void                                        Update( Core * core, f32 dt );
+        void                    Initialize( Core * core );
+        void                    Update( Core * core, f32 dt );
         
-        SimEntity *                                 SpawnEntity( EntityType type, PlayerNumber playerNumber, TeamNumber teamNumber, fp2 pos, fp ori, fp2 vel );
-        void                                        DestroyEntity( SimEntity * entity );
-
-        void                                        SimTick( MapTurn * turn1, MapTurn * turn2 );
-        void                                        Sim_ApplyActions( MapActionBuffer * actionBuffer );
-        i64                                         Sim_CheckSum();
-
-        void                                        SimAction_SpawnEntity( i32 * type, PlayerNumber * playerNumberPtr, TeamNumber * teamNumber, fp2 * pos, fp * ori, fp2 * vel );
-        void                                        SimAction_DestroyEntity( EntityHandle * handle );
-        void                                        SimAction_PlayerSelect( PlayerNumber * playerNumberPtr, EntHandleList * selection, EntitySelectionChange * change );
-        //void                                        SimAction_PlayerWorldCommand( i32 * playerNumber, glm::vec2 targetPos, EntityHandle * targetEnt ); // Right clicking in the world
-
-        void                                        SimAction_Move( PlayerNumber * playerNumberPtr, fp2 * pos );
-        void                                        SimAction_Attack( PlayerNumber * playerNumberPtr, EntityHandle * target );
-        void                                        SimAction_ContructBuilding( PlayerNumber * playerNumberPtr, i32 * typePtr, fp2 * posPtr );
-        void                                        SimAction_ContructExistingBuilding( PlayerNumber * playerNumberPtr, EntityHandle * target );
-        void                                        SimAction_BuildingTrainUnit( PlayerNumber * playerNumberPtr , i32 * typePtr );
-        void                                        SimAction_ApplyDamage( i32 * damage, EntityHandle * target );
-        void                                        SimAction_ApplyContruction( EntityHandle * target );
-        void                                        SimAction_GiveCredits( PlayerNumber * playerNumberPtr, i32 * amountPtr );
-        void                                        SimAction_GiveEnergy( PlayerNumber * playerNumberPtr, i32 * amountPtr );
-        void                                        SimAction_GiveCompute( PlayerNumber * playerNumberPtr, i32 * amountPtr );
+        SimEntity *             SpawnEntity( EntityType type, PlayerNumber playerNumber, TeamNumber teamNumber, fp2 pos, fp ori, fp2 vel );
+        void                    DestroyEntity( SimEntity * entity );
+                                
+        void                    SimTick( MapTurn * turn1, MapTurn * turn2 );
+        void                    Sim_ApplyActions( MapActionBuffer * actionBuffer );
+        i64                     Sim_CheckSum();
+                                
+        void                    SimAction_SpawnEntity( i32 * type, PlayerNumber * playerNumberPtr, TeamNumber * teamNumber, fp2 * pos, fp * ori, fp2 * vel );
+        void                    SimAction_DestroyEntity( EntityHandle * handle );
+        void                    SimAction_PlayerSelect( PlayerNumber * playerNumberPtr, EntHandleList * selection, EntitySelectionChange * change );
+        //void                    SimAction_PlayerWorldCommand( i32 * playerNumber, glm::vec2 targetPos, EntityHandle * targetEnt ); // Right clicking in the world
+                                
+        void                    SimAction_Move( PlayerNumber * playerNumberPtr, fp2 * pos );
+        void                    SimAction_Attack( PlayerNumber * playerNumberPtr, EntityHandle * target );
+        void                    SimAction_ContructBuilding( PlayerNumber * playerNumberPtr, i32 * typePtr, fp2 * posPtr );
+        void                    SimAction_ContructExistingBuilding( PlayerNumber * playerNumberPtr, EntityHandle * target );
+        void                    SimAction_PlanetPlacePlacement( PlayerNumber * playerNumberPtr, i32 * placementIndexPtr, PlanetPlacementType * placementTypePtr );
+        void                    SimAction_BuildingTrainUnit( PlayerNumber * playerNumberPtr , i32 * typePtr );
+        void                    SimAction_ApplyDamage( i32 * damage, EntityHandle * target );
+        void                    SimAction_ApplyContruction( EntityHandle * target );
+        void                    SimAction_GiveCredits( PlayerNumber * playerNumberPtr, i32 * amountPtr );
+        void                    SimAction_GiveEnergy( PlayerNumber * playerNumberPtr, i32 * amountPtr );
+        void                    SimAction_GiveCompute( PlayerNumber * playerNumberPtr, i32 * amountPtr );
 
         REFLECT();
 
