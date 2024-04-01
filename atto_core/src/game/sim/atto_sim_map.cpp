@@ -368,7 +368,6 @@ namespace atto {
             SelectedBy( localPlayerNumber )->
             End()->
             ContainsOnlyType( EntityType::UNIT_WORKER );
-         
 
         if ( singlePlanetSelected == true ) {
             SimEntity * ent = entityFilter->result[ 0 ];
@@ -477,6 +476,55 @@ namespace atto {
             localEndDrag = mousePosWorld;
             if ( core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) == true ) {
                 localIsDragging = false;
+
+                bool hasLocalPlayerUnits = false;
+                bool hasPlanetType = false;
+                bool hasBuildingType = false;
+                bool hasUnitType = false;
+
+                // @NOTE: Selection Priority
+                const i32 selectionCount = localDragSelection.GetCount();
+                for ( i32 selectionIndex = 0; selectionIndex < selectionCount; selectionIndex++ ) {
+                    EntityHandle handle = localDragSelection[ selectionIndex ];
+                    SimEntity * selectionEnt = entityPool.Get( handle );
+                    if ( selectionEnt != nullptr ) {
+                        if ( selectionEnt->playerNumber == localPlayerNumber ) {
+                            hasLocalPlayerUnits = true;
+                        }
+                        if ( selectionEnt->type == EntityType::PLANET ) {
+                            hasPlanetType = true;
+                        }
+                        else if ( IsBuildingType( selectionEnt->type ) == true ) {
+                            hasBuildingType = true;
+                        }
+                        else if ( IsUnitType( selectionEnt->type ) == true ) {
+                            hasUnitType = true;
+                        }
+                    }
+                }
+
+                for ( i32 selectionIndex = 0; selectionIndex < localDragSelection.GetCount(); selectionIndex++ ) {
+                    EntityHandle handle = localDragSelection[ selectionIndex ];
+                    SimEntity * selectionEnt = entityPool.Get( handle );
+                    if ( selectionEnt != nullptr ) {
+                        if ( hasLocalPlayerUnits == true && selectionEnt->playerNumber != localPlayerNumber ) {
+                            localDragSelection.RemoveIndex( selectionIndex );
+                            selectionIndex--;
+                        }
+                        if ( hasUnitType == true ) {
+                            if ( IsBuildingType( selectionEnt->type ) == true || selectionEnt->type == EntityType::PLANET ) {
+                                localDragSelection.RemoveIndex( selectionIndex );
+                                selectionIndex--;
+                            }
+                        } else if ( hasBuildingType == true ) {
+                            if ( selectionEnt->type == EntityType::PLANET ) {
+                                localDragSelection.RemoveIndex( selectionIndex );
+                                selectionIndex--;
+                            }
+                        }
+                    }
+                }
+
                 localActionBuffer.AddAction( MapActionType::PLAYER_SELECTION, localPlayerNumber, localDragSelection, EntitySelectionChange::SET );
             }
         }

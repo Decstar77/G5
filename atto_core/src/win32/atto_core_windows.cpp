@@ -512,7 +512,7 @@ namespace atto {
                     glEnable( GL_DEPTH_TEST );
 
                     glBindVertexArray( staticMeshTriangle->vao );
-                    GetVertexBufferUpdate( staticMeshTriangle->vbo, 0, sizeof( vertices ), vertices );
+                    GLVertexBufferUpdate( staticMeshTriangle->vbo, 0, sizeof( vertices ), vertices );
                     glDrawArrays( GL_LINES, 0, 2 );
                     glBindVertexArray( 0 );
                 } break;
@@ -546,7 +546,7 @@ namespace atto {
                     glEnable( GL_DEPTH_TEST );
 
                     glBindVertexArray( staticMeshTriangle->vao );
-                    GetVertexBufferUpdate( staticMeshTriangle->vbo, 0, sizeof( vertices ), vertices );
+                    GLVertexBufferUpdate( staticMeshTriangle->vbo, 0, sizeof( vertices ), vertices );
                     glDrawArrays( GL_TRIANGLES, 0, 3 );
                     glBindVertexArray( 0 );
                 } break;
@@ -586,7 +586,7 @@ namespace atto {
                 } break;
                 default:
                 {
-                    //ATTOASSERT(false, "Invalid draw command type");
+                    INVALID_CODE_PATH;
                 } break;
             }
         }
@@ -1258,7 +1258,7 @@ namespace atto {
         glBindBuffer( GL_ARRAY_BUFFER, 0 );
     }
 
-    void WindowsCore::GetVertexBufferUpdate( u32 vbo, i32 offset, i32 size, const void * data ) {
+    void WindowsCore::GLVertexBufferUpdate( u32 vbo, i32 offset, i32 size, const void * data ) {
         glBindBuffer( GL_ARRAY_BUFFER, vbo );
         glBufferSubData( GL_ARRAY_BUFFER, offset, size, data );
         glBindBuffer( GL_ARRAY_BUFFER, 0 );

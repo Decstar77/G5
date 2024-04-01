@@ -332,7 +332,7 @@ namespace atto {
         f32             cameraHeight;
         glm::mat4       screenProjection;
         glm::mat4       cameraProjection;
-        FixedList<DrawCommand, 4000> drawList;
+        FixedList<DrawCommand, 1000> drawList;
     };
 
     enum PlayerConnectState {

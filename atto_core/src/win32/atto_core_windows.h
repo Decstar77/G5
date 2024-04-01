@@ -223,7 +223,7 @@ namespace atto {
         ShaderProgram   GLCreateShaderProgram( const char * vertexSource, const char * fragmentSource );
         VertexBuffer    GLCreateVertexBuffer( VertexLayout * layout, i32 vertexCount, const void * srcData, bool dyanmic );
         void            GLVertexBufferUpdate( VertexBuffer vertexBuffer, i32 offset, i32 size, const void * data );
-        void            GetVertexBufferUpdate( u32 vbo, i32 offset, i32 size, const void * data );
+        void            GLVertexBufferUpdate( u32 vertexBuffer, i32 offset, i32 size, const void * data );
         
         void            GLInitializeShapeRendering();
         void            GLInitializeSpriteRendering();
