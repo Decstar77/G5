@@ -100,12 +100,14 @@ namespace atto {
         else {
             if( win32Audio->sound3D != nullptr ) {
                 FMOD::Channel * channel = nullptr;
-                FMOD_RESULT result = fmodSystem->playSound( win32Audio->sound3D, fmodMasterGroup, false, &channel );
+                FMOD_RESULT result = fmodSystem->playSound( win32Audio->sound3D, fmodMasterGroup, true, &channel );
                 ERRCHECK( result );
                 FMOD_VECTOR v = {};
                 v.x = pos->x;
                 v.y = pos->y;
+                v.z = 0.0f;
                 channel->set3DAttributes( &v, nullptr );
+                channel->setPaused( false );
 
                 f32 dist = glm::distance( *pos, listenerPos );
                 LogOutput( LogLevel::INFO, "Dist = %f", dist );
@@ -123,6 +125,7 @@ namespace atto {
         FMOD_VECTOR v = {};
         v.x = pos.x;
         v.y = pos.y;
+        v.z = 1.0f;
         FMOD_RESULT result = fmodSystem->set3DListenerAttributes( 0, &v, nullptr, nullptr, nullptr );
         ERRCHECK( result );
     }

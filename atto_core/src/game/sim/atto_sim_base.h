@@ -3,10 +3,12 @@
 #include "../../shared/atto_core.h"
 
 namespace atto {
+    class RpcHolder;
+
     constexpr static i32 MAX_ENTITIES = 1024;
     constexpr static i32 MAX_PLAYERS = 4;
 
-    constexpr i32 TURNS_PER_SECOND = 16;
+    constexpr i32 TURNS_PER_SECOND = 10;
     constexpr float SIM_DT_FLOAT = 1.0f / TURNS_PER_SECOND;
     constexpr fp SIM_DT = Fp( 1.0f / TURNS_PER_SECOND );
     inline i32 SecondsToTurns( i32 s ) { return s * TURNS_PER_SECOND; }
@@ -40,6 +42,26 @@ namespace atto {
         SIM_MAP_MONIES_GIVE_ENERGY,
         SIM_MAP_MONIES_GIVE_COMPUTE
     };
+
+    inline const char * MapActionTypeStrings[] = {
+        "NONE",
+        "PLAYER_SELECTION",
+        "SIM_ENTITY_UNIT_COMMAND_MOVE",
+        "SIM_ENTITY_UNIT_COMMAND_ATTACK",
+        "SIM_ENTITY_UNIT_COMMAND_CONSTRUCT_BUILDING",
+        "SIM_ENTITY_UNIT_COMMAND_CONSTRUCT_EXISTING_BUILDING",
+        "SIM_ENTITY_PLANET_COMMAND_PLACE_PLACEMENT",
+        "SIM_ENTITY_BUILDING_COMMAND_TRAIN_UNIT",
+        "SIM_ENTITY_SPAWN",
+        "SIM_ENTITY_DESTROY",
+        "SIM_ENTITY_APPLY_DAMAGE",
+        "SIM_ENTITY_APPLY_CONSTRUCTION",
+        "SIM_MAP_MONIES_GIVE_CREDITS",
+        "SIM_MAP_MONIES_GIVE_ENERGY",
+        "SIM_MAP_MONIES_GIVE_COMPUTE"
+    };
+
+    inline FixedList< RpcHolder *, 256 >         rpcTable = {};
 
     class MapActionBuffer {
     public:

@@ -165,6 +165,7 @@ namespace atto {
         CIRCLE,
         RECT,
         LINE2D,
+        TRIANGLE,
         TEXTURE,
         SPRITE,
         TEXT,
@@ -174,7 +175,7 @@ namespace atto {
         SPHERE,
         BOX,
         LINE,
-        TRIANGLE,
+        TRIANGLE3D,
         MESH,
     };
 
@@ -243,6 +244,15 @@ namespace atto {
                     glm::vec3 p2;
                 } line;
                 struct {
+                    glm::vec2 p1;
+                    glm::vec2 p2;
+                    glm::vec2 p3;
+                    glm::vec2 uv1;
+                    glm::vec2 uv2;
+                    glm::vec2 uv3;
+                    TextureResource * texture;
+                } triangle;
+                struct {
                     glm::vec3 p1;
                     glm::vec3 p2;
                     glm::vec3 p3;
@@ -250,7 +260,7 @@ namespace atto {
                     glm::vec2 uv2;
                     glm::vec2 uv3;
                     TextureResource * texture;
-                } triangle;
+                } triangle3D;
                 struct {
                     glm::mat4 m;
                     StaticMeshResource * mesh;
@@ -290,8 +300,9 @@ namespace atto {
         void DrawRect( glm::vec2 bl, glm::vec2 tr, glm::vec4 colour = glm::vec4( 1 ) );
         void DrawRect( glm::vec2 center, glm::vec2 dim, f32 rot, const glm::vec4 & color = glm::vec4( 1 ) );
         void DrawRectScreen( glm::vec2 bl, glm::vec2 tr, glm::vec4 colour = glm::vec4( 1 ) );
-        void DrawLine2D( glm::vec2 start, glm::vec2 end, f32 thicc, const glm::vec4 & color = glm::vec4( 1 ) );
-        void DrawLine2D_NDC( glm::vec2 start, glm::vec2 end, f32 thicc, const glm::vec4 & color = glm::vec4( 1 ) );
+        void DrawLine( glm::vec2 start, glm::vec2 end, f32 thicc, const glm::vec4 & color = glm::vec4( 1 ) );
+        void DrawLine_NDC( glm::vec2 start, glm::vec2 end, f32 thicc, const glm::vec4 & color = glm::vec4( 1 ) );
+        void DrawTriangle( glm::vec2 p1, glm::vec2 p2, glm::vec2 p3, glm::vec4 colour = glm::vec4( 1 ) );
         void DrawTexture( TextureResource * texture, glm::vec2 center, f32 rot = 0.0f, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
         void DrawTextureBL( TextureResource * texture, glm::vec2 bl, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
         void DrawTextureTL( TextureResource * texture, glm::vec2 tl, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
@@ -299,13 +310,14 @@ namespace atto {
         void DrawSprite( SpriteResource * sprite, i32 frameIndex, glm::vec2 center, f32 rot = 0.0f, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
         void DrawSprite( SpriteResource * sprite, i32 tileX, i32 tileY, glm::vec2 center, f32 rot = 0.0f, glm::vec2 size = glm::vec2( 1 ), glm::vec4 colour = glm::vec4( 1 ) );
         void DrawTextCam( FontHandle font, glm::vec2 tl, f32 fontSize, const char * text, TextAlignment_H hA = TextAlignment_H::FONS_ALIGN_LEFT, TextAlignment_V vA = TextAlignment_V::FONS_ALIGN_BASELINE, glm::vec4 colour = glm::vec4( 1 ) );
-        void DrawText2D( FontHandle font, glm::vec2 tl, f32 fontSize, const char * text, TextAlignment_H hA = TextAlignment_H::FONS_ALIGN_LEFT, TextAlignment_V vA = TextAlignment_V::FONS_ALIGN_BASELINE, glm::vec4 colour = glm::vec4( 1 ) );
-        void DrawPlane( glm::vec3 center, glm::vec3 normal, glm::vec2 dim, glm::vec4 colour = glm::vec4( 1 ) );
-        void DrawSphere( glm::vec3 center, f32 r, glm::vec4 colour = glm::vec4( 1 ) );
-        void DrawBox( glm::vec3 min, glm::vec3 max, glm::vec4 colour = glm::vec4( 1 ) );
-        void DrawLine( glm::vec3 p1, glm::vec3 p2, f32 thicc, glm::vec4 colour = glm::vec4( 1 ) );
-        void DrawTriangle( glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec4 colour = glm::vec4( 1 ) );
-        void DrawTriangle( glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec2 uv1, glm::vec2 uv2, glm::vec2 uv3, TextureResource * texture );
+        void DrawTextScreen( FontHandle font, glm::vec2 tl, f32 fontSize, const char * text, TextAlignment_H hA = TextAlignment_H::FONS_ALIGN_LEFT, TextAlignment_V vA = TextAlignment_V::FONS_ALIGN_BASELINE, glm::vec4 colour = glm::vec4( 1 ) );
+
+        void DrawPlane3D( glm::vec3 center, glm::vec3 normal, glm::vec2 dim, glm::vec4 colour = glm::vec4( 1 ) );
+        void DrawSphere3D( glm::vec3 center, f32 r, glm::vec4 colour = glm::vec4( 1 ) );
+        void DrawBox3D( glm::vec3 min, glm::vec3 max, glm::vec4 colour = glm::vec4( 1 ) );
+        void DrawLine3D( glm::vec3 p1, glm::vec3 p2, f32 thicc, glm::vec4 colour = glm::vec4( 1 ) );
+        void DrawTriangle3D( glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec4 colour = glm::vec4( 1 ) );
+        void DrawTriangle3D( glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec2 uv1, glm::vec2 uv2, glm::vec2 uv3, TextureResource * texture );
 
         void DrawMesh( StaticMeshResource * mesh, glm::mat4 m, TextureResource * albedo = nullptr );
 
@@ -332,7 +344,7 @@ namespace atto {
         f32             cameraHeight;
         glm::mat4       screenProjection;
         glm::mat4       cameraProjection;
-        FixedList<DrawCommand, 1000> drawList;
+        FixedList<DrawCommand, 2000> drawList;
     };
 
     enum PlayerConnectState {
@@ -375,6 +387,8 @@ namespace atto {
         f32                                 GetDeltaTime() const;
         virtual f64                         GetTheCurrentTime() const = 0;
         Camera                              CreateDefaultCamera() const;
+
+        inline GameSettings                 GetCurrentGameSettings() const { return theGameSettings; }
 
         void                                MoveToGameMode( GameMode * gameMode );
         
@@ -429,8 +443,6 @@ namespace atto {
         void                                NetDisconnect();
         SmallString                         NetStatusText();
         u32                                 NetGetPing();
-
-        BinaryBlob                          CreateBinaryBlob( i32 blobSize );
 
         void *                              MemoryAllocatePermanent( u64 bytes );
         void *                              MemoryAllocateTransient( u64 bytes );

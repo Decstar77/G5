@@ -34,12 +34,12 @@ namespace atto
 
         std::atomic<SmallString> statusText = {};
 
-        ENetAddress          address = {};
-        ENetPeer* peer = nullptr;
-        ENetHost* client = nullptr;
+        ENetAddress             address = {};
+        ENetPeer*               peer = nullptr;
+        ENetHost*               client = nullptr;
         Core* core = nullptr;
 
-        FixedQueueThreadSafe<NetworkMessage, 1024>* incommingMessages;
-        FixedQueueThreadSafe<NetworkMessage, 1024>* outgoingMessages;
+        FixedQueueThreadSafe<NetworkMessage, 1024> incommingMessages = {};
+        FixedQueueThreadSafe<NetworkMessage, 1024> outgoingMessages = {};
     };
 }

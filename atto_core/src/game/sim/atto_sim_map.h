@@ -54,6 +54,12 @@ namespace atto {
         REMOVE
     };
 
+    inline static const char * EntitySelectionChangeStrings[] = { 
+        "SET",
+        "ADD",
+        "REMOVE"
+    };
+
     struct Navigator {
         bool                hasDest;
         fp2                 dest;
@@ -106,7 +112,6 @@ namespace atto {
         fp                          speed;
         fp                          aliveTimer;
         fp                          aliveTime;
-        SpriteResource *            sprVFX_SmallExplody;
     };
 
     enum class PlanetPlacementType : u8 {
@@ -120,6 +125,16 @@ namespace atto {
 
         //REPAIR_STATION, // That's a cool idea
     };
+
+    inline static const char * PlanetPlacementTypeStrings[] = {
+        "INVALID",
+        "BLOCKED",
+        "OPEN",
+        "CREDIT_GENERATOR",
+        "ENERGY_GENERATOR",
+        "COMPUTE_GENERATOR"
+    };
+
 
     constexpr i32 MAX_PLANET_PLACEMENTS = 5 * 3;
     struct Planet {
@@ -136,8 +151,6 @@ namespace atto {
         EntityType trainingEnt;
         i32 giveEnergyAmount;
     };
-
-    inline FixedList<RpcHolder *, 256>         rpcTable = {};
 
     struct SimEntity {
         EntityHandle                handle;
@@ -174,6 +187,7 @@ namespace atto {
 
         glm::vec2                   visPos;
         f32                         visOri;
+        FixedList<PlayerNumber, MAX_PLAYERS> visSelectedBy;
 
         SpriteAnimator                      spriteAnimator;
         SpriteAnimator                      selectionAnimator;
@@ -210,6 +224,22 @@ namespace atto {
         i32 compute;
     };
 
+    class SimMapReplay {
+    public:
+        void Prepare();
+        void NextTurn( i32 turn );
+        void AddActionData( MapActionBuffer * actionBuffer );
+        void PrintActions( Core * core );
+
+    private:
+        struct TurnAction {
+            i32 turnNumber;
+            i32 actionCount;
+        };
+        std::vector<TurnAction> turns;
+        BinaryBlob actionData;
+    };
+
     class SimMap {
     public:
         Core *                                      core = nullptr;
@@ -239,6 +269,9 @@ namespace atto {
         FixedList< PlayerNumber, 4 >                playerNumbers = {};
         FixedList< PlayerMonies, 4 >                playerMonies = {};
 
+        // ================= Other =================
+        SimMapReplay                                mapReplay = {};
+
         // ============ Visual Stuffies ============
         bool                                        localIsDragging = false;
         glm::vec2                                   localStartDrag = glm::vec2( 0.0f );
@@ -263,12 +296,10 @@ namespace atto {
         void                    SimTick( MapTurn * turn1, MapTurn * turn2 );
         void                    Sim_ApplyActions( MapActionBuffer * actionBuffer );
         i64                     Sim_CheckSum();
-                                
+
         void                    SimAction_SpawnEntity( i32 * type, PlayerNumber * playerNumberPtr, TeamNumber * teamNumber, fp2 * pos, fp * ori, fp2 * vel );
         void                    SimAction_DestroyEntity( EntityHandle * handle );
         void                    SimAction_PlayerSelect( PlayerNumber * playerNumberPtr, EntHandleList * selection, EntitySelectionChange * change );
-        //void                    SimAction_PlayerWorldCommand( i32 * playerNumber, glm::vec2 targetPos, EntityHandle * targetEnt ); // Right clicking in the world
-                                
         void                    SimAction_Move( PlayerNumber * playerNumberPtr, fp2 * pos );
         void                    SimAction_Attack( PlayerNumber * playerNumberPtr, EntityHandle * target );
         void                    SimAction_ContructBuilding( PlayerNumber * playerNumberPtr, i32 * typePtr, fp2 * posPtr );
@@ -280,6 +311,8 @@ namespace atto {
         void                    SimAction_GiveCredits( PlayerNumber * playerNumberPtr, i32 * amountPtr );
         void                    SimAction_GiveEnergy( PlayerNumber * playerNumberPtr, i32 * amountPtr );
         void                    SimAction_GiveCompute( PlayerNumber * playerNumberPtr, i32 * amountPtr );
+
+        void                    VisAction_PlayerSelect( PlayerNumber * playerNumberPtr, EntHandleList * selection, EntitySelectionChange change );
 
         REFLECT();
 

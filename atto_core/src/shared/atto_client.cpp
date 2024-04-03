@@ -108,7 +108,7 @@ namespace atto {
                     else if( event.type == ENET_EVENT_TYPE_RECEIVE ) {
                         //SetStatusStringInfo("Received packet");
                         NetworkMessage * msg = (NetworkMessage *)event.packet->data;
-                        incommingMessages->Enqueue( *msg );
+                        incommingMessages.Enqueue( *msg );
 
                         enet_packet_destroy( event.packet );
                     }
@@ -122,7 +122,7 @@ namespace atto {
                     //enet_host_destroy(client);
                 }
 
-                while( outgoingMessages->IsEmpty() == false ) {
+                while( outgoingMessages.IsEmpty() == false ) {
                 #if 0 
                     NetworkMessage msg = outgoingMessages->Dequeue();
                     NetworkMessageBuffer msgBuf = {};
@@ -131,7 +131,7 @@ namespace atto {
                     ENetPacket * packet = enet_packet_create( msgBuf.GetData(), msgBuf.GetHeadLocation(), msg.isUDP ? ENET_PACKET_FLAG_UNSEQUENCED : ENET_PACKET_FLAG_RELIABLE );
                     enet_peer_send( peer, 0, packet );
                 #else
-                    NetworkMessage msg = outgoingMessages->Dequeue();
+                    NetworkMessage msg = outgoingMessages.Dequeue();
                     i32 len = NetworkMessageGetTotalSize( msg );
                     i32 flags = msg.isUDP ? ENET_PACKET_FLAG_UNSEQUENCED : ENET_PACKET_FLAG_RELIABLE;
                     ENetPacket * packet = enet_packet_create( &msg, len, flags );
@@ -150,8 +150,6 @@ namespace atto {
     }
 
     NetClient::NetClient( class Core * inCore ) {
-        incommingMessages = new FixedQueueThreadSafe<NetworkMessage, 1024>();
-        outgoingMessages = new FixedQueueThreadSafe<NetworkMessage, 1024>();
         core = inCore;
         std::thread( &NetClient::NetworkLoop, this ).detach();
     }
@@ -184,16 +182,16 @@ namespace atto {
 
     void NetClient::Send( const NetworkMessage & msg ) {
         if( isConnected ) {
-            outgoingMessages->Enqueue( msg );
+            outgoingMessages.Enqueue( msg );
         }
     }
 
     bool NetClient::Recieve( NetworkMessage & msg ) {
-        if( incommingMessages->IsEmpty() ) {
+        if( incommingMessages.IsEmpty() ) {
             return false;
         }
 
-        msg = incommingMessages->Dequeue();
+        msg = incommingMessages.Dequeue();
 
         return true;
     }

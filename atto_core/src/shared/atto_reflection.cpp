@@ -188,6 +188,12 @@ namespace atto {
         virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
             ImGui::InputInt( memberName, (i32 *)obj );
         }
+
+        virtual LargeString ToString( const void * obj ) override {
+            LargeString res = {};
+            res.Add( std::to_string( *( (i32 *)obj ) ).c_str() );
+            return res;
+        }
     };
 
     template <>
@@ -212,6 +218,12 @@ namespace atto {
 
         virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
             ImGui::InputScalar( memberName, ImGuiDataType_U32, (u32 *)obj );
+        }
+
+        virtual LargeString ToString( const void * obj ) override {
+            LargeString res = {};
+            res.Add( std::to_string( *( (u32 *)obj ) ).c_str() );
+            return res;
         }
     };
 
@@ -238,6 +250,12 @@ namespace atto {
         virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
             ImGui::InputScalar( memberName, ImGuiDataType_S64, (i64 *)obj );
         }
+
+        virtual LargeString ToString( const void * obj ) override {
+            LargeString res = {};
+            res.Add( std::to_string( *( (i64 *)obj ) ).c_str() );
+            return res;
+        }
     };
 
     template <>
@@ -262,6 +280,12 @@ namespace atto {
 
         virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
             throw std::logic_error( "The method or operation is not implemented." );
+        }
+
+        virtual LargeString ToString( const void * obj ) override {
+            LargeString res = {};
+            res.Add( std::to_string( *( (u64 *)obj ) ).c_str() );
+            return res;
         }
     };
 
@@ -288,6 +312,12 @@ namespace atto {
         virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
             ImGui::InputFloat( memberName, (float *)obj );
         }
+
+        virtual LargeString ToString( const void * obj ) override {
+            LargeString res = {};
+            res.Add( std::to_string( *( (f32 *)obj ) ).c_str() );
+            return res;
+        }
     };
 
     template <>
@@ -312,6 +342,12 @@ namespace atto {
 
         virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
             ImGui::InputDouble( memberName, (double *)obj );
+        }
+
+        virtual LargeString ToString( const void * obj ) override {
+            LargeString res = {};
+            res.Add( std::to_string( *( (f64 *)obj ) ).c_str() );
+            return res;
         }
     };
 
@@ -338,11 +374,88 @@ namespace atto {
         virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
             ImGui::Checkbox( memberName, (bool *)obj );
         }
+
+        virtual LargeString ToString( const void * obj ) override {
+            LargeString res = {};
+            res.Add( std::to_string( *( (bool *)obj ) ).c_str() );
+            return res;
+        }
     };
 
     template <>
     TypeDescriptor * GetPrimitiveDescriptor<bool>() {
         static TypeDescriptor_Bool typeDesc;
+        return &typeDesc;
+    }
+
+    struct TypeDescriptor_FixedPoint : TypeDescriptor {
+        TypeDescriptor_FixedPoint() {
+            name = "fp";
+            size = sizeof( fp );
+        }
+
+        virtual nlohmann::json JSON_Write( const void * obj ) override {
+            INVALID_CODE_PATH;
+            return nlohmann::json();
+        }
+
+        virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+            INVALID_CODE_PATH;
+        }
+
+        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
+            INVALID_CODE_PATH;
+        }
+
+        virtual LargeString ToString( const void * obj ) override {
+            LargeString res = {};
+            fp f = *(fp *)obj;
+            f32 v = ToFloat( f );
+            res.Add( std::to_string( v ).c_str() );
+            return res;
+        }
+    };
+
+    template <>
+    TypeDescriptor * GetPrimitiveDescriptor<fp>() {
+        static TypeDescriptor_FixedPoint typeDesc;
+        return &typeDesc;
+    }
+
+    struct TypeDescriptor_Fp2 : TypeDescriptor {
+        TypeDescriptor_Fp2() {
+            name = "fp2";
+            size = sizeof( fp2 );
+        }
+
+        virtual nlohmann::json JSON_Write( const void * obj ) override {
+            INVALID_CODE_PATH;
+            return nlohmann::json();
+        }
+
+        virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+            INVALID_CODE_PATH;
+        }
+
+        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
+            INVALID_CODE_PATH;
+        }
+
+        virtual LargeString ToString( const void * obj ) override {
+            LargeString res = {};
+            fp2 v = *(fp2 *)obj;
+            res.Add( "< " );
+            res.Add( std::to_string( ToFloat( v.x ) ).c_str() );
+            res.Add( ", " );
+            res.Add( std::to_string( ToFloat( v.x ) ).c_str() );
+            res.Add( " >" );
+            return res;
+        }
+    };
+
+    template <>
+    TypeDescriptor * GetPrimitiveDescriptor<fp2>() {
+        static TypeDescriptor_Fp2 typeDesc;
         return &typeDesc;
     }
 
@@ -362,6 +475,17 @@ namespace atto {
 
         virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
             ImGui::InputFloat2( memberName, (float *)obj );
+        }
+
+        virtual LargeString ToString( const void * obj ) override {
+            LargeString res = {};
+            glm::vec2 v = *(glm::vec2 *)obj;
+            res.Add( "< " );
+            res.Add( std::to_string( v.x ).c_str() );
+            res.Add( ", " );
+            res.Add( std::to_string( v.y ).c_str() );
+            res.Add( " >" );
+            return res;
         }
     };
 
@@ -388,6 +512,19 @@ namespace atto {
         virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
             ImGui::InputFloat3( memberName, (float *)obj );
         }
+
+        virtual LargeString ToString( const void * obj ) override {
+            LargeString res = {};
+            glm::vec3 v = *(glm::vec3 *)obj;
+            res.Add( "< " );
+            res.Add( std::to_string( v.x ).c_str() );
+            res.Add( ", " );
+            res.Add( std::to_string( v.y ).c_str() );
+            res.Add( ", " );
+            res.Add( std::to_string( v.z ).c_str() );
+            res.Add( " >" );
+            return res;
+        }
     };
 
     template <>
@@ -412,6 +549,21 @@ namespace atto {
 
         virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
             ImGui::InputFloat4( memberName, (float *)obj );
+        }
+
+        virtual LargeString ToString( const void * obj ) override {
+            LargeString res = {};
+            glm::vec4 v = *(glm::vec4 *)obj;
+            res.Add( "< " );
+            res.Add( std::to_string( v.x ).c_str() );
+            res.Add( ", " );
+            res.Add( std::to_string( v.y ).c_str() );
+            res.Add( ", " );
+            res.Add( std::to_string( v.z ).c_str() );
+            res.Add( ", " );
+            res.Add( std::to_string( v.w ).c_str() );
+            res.Add( " >" );
+            return res;
         }
     };
 
@@ -438,6 +590,11 @@ namespace atto {
         virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
             throw std::logic_error( "The method or operation is not implemented." );
         }
+
+        virtual LargeString ToString( const void * obj ) override {
+            INVALID_CODE_PATH;
+            return {};
+        }
     };
 
     template <>
@@ -463,6 +620,11 @@ namespace atto {
         virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
             throw std::logic_error( "The method or operation is not implemented." );
         }
+
+        virtual LargeString ToString( const void * obj ) override {
+            INVALID_CODE_PATH;
+            return {};
+        }
     };
 
     template <>
@@ -487,6 +649,11 @@ namespace atto {
 
         virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
             throw std::logic_error( "The method or operation is not implemented." );
+        }
+
+        virtual LargeString ToString( const void * obj ) override {
+            INVALID_CODE_PATH;
+            return {};
         }
     };
 
@@ -516,6 +683,13 @@ namespace atto {
                 s->CalculateLength();
             }
         }
+
+        virtual LargeString ToString( const void * obj ) override {
+            SmallString str = *(SmallString *)obj;
+            LargeString res = {};
+            res.Add( str.GetCStr() );
+            return res;
+        }
     };
 
     template <>
@@ -543,6 +717,11 @@ namespace atto {
             if( ImGui::InputText( memberName, s->GetCStr(), LargeString::CAPCITY ) ) {
                 s->CalculateLength();
             }
+        }
+
+        virtual LargeString ToString( const void * obj ) override {
+            LargeString str = *(LargeString *)obj;
+            return str;
         }
     };
 
@@ -655,6 +834,10 @@ namespace atto {
         }
 
         virtual void Binary_Write( const void * obj, BinaryBlob & f ) override {
+            throw std::logic_error( "The method or operation is not implemented." );
+        }
+
+        virtual LargeString ToString( const void * obj ) override {
             throw std::logic_error( "The method or operation is not implemented." );
         }
     };
@@ -787,6 +970,10 @@ namespace atto {
                 ImGui::TreePop();
             }
         }
+
+        virtual LargeString ToString( const void * obj ) override {
+            throw std::logic_error( "The method or operation is not implemented." );
+        }
     };
 
     template<>
@@ -871,6 +1058,10 @@ namespace atto {
             }
         #endif
         }
+
+        virtual LargeString ToString( const void * obj ) override {
+            throw std::logic_error( "The method or operation is not implemented." );
+        }
     };
 
     template <>
@@ -940,6 +1131,10 @@ namespace atto {
             }
         #endif
         }
+
+        virtual LargeString ToString( const void * obj ) override {
+            throw std::logic_error( "The method or operation is not implemented." );
+        }
     };
 
     template <>
@@ -1002,6 +1197,10 @@ namespace atto {
                     }
                 }
             }
+        }
+
+        virtual LargeString ToString( const void * obj ) override {
+            throw std::logic_error( "The method or operation is not implemented." );
         }
     };
 

@@ -2,25 +2,23 @@
 #include "atto_core.h"
 
 namespace atto {
-    void BinaryBlob::Create( const byte * buffer, i32 size ) {
-        this->buffer = new byte[ size ];
-        this->totalSize = size;
-        this->current = 0;
+
+    BinaryBlob::BinaryBlob() {
+        buffer.reserve( Kilobytes( 1 ) );
     }
 
     void BinaryBlob::Save( Core * core, const char * path ) {
-        core->ResourceWriteEntireBinaryFile( path, (char*)buffer, totalSize );
+        core->ResourceWriteEntireBinaryFile( path, (char*)buffer.data(), (i32)buffer.size() );
     }
 
-    void BinaryBlob::Write( const void * data, i32 size ) {
-        AssertMsg( current + size < totalSize, " BinaryFile::Write :: Network stuffies to big" );
-        memcpy( buffer + current, data, size );
-        current += size;
+    void BinaryBlob::Write( const void * data, size_t size ) {
+        const byte* byteData = static_cast<const byte*>(data);
+        buffer.insert( buffer.end(), byteData, byteData + size );
     }
 
-    void BinaryBlob::Read( void * dst, i32 size ) {
-        AssertMsg( current + size < totalSize, "BinaryFile::Read :: Network stuffies to big" );
-        memcpy( dst, buffer + current, size );
-        current += size;
+    void BinaryBlob::Read( void * dst, size_t size ) {
+        Assert( current + size < buffer.size() );
+        byte * p = &buffer.at( current );
+        memcpy( dst, p, size );
     }
 }

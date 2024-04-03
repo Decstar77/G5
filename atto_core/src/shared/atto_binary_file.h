@@ -68,25 +68,26 @@ namespace atto {
         char buffer[ _size_ ];
     };
 
-
-
     class BinaryBlob {
     public:
-        void Create( const byte * buffer, i32 size );
+        BinaryBlob();
+        inline void Reserve( size_t size ) { buffer.reserve( size ); }
         void Save( Core * core, const char * path );
 
-        void Write( const void * data, i32 size );
+        void Write( const void * data, size_t size );
         template<typename _type_>
         void Write( const _type_ * obj );
 
-        void Read( void * dst, i32 size );
+        inline void ReadPreare() { current = 0; }
+        inline bool ReadComplete() { return current >= buffer.size(); }
+
+        void Read( void * dst, size_t size );
         template<typename _type_>
         void Read( _type_ * obj );
 
     public:
-        byte * buffer = nullptr;
-        i32 totalSize = 0;
-        i32 current = 0;
+        std::vector< byte > buffer;
+        size_t              current = 0;
     };
 
     template<typename _type_>

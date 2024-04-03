@@ -192,7 +192,7 @@ namespace atto {
         drawList.Add( cmd );
     }
 
-    void DrawContext::DrawLine2D( glm::vec2 start, glm::vec2 end, f32 thicc, const glm::vec4 & color /*= glm::vec4(1)*/ ) {
+    void DrawContext::DrawLine( glm::vec2 start, glm::vec2 end, f32 thicc, const glm::vec4 & color /*= glm::vec4(1)*/ ) {
         glm::vec2 direction = glm::normalize( end - start );
         glm::vec2 perpendicular( direction.y, -direction.x );
 
@@ -217,10 +217,22 @@ namespace atto {
         drawList.Add( cmd );
     }
 
-
-    void DrawContext::DrawLine2D_NDC( glm::vec2 start, glm::vec2 end, f32 thicc, const glm::vec4 & color /*= glm::vec4( 1 ) */ ) {
-        DrawLine2D( start, end, thicc, color );
+    void DrawContext::DrawLine_NDC( glm::vec2 start, glm::vec2 end, f32 thicc, const glm::vec4 & color /*= glm::vec4( 1 ) */ ) {
+        DrawLine( start, end, thicc, color );
         drawList.Last().proj = glm::mat4( 1 );
+    }
+
+    void DrawContext::DrawTriangle( glm::vec2 p1, glm::vec2 p2, glm::vec2 p3, glm::vec4 colour ) {
+        DrawCommand cmd = {};
+        cmd.type = DrawCommandType::TRIANGLE;
+        cmd.color = colour;
+        cmd.proj = cameraProjection;
+
+        cmd.triangle.p1 = p1;
+        cmd.triangle.p2 = p2;
+        cmd.triangle.p3 = p3;
+
+        drawList.Add( cmd );
     }
 
     void DrawContext::DrawTexture( TextureResource * texture, glm::vec2 center, f32 rot, glm::vec2 size, glm::vec4 colour ) {
@@ -390,7 +402,7 @@ namespace atto {
         drawList.Add( cmd );
     }
 
-    void DrawContext::DrawText2D( FontHandle font, glm::vec2 bl, f32 fontSize, const char * text, TextAlignment_H hA, TextAlignment_V vA, glm::vec4 colour ) {
+    void DrawContext::DrawTextScreen( FontHandle font, glm::vec2 bl, f32 fontSize, const char * text, TextAlignment_H hA, TextAlignment_V vA, glm::vec4 colour ) {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::TEXT;
         cmd.color = colour;
@@ -404,7 +416,7 @@ namespace atto {
         drawList.Add( cmd );
     }
 
-    void DrawContext::DrawPlane( glm::vec3 center, glm::vec3 normal, glm::vec2 dim, glm::vec4 colour /*= glm::vec4( 1 ) */ ) {
+    void DrawContext::DrawPlane3D( glm::vec3 center, glm::vec3 normal, glm::vec2 dim, glm::vec4 colour /*= glm::vec4( 1 ) */ ) {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::PLANE;
         cmd.color = colour;
@@ -415,7 +427,7 @@ namespace atto {
         drawList.Add( cmd );
     }
 
-    void DrawContext::DrawSphere( glm::vec3 center, f32 r, glm::vec4 colour ) {
+    void DrawContext::DrawSphere3D( glm::vec3 center, f32 r, glm::vec4 colour ) {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::SPHERE;
         cmd.color = colour;
@@ -425,7 +437,7 @@ namespace atto {
         drawList.Add( cmd );
     }
 
-    void DrawContext::DrawBox( glm::vec3 min, glm::vec3 max, glm::vec4 colour ) {
+    void DrawContext::DrawBox3D( glm::vec3 min, glm::vec3 max, glm::vec4 colour ) {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::BOX;
         cmd.color = colour;
@@ -439,7 +451,7 @@ namespace atto {
         drawList.Add( cmd );
     }
 
-    void DrawContext::DrawLine( glm::vec3 p1, glm::vec3 p2, f32 thicc, glm::vec4 colour ) {
+    void DrawContext::DrawLine3D( glm::vec3 p1, glm::vec3 p2, f32 thicc, glm::vec4 colour ) {
         DrawCommand cmd = {};
         cmd.type = DrawCommandType::LINE;
         cmd.color = colour;
@@ -449,27 +461,27 @@ namespace atto {
         drawList.Add( cmd );
     }
 
-    void DrawContext::DrawTriangle( glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec4 colour ) {
+    void DrawContext::DrawTriangle3D( glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec4 colour ) {
         DrawCommand cmd = {};
-        cmd.type = DrawCommandType::TRIANGLE;
+        cmd.type = DrawCommandType::TRIANGLE3D;
         cmd.color = colour;
-        cmd.triangle.p1 = p1;
-        cmd.triangle.p2 = p2;
-        cmd.triangle.p3 = p3;
+        cmd.triangle3D.p1 = p1;
+        cmd.triangle3D.p2 = p2;
+        cmd.triangle3D.p3 = p3;
 
         drawList.Add( cmd );
     }
 
-    void DrawContext::DrawTriangle( glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec2 uv1, glm::vec2 uv2, glm::vec2 uv3, TextureResource * texture ) {
+    void DrawContext::DrawTriangle3D( glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec2 uv1, glm::vec2 uv2, glm::vec2 uv3, TextureResource * texture ) {
         DrawCommand cmd = {};
-        cmd.type = DrawCommandType::TRIANGLE;
-        cmd.triangle.texture = texture;
-        cmd.triangle.p1 = p1;
-        cmd.triangle.p2 = p2;
-        cmd.triangle.p3 = p3;
-        cmd.triangle.uv1 = uv1;
-        cmd.triangle.uv2 = uv2;
-        cmd.triangle.uv3 = uv3;
+        cmd.type = DrawCommandType::TRIANGLE3D;
+        cmd.triangle3D.texture = texture;
+        cmd.triangle3D.p1 = p1;
+        cmd.triangle3D.p2 = p2;
+        cmd.triangle3D.p3 = p3;
+        cmd.triangle3D.uv1 = uv1;
+        cmd.triangle3D.uv2 = uv2;
+        cmd.triangle3D.uv3 = uv3;
 
         drawList.Add( cmd );
     }
@@ -559,12 +571,6 @@ namespace atto {
 
     u32 Core::NetGetPing() {
         return client->GetPing();
-    }
-
-    BinaryBlob Core::CreateBinaryBlob( i32 blobSize ) {
-        BinaryBlob blob = {};
-        blob.Create( (byte *)MemoryAllocateTransient( blobSize ), (i32)blobSize );
-        return blob;
     }
 
     void * Core::MemoryAllocatePermanent( u64 bytes ) {

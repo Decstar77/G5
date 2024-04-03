@@ -1,7 +1,11 @@
 #pragma once
 
 #include "../shared/atto_core.h"
+#include "atto_platform_window.h"
 
+
+struct GLFWmonitor;
+struct GLFWwindow;
 struct FONScontext;
 typedef FONScontext * FontContext;
 
@@ -185,6 +189,8 @@ namespace atto {
         i32                         arialFontHandle;
         i32                         kenFontHandle;
 
+        PlatformWindow              window;
+
         FixedList<glm::vec2, 96>        shapeCirleBase;
         FixedList<glm::vec2, 96>        shapeCirle;
 
@@ -198,8 +204,6 @@ namespace atto {
         bool            AudioInitialize();
         void            AudioUpdate();
         void            AudioShudown();
-        bool            ALLoadOGG( const char * file, Win32AudioResource & audioBuffer );
-        bool            ALLoadWAV( const char * file, Win32AudioResource & audioBuffer );
 
         void            GLCheckCapablities();
         void            GLShaderProgramBind( ShaderProgram & program );

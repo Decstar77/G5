@@ -25,8 +25,21 @@ namespace atto {
         i32             width = -1;
         i32             height = -1;
         i32             channels = 4;
-
-    private:
-        void GetPixel( i32 x, i32 y, u8 & r, u8 & g, u8 & b, u8 & a );
     };
+
+    class PixelArtMeshCreator {
+    public:
+        bool LoadFromFile( const char * file );
+
+        inline bool IsLoaded() { return points.size() != 0; }
+
+        struct PixyPoint {
+            glm::vec4 c;
+            glm::vec2 p;
+        };
+
+        std::vector<PixyPoint> points;
+
+    };
+
 }

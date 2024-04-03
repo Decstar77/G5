@@ -1,11 +1,13 @@
 
-#include "win32/atto_core_windows.h"
+#include "platform/atto_core_windows.h"
 
 using namespace atto;
 
 /*
 MEMES:
     An ability that scrambles your opponesnts selections.... :D :D :D
+    Combine solar systems
+    Smash solar systems together 
     ACHIVEMTN: You've been granted a random perk: Dead.
     ACHIVEMTN: Hey, real quick, whats the radius on that?: "Yes."
 */
@@ -28,49 +30,6 @@ IDEAS:
     SHEILD BAR
     ENERGY BAR
 
-    EACH BIOOM will drop different parts. 
-
-    BIOOOOMS:
-        - Homebase:
-            - Augment station
-
-        - Ship:
-            Tile sheet:
-                - Ventilation
-                - Control panel
-            Props:
-                - Charging station
-                - Cables
-                - Pipes
-                - Storage
-                - Monitor/Datapad
-                - Escape pod
-
-            Enemies:
-                Shield drones: ( Shield effect + particles )
-                Kamikazy drones: ( Explosition + Particles )
-                Wall turret: 
-                Ground turret: ( Explosition + Particles )
-                Droikedia:
-
-            Boss:
-                - Captains bolts
-
-        - Desert:
-            Enemies:
-                Sand worm
-        
-        - Forest:
-            Enemies:
-                -
-
-        - Snow: 
-            Enemies:
-                -
-
-        - Volcano:
-            Enemies:
-                    -
 
 */
 

@@ -169,7 +169,7 @@ namespace atto {
                 if ( child->text.GetLength() != 0 ) {
                     glm::vec2 screenPos = uiDraw->WorldPosToScreenPos( child->computedBounds.GetCenter() );
                     glm::vec2 screenFontSize = uiDraw->WorldPosToScreenPos( glm::vec2( 0, fontSize ) );
-                    uiDraw->DrawText2D( fontHandle, screenPos, screenFontSize.y, child->text.GetCStr(), TextAlignment_H::FONS_ALIGN_CENTER, TextAlignment_V::FONS_ALIGN_MIDDLE );
+                    uiDraw->DrawTextScreen( fontHandle, screenPos, screenFontSize.y, child->text.GetCStr(), TextAlignment_H::FONS_ALIGN_CENTER, TextAlignment_V::FONS_ALIGN_MIDDLE );
                 }
 
                 traversalQueue.Enqueue( child );

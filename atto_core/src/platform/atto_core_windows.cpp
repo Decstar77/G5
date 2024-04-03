@@ -7,7 +7,6 @@
 #include "atto_core_windows.h"
 
 #include <glad/glad.h>
-#include "GLFW/glfw3.h"
 
 #include <fstream>
 #include "../editor/atto_editor.h"
@@ -15,55 +14,6 @@
 #include "../game/modes/atto_game_mode_main_menu.h"
 
 namespace atto {
-
-    static GLFWmonitor * monitor = nullptr;
-    static LargeString                 monitorName = LargeString::FromLiteral( "" );
-    static f64                         monitorRefreshRate = 0;
-    static GLFWwindow *                window = nullptr;
-    static SmallString                 windowTitle = SmallString::FromLiteral( "Game" );
-    static bool                        windowFullscreen = false;
-    static bool                        shouldClose = false;
-    static bool                        firstMouse = true;
-
-    static void KeyCallback( GLFWwindow * window, int key, int scancode, int action, int mods ) {
-        Core * core = (Core *)glfwGetWindowUserPointer( window );
-        FrameInput & fi = core->InputGetFrameInput();
-        fi.keys[ key ] = action != GLFW_RELEASE;
-    }
-
-    static void MousePositionCallback( GLFWwindow * window, double xpos, double ypos ) {
-        Core * core = (Core *)glfwGetWindowUserPointer( window );
-        FrameInput & fi = core->InputGetFrameInput();
-        if( firstMouse ) {
-            fi.lastMousePosPixels.x = (f32)xpos;
-            fi.lastMousePosPixels.y = (f32)ypos;
-            firstMouse = false;
-        }
-        else {
-            fi.lastMousePosPixels = fi.mousePosPixels;
-        }
-
-        fi.mousePosPixels = glm::vec2( (f32)xpos, (f32)ypos );
-        // We need to += here because this callback can be called multiple times when calling glfwPollEvents. So we need to collect all the inputs.
-        fi.mouseDeltaPixels.x += fi.mousePosPixels.x - fi.lastMousePosPixels.x;
-        fi.mouseDeltaPixels.y += fi.lastMousePosPixels.y - fi.mousePosPixels.y;
-    }
-
-    static void MouseButtonCallback( GLFWwindow * window, int button, int action, int mods ) {
-        Core * core = (Core *)glfwGetWindowUserPointer( window );
-        FrameInput & fi = core->InputGetFrameInput();
-        fi.mouseButtons[ button ] = action != GLFW_RELEASE;
-    }
-
-    static void ScrollCallback( GLFWwindow * window, double xoffset, double yoffset ) {
-        Core * core = (Core *)glfwGetWindowUserPointer( window );
-        FrameInput & fi = core->InputGetFrameInput();
-        fi.mouseWheelDelta = glm::vec2( (f32)xoffset, (f32)yoffset );
-    }
-
-    static void FramebufferCallback( GLFWwindow * window, i32 w, i32 h ) {
-    }
-
     void WindowsCore::Run( int argc, char ** argv ) {
         theCore = this;
 
@@ -73,66 +23,8 @@ namespace atto {
 
         MemoryMakePermanent( Megabytes( 128 ) );
         MemoryMakeTransient( Megabytes( 128 ) );
-        
-        if( !glfwInit() ) {
-            //ATTOFATAL("Could not init GLFW, your windows is f*cked");
-            return;
-        }
 
-        glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 4 );
-        glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 6 );
-
-    #if ATTO_DEBUG_RENDERING
-        glfwWindowHint( GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE );
-    #endif
-
-        glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );
-        glfwWindowHint( GLFW_RESIZABLE, GL_TRUE );
-        glfwWindowHint( GLFW_SCALE_TO_MONITOR, GLFW_FALSE );
-        glfwWindowHint(GLFW_SAMPLES, 4);
-
-        monitor = glfwGetPrimaryMonitor();
-        if( monitor != nullptr ) {
-            const GLFWvidmode * videoMode = glfwGetVideoMode( monitor );
-            monitorRefreshRate = videoMode->refreshRate;
-            monitorName = glfwGetMonitorName( monitor );
-            //ATTOINFO("Using monitor name %s", os.monitorName.GetCStr());
-        }
-
-        i32 windowWidth = theGameSettings.windowWidth;
-        i32 windowHeight = theGameSettings.windowHeight;
-        //windowFullscreen = true;
-        window = glfwCreateWindow( windowWidth, windowHeight, windowTitle.GetCStr(), windowFullscreen ? monitor : nullptr, 0 );
-
-        if( window == nullptr ) {
-            LogOutput( LogLevel::FATAL, "Could not create window, your windows is f*cked" );
-            return;
-        }
-
-        glfwMakeContextCurrent( window );
-        glfwSwapInterval( theGameSettings.vsync );
-
-        glfwSetWindowUserPointer( window, this );
-
-        if( glfwRawMouseMotionSupported() ) {
-            glfwSetInputMode( window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE );
-        }
-        else {
-            LogOutput( LogLevel::WARN, "Could not enable raw input" );
-        }
-
-        glfwSetCursorPosCallback( window, MousePositionCallback );
-        glfwSetKeyCallback( window, KeyCallback );
-        glfwSetMouseButtonCallback( window, MouseButtonCallback );
-        glfwSetScrollCallback( window, ScrollCallback );
-        glfwSetFramebufferSizeCallback( window, FramebufferCallback );
-
-        if( theGameSettings.windowStartPosX != -1 ) {
-            glfwSetWindowPos( window, theGameSettings.windowStartPosX, theGameSettings.windowStartPosY );
-        }
-
-        gladLoadGLLoader( (GLADloadproc)glfwGetProcAddress );
-        LogOutput( LogLevel::INFO, "OpenGL %s, GLSL %s", glGetString( GL_VERSION ), glGetString( GL_SHADING_LANGUAGE_VERSION ) );
+        window.Initialize( this );
 
         //RenderSetCameraDims( 320, 180 );
         //RenderSetCamera( 320 * 1.5f, 180 * 1.5f );
@@ -149,7 +41,7 @@ namespace atto {
         taskScheduler.Initialize( 4 );
 
     #if ATTO_EDITOR
-        EngineImgui::Initialize( window );
+        EngineImgui::Initialize( window.window );
         editor = new Editor();
         editor->Initialize( this );
     #endif
@@ -166,8 +58,8 @@ namespace atto {
         f32 simTickCurrent = 0.0f;
 
         this->deltaTime = 0;
-        f64 startTime = glfwGetTime();
-        while( !glfwWindowShouldClose( window ) ) {
+        f64 startTime = window.GetTime();
+        while( window.ShouldClose() == false ) {
             FrameInput & fi = InputGetFrameInput();
             fi.lastKeys = fi.keys;
             fi.lastMouseButtons = fi.mouseButtons;
@@ -175,18 +67,15 @@ namespace atto {
             fi.mouseDeltaPixels = glm::vec2( 0.0f, 0.0f );
 
             //std::cout << "Poll start " << std::endl;
-            glfwPollEvents();
+            window.PollEvents();
             //std::cout << "Poll end " << std::endl;
 
             if( InputKeyJustPressed( KEY_CODE_ENTER ) && InputKeyDown( KEY_CODE_LEFT_ALT ) ) {
-                if( windowFullscreen ) {
-                    glfwSetWindowMonitor( window, nullptr, theGameSettings.windowStartPosX, theGameSettings.windowStartPosY, windowWidth, windowHeight, 0 );
-                    windowFullscreen = false;
+                if( window.windowFullscreen ) {
+                    window.DisableFullscreen();
                 }
                 else {
-                    const GLFWvidmode * mode = glfwGetVideoMode( monitor );
-                    glfwSetWindowMonitor( window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate );
-                    windowFullscreen = true;
+                    window.EnableFullscreen();
                 }
             }
 
@@ -216,11 +105,11 @@ namespace atto {
 
             AudioUpdate();
 
-            glfwSwapBuffers( window );
+            window.SwapBuffers();
 
             MemoryClearTransient();
 
-            f64 endTime = glfwGetTime();
+            f64 endTime = window.GetTime();
             this->deltaTime = (f32)( endTime - startTime );
             startTime = endTime;
         }
@@ -233,13 +122,13 @@ namespace atto {
     }
 
     f64 WindowsCore::GetTheCurrentTime() const {
-        return glfwGetTime();
+        return window.GetTime();
     }
 
     void WindowsCore::GLSetCamera( f32 width, f32 height ) {
         i32 w = 0;
         i32 h = 0;
-        glfwGetFramebufferSize( window, &w, &h );
+        window.GetFramebufferSize( w, h );
         GLResetSurface( (f32)w, (f32)h, width, height );
     }
 
@@ -341,6 +230,29 @@ namespace atto {
                     glBindVertexArray( shapeVertexBuffer.vao );
                     GLVertexBufferUpdate( shapeVertexBuffer, 0, sizeof( vertices ), vertices );
                     glDrawArrays( GL_TRIANGLES, 0, 6 );
+                    glBindVertexArray( 0 );
+                } break;
+                case DrawCommandType::TRIANGLE: {
+                    cmd.triangle.p1 -= dcxt->cameraPos;
+                    cmd.triangle.p2 -= dcxt->cameraPos;
+                    cmd.triangle.p3 -= dcxt->cameraPos;
+
+                    glm::vec2 vertices[ 3 ] = {
+                        { cmd.triangle.p1 },
+                        { cmd.triangle.p2 },
+                        { cmd.triangle.p3 }
+                    };
+
+                    GLEnableAlphaBlending();
+                    GLShaderProgramBind( shapeProgram );
+                    GLShaderProgramSetMat4( "p", cmd.proj );
+                    GLShaderProgramSetInt( "mode", 0 );
+                    GLShaderProgramSetVec4( "color", cmd.color );
+
+                    glDisable( GL_CULL_FACE );
+                    glBindVertexArray( shapeVertexBuffer.vao );
+                    GLVertexBufferUpdate( shapeVertexBuffer, 0, sizeof( vertices ), vertices );
+                    glDrawArrays( GL_TRIANGLES, 0, 3 );
                     glBindVertexArray( 0 );
                 } break;
                 case DrawCommandType::TEXTURE:
@@ -516,12 +428,12 @@ namespace atto {
                     glDrawArrays( GL_LINES, 0, 2 );
                     glBindVertexArray( 0 );
                 } break;
-                case DrawCommandType::TRIANGLE:
+                case DrawCommandType::TRIANGLE3D:
                 {
                     StaticMeshVertex vertices[ 3 ] = {
-                        { cmd.triangle.p1, glm::vec3( 0 ), cmd.triangle.uv1 },
-                        { cmd.triangle.p2, glm::vec3( 0 ), cmd.triangle.uv2 },
-                        { cmd.triangle.p3, glm::vec3( 0 ), cmd.triangle.uv3 }
+                        { cmd.triangle3D.p1, glm::vec3( 0 ), cmd.triangle3D.uv1 },
+                        { cmd.triangle3D.p2, glm::vec3( 0 ), cmd.triangle3D.uv2 },
+                        { cmd.triangle3D.p3, glm::vec3( 0 ), cmd.triangle3D.uv3 }
                     };
 
                     glm::mat4 v = dcxt->cameraView;
@@ -531,9 +443,9 @@ namespace atto {
                     GLShaderProgramBind( staticMeshUnlitProgram );
                     GLShaderProgramSetMat4( "pvm", pvm );
 
-                    if( cmd.triangle.texture != nullptr ) {
+                    if( cmd.triangle3D.texture != nullptr ) {
                         GLShaderProgramSetInt( "hasTexture", 1 );
-                        Win32TextureResource * texture = (Win32TextureResource *)cmd.triangle.texture;
+                        Win32TextureResource * texture = (Win32TextureResource *)cmd.triangle3D.texture;
                         GLShaderProgramSetSampler( "texture0", 0 );
                         GLShaderProgramSetTexture( 0, texture->handle );
                     }
@@ -650,19 +562,6 @@ namespace atto {
 
     TextureResource * WindowsCore::ResourceGetAndLoadTexture( const char * name ) {
         return ResourceGetAndCreateTexture( name, false , false );
-        //const i32 textureResourceCount = resources.textures.GetCount();
-        //for( i32 i = 0; i < textureResourceCount; i++ ) {
-        //    TextureResource & textureResource = resources.textures[ i ];
-        //    if( textureResource.name == name ) {
-        //        return &textureResource;
-        //    }
-        //}
-        //
-        //Win32TextureResource * textureResource = MemoryAllocateTransient<Win32TextureResource>();
-        //if( ResourceReadTextRefl<TextureResource>( (TextureResource *)textureResource, name ) == true ) {
-        //    
-        //}
-        //return nullptr;
     }
 
     inline static SmallString GetEndingFolder( const char * path ) {
@@ -752,27 +651,27 @@ namespace atto {
     }
 
     void WindowsCore::InputDisableMouse() {
-        glfwSetInputMode( window, GLFW_CURSOR, GLFW_CURSOR_DISABLED );
+        window.SetCursorDisable();
     }
 
     void WindowsCore::InputEnableMouse() {
-        glfwSetInputMode( window, GLFW_CURSOR, GLFW_CURSOR_NORMAL );
+        window.SetCursorNormal();
     }
 
     bool WindowsCore::InputIsMouseDisabled() {
-        return glfwGetInputMode( window, GLFW_CURSOR ) == GLFW_CURSOR_DISABLED;
+        return window.IsCursorDisabled();
     }
 
     void WindowsCore::WindowClose() {
-        glfwSetWindowShouldClose( window, true );
+        window.Close();
     }
 
     void WindowsCore::WindowSetTitle( const char * title ) {
-        glfwSetWindowTitle( window, title );
+        window.SetWindowTitle( title );
     }
 
     void WindowsCore::WindowSetVSync( bool value ) {
-        glfwSwapInterval( (i32)value );
+        window.SetVysnc( value );
         theGameSettings.vsync = value;
     }
 

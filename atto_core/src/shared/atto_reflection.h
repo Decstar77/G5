@@ -4,11 +4,6 @@
 #include "atto_math.h"
 #include "atto_binary_file.h"
 
-#include <vector>
-#include <iostream>
-#include <string>
-#include <cstddef>
-
 #ifndef ATTO_SERVER
 
 #include "json/json.hpp"
@@ -37,22 +32,22 @@ namespace atto {
     nlohmann::json JSON_Write( glm::mat3 v );
     nlohmann::json JSON_Write( glm::mat4 v );
 
-    void JSON_Read( const nlohmann::json & j, u8 & o );
-    void JSON_Read( const nlohmann::json & j, bool & o );
-    void JSON_Read( const nlohmann::json & j, i32 & o );
-    void JSON_Read( const nlohmann::json & j, i64 & o );
-    void JSON_Read( const nlohmann::json & j, u32 & o );
-    void JSON_Read( const nlohmann::json & j, u64 & o );
-    void JSON_Read( const nlohmann::json & j, f32 & o );
-    void JSON_Read( const nlohmann::json & j, f64 & o );
-    void JSON_Read( const nlohmann::json & j, SmallString & o );
-    void JSON_Read( const nlohmann::json & j, LargeString & o );
-    void JSON_Read( const nlohmann::json & j, glm::vec2 & o );
-    void JSON_Read( const nlohmann::json & j, glm::vec3 & o );
-    void JSON_Read( const nlohmann::json & j, glm::vec4 & o );
-    void JSON_Read( const nlohmann::json & j, glm::mat2 & o );
-    void JSON_Read( const nlohmann::json & j, glm::mat3 & o );
-    void JSON_Read( const nlohmann::json & j, glm::mat4 & o );
+    void            JSON_Read( const nlohmann::json & j, u8 & o );
+    void            JSON_Read( const nlohmann::json & j, bool & o );
+    void            JSON_Read( const nlohmann::json & j, i32 & o );
+    void            JSON_Read( const nlohmann::json & j, i64 & o );
+    void            JSON_Read( const nlohmann::json & j, u32 & o );
+    void            JSON_Read( const nlohmann::json & j, u64 & o );
+    void            JSON_Read( const nlohmann::json & j, f32 & o );
+    void            JSON_Read( const nlohmann::json & j, f64 & o );
+    void            JSON_Read( const nlohmann::json & j, SmallString & o );
+    void            JSON_Read( const nlohmann::json & j, LargeString & o );
+    void            JSON_Read( const nlohmann::json & j, glm::vec2 & o );
+    void            JSON_Read( const nlohmann::json & j, glm::vec3 & o );
+    void            JSON_Read( const nlohmann::json & j, glm::vec4 & o );
+    void            JSON_Read( const nlohmann::json & j, glm::mat2 & o );
+    void            JSON_Read( const nlohmann::json & j, glm::mat3 & o );
+    void            JSON_Read( const nlohmann::json & j, glm::mat4 & o );
 
     struct TypeDescriptor {
         i32         size;
@@ -60,6 +55,7 @@ namespace atto {
         virtual ~TypeDescriptor() {}
         virtual nlohmann::json      JSON_Write( const void * obj ) = 0;
         virtual void                JSON_Read( const nlohmann::json & j, const void * obj ) = 0;
+        virtual LargeString         ToString( const void * obj ) = 0;
         virtual void                Binary_Write( const void * obj, BinaryBlob & f ) { f.Write( obj, size ); }
         virtual void                Binary_Read( void * obj, BinaryBlob & f ) { f.Read( obj, size ); }
         virtual void                Imgui_Draw( const void * obj, const char * memberName ) = 0;
@@ -137,6 +133,11 @@ namespace atto {
             }
         }
 
+        virtual LargeString ToString( const void * obj ) override {
+            INVALID_CODE_PATH;
+            return {};
+        }
+
         virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
             nlohmann::json j;
             if( ImGui::TreeNodeEx( memberName, ImGuiTreeNodeFlags_DefaultOpen ) ) {
@@ -181,6 +182,37 @@ namespace atto {
         }; \
     }
 
+    template < typename _numberType_, typename _classType_ >
+    struct TypeDescriptor_TypeSafeNumber : TypeDescriptor {
+        virtual nlohmann::json JSON_Write( const void * obj ) override {
+            INVALID_CODE_PATH;
+            return {};
+        }
+
+        virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+            INVALID_CODE_PATH;
+        }
+
+        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
+            INVALID_CODE_PATH;
+        }
+
+        virtual LargeString ToString( const void * obj ) override {
+            TypeSafeNumber< _numberType_, _classType_ > * num = ( TypeSafeNumber< _numberType_, _classType_ > * )obj;
+            TypeDescriptor * t = TypeResolver< _numberType_ >::get();
+            return t->ToString( &num->value );
+        }
+    };
+
+    template < typename _numberType_, typename _classType_ >
+    class TypeResolver< TypeSafeNumber< _numberType_, _classType_ > > {
+    public:
+        static TypeDescriptor * get() {
+            static TypeDescriptor_TypeSafeNumber<_numberType_, _classType_> typeDesc;
+            return &typeDesc;
+        }
+    };
+
     template <typename _type_, i32 cap>
     struct TypeDescriptor_FixedList : TypeDescriptor {
         static_assert( std::is_trivial<_type_>::value, "Type must be trivial" );
@@ -211,6 +243,17 @@ namespace atto {
                 list->Add_MemCpyPtr( item );
             }
             delete item;
+        }
+
+        virtual LargeString ToString( const void * obj ) override {
+            FixedList< _type_, cap > * list = ( FixedList< _type_, cap > * )obj;
+            LargeString result = {};
+            result.Add( "{" );
+            for( i32 i = 0; i < list->GetCount(); i++ ) {
+                result.Add( itemType->ToString( list->Get( i ) ) );
+            }
+            result.Add( "}" );
+            return result;
         }
 
         virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
@@ -275,6 +318,37 @@ namespace atto {
         }
     };
 
+    template<typename _type_ >
+    struct TypeDescriptor_ObjectHandle : TypeDescriptor {
+        virtual nlohmann::json JSON_Write( const void * obj ) override {
+            INVALID_CODE_PATH;
+            return {};
+        }
+
+        virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+            INVALID_CODE_PATH;
+        }
+
+        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
+            INVALID_CODE_PATH;
+        }
+
+        virtual LargeString ToString( const void * obj ) override {
+            ObjectHandle< _type_ > hndl = *( ObjectHandle< _type_ > * )obj;
+            LargeString str = StringFormat::Large( "(idx=%d, gen%d)", hndl.idx, hndl.gen );
+            return str;
+        }
+    };
+
+    template <typename _type_>
+    class TypeResolver< ObjectHandle< _type_ > > {
+    public:
+        static TypeDescriptor * get() {
+            static TypeDescriptor_ObjectHandle< _type_ > typeDesc;
+            return &typeDesc;
+        }
+    };
+
     template <typename _type_, i32 cap>
     struct TypeDescriptor_FixedObjectPool : TypeDescriptor {
         TypeDescriptor * itemType;
@@ -309,6 +383,11 @@ namespace atto {
                 newT->handle = handle;
             }
         };
+
+        virtual LargeString ToString( const void * obj ) override {
+            INVALID_CODE_PATH;
+            return {};
+        }
 
         virtual void Binary_Write( const void * obj, BinaryBlob & f ) {
             INVALID_CODE_PATH;
@@ -499,6 +578,11 @@ struct EnumName {                                                               
       virtual void Imgui_Draw( const void * obj, const char * memberName ) {                                \
             ImGui::Text( "%s: %s", memberName, ((EnumName *)obj)->ToString() );                             \
       };                                                                                                    \
+                                                                                                            \
+      virtual LargeString ToString( const void * obj ) override {                                           \
+            return LargeString::FromLiteral( ( (EnumName *)obj )->ToString() );                             \
+      }                                                                                                     \
+                                                                                                            \
     };                                                                                                      \
                                                                                                             \
     template <>                                                                                             \

@@ -1,9 +1,9 @@
 #pragma once
 
 #include "atto_defines.h"
+#include <vector> // Because we actually want to ship things :)
 
 namespace atto {
-  
 
     template<typename _type_>
     void Swap( _type_ & a, _type_ & b ) {
@@ -1255,16 +1255,7 @@ namespace atto {
     typedef FixedStringBase<64>           SmallString;
     typedef FixedStringBase<256>          LargeString;
     typedef FixedStringBase<Megabytes( 4 )> VeryLargeString;
-
-    SmallString ToString( bool v );
-    SmallString ToString( i32 v );
-    SmallString ToString( i64 v );
-    SmallString ToString( u8 v );
-    SmallString ToString( u32 v );
-    SmallString ToString( u64 v );
-    SmallString ToString( f32 v );
-    SmallString ToString( f64 v );
-
+    
     class StringFormat {
     public:
         static SmallString Small( const char * format, ... );

@@ -7,6 +7,9 @@ namespace atto {
     static FixedList<glm::vec2, 5 * 3> ui_LeftPanelCenters;
     static FixedList<glm::vec2, 5 * 3> ui_RightPanelCenters;
 
+    static AudioResource * sndLaser1[23] = {};
+    static AudioResource * sndLaser2[6] = {};
+
     EntityListFilter * EntityListFilter::Begin( EntList * activeEntities ) {
         this->activeEntities = activeEntities;
         const i32 entCount = activeEntities->GetCount();
@@ -82,6 +85,68 @@ namespace atto {
         return this;
     }
 
+    struct TypeDescriptor_EntitySelectionChange : TypeDescriptor {
+        TypeDescriptor_EntitySelectionChange() {
+            name = "EntitySelectionChange";
+            size = sizeof( EntitySelectionChange );
+        }
+
+        virtual nlohmann::json JSON_Write( const void * obj ) override {
+            INVALID_CODE_PATH;
+            return nlohmann::json();
+        }
+
+        virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+            INVALID_CODE_PATH;
+        }
+
+        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
+            INVALID_CODE_PATH;
+        }
+
+        virtual LargeString ToString( const void * obj ) override {
+            i32 index = (i32)(*(EntitySelectionChange *)obj);
+            return LargeString::FromLiteral( EntitySelectionChangeStrings[ index ] );
+        }
+    };
+
+    template <>
+    TypeDescriptor * GetPrimitiveDescriptor<EntitySelectionChange>() {
+        static TypeDescriptor_EntitySelectionChange typeDesc;
+        return &typeDesc;
+    }
+
+    struct TypeDescriptor_PlanetPlacementType : TypeDescriptor {
+        TypeDescriptor_PlanetPlacementType() {
+            name = "PlanetPlacementType";
+            size = sizeof( PlanetPlacementType );
+        }
+
+        virtual nlohmann::json JSON_Write( const void * obj ) override {
+            INVALID_CODE_PATH;
+            return nlohmann::json();
+        }
+
+        virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+            INVALID_CODE_PATH;
+        }
+
+        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
+            INVALID_CODE_PATH;
+        }
+
+        virtual LargeString ToString( const void * obj ) override {
+            i32 index = (i32)( *(PlanetPlacementType *)obj );
+            return LargeString::FromLiteral( PlanetPlacementTypeStrings[ index ] );
+        }
+    };
+
+    template <>
+    TypeDescriptor * GetPrimitiveDescriptor<PlanetPlacementType>() {
+        static TypeDescriptor_PlanetPlacementType typeDesc;
+        return &typeDesc;
+    }
+
     bool EntityListFilter::ContainsOnlyType( EntityType::_enumerated type ) {
         const i32 entCount = result.GetCount();
         if( entCount == 0 ) {
@@ -115,6 +180,7 @@ namespace atto {
     }
 
     void SimMap::Initialize( Core * core ) {
+        // @TODO: This won't work if we have more than one map instance !!
         if( rpcTable[ 1 ] == nullptr ) {
             rpcTable[ ( i32 )MapActionType::PLAYER_SELECTION ]                          = new RpcMemberFunction( this, &SimMap::SimAction_PlayerSelect );
             rpcTable[ ( i32 )MapActionType::SIM_ENTITY_UNIT_COMMAND_MOVE ]              = new RpcMemberFunction( this, &SimMap::SimAction_Move );
@@ -134,6 +200,8 @@ namespace atto {
             rpcTable[ ( i32 )MapActionType::SIM_MAP_MONIES_GIVE_ENERGY ]                = new RpcMemberFunction( this, &SimMap::SimAction_GiveEnergy );
             rpcTable[ ( i32 )MapActionType::SIM_MAP_MONIES_GIVE_COMPUTE ]               = new RpcMemberFunction( this, &SimMap::SimAction_GiveCompute );
         }
+
+        mapReplay.Prepare();
 
         const f32 panelDim = 16 + 1;
         const glm::vec2 ui_LeftFirst = glm::vec2( 193, 44 );
@@ -155,6 +223,16 @@ namespace atto {
         this->core = core;
         syncQueues.Start();
 
+        for ( i32 i = 0; i < 23; i++ ) {
+            LargeString name = StringFormat::Large( "res/sounds/laser_1/blue_laser_%d.wav", i + 1 );
+            sndLaser1[ i ] = core->ResourceGetAndCreateAudio( name.GetCStr(), false, true, 500.0f, 10000.0f );
+        }
+
+        for ( i32 i = 0; i < 6; i++ ) {
+            LargeString name = StringFormat::Large( "res/sounds/laser_2/sci-fi_weapon_plasma_pistol_0%d.wav", i + 1 );
+            sndLaser2[ i ] = core->ResourceGetAndCreateAudio( name.GetCStr(), false, true, 500.0f, 10000.0f );
+        }
+
         playerNumbers.Add( PlayerNumber::Create( 1 ) );
         playerNumbers.Add( PlayerNumber::Create( 2 ) );
 
@@ -175,7 +253,7 @@ namespace atto {
         
         SpawnEntity( EntityType::Make( EntityType::BUILDING_STATION ), p1, t1, Fp2( 500.0f, 1000.0f ), Fp( 0 ), Fp2( 0, 0 ) )->building.isBuilding = false;
         
-        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p1, t1, Fp2( 800.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
+        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p1, t1, Fp2( 800.2f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
         SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p1, t1, Fp2( 900.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
         SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p1, t1, Fp2( 1000.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
         SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p1, t1, Fp2( 1100.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
@@ -269,10 +347,11 @@ namespace atto {
         }
 
         static FontHandle fontHandle = core->ResourceGetFont( "default" );
-        static TextureResource * background = core->ResourceGetAndLoadTexture( "res/maps/dark_blue.png" );
+        static TextureResource * background = core->ResourceGetAndLoadTexture( "res/game/backgrounds/dark_blue.png" );
         static TextureResource * sprTurretSmol = core->ResourceGetAndLoadTexture( "res/ents/test/turret_smol.png" );
         static TextureResource * sprTurretMed = core->ResourceGetAndLoadTexture( "res/ents/test/turret_med.png" );
         static TextureResource * sprUIMock = core->ResourceGetAndLoadTexture( "res/ents/test/ui_mock_01.png" );
+        static TextureResource * sprMoveLocation = core->ResourceGetAndLoadTexture( "res/ents/test/move_location.png" );
 
         const f32 cameraSpeed = 20.0f;
         if ( core->InputKeyDown( KEY_CODE_W ) == true ) {
@@ -311,11 +390,13 @@ namespace atto {
         glm::vec2 wantedResolution = resolutions[ localCameraZoomIndex ];
         glm::vec2 oldCameraWidth = localCameraZoomLerp;
         localCameraZoomLerp = glm::mix( localCameraZoomLerp, wantedResolution, dt * 10.f );
-        if( glm::abs( localCameraZoomLerp.x - wantedResolution.x ) < 0.1f ) {
+        if( glm::abs( localCameraZoomLerp.x - wantedResolution.x ) < 5 ) {
             localCameraZoomLerp = wantedResolution;
         }
 
         localCameraPos -= ( localCameraZoomLerp - oldCameraWidth ) * 0.5f;
+
+        core->AudioSetListener( localCameraPos );
 
         DrawContext * spriteDrawContext = core->RenderGetDrawContext( 0, true );
         //DrawContext * backgroundDrawContext = core->RenderGetDrawContext( 1, true );
@@ -446,15 +527,15 @@ namespace atto {
 
             if ( isPlacingBuilding == false ) {
                 const glm::vec2 s = glm::vec2( 15 );
-                if ( gameUI.ButtonPix( 232, "S", ui_RightPanelCenters[ 0 ], s, Colors::SKY_BLUE ) ) {
+                if( core->InputKeyJustPressed( KEY_CODE_Q ) || gameUI.ButtonPix( 232, "Q", ui_RightPanelCenters[ 0 ], s, Colors::SKY_BLUE ) ) {
                     isPlacingBuilding = true;
                     placingBuildingType = EntityType::BUILDING_STATION;
                 }
-                if ( gameUI.ButtonPix( 233, "E", ui_RightPanelCenters[ 1 ], s, Colors::SKY_BLUE ) ) {
+                if ( core->InputKeyJustPressed( KEY_CODE_E ) || gameUI.ButtonPix( 233, "E", ui_RightPanelCenters[ 1 ], s, Colors::SKY_BLUE ) ) {
                     isPlacingBuilding = true;
                     placingBuildingType = EntityType::BUILDING_SOLAR_ARRAY;
                 }
-                if ( gameUI.ButtonPix( 234, "C", ui_RightPanelCenters[ 2 ], s, Colors::SKY_BLUE ) ) {
+                if ( core->InputKeyJustPressed( KEY_CODE_C ) || gameUI.ButtonPix( 234, "C", ui_RightPanelCenters[ 2 ], s, Colors::SKY_BLUE ) ) {
                     isPlacingBuilding = true;
                     placingBuildingType = EntityType::BUILDING_COMPUTE;
                 }
@@ -463,10 +544,10 @@ namespace atto {
 
         if ( onlyBuildingSelected == true ) {
             const glm::vec2 s = glm::vec2( 15 );
-            if ( gameUI.ButtonPix( 242, "W", ui_RightPanelCenters[ 0 ], s, Colors::SKY_BLUE ) ) {
+            if ( core->InputKeyJustPressed( KEY_CODE_Q ) || gameUI.ButtonPix( 242, "Q", ui_RightPanelCenters[ 0 ], s, Colors::SKY_BLUE ) ) {
                 localActionBuffer.AddAction( MapActionType::SIM_ENTITY_BUILDING_COMMAND_TRAIN_UNIT, localPlayerNumber, (i32)EntityType::UNIT_WORKER );
             }
-            if ( gameUI.ButtonPix( 243, "F", ui_RightPanelCenters[ 1 ], s, Colors::SKY_BLUE ) ) {
+            if ( core->InputKeyJustPressed( KEY_CODE_E ) || gameUI.ButtonPix( 243, "E", ui_RightPanelCenters[ 1 ], s, Colors::SKY_BLUE ) ) {
                 localActionBuffer.AddAction( MapActionType::SIM_ENTITY_BUILDING_COMMAND_TRAIN_UNIT, localPlayerNumber, (i32)EntityType::UNIT_TEST );
             }
         }
@@ -507,7 +588,7 @@ namespace atto {
                 bool hasUnitType = false;
 
                 // @NOTE: Selection Priority
-                const i32 selectionCount = localDragSelection.GetCount();
+                i32 selectionCount = localDragSelection.GetCount();
                 for ( i32 selectionIndex = 0; selectionIndex < selectionCount; selectionIndex++ ) {
                     EntityHandle handle = localDragSelection[ selectionIndex ];
                     SimEntity * selectionEnt = entityPool.Get( handle );
@@ -535,7 +616,7 @@ namespace atto {
                             localDragSelection.RemoveIndex( selectionIndex );
                             selectionIndex--;
                         }
-                        if ( hasUnitType == true ) {
+                        else if ( hasUnitType == true ) {
                             if ( IsBuildingType( selectionEnt->type ) == true || selectionEnt->type == EntityType::PLANET ) {
                                 localDragSelection.RemoveIndex( selectionIndex );
                                 selectionIndex--;
@@ -549,6 +630,7 @@ namespace atto {
                     }
                 }
 
+                VisAction_PlayerSelect( &localPlayerNumber, &localDragSelection,  EntitySelectionChange::SET );
                 localActionBuffer.AddAction( MapActionType::PLAYER_SELECTION, localPlayerNumber, localDragSelection, EntitySelectionChange::SET );
             }
         }
@@ -567,7 +649,12 @@ namespace atto {
             glm::vec2 drawPos = ent->visPos;
             f32 drawOri = ent->visOri;
 
-            if( ent->selectedBy.Contains( localPlayerNumber ) && ent->selectionAnimator.sprite != nullptr ) {
+            if( ent->visSelectedBy.Contains( localPlayerNumber ) && ent->playerNumber == localPlayerNumber && ent->navigator.hasDest == true ) {
+                glm::vec2 dest = ToVec2( ent->navigator.dest );
+                spriteDrawContext->DrawTexture( sprMoveLocation, dest, 0.0f );
+            }
+
+            if( ent->visSelectedBy.Contains( localPlayerNumber ) && ent->selectionAnimator.sprite != nullptr ) {
                 //spriteDrawContext->DrawSprite( ent->selectionAnimator.sprite, ent->selectionAnimator.frameIndex, ent->pos, ent->ori );
                 spriteDrawContext->DrawSprite( ent->selectionAnimator.sprite, ent->selectionAnimator.frameIndex, drawPos, drawOri );
             }
@@ -585,10 +672,10 @@ namespace atto {
                     glm::vec2 worldPos = ent->visPos + glm::rotate( ToVec2( turret.posOffset ), -ent->visOri );
 
                     if( turret.size == WeaponSize::SMALL ) {
-                        spriteDrawContext->DrawTexture( sprTurretSmol, worldPos, ToFloat( turret.ori ) );
+                       // spriteDrawContext->DrawTexture( sprTurretSmol, worldPos, ToFloat( turret.ori ) );
                     }
                     else if( turret.size == WeaponSize::MEDIUM ) {
-                        spriteDrawContext->DrawTexture( sprTurretMed, worldPos, ToFloat( turret.ori ) );
+                       // spriteDrawContext->DrawTexture( sprTurretMed, worldPos, ToFloat( turret.ori ) );
                     }
                 }
             }
@@ -619,6 +706,10 @@ namespace atto {
                 if ( collider.Intersects( selectionBounds ) == true ) {
                     localDragSelection.AddUnique( ent->handle );
                 }
+            }
+
+            if( isPlacingBuilding == true ) {
+                spriteDrawContext->DrawTexture( sprMoveLocation, mousePosWorld );
             }
 
             // DEBUG
@@ -680,13 +771,17 @@ namespace atto {
             glm::vec2 maxBox = glm::max( localStartDrag, localEndDrag );
             spriteDrawContext->DrawRect( minBox, maxBox, Colors::BOX_SELECTION_COLOR );
         }
-        
+
+        if( core->InputKeyJustPressed( KEY_CODE_F2 ) == true ) {
+            mapReplay.PrintActions( core );
+        }
+
         SmallString s = StringFormat::Small( "ping=%d", (i32)core->NetworkGetPing() );
-        spriteDrawContext->DrawText2D( fontHandle, glm::vec2( 128, 128 ), 32, s.GetCStr() );
+        spriteDrawContext->DrawTextScreen( fontHandle, glm::vec2( 128, 128 ), 32, s.GetCStr() );
         s = StringFormat::Small( "dt=%f", dt );
-        spriteDrawContext->DrawText2D( fontHandle, glm::vec2( 128, 160 ), 32, s.GetCStr() );
+        spriteDrawContext->DrawTextScreen( fontHandle, glm::vec2( 128, 160 ), 32, s.GetCStr() );
         s = StringFormat::Small( "fps=%f", 1.0f / dt );
-        spriteDrawContext->DrawText2D( fontHandle, glm::vec2( 128, 200 ), 32, s.GetCStr() );
+        spriteDrawContext->DrawTextScreen( fontHandle, glm::vec2( 128, 200 ), 32, s.GetCStr() );
 
         //ScopedClock renderingClock( "Rendering clock", core );
         core->RenderSubmit( spriteDrawContext, true );
@@ -783,25 +878,23 @@ namespace atto {
                     static SpriteResource * sprVFX_SmallExplody = core->ResourceGetAndCreateSprite( "res/ents/test/bullet_hit_smol.png", 3, 16, 16, 10 );
                     static AudioResource * audVFX_SmallExplody = core->ResourceGetAndCreateAudio( "res/sounds/tomwinandysfx_explosions_volume_i_closeexplosion_01.wav", true, false, 400.0f, 1000.0f );
 
-                    if( sprVFX_SmallExplody->frameActuations.GetCount() == 0 ) {
-                        SpriteActuation a1 = {};
-                        a1.audioResources.Add( audVFX_SmallExplody );
-                        a1.frameIndex = 0;
-                        sprVFX_SmallExplody->frameActuations.Add( a1 );
-                    }
-                    
+                    entity->spriteBank[0] = mainSprite;
+                    entity->spriteBank[1] = sprVFX_SmallExplody;
                     entity->spriteAnimator.SetSpriteIfDifferent( mainSprite, false );
-                    entity->bullet.sprVFX_SmallExplody = sprVFX_SmallExplody;
+
                     entity->bullet.aliveTime = Fp( 1.87f );
                     entity->bullet.damage = 5;
+
+                    core->AudioPlay( sndLaser2[ Random::Int( 6 ) ] , &entity->visPos );
                 } break;
                 case EntityType::BULLET_MED:
                 {
                     static SpriteResource * mainSprite = core->ResourceGetAndCreateSprite( "res/ents/test/bullet_med.png", 1, 8, 8, 0 );
                     static SpriteResource * sprVFX_SmallExplody = core->ResourceGetAndLoadSprite( "res/sprites/vfx_small_explody/vfx_small_explody.json" );
+                    entity->spriteBank[0] = mainSprite;
+                    entity->spriteBank[1] = sprVFX_SmallExplody;
                     entity->spriteAnimator.SetSpriteIfDifferent( mainSprite, false );
-
-                    entity->bullet.sprVFX_SmallExplody = sprVFX_SmallExplody;
+                    
                     entity->bullet.aliveTime = Fp( 3 );
                     entity->bullet.damage = 8;
                 } break;
@@ -991,6 +1084,8 @@ namespace atto {
                 }
             }
         }
+
+        VisAction_PlayerSelect( playerNumberPtr, selection, change );
     }
 
     void SimMap::SimAction_Move( PlayerNumber * playerNumberPtr, fp2 * posPtr ) {
@@ -1401,7 +1496,7 @@ namespace atto {
                     fp dist2 = FpDistance2( ent->pos, otherEnt->pos );
                     fp r = ent->handle.idx * Fp( 10 );
                     if( dist2 <= Fp( 36 * 36 ) + r ) {
-                        bool changed = ent->spriteAnimator.SetSpriteIfDifferent( bullet.sprVFX_SmallExplody, false );
+                        bool changed = ent->spriteAnimator.SetSpriteIfDifferent( ent->spriteBank[1], false );
                         ent->vel = Fp2( 0, 0 );
                         if( changed == true ) {
                             ent->actions.AddAction( MapActionType::SIM_ENTITY_APPLY_DAMAGE, bullet.damage, otherEnt->handle );
@@ -1513,6 +1608,8 @@ namespace atto {
             INVALID_CODE_PATH;
         }
 
+        mapReplay.NextTurn( turnNumber );
+
         if( turn1 != nullptr ) {
             Sim_ApplyActions( &turn1->actions );
         }
@@ -1578,8 +1675,11 @@ namespace atto {
     }
 
     void SimMap::Sim_ApplyActions( MapActionBuffer * actionBuffer ) {
-        const i32 turnSize = actionBuffer->data.GetSize();
         char * turnData = actionBuffer->data.GetBuffer();
+        const i32 turnSize = actionBuffer->data.GetSize();
+
+        mapReplay.AddActionData( actionBuffer );
+
         i32 offset = 0;
         while( offset < turnSize ) {
             MapActionType actionType = (MapActionType)turnData[ offset ];
@@ -1625,6 +1725,43 @@ namespace atto {
         return checkSum;
     }
 
+    void SimMap::VisAction_PlayerSelect( PlayerNumber * playerNumberPtr, EntHandleList * selection, EntitySelectionChange change ) {
+        PlayerNumber playerNumber = *playerNumberPtr;
+
+        // @SPEED:
+        simAction_ActiveEntities.Clear( false );
+        entityPool.GatherActiveObjs( simAction_ActiveEntities );
+
+        if( change == EntitySelectionChange::SET ) {
+            const i32 entityCount = simAction_ActiveEntities.GetCount();
+            for( i32 entityIndex = 0; entityIndex < entityCount; entityIndex++ ) {
+                SimEntity * ent = simAction_ActiveEntities[ entityIndex ];
+                ent->visSelectedBy.RemoveValue( playerNumber );
+            }
+        }
+
+        const i32 selectionCount = selection->GetCount();
+        if( change == EntitySelectionChange::SET || change == EntitySelectionChange::ADD ) {
+            for( i32 entityHandleIndex = 0; entityHandleIndex < selectionCount; entityHandleIndex++ ) {
+                EntityHandle handle = *selection->Get( entityHandleIndex );
+                SimEntity * ent = entityPool.Get( handle );
+                if( ent != nullptr ) {
+                    ent->visSelectedBy.Add( playerNumber );
+                }
+            }
+        }
+
+        if( change == EntitySelectionChange::REMOVE ) {
+            for( i32 entityHandleIndex = 0; entityHandleIndex < selectionCount; entityHandleIndex++ ) {
+                EntityHandle handle = *selection->Get( entityHandleIndex );
+                SimEntity * ent = entityPool.Get( handle );
+                if( ent != nullptr ) {
+                    ent->visSelectedBy.RemoveValue( playerNumber );
+                }
+            }
+        }
+    }
+
     inline static Collider2D ColliderForSpace( const Collider2D & base, glm::vec2 p ) {
         Collider2D c = base;
         switch( base.type ) {
@@ -1653,8 +1790,62 @@ namespace atto {
         return ColliderForSpace( selectionCollider, ToVec2( pos )); //@HACK: FPM
     }
 
+    void SimMapReplay::Prepare() {
+        turns.reserve( 1024 );
+        actionData.Reserve( Megabytes( 64 ) );
+    }
 
+    void SimMapReplay::NextTurn( i32 turn ) {
+        TurnAction turnAction = {};
+        turnAction.turnNumber = turn;
+        turnAction.actionCount = 0;
+        turns.push_back( turnAction );
+    }
 
+    void SimMapReplay::AddActionData( MapActionBuffer * actionBuffer ) {
+        char * data = actionBuffer->data.GetBuffer();
+        size_t size = actionBuffer->data.GetSize();
+        if( size != 0 ) {
+            actionData.Write( data, size );
+            turns.back().actionCount++;
+        }
+    }
+
+    void SimMapReplay::PrintActions( Core * core ) {
+        core->LogOutput( LogLevel::INFO, "===========================================================" );
+        
+        size_t actionOffset = 0;
+        const size_t turnCount = turns.size();
+        for ( size_t turnIndex = 0; turnIndex < turnCount; turnIndex++ ) {
+            const TurnAction &turn = turns[turnIndex];
+
+            bool displayed = false;
+            for ( size_t actionCounter = 0; actionCounter < turn.actionCount; actionCounter++ ) {
+                MapActionType actionType = ( MapActionType )actionData.buffer.at( actionOffset );
+                if( actionType == MapActionType::NONE ) {
+                    core->LogOutput( LogLevel::ERR, "Can't apply a none turn" );
+                    break;
+                }
+
+                if( displayed == false ) {
+                    displayed = true;
+                    core->LogOutput( LogLevel::INFO, "=============%d=============", turn.turnNumber );
+                }
+                
+                actionOffset += sizeof( MapActionType );
+
+                byte * data = &actionData.buffer.at( actionOffset );
+                
+                RpcHolder * holder = rpcTable[ (i32)actionType ];
+                LargeString rpcString = holder->Log( (char *)data );
+                i32 lastCallSize = holder->GetLastCallSize();
+                actionOffset += lastCallSize;
+
+                const char * actionName = MapActionTypeStrings[ (i32)actionType ];
+                core->LogOutput( LogLevel::INFO, "%s :: ( %s )", actionName, rpcString.GetCStr() );
+            }
+        }
+    }
 }
 
 

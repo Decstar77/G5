@@ -5,8 +5,8 @@
 
 namespace atto
 {
-    SmallString ToString( bool v ) {
-        SmallString res = {};
+    LargeString ToString( bool v ) {
+        LargeString res = {};
         if ( v == true ) {
             res.Add( "true" );
         } else {
@@ -15,44 +15,44 @@ namespace atto
         return res;
     }
 
-    SmallString ToString( i32 v ) {
-        SmallString res = {};
+    LargeString ToString( i32 v ) {
+        LargeString res = {};
         res.Add( std::to_string( v ).c_str() );
         return res;
     }
 
-    SmallString ToString( i64 v ) {
-        SmallString res = {};
+    LargeString ToString( i64 v ) {
+        LargeString res = {};
         res.Add( std::to_string( v ).c_str() );
         return res;
     }
 
-    SmallString ToString( u8 v ) {
-        SmallString res = {};
+    LargeString ToString( u8 v ) {
+        LargeString res = {};
         res.Add( std::to_string( v ).c_str() );
         return res;
     }
 
-    SmallString ToString( u32 v ) {
-        SmallString res = {};
+    LargeString ToString( u32 v ) {
+        LargeString res = {};
         res.Add( std::to_string( v ).c_str() );
         return res;
     }
 
-    SmallString ToString( u64 v ) {
-        SmallString res = {};
+    LargeString ToString( u64 v ) {
+        LargeString res = {};
         res.Add( std::to_string( v ).c_str() );
         return res;
     }
 
-    SmallString ToString( f32 v ) {
-        SmallString res = {};
+    LargeString ToString( f32 v ) {
+        LargeString res = {};
         res.Add( std::to_string( v ).c_str() );
         return res;
     }
 
-    SmallString ToString( f64 v ) {
-        SmallString res = {};
+    LargeString ToString( f64 v ) {
+        LargeString res = {};
         res.Add( std::to_string( v ).c_str() );
         return res;
     }

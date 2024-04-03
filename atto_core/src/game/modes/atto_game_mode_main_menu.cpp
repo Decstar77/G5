@@ -2,6 +2,9 @@
 #include "atto_game_mode_game.h"
 #include "../../shared/atto_colors.h"
 
+// @TODO: REMOVE THIS.
+#include "../../content/atto_content.h"
+
 namespace atto {
     GameModeType GameMode_MainMenu::GetGameModeType() {
         return GameModeType::MAIN_MENU;
@@ -100,7 +103,32 @@ namespace atto {
 
         FontHandle fontHandle = core->ResourceGetFont( "default" );
         SmallString status = core->NetworkGetStatusText();
-        draw->DrawText2D( fontHandle, glm::vec2( 128, 128 ), 32, status.GetCStr() );
+        draw->DrawTextScreen( fontHandle, glm::vec2( 128, 128 ), 32, status.GetCStr() );
+
+        //static PixelArtMeshCreator pixyMesh;
+        //if ( pixyMesh.IsLoaded() == false ) {
+        //    pixyMesh.LoadFromFile( "res/ents/test/ship_blue.png" );
+        //}
+
+        //glm::vec2 offset = glm::vec2( 100 );
+
+        //static f32 rot = 0.0f;
+        //rot += dt;
+
+        //f32 scale = 0.06f;
+
+        //for ( size_t i = 0; i < pixyMesh.points.size(); i++ ) {
+        //    auto pp = pixyMesh.points[i];
+        //    glm::vec2 p = pp.p;
+        //    p = glm::rotate( p, -rot ) * scale;
+        //    draw->DrawRect( offset + p, scale * glm::vec2( 10.0f ), rot, pp.c );
+        //}
+
+        //static TextureResource * sprShip = core->ResourceGetAndLoadTexture( "res/ents/test/ship_blue.png" );
+        //draw->DrawTexture( sprShip, offset + glm::vec2( 64, 0 ), rot, glm::vec2( 0.6f ) );
+
+        SmallString s = StringFormat::Small( "fps=%f", 1.0f / dt );
+        draw->DrawTextScreen( fontHandle, glm::vec2( 528, 200 ), 32, s.GetCStr() );
 
         core->RenderSubmit( draw, true );
     }

@@ -3,6 +3,8 @@
 #include <array>
 #include "atto_containers.h"
 
+#include "atto_reflection.h"
+
 namespace atto {
     template< typename _type_ >
     struct is_fixed_list {
@@ -22,12 +24,13 @@ namespace atto {
 
     template<typename _ret_, typename ... _args_>
     class RpcBase;
-    
+
     class RpcHolder {
     public:
         virtual void Call( char * data ) = 0;
         virtual i32 GetLastCallSize() const = 0;
         virtual i32 GetParameterCount() const = 0;
+        virtual LargeString Log( char * data ) = 0;
 
         template<typename _ret_, typename ... _args_>
         inline bool AreParamtersTheSame() {
@@ -120,6 +123,55 @@ namespace atto {
             return CallImpl( seq, sizes, data );
         };
 
+        template<typename _type_>
+        inline LargeString ConvertString( size_t argIndex, const std::array< size_t, sizeof...( _args_ ) > & sizes, char * data ) {
+            static_assert( std::is_pointer_v<_type_> == true, "RpcBase :: Argument should be a pointer" );
+
+            size_t dataOffset = 0;
+            for( size_t i = 0; i < argIndex; i++ ) {
+                dataOffset += sizes[ i ];
+            }
+
+            _type_ objPtr = (_type_)( data + dataOffset );
+
+            TypeDescriptor * leType = TypeResolver< std::remove_pointer_t<_type_> >::get();
+            LargeString res = leType->ToString( objPtr );
+            return res;
+        }
+
+        void CatStrings() {
+        }
+
+        template<typename _type_, typename... Args>
+        void CatStrings( _type_ f, Args... args ) {
+            logString.Add( f );
+            logString.Add( ", " );
+            CatStrings( args... );
+        }
+
+        template<size_t... S>
+        inline void LogImpl( std::index_sequence<S...>, const std::array< size_t, sizeof...( _args_ ) > & sizes, char * data ) {
+            CatStrings( ConvertString<_args_>( S, sizes, data )... );
+        }
+
+        virtual LargeString Log( char * data ) override {
+            auto seq = std::index_sequence_for< _args_... >{};
+            auto sizes = std::array< size_t, sizeof...( _args_ ) > { GetSize< std::remove_pointer_t< _args_ > >()... };
+            auto marks = std::array< bool, sizeof...( _args_ ) > { MarkFixedList< std::remove_pointer_t< _args_ > >()... };
+
+            lastCallSize = 0;
+            for( size_t i = 0; i < sizeof...( _args_ ); i++ ) {
+                if( marks[ i ] == true ) {
+                    sizes[ i ] = GetSizeFromData( i, sizes, data );
+                }
+                lastCallSize += sizes[ i ];
+            }
+
+            logString.Clear();
+            LogImpl( seq, sizes, data );
+            return logString;
+        }
+
         virtual i32 GetParameterCount() const {
             return (i32)sizeof...( _args_ );
         }
@@ -128,6 +180,7 @@ namespace atto {
         virtual _ret_ DoCall( _args_ ... args ) = 0;
 
     private:
+        LargeString logString;
         size_t lastCallSize = 0;
     };
 
