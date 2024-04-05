@@ -1,6 +1,5 @@
 .vs
 tmp
-vendor
 x86_64
 *.png
 *.jpg
