@@ -22,7 +22,11 @@ namespace atto {
         Logger() {
             std::time_t t = std::time(nullptr);
             std::tm now = {};
+        #if _WIN32
             localtime_s(&now, &t);
+        #else 
+            localtime_r( &now, &t );
+        #endif
 
             std::stringstream filename;
             filename << "logs/" << std::put_time(&now, "%Y-%m-%d_%H-%M-%S") << ".txt";
@@ -79,7 +83,12 @@ namespace atto {
         inline void Log(LogLevel level, const char* format, va_list args, std::ostream& stream) {
             std::time_t t = std::time(nullptr);
             std::tm now = { 0 };
-            localtime_s(&now, &t);
+
+        #if _WIN32
+            localtime_s( &now, &t );
+        #else 
+            localtime_r( &now, &t );
+        #endif
 
             const char* levelString = GetLevelString(level);
 
