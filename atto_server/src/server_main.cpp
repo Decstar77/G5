@@ -4,7 +4,7 @@
 #include "atto_server_logger.h"
 
 #define ENET_IMPLEMENTATION
-#include <enet.h>
+#include "../../vendor/enet/include/enet.h"
 
 #include <iostream>
 #include <unordered_map>
