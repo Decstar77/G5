@@ -74,6 +74,12 @@ int main( int argc, char * argv[] ) {
 
     logger.Info( "Server started..." );
 
+    // Get ip
+    char hostname[ 1024 ];
+    hostname[ 1023 ] = '\0';
+    gethostname( hostname, 1023 );
+    logger.Info( "Hostname: %s", hostname );
+
     ENetEvent event = {};
     while( enet_host_service( server, &event, 30 ) >= 0 ) {
         switch( event.type ) {

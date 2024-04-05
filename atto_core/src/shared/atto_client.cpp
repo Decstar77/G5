@@ -30,7 +30,8 @@ namespace atto {
                 SetStatusStringInfo( "Attempting to connect." );
                 client = enet_host_create( NULL, 1, 2, 0, 0 );
                 if( client != nullptr ) {
-                    enet_address_set_host( &address, "127.0.0.1" );
+                    //enet_address_set_host( &address, "127.0.0.1" );
+                    enet_address_set_host( &address, "77.37.120.37" );
                     address.port = 27164;
 
                     peer = enet_host_connect( client, &address, 2, 0 );

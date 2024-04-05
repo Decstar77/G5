@@ -20,18 +20,6 @@ namespace atto {
     class Logger {
     public:
         Logger() {
-            std::time_t t = std::time(nullptr);
-            std::tm now = {};
-        //#if _WIN32
-        //    localtime_s(&now, &t);
-        //#else 
-        //    localtime_r( &now, &t );
-        //#endif
-
-            std::stringstream filename;
-            filename << "logs/" << std::put_time(&now, "%Y-%m-%d_%H-%M-%S") << ".txt";
-
-            fileStream.open(filename.str(), std::ios::app);  // Open the log file in append mode
         }
 
         ~Logger() {
@@ -81,19 +69,12 @@ namespace atto {
 
     private:
         inline void Log(LogLevel level, const char* format, va_list args, std::ostream& stream) {
-            std::time_t t = std::time(nullptr);
-            std::tm now = { 0 };
-
-        //#if _WIN32
-        //    localtime_s( &now, &t );
-        //#else 
-        //    localtime_r( &now, &t );
-        //#endif
-
+            // THE STANDARD TEMPLATE LIB IS SOOOOOOOOO FUCKING BAD !!!!
+            
             const char* levelString = GetLevelString(level);
 
             // Print the log level and date
-            stream << "[" << std::put_time(&now, "%Y-%m-%d %H:%M:%S") << "] [" << levelString << "] ";
+            stream << "[" << levelString << "] ";
 
             // Format the message using variadic arguments
             char buffer[256];
@@ -101,9 +82,6 @@ namespace atto {
 
             // Print the formatted message
             stream << GetLevelStringSpaces(level) << buffer << std::endl;
-
-            // Append the log to the log buffer
-            logBuffer << "[" << std::put_time(&now, "%Y-%m-%d %H:%M:%S") << "] [" << levelString << "] " << GetLevelStringSpaces(level) << buffer << std::endl;
         }
 
         inline const char* GetLevelString(LogLevel level) {
