@@ -225,12 +225,12 @@ namespace atto {
 
         for ( i32 i = 0; i < 23; i++ ) {
             LargeString name = StringFormat::Large( "res/sounds/laser_1/blue_laser_%d.wav", i + 1 );
-            sndLaser1[ i ] = core->ResourceGetAndCreateAudio( name.GetCStr(), false, true, 500.0f, 10000.0f );
+            sndLaser1[ i ] = core->ResourceGetAndCreateAudio( name.GetCStr(), true, false, 4000.0f, 10000.0f );
         }
 
         for ( i32 i = 0; i < 6; i++ ) {
             LargeString name = StringFormat::Large( "res/sounds/laser_2/sci-fi_weapon_plasma_pistol_0%d.wav", i + 1 );
-            sndLaser2[ i ] = core->ResourceGetAndCreateAudio( name.GetCStr(), false, true, 500.0f, 10000.0f );
+            sndLaser2[ i ] = core->ResourceGetAndCreateAudio( name.GetCStr(), true, false, 4000.0f, 10000.0f );
         }
 
         playerNumbers.Add( PlayerNumber::Create( 1 ) );
@@ -396,8 +396,6 @@ namespace atto {
 
         localCameraPos -= ( localCameraZoomLerp - oldCameraWidth ) * 0.5f;
 
-        core->AudioSetListener( localCameraPos );
-
         DrawContext * spriteDrawContext = core->RenderGetDrawContext( 0, true );
         //DrawContext * backgroundDrawContext = core->RenderGetDrawContext( 1, true );
         DrawContext * uiDrawContext = core->RenderGetDrawContext( 2, true );
@@ -413,6 +411,11 @@ namespace atto {
 
         spriteDrawContext->SetCameraPos( localCameraPos );
         debugDrawContext->SetCameraPos( localCameraPos );
+
+        const glm::vec2 localCameraCenter = localCameraPos + glm::vec2( spriteDrawContext->GetCameraWidth(), spriteDrawContext->GetCameraHeight() ) / 2.0f;
+        core->AudioSetListener( localCameraCenter );
+        //core->LogOutput( LogLevel::INFO, "%f, %f", localCameraCenter.x, localCameraCenter.y );
+
         spriteDrawContext->DrawTextureBL( background, glm::vec2( 0, 0 ) );
 
         const glm::vec2 mousePosPix = core->InputMousePosPixels();
@@ -436,12 +439,12 @@ namespace atto {
 
         uiDrawContext->DrawTexture( sprUIMock, glm::vec2( 640 / 2, 360 / 2 ) );
         gameUI.Begin( uiDrawContext->GetCameraDims() );
-        gameUI.LablePix( 928374, "Planet.", glm::vec2( 228, 58 ) );
-        gameUI.LablePix( 928334, "Production.", glm::vec2( 420, 58 ) );
+        gameUI.LablePix( "Planet.", glm::vec2( 228, 58 ) );
+        gameUI.LablePix( "Production.", glm::vec2( 420, 58 ) );
 
-        gameUI.LablePix( 626262, creditsStr.GetCStr(), glm::vec2( 488, 34 ) );
-        gameUI.LablePix( 626263, energyStr.GetCStr(), glm::vec2( 488, 34 - 12  ) );
-        gameUI.LablePix( 626264, computeStr.GetCStr(), glm::vec2( 488, 34 -12 -12 ) );
+        gameUI.LablePix( creditsStr.GetCStr(), glm::vec2( 488, 34 ) );
+        gameUI.LablePix( energyStr.GetCStr(), glm::vec2( 488, 34 - 12  ) );
+        gameUI.LablePix( computeStr.GetCStr(), glm::vec2( 488, 34 -12 -12 ) );
 
         const bool onlyPlanetSelected = entityFilter->Begin( &entities )->
             OwnedBy( localPlayerNumber )->
@@ -885,7 +888,7 @@ namespace atto {
                     entity->bullet.aliveTime = Fp( 1.87f );
                     entity->bullet.damage = 5;
 
-                    core->AudioPlay( sndLaser2[ Random::Int( 6 ) ] , &entity->visPos );
+                    core->AudioPlay( sndLaser1[ Random::Int( 6 ) ] );
                 } break;
                 case EntityType::BULLET_MED:
                 {

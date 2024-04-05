@@ -1033,30 +1033,28 @@ namespace atto {
 
 
         virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
-        #if ATTO_EDITOR
-            TextureResource * textureResource = *(TextureResource **)obj;
-            if( textureResource != nullptr ) {
-                ImGui::SeparatorText( "Image" );
-                if( ImGui::ImageButton( (void *)(intptr_t)textureResource->handle, ImVec2( (f32)textureResource->width, (f32)textureResource->height ) ) ) {
-                    Core * core = Core::EditorOnly_GetCore();
-                    LargeString resPath = {};
-                    if( core->WindowOpenNativeFileDialog( nullptr, "png", resPath ) == true ) {
-                        TextureResource ** tptr = (TextureResource **)obj;
-                        *tptr = core->ResourceGetAndCreateTexture( resPath.GetCStr(), false, false );
-                    }
-                }
-            }
-            else {
-                if( ImGui::Button( "No Image" ) ) {
-                    Core * core = Core::EditorOnly_GetCore();
-                    LargeString resPath = {};
-                    if( core->WindowOpenNativeFileDialog( nullptr, "png", resPath ) == true ) {
-                        TextureResource ** tptr = (TextureResource **)obj;
-                        *tptr = core->ResourceGetAndCreateTexture( resPath.GetCStr(), false, false );
-                    }
-                }
-            }
-        #endif
+//            TextureResource * textureResource = *(TextureResource **)obj;
+//            if( textureResource != nullptr ) {
+//                ImGui::SeparatorText( "Image" );
+//                if( ImGui::ImageButton( (void *)(intptr_t)textureResource->handle, ImVec2( (f32)textureResource->width, (f32)textureResource->height ) ) ) {
+//                    Core * core = Core::EditorOnly_GetCore();
+//                    LargeString resPath = {};
+//                    if( core->WindowOpenNativeFileDialog( nullptr, "png", resPath ) == true ) {
+//                        TextureResource ** tptr = (TextureResource **)obj;
+//                        *tptr = core->ResourceGetAndCreateTexture( resPath.GetCStr(), false, false );
+//                    }
+//                }
+//            }
+//            else {
+//                if( ImGui::Button( "No Image" ) ) {
+//                    Core * core = Core::EditorOnly_GetCore();
+//                    LargeString resPath = {};
+//                    if( core->WindowOpenNativeFileDialog( nullptr, "png", resPath ) == true ) {
+//                        TextureResource ** tptr = (TextureResource **)obj;
+//                        *tptr = core->ResourceGetAndCreateTexture( resPath.GetCStr(), false, false );
+//                    }
+//                }
+//            }
         }
 
         virtual LargeString ToString( const void * obj ) override {
@@ -1176,27 +1174,27 @@ namespace atto {
         }
 
         virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
-            SpriteResource * spriteResource = *(SpriteResource **)obj;
-            if( spriteResource != nullptr || spriteResource->textureResource != nullptr ) {
-                ImGui::SeparatorText( "Image" );
-                if( ImGui::ImageButton( (void *)(intptr_t)spriteResource->textureResource->handle, ImVec2( (f32)spriteResource->textureResource->width, (f32)spriteResource->textureResource->height ) ) ) {
-                    Core * core = Core::EditorOnly_GetCore();
-                    LargeString resPath = {};
-                    if( core->WindowOpenNativeFileDialog( nullptr, "png", resPath ) == true ) {
-                        spriteResource->textureResource = core->ResourceGetAndCreateTexture( resPath.GetCStr(), false, false );
-                    }
-                }
-            }
-            else {
-                if( ImGui::Button( "No Image" ) ) {
-                    Core * core = Core::EditorOnly_GetCore();
-                    LargeString resPath = {};
-                    if( core->WindowOpenNativeFileDialog( nullptr, "png", resPath ) == true ) {
-                        TextureResource ** tptr = (TextureResource **)obj;
-                        *tptr = core->ResourceGetAndCreateTexture( resPath.GetCStr(), false, false );
-                    }
-                }
-            }
+//            SpriteResource * spriteResource = *(SpriteResource **)obj;
+//            if( spriteResource != nullptr || spriteResource->textureResource != nullptr ) {
+//                ImGui::SeparatorText( "Image" );
+//                if( ImGui::ImageButton( (void *)(intptr_t)spriteResource->textureResource->handle, ImVec2( (f32)spriteResource->textureResource->width, (f32)spriteResource->textureResource->height ) ) ) {
+//                    Core * core = Core::EditorOnly_GetCore();
+//                    LargeString resPath = {};
+//                    if( core->WindowOpenNativeFileDialog( nullptr, "png", resPath ) == true ) {
+//                        spriteResource->textureResource = core->ResourceGetAndCreateTexture( resPath.GetCStr(), false, false );
+//                    }
+//                }
+//            }
+//            else {
+//                if( ImGui::Button( "No Image" ) ) {
+//                    Core * core = Core::EditorOnly_GetCore();
+//                    LargeString resPath = {};
+//                    if( core->WindowOpenNativeFileDialog( nullptr, "png", resPath ) == true ) {
+//                        TextureResource ** tptr = (TextureResource **)obj;
+//                        *tptr = core->ResourceGetAndCreateTexture( resPath.GetCStr(), false, false );
+//                    }
+//                }
+//            }
         }
 
         virtual LargeString ToString( const void * obj ) override {

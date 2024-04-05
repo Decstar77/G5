@@ -124,27 +124,27 @@ namespace atto {
     }
 
     inline static bool SpriteResourcePicker( Core * core, SpriteResource *& spriteResource ) {
-        LargeString res = {};
-        if( spriteResource != nullptr && spriteResource->textureResource != nullptr ) {
-            if( ImGui::ImageButton( (void *)(intptr_t)spriteResource->textureResource->handle, ImVec2( 64.0f, 64.0f ) ) ) {
-                if( core->WindowOpenNativeFileDialog( nullptr, "png", res ) ) {
-                    res.StripFileExtension();
-                    res.Add( ".json" );
-                    spriteResource = core->ResourceGetAndLoadSprite( res.GetCStr() );
-                    return true;
-                }
-            }
-        }
-        else {
-            if( ImGui::Button( "Select Sprite" ) ) {
-                if( core->WindowOpenNativeFileDialog( nullptr, "png", res ) ) {
-                    res.StripFileExtension();
-                    res.Add( ".json" );
-                    spriteResource = core->ResourceGetAndLoadSprite( res.GetCStr() );
-                    return true;
-                }
-            }
-        }
+//        LargeString res = {};
+//        if( spriteResource != nullptr && spriteResource->textureResource != nullptr ) {
+//            if( ImGui::ImageButton( (void *)(intptr_t)spriteResource->textureResource->handle, ImVec2( 64.0f, 64.0f ) ) ) {
+//                if( core->WindowOpenNativeFileDialog( nullptr, "png", res ) ) {
+//                    res.StripFileExtension();
+//                    res.Add( ".json" );
+//                    spriteResource = core->ResourceGetAndLoadSprite( res.GetCStr() );
+//                    return true;
+//                }
+//            }
+//        }
+//        else {
+//            if( ImGui::Button( "Select Sprite" ) ) {
+//                if( core->WindowOpenNativeFileDialog( nullptr, "png", res ) ) {
+//                    res.StripFileExtension();
+//                    res.Add( ".json" );
+//                    spriteResource = core->ResourceGetAndLoadSprite( res.GetCStr() );
+//                    return true;
+//                }
+//            }
+//        }
         return false;
     }
 

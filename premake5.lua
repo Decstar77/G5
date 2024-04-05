@@ -13,6 +13,7 @@ local IMGUI_DIR = path.join(ABSOLUTE_SOL_PATH, "atto_core/src/editor/imgui")
 local FMOD_DIR = "vendor/fmod"
 local FPM = "vendor/fpm"
 local BACKWARD = "vendor/backward"
+local VULKAN_DIR = "C:/VulkanSDK/1.3.239.0"
 
 solution "Atto"
     location("")
@@ -67,6 +68,7 @@ project "atto_core"
         path.join(GLAD_DIR, "include"),
         path.join(FMOD_DIR, "include"),
         path.join(ENET_DIR, "include"),
+		path.join(VULKAN_DIR, "include"),
         JSON_DIR,
         STB_DIR,
         FPM,
@@ -80,7 +82,8 @@ project "atto_core"
     
     libdirs
     {
-        path.join(FMOD_DIR, "lib")
+        path.join(FMOD_DIR, "lib"),
+		path.join(VULKAN_DIR, "lib")
     }
     
     files {
@@ -94,7 +97,7 @@ project "atto_core"
     links { "opengl32", "glfw", "glad", "fmod_vc" }
 
     filter "system:windows"
-        links { "kernel32", "user32","Dbghelp"  }
+        links { "kernel32", "user32", "Dbghelp", "vulkan-1" }
 
     dependson { "AttoTypeGen", "atto_game" }
 

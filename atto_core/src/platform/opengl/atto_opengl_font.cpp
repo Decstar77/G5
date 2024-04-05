@@ -1,6 +1,11 @@
-#include "atto_core_windows.h"
-#include "../shared/atto_colors.h"
+#include "atto_opengl.h"
 
+#if ATTO_OPENGL
+
+#include "../atto_core_windows.h"
+#include "../../shared/atto_colors.h"
+
+// @NOTE: I can't believe it need this...
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
@@ -12,8 +17,8 @@
 namespace atto {
 
     static int glfons__renderCreate( void * userPtr, int width, int height ) {
-        WindowsCore * core = (WindowsCore *)userPtr;
-        core->GLFontsRenderCreate( width, height );
+        OpenglState * glState = (OpenglState *)userPtr;
+        glState->GLFontsRenderCreate( width, height );
         return 1;
     }
 
@@ -22,22 +27,34 @@ namespace atto {
     }
 
     static void glfons__renderUpdate( void * userPtr, int * rect, const unsigned char * data ) {
-        WindowsCore * core = (WindowsCore *)userPtr;
-        core->GLFontsRenderUpdate( rect, data );
+        OpenglState * glState = (OpenglState *)userPtr;
+        glState->GLFontsRenderUpdate( rect, data );
     }
 
     static void glfons__renderDraw( void * userPtr, const float * verts, const float * tcoords, const unsigned int * colors, int nverts ) {
-        WindowsCore * core = (WindowsCore *)userPtr;
-        core->GLFontsRenderDraw( verts, tcoords, colors, nverts );
+        OpenglState * glState = (OpenglState *)userPtr;
+        glState->GLFontsRenderDraw( verts, tcoords, colors, nverts );
     }
 
     static void glfons__renderDelete( void * userPtr ) {
-        WindowsCore * core = (WindowsCore *)userPtr;
-        core->GLFontsRenderDelete();
+        OpenglState * glState = (OpenglState *)userPtr;
+        glState->GLFontsRenderDelete();
+    }
+    
+    FontHandle OpenglState::ResourceGetFont( const char * name ) {
+        i32 fh = fonsGetFontByName( core->resources.fontContext, name );
+        if( fh == FONS_INVALID ) {
+            return FontHandle::INVALID;
+        }
+
+        FontHandle fontHandle = {};
+        fontHandle.idx = fh;
+        fontHandle.gen = 0;
+        return fontHandle;
     }
 
-    float WindowsCore::FontGetTextBounds( FontHandle font, f32 fontSize, const char * text, glm::vec2 pos, BoxBounds2D & bounds, TextAlignment_H hA, TextAlignment_V vA ) {
-        FontContext fs = resources.fontContext;
+    float OpenglState::FontGetTextBounds( FontHandle font, f32 fontSize, const char * text, glm::vec2 pos, BoxBounds2D & bounds, TextAlignment_H hA, TextAlignment_V vA ) {
+        FontContext fs = core->resources.fontContext;
         float fbounds[ 4 ] = {};
         fonsSetFont( fs, font.idx );
         fonsSetSize( fs, fontSize );
@@ -50,8 +67,8 @@ namespace atto {
         return r;
     }
 
-    void WindowsCore::RenderDrawCommandText( DrawCommand & cmd ) {
-        FontContext fs = resources.fontContext;
+    void OpenglState::RenderDrawCommandText( DrawCommand & cmd ) {
+        FontContext fs = core->resources.fontContext;
 
         GLEnableAlphaBlending();
         GLShaderProgramBind( fontProgram );
@@ -67,7 +84,7 @@ namespace atto {
         fonsDrawText( fs, cmd.text.bl.x, cmd.text.bl.y, cmd.text.text.GetCStr(), NULL );
     }
 
-    void WindowsCore::GLInitializeTextRendering() {
+    void OpenglState::GLInitializeTextRendering() {
         i32 textureWidth = 512;
         i32 textureHeight = 512;
         i32 textureFlags = FONS_ZERO_BOTTOMLEFT;
@@ -83,9 +100,9 @@ namespace atto {
         params.renderDelete = glfons__renderDelete;
         params.userPtr = this;
 
-        resources.fontContext = fonsCreateInternal( &params );
-        arialFontHandle = fonsAddFont( resources.fontContext, "default", "res/fonts/arial.ttf" );
-        kenFontHandle = fonsAddFont( resources.fontContext, "ken", "res/fonts/kenvector_future.ttf" );
+        core->resources.fontContext = fonsCreateInternal( &params );
+        arialFontHandle = fonsAddFont( core->resources.fontContext, "default", "res/fonts/arial.ttf" );
+        kenFontHandle = fonsAddFont( core->resources.fontContext, "ken", "res/fonts/kenvector_future.ttf" );
 
         const char * vertexShaderSource = R"(
             #version 330 core
@@ -121,24 +138,12 @@ namespace atto {
             }
         )";
 
-        VertexLayoutFont text = {};
+        GLVertexLayoutFont text = {};
         fontProgram = GLCreateShaderProgram( vertexShaderSource, fragmentShaderSource );
         fontVertexBuffer = GLCreateVertexBuffer( &text, FONS_VERTEX_COUNT, nullptr, true );
     }
 
-    FontHandle WindowsCore::ResourceGetFont( const char * name ) {
-        i32 fh = fonsGetFontByName( resources.fontContext, name );
-        if( fh == FONS_INVALID ) {
-            return FontHandle::INVALID;
-        }
-
-        FontHandle fontHandle = {};
-        fontHandle.idx = fh;
-        fontHandle.gen = 0;
-        return fontHandle;
-    }
-
-    void WindowsCore::GLFontsRenderCreate( i32 width, i32 height ) {
+    void OpenglState::GLFontsRenderCreate( i32 width, i32 height ) {
         if ( fontTextureHandle != 0 ) {
             glDeleteTextures( 1, &fontTextureHandle );
             fontTextureHandle = 0;
@@ -163,11 +168,13 @@ namespace atto {
         glBindTexture( GL_TEXTURE_2D, 0 );
     }
 
-    void WindowsCore::GLFontsRenderUpdate( i32 * rect, const byte * data ) {
+    void OpenglState::GLFontsRenderUpdate( i32 * rect, const byte * data ) {
         i32 w = rect[ 2 ] - rect[ 0 ];
         i32 h = rect[ 3 ] - rect[ 1 ];
 
-        if( fontTextureHandle == 0 ) return;
+        if( fontTextureHandle == 0 ) { 
+            return;
+        }
 
         // Push old values
         GLint alignment, rowLength, skipPixels, skipRows;
@@ -192,9 +199,9 @@ namespace atto {
         glPixelStorei( GL_UNPACK_SKIP_ROWS, skipRows );
     }
 
-    void WindowsCore::GLFontsRenderDraw( const f32 * verts, const f32 * tcoords, const u32 * colors, i32 nverts ) {
-        const i32 size = sizeof( VertexLayoutFont::FontVertex ) * nverts;
-        VertexLayoutFont::FontVertex * vertices = (VertexLayoutFont::FontVertex *)MemoryAllocateTransient( size );
+    void OpenglState::GLFontsRenderDraw( const f32 * verts, const f32 * tcoords, const u32 * colors, i32 nverts ) {
+        const i32 size = sizeof( GLVertexLayoutFont::FontVertex ) * nverts;
+        GLVertexLayoutFont::FontVertex * vertices = (GLVertexLayoutFont::FontVertex *)core->MemoryAllocateTransient( size );
         for( i32 i = 0; i < nverts; i++ ) {
             vertices[ i ].position.x = verts[ 2 * i ];
             vertices[ i ].position.y = verts[ 2 * i + 1 ];
@@ -211,11 +218,11 @@ namespace atto {
         glBindVertexArray( 0 );
     }
 
-    void WindowsCore::GLFontsRenderDelete() {
+    void OpenglState::GLFontsRenderDelete() {
 
     }
 
-    void VertexLayoutFont::Layout() {
+    void GLVertexLayoutFont::Layout() {
         i32 stride = StrideBytes();
         glEnableVertexAttribArray( 0 );
         glVertexAttribPointer( 0, 3, GL_FLOAT, false, stride, 0 );
@@ -227,11 +234,13 @@ namespace atto {
         glVertexAttribPointer( 2, 2, GL_FLOAT, false, stride, (void *)( 4 * sizeof( f32 ) ) );
     }
 
-    i32 VertexLayoutFont::SizeBytes() {
+    i32 GLVertexLayoutFont::SizeBytes() {
         return (i32)sizeof( FontVertex );
     }
 
-    i32 VertexLayoutFont::StrideBytes() {
+    i32 GLVertexLayoutFont::StrideBytes() {
         return (i32)sizeof( FontVertex );
     }
 }
+
+#endif

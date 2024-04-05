@@ -4,6 +4,10 @@
 #define ATTO_DEBUG_RENDERING 0
 #define ATTO_EDITOR 1
 
+// @TEMP:
+#define ATTO_OPENGL 1
+#define ATTO_VULKAN 0
+
 #define ATTO_GAME_CHECK_RPC_FUNCTION_TYPES 1
 
 

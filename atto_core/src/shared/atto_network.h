@@ -1,8 +1,6 @@
 #pragma once
 
-#include "atto_defines.h"
 #include "atto_containers.h"
-#include "atto_math.h"
 
 namespace atto {
     enum class NetworkMessageType {

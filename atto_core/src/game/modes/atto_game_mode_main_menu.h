@@ -13,6 +13,8 @@ namespace atto {
         void UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags = UPDATE_AND_RENDER_FLAG_NONE ) override;
         void Shutdown( Core * core ) override;
         UIContext ui;
+        bool showOptions = false;
+        bool showOptionsAudio = false;
     };
     
 }

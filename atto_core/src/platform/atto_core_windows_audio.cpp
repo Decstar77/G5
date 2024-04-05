@@ -40,7 +40,7 @@ namespace atto {
             }
         }
 
-        Win32AudioResource audioResource = {};
+        FMODAudioResource audioResource = {};
         audioResource.id = StringHash::Hash( name );
         audioResource.name = name;
         audioResource.is2D = is2D;
@@ -85,12 +85,13 @@ namespace atto {
     }
 
     AudioSpeaker WindowsCore::AudioPlay( AudioResource * audio, glm::vec2 * pos ) {
-        Win32AudioResource * win32Audio = (Win32AudioResource *)audio;
+        FMODAudioResource * win32Audio = (FMODAudioResource *)audio;
 
         if( pos == nullptr ) {
             if( win32Audio->sound2D != nullptr ) {
                 FMOD::Channel * channel = nullptr;
                 FMOD_RESULT result = fmodSystem->playSound( win32Audio->sound2D, fmodMasterGroup, false, &channel );
+                channel->setVolume( 0.1f );
                 ERRCHECK( result );
             }
             else {
@@ -107,6 +108,7 @@ namespace atto {
                 v.y = pos->y;
                 v.z = 0.0f;
                 channel->set3DAttributes( &v, nullptr );
+                channel->setVolume( 0.3f );
                 channel->setPaused( false );
 
                 f32 dist = glm::distance( *pos, listenerPos );

@@ -28,7 +28,7 @@ namespace atto {
         NONE,
         PIXELS,
         CENTER,
-        PIXELS_AND_CENTERED
+        PERCENT_OF_PARENT, 
     };
 
     struct UIWidgetPos {
@@ -44,15 +44,23 @@ namespace atto {
 
     enum UI_Flags {
         UI_FLAG_NONE = 0,
-        UI_FLAG_HOVERABLE = SetABit(1),
-        UI_FLAG_CLICKABLE = SetABit(2),
+        UI_FLAG_HOVERABLE = SetABit( 1 ),
+        UI_FLAG_CLICKABLE = SetABit( 2 ),
+        UI_FLAG_TREAT_POS_AS_CENTER = SetABit( 3 ),
     };
 
     enum UI_WidgetType {
         UI_WIDGET_TYPE_ROOT,
         UI_WIDGET_TYPE_BUTTON,
         UI_WIDGET_TYPE_POPUP,
-        UI_WIDGET_TYPE_VBOX
+        UI_WIDGET_TYPE_VBOX,
+        UI_WIDGET_TYPE_SLIDER,
+    };
+
+    struct UISlider {
+        f32 t;
+        f32 maxValue;
+        f32 minValue;
     };
 
     struct UIWidget {
@@ -69,6 +77,8 @@ namespace atto {
         BoxBounds2D computedBounds;
 
         SmallString text;
+        UISlider slider;
+
 
         UIWidget * parent;
         FixedList<UIWidget *, 32> child; // @NOTE: Probably shouldn't do this...
@@ -80,13 +90,12 @@ namespace atto {
         void End();
         UIWidget *  Widget( i32 id, const char * text, UIWidgetPos pos, UIWidgetSize sizeX, UIWidgetSize sizeY, i32 flags, glm::vec4 col = glm::vec4( 1 ) );
         void        ColorBlockPix( i32 id, glm::vec2 center, glm::vec2 size, glm::vec4 col );
-        void        LablePix( i32 id, const char * text, glm::vec2 center );
+        void        LablePix( const char * text, glm::vec2 center );
         bool        Button( i32 id, const char * text, UIWidgetPos pos, UIWidgetSize sizeX, UIWidgetSize sizeY, glm::vec4 col = glm::vec4( 1 ) );
         bool        ButtonPix( i32 id, const char * text, glm::vec2 center, glm::vec2 size, glm::vec4 col = glm::vec4( 1 ) );
-        //bool BeginPopup( i32 id, const char * text, glm::vec2 center, glm::vec2 size, glm::vec4 col = glm::vec4( 1 ) );
-        //void EndPopup( i32 id );
+        bool        Slider( const char * text, f32 * value, glm::vec4 col = glm::vec4( 1 ) );
 
-        void BeginVBox( i32 id, UIWidgetPos pos, UIWidgetSize sizeX, UIWidgetSize sizeY, glm::vec4 c = glm::vec4( 1 ) );
+        void BeginVBox( i32 id, UIWidgetPos pos, UIWidgetSize sizeX, UIWidgetSize sizeY, i32 flags = 0, glm::vec4 c = glm::vec4( 1 ) );
         void EndVBox();
 
         void UpdateAndRender( Core * core, DrawContext * uiDraw );
@@ -101,6 +110,8 @@ namespace atto {
         void ComputeBounds( UIWidget * widget, glm::vec2 pos );
 
         i32 clickedId = -1;
+        i32 pressedId = -1;
+        glm::vec2 normalizedHoverPos = glm::vec2( 0, 0 );
         i32 lastClickedId = -1;
         i32 popupOpen = -1;
         bool mouseOverAnyElements;

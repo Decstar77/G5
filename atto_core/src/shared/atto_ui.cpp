@@ -3,7 +3,7 @@
 #include "atto_colors.h"
 
 //#include "glad/glad.h"
-
+#include <iostream>
 namespace atto {
 
     void UIContext::Begin( glm::vec2 dims ) {
@@ -56,15 +56,16 @@ namespace atto {
         Widget( id, "", pos, sizeX, sizeY, 0, col );
     }
 
-    void UIContext::LablePix( i32 id, const char * text, glm::vec2 center ) {
+    void UIContext::LablePix( const char * text, glm::vec2 center ) {
         UIWidgetPos pos = {};
-        pos.type = UI_PosType::PIXELS_AND_CENTERED;
+        pos.type = UI_PosType::PIXELS;
         pos.value = center;
         UIWidgetSize sizeX = {};
         sizeX.type = UI_SizeType::TEXTCONTENT;
         UIWidgetSize sizeY = {};
         sizeY.type = UI_SizeType::TEXTCONTENT;
-        Widget( id, text, pos, sizeX, sizeY, 0, glm::vec4( 0 ) );
+        i32 id = ( i32 )StringHash::Hash( text );
+        Widget( id, text, pos, sizeX, sizeY, UI_FLAG_TREAT_POS_AS_CENTER, glm::vec4( 0 ) );
     }
 
     bool UIContext::Button( i32 id, const char * text, UIWidgetPos pos, UIWidgetSize sizeX, UIWidgetSize sizeY, glm::vec4 col ) {
@@ -87,30 +88,31 @@ namespace atto {
         return Button( id, text, pos, sizeX, sizeY, col );
     }
 
-//    bool UIContext::BeginPopup( i32 id, const char * text, glm::vec2 center, glm::vec2 size, glm::vec4 col ) {
-//        bool c = Widget( id, text, center, size, col );
-//        UIWidget * w = FindWidgetWithId( id ); // @HACK:
-//
-//        idStack.Push( id );
-//
-//        if ( c ) {
-//            popupOpen = w->id;
-//        }
-//
-//        return popupOpen == w->id;
-//    }
-//
-//    void UIContext::EndPopup( i32 id ) {
-//        UIWidget * w = FindWidgetWithId( id );
-//        if ( lastClickedId != w->id ) {
-//            popupOpen = -1;
-//        }
-//
-//        idStack.Pop();
-//    }
+    bool UIContext::Slider( const char * text, f32 * value, glm::vec4 col ) {
+        i32 id =( i32 )StringHash::Hash( text );
+        UIWidgetPos pos = {};
+        pos.type = UI_PosType::CENTER;
+        UIWidgetSize sizeX = {};
+        sizeX.type = UI_SizeType::PIXELS;
+        sizeX.value = 100;
+        UIWidgetSize sizeY = {};
+        sizeY.type = UI_SizeType::PIXELS;
+        sizeY.value = 10;
+        UIWidget * w = Widget( id, text, pos, sizeX, sizeY, UI_FLAG_HOVERABLE | UI_FLAG_CLICKABLE, col );
+        w->slider.minValue = 0.0f;
+        w->slider.maxValue = 1.0f;
+        w->type = UI_WIDGET_TYPE_SLIDER;
 
-    void UIContext::BeginVBox( i32 id, UIWidgetPos pos, UIWidgetSize sizeX, UIWidgetSize sizeY, glm::vec4 c ) {
-        UIWidget * w = Widget( id, "", pos, sizeX, sizeY, 0, c );
+        if ( id == pressedId ) {
+            *value = normalizedHoverPos.x;
+        }
+        w->slider.t = *value;
+
+        return false;
+    }
+
+    void UIContext::BeginVBox( i32 id, UIWidgetPos pos, UIWidgetSize sizeX, UIWidgetSize sizeY, i32 flags, glm::vec4 c ) {
+        UIWidget * w = Widget( id, "", pos, sizeX, sizeY, flags, c );
         w->type = UI_WIDGET_TYPE_VBOX;
 
         idStack.Push( id );
@@ -136,11 +138,12 @@ namespace atto {
         ComputeSizes( core );
 
         if (mouseClicked == true ) {
-            lastClickedId = -1;
+            //lastClickedId = -1;
         }
 
         mouseOverAnyElements = false;
         clickedId = -1;
+        pressedId = -1;
         traversalQueue.Clear();
         traversalQueue.Enqueue( &widgets[ 0 ] );
         while ( traversalQueue.IsEmpty() == false ) {
@@ -153,19 +156,34 @@ namespace atto {
                     mouseOverAnyElements = true;
                     col *= 1.1f;
 
+                    normalizedHoverPos = ( mousePos - child->computedBounds.min ) / child->computedBounds.GetSize() ;
+
                     if ( EnumHasFlag( child->flags, UI_FLAG_CLICKABLE ) && mousePressed == true ) {
                         col *= 1.1f;
+                        pressedId = child->id;
                     }
 
                     if ( EnumHasFlag( child->flags, UI_FLAG_CLICKABLE ) && mouseClicked == true ) {
                         clickedId = child->id;
-                        lastClickedId = child->id;
                     }
-
                 }
+                
                 if ( col.a != 0.0f ) {
                     uiDraw->DrawRect( child->computedBounds.min, child->computedBounds.max, col );
                 }
+
+                if ( child->type == UI_WIDGET_TYPE_SLIDER ) {
+                    glm::vec2 start = child->computedBounds.min;
+                    glm::vec2 end = child->computedBounds.max;
+                    f32 d = ( end.y - start.y );
+                    start.y += d / 2.0f;
+                    end.y -= d / 2.0f;
+                    uiDraw->DrawLine( start, end, 2, glm::vec4(0, 1, 0, 1) );
+
+                    glm::vec2 cpos = glm::mix( start, end, child->slider.t );
+                    uiDraw->DrawCircle( cpos, 3.f );
+                }
+
                 if ( child->text.GetLength() != 0 ) {
                     glm::vec2 screenPos = uiDraw->WorldPosToScreenPos( child->computedBounds.GetCenter() );
                     glm::vec2 screenFontSize = uiDraw->WorldPosToScreenPos( glm::vec2( 0, fontSize ) );
@@ -268,23 +286,36 @@ namespace atto {
             if ( child->pos.type == UI_PosType::NONE ) {
             }
             else if ( child->pos.type == UI_PosType::PIXELS ) {
-                child->computedPos = child->pos.value;
-            } 
-            else if ( child->pos.type == UI_PosType::CENTER ) {
-                if ( widget->id == 0 ) { // @HACK   
-                    child->computedPos = widget->computedSize / 2.0f;
+                if ( EnumHasFlag( child->flags, UI_FLAG_TREAT_POS_AS_CENTER ) == true ) {
+                    child->computedPos = child->pos.value;
                     child->computedPos.x -= child->computedSize.x / 2.0f;
                     child->computedPos.y += child->computedSize.y / 2.0f;
                 } else {
+                    child->computedPos = child->pos.value;
+                }
+            } 
+            else if ( child->pos.type == UI_PosType::CENTER ) {
+                if( widget->id == 0 ) { // @HACK   
+                    child->computedPos = widget->computedSize / 2.0f;
+                    child->computedPos.x -= child->computedSize.x / 2.0f;
+                    child->computedPos.y += child->computedSize.y / 2.0f;
+                }
+                else {
                     child->computedPos = p;
                     child->computedPos.x = ( widget->computedSize.x - child->computedSize.x ) / 2.0f;
                     p.y -= child->computedSize.y;
                 }
             }
-            else if ( child->pos.type == UI_PosType::PIXELS_AND_CENTERED ) {
-                child->computedPos = child->pos.value;
-                child->computedPos.x -= child->computedSize.x / 2.0f;
-                child->computedPos.y += child->computedSize.y / 2.0f;
+            else if ( child->pos.type == UI_PosType::PERCENT_OF_PARENT ) {
+                glm::vec2 start = widget->computedPos;
+                glm::vec2 end = widget->computedPos + widget->computedSize;
+                child->computedPos.x = glm::mix( start.x, end.x, child->pos.value.x );
+                child->computedPos.y = glm::mix( start.y, end.y, child->pos.value.y );
+
+                if ( EnumHasFlag( child->flags, UI_FLAG_TREAT_POS_AS_CENTER ) == true ) {
+                    child->computedPos.x -= child->computedSize.x / 2.0f;
+                    child->computedPos.y += child->computedSize.y / 2.0f;
+                }
             }
 
             ComputeRelativePositions( child );

@@ -20,6 +20,7 @@ namespace atto {
     void GameMode_MainMenu::UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags /*= UPDATE_AND_RENDER_FLAG_NONE */ ) {
         static TextureResource * background = core->ResourceGetAndCreateTexture( "res/sprites/ui/main_menu_screen_01.png", false, false );
         DrawContext * draw = core->RenderGetDrawContext( 0, true );
+    #if ATTO_OPENGL
         draw->DrawTextureBL( background, glm::vec2( 0, 0 ) );
 
         if( core->NetworkIsConnected() ) {
@@ -63,43 +64,65 @@ namespace atto {
         paretPercent.type = UI_SizeType::PERCENTOFPARENT;
         paretPercent.value = 1.0f;
 
-        ui.Begin( draw->GetCameraDims() );
-        ui.BeginVBox( 1, centerPos, childMax, childSum, Colors::MIDNIGHT_BLUE );
+        ui.Begin( draw->GetCameraDims() ); 
+        ui.BeginVBox( 1, centerPos, childMax, childSum, UI_FLAG_TREAT_POS_AS_CENTER, Colors::MIDNIGHT_BLUE );
         ui.Button( 22, "The game name is here", centerPos, textSize, textSize, Colors::ALIZARIN );
 
-        ui.BeginVBox( 2, centerPos, paretPercent, childSum, Colors::SKY_BLUE );
+        ui.BeginVBox( 2, centerPos, paretPercent, childSum, 0, Colors::SKY_BLUE );
         //ui.Button( 33, "Tutorial", centerPos, paretPercent, textSize , Colors::ALIZARIN );
         if ( ui.Button( 44, "Single Player",  centerPos, paretPercent, textSize, Colors::ALIZARIN ) ) {
             GameStartParams parms = {};
             parms.isMutliplayer = false;
             core->MoveToGameMode( new GameMode_SinglePlayerGame( parms ) );
         }
-        if ( ui.Button( 55, "Mutliplayer",  centerPos, paretPercent, textSize, Colors::ALIZARIN ) ) {
+        if ( ui.Button( 55, "Mutliplayer", centerPos, paretPercent, textSize, Colors::ALIZARIN ) ) {
             core->NetConnect();
         }
-        if ( ui.Button( 66, "Quit", centerPos, paretPercent, textSize, Colors::ALIZARIN ) ) {
+        if ( ui.Button( 66, "Options", centerPos, paretPercent, textSize, Colors::ALIZARIN ) ) {
+            showOptions = true;
+        }
+        if ( ui.Button( 77, "Quit", centerPos, paretPercent, textSize, Colors::ALIZARIN ) ) {
             core->WindowClose();
         }
-        ui.EndVBox();
 
         ui.EndVBox();
+        
+        ui.EndVBox();
+
+        if ( showOptions ) {
+            UIWidgetPos  parentPos = {};
+            parentPos.type = UI_PosType::PERCENT_OF_PARENT;
+            parentPos.value = glm::vec2( 0.65f, 0.5f );
+            ui.BeginVBox( 3, parentPos, childMax, childSum, UI_FLAG_TREAT_POS_AS_CENTER, Colors::MIDNIGHT_BLUE );
+            if ( ui.Button( 88, "Video", centerPos, textSize, textSize, Colors::ALIZARIN ) ) {
+            }
+            if ( ui.Button( 99, "Audio", centerPos, textSize, textSize, Colors::ALIZARIN ) ) {
+                showOptionsAudio = true;
+            }
+            if ( ui.Button( 111, "Game", centerPos, textSize, textSize, Colors::ALIZARIN ) ) {
+            }
+            if ( ui.Button( 122, "Input", centerPos, textSize, textSize, Colors::ALIZARIN ) ) {
+            }
+            if ( ui.Button( 133, "System", centerPos, textSize, textSize, Colors::ALIZARIN ) ) {
+            }
+            ui.EndVBox();
+        }
+
+        if ( showOptionsAudio ) {
+            UIWidgetPos  parentPos = {};
+            parentPos.type = UI_PosType::PERCENT_OF_PARENT;
+            parentPos.value = glm::vec2( 0.75f, 0.5f );
+            ui.BeginVBox( 4, parentPos, childMax, childSum, UI_FLAG_TREAT_POS_AS_CENTER, Colors::MIDNIGHT_BLUE );
+            static f32 sliderValue = 0.0f;
+            if ( ui.Slider( "Master Volume", &sliderValue, glm::vec4( 0 ) ) ) {
+            }
+            ui.EndVBox();
+        }
+
+
+
         ui.UpdateAndRender( core, draw );
         ui.End();
-
-//        ui.BeginBox( core->RenderGetMainSurfaceWidth() / 2, core->RenderGetMainSurfaceHeight() - 250, true );
-//        if( ui.AddButton( "Loner" ) ) {
-//            GameStartParams parms = {};
-//            parms.isMutliplayer = false;
-//            core->MoveToGameMode( new GameMode_SinglePlayerGame( parms ) );
-//        }
-//        if( ui.AddButton( "Blessed" ) ) {
-//            core->NetConnect();
-//        }
-//        if( ui.AddButton( "Soon" ) ) {
-//            core->WindowClose();
-//        }
-//        ui.EndBox();
-//        ui.Draw( draw );
 
         FontHandle fontHandle = core->ResourceGetFont( "default" );
         SmallString status = core->NetworkGetStatusText();
@@ -129,7 +152,7 @@ namespace atto {
 
         SmallString s = StringFormat::Small( "fps=%f", 1.0f / dt );
         draw->DrawTextScreen( fontHandle, glm::vec2( 528, 200 ), 32, s.GetCStr() );
-
+    #endif
         core->RenderSubmit( draw, true );
     }
 

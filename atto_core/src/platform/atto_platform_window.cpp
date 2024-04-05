@@ -58,11 +58,16 @@ namespace atto {
         glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 4 );
         glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 6 );
 
-    #if ATTO_DEBUG_RENDERING
+    #if ATTO_DEBUG_RENDERING && ATTO_OPENGL
         glfwWindowHint( GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE );
     #endif
-
+        
+    #if ATTO_OPENGL
         glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );
+    #elif ATTO_VULKAN
+        glfwWindowHint( GLFW_CLIENT_API, GLFW_NO_API );
+    #endif
+
         glfwWindowHint( GLFW_RESIZABLE, GL_TRUE );
         glfwWindowHint( GLFW_SCALE_TO_MONITOR, GLFW_FALSE );
         glfwWindowHint( GLFW_SAMPLES, 4 );
@@ -108,9 +113,6 @@ namespace atto {
         if( gameSettings.windowStartPosX != -1 ) {
             glfwSetWindowPos( window, gameSettings.windowStartPosX, gameSettings.windowStartPosY );
         }
-
-        gladLoadGLLoader( (GLADloadproc)glfwGetProcAddress );
-        core->LogOutput( LogLevel::INFO, "OpenGL %s, GLSL %s", glGetString( GL_VERSION ), glGetString( GL_SHADING_LANGUAGE_VERSION ) );
     }
 
     f64 PlatformWindow::GetTime() const {

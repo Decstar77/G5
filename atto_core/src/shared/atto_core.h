@@ -51,7 +51,7 @@ namespace atto {
 
     class TextureResource : public Resource {
     public:
-        u32     handle;
+        
         i32     width;
         i32     height;
         i32     channels;
@@ -294,6 +294,8 @@ namespace atto {
     class DrawContext {
         friend class Core;
         friend class WindowsCore;
+        friend class OpenglState;
+        friend class VulkanState;
     public:
         void SetCameraPos( glm::vec2 pos );
         void DrawCircle( glm::vec2 pos, f32 radius, glm::vec4 colour = glm::vec4( 1 ) );
@@ -379,6 +381,8 @@ namespace atto {
     };
 
     class Core {
+        friend class OpenglState;
+        friend class VulkanState;
     public:
         void                                LogOutput( LogLevel level, const char * message, ... );
         //template<typename... _types_>
@@ -517,7 +521,7 @@ namespace atto {
         glm::mat4                           screenProjection;
         glm::vec4                           viewport;
 
-        glm::vec2           listenerPos;
+        glm::vec2                           listenerPos;
 
         u8 * thePermanentMemory = nullptr;
         u64 thePermanentMemorySize = 0;

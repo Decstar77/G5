@@ -26,6 +26,8 @@ namespace atto {
         void    EnableFullscreen();
         void    DisableFullscreen();
 
+        GLFWwindow * GetWindowPtr() { return window; }
+
     public:
         Core *                      core = nullptr;
         GLFWmonitor *               monitor = nullptr;
