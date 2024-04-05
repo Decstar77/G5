@@ -4,6 +4,7 @@
 
 #include <cstddef>
 #include <cstring>
+#include <type_traits>
 
 namespace atto {
     enum class NetworkMessageType {
