@@ -1149,15 +1149,15 @@ static stbtt_uint8 stbtt__buf_peek8(stbtt__buf *b)
    return b->data[b->cursor];
 }
 
-static void stbtt__buf_seek(stbtt__buf *b, int o)
+static void stbtt__buf_seek(stbtt__buf *b, int spawnOri)
 {
-   STBTT_assert(!(o > b->size || o < 0));
-   b->cursor = (o > b->size || o < 0) ? b->size : o;
+   STBTT_assert(!(spawnOri > b->size || spawnOri < 0));
+   b->cursor = (spawnOri > b->size || spawnOri < 0) ? b->size : spawnOri;
 }
 
-static void stbtt__buf_skip(stbtt__buf *b, int o)
+static void stbtt__buf_skip(stbtt__buf *b, int spawnOri)
 {
-   stbtt__buf_seek(b, b->cursor + o);
+   stbtt__buf_seek(b, b->cursor + spawnOri);
 }
 
 static stbtt_uint32 stbtt__buf_get(stbtt__buf *b, int n)
@@ -1183,11 +1183,11 @@ static stbtt__buf stbtt__new_buf(const void *p, size_t size)
 #define stbtt__buf_get16(b)  stbtt__buf_get((b), 2)
 #define stbtt__buf_get32(b)  stbtt__buf_get((b), 4)
 
-static stbtt__buf stbtt__buf_range(const stbtt__buf *b, int o, int s)
+static stbtt__buf stbtt__buf_range(const stbtt__buf *b, int spawnOri, int s)
 {
    stbtt__buf r = stbtt__new_buf(NULL, 0);
-   if (o < 0 || s < 0 || o > b->size || s > b->size - o) return r;
-   r.data = b->data + o;
+   if (spawnOri < 0 || s < 0 || spawnOri > b->size || s > b->size - spawnOri) return r;
+   r.data = b->data + spawnOri;
    r.size = s;
    return r;
 }
@@ -1284,17 +1284,17 @@ static stbtt__buf stbtt__cff_index_get(stbtt__buf b, int i)
 // on platforms that don't allow misaligned reads, if we want to allow
 // truetype fonts that aren't padded to alignment, define ALLOW_UNALIGNED_TRUETYPE
 
-#define ttBYTE(p)     (* (stbtt_uint8 *) (p))
-#define ttCHAR(p)     (* (stbtt_int8 *) (p))
-#define ttFixed(p)    ttLONG(p)
+#define ttBYTE(spawnLocation)     (* (stbtt_uint8 *) (spawnLocation))
+#define ttCHAR(spawnLocation)     (* (stbtt_int8 *) (spawnLocation))
+#define ttFixed(spawnLocation)    ttLONG(spawnLocation)
 
 static stbtt_uint16 ttUSHORT(stbtt_uint8 *p) { return p[0]*256 + p[1]; }
 static stbtt_int16 ttSHORT(stbtt_uint8 *p)   { return p[0]*256 + p[1]; }
 static stbtt_uint32 ttULONG(stbtt_uint8 *p)  { return (p[0]<<24) + (p[1]<<16) + (p[2]<<8) + p[3]; }
 static stbtt_int32 ttLONG(stbtt_uint8 *p)    { return (p[0]<<24) + (p[1]<<16) + (p[2]<<8) + p[3]; }
 
-#define stbtt_tag4(p,c0,c1,c2,c3) ((p)[0] == (c0) && (p)[1] == (c1) && (p)[2] == (c2) && (p)[3] == (c3))
-#define stbtt_tag(p,str)           stbtt_tag4(p,str[0],str[1],str[2],str[3])
+#define stbtt_tag4(spawnLocation,c0,c1,c2,c3) ((spawnLocation)[0] == (c0) && (spawnLocation)[1] == (c1) && (spawnLocation)[2] == (c2) && (spawnLocation)[3] == (c3))
+#define stbtt_tag(spawnLocation,str)           stbtt_tag4(spawnLocation,str[0],str[1],str[2],str[3])
 
 static int stbtt__isfont(stbtt_uint8 *font)
 {
@@ -2998,12 +2998,12 @@ static void stbtt__rasterize_sorted_edges(stbtt__bitmap *result, stbtt__edge *e,
                      active = z;
                   } else {
                      // find thing to insert AFTER
-                     stbtt__active_edge *p = active;
-                     while (p->next && p->next->x < z->x)
-                        p = p->next;
+                     stbtt__active_edge *spawnLocation = active;
+                     while (spawnLocation->next && spawnLocation->next->x < z->x)
+                        spawnLocation = spawnLocation->next;
                      // at this point, p->next->x is NOT < z->x
-                     z->next = p->next;
-                     p->next = z;
+                     z->next = spawnLocation->next;
+                     spawnLocation->next = z;
                   }
                }
             }

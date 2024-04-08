@@ -542,37 +542,6 @@ namespace atto {
         cameraProjection = glm::ortho( 0.0f, cameraWidth, 0.0f, cameraHeight, -1.0f, 1.0f );
     }
 
-    void Core::NetConnect() {
-        if( client != nullptr ) {
-            client->Connect();
-        }
-    }
-
-    bool Core::NetIsConnected() {
-        if( client != nullptr ) {
-            return client->IsConnected();
-        }
-        return false;
-    }
-
-    void Core::NetDisconnect() {
-        if( client != nullptr ) {
-            client->Disconnect();
-        }
-    }
-
-    SmallString Core::NetStatusText() {
-        if( client != nullptr ) {
-            return client->StatusText();
-        }
-
-        return {};
-    }
-
-    u32 Core::NetGetPing() {
-        return client->GetPing();
-    }
-
     void * Core::MemoryAllocatePermanent( u64 bytes ) {
         thePermanentMemoryMutex.lock();
 
@@ -648,39 +617,6 @@ namespace atto {
 
     FrameInput & Core::InputGetFrameInput() {
         return input;
-    }
-
-    NetClient * Core::GetNetClient() {
-        return client;
-    }
-
-    void Core::NetworkConnect() {
-        client->Connect();
-    }
-    
-    bool Core::NetworkIsConnected() {
-        return client->IsConnected();
-    }
-
-    void Core::NetworkDisconnect() {
-        client->Disconnect();
-    }
-
-    SmallString Core::NetworkGetStatusText() {
-        return client->StatusText();
-    }
-
-    void Core::NetworkSend( const NetworkMessage & msg ) {
-        Assert( msg.type != NetworkMessageType::NONE );
-        client->Send( msg );
-    }
-
-    bool Core::NetworkRecieve( NetworkMessage & msg ) {
-        return client->Recieve( msg );
-    }
-
-    u32 Core::NetworkGetPing() {
-        return client->GetPing();
     }
 
     void * Core::MemoryAllocateTransient( u64 bytes ) {
@@ -790,12 +726,17 @@ namespace atto {
     bool SpriteAnimator::SetSpriteIfDifferent( SpriteResource * sprite, bool loops ) {
         if( this->sprite != sprite ) {
             this->sprite = sprite;
+            if ( sprite == nullptr ) {
+                return true;
+            }
+
             SetFrameRate( (f32)sprite->frameRate );
             frameIndex = 0;
             frameTimer = 0;
             loopCount = 0;
             this->loops = loops;
             color = glm::vec4( 1 );
+
             return true;
         }
         return false;

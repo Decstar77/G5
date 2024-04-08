@@ -30,6 +30,7 @@ namespace atto {
 
                 STAR,
                 PLANET,
+                SOLAR_SYSTEM,
 
                 BUILDING_BEGIN,
                 BUILDING_STATION,
@@ -98,8 +99,6 @@ namespace atto {
 
     struct Unit {
         UnitCommand                 command;
-        i32                         maxHealth;
-        i32                         currentHealth;
 
         fp                          averageRange;
 
@@ -135,11 +134,10 @@ namespace atto {
         "COMPUTE_GENERATOR"
     };
 
-
     constexpr i32 MAX_PLANET_PLACEMENTS = 5 * 3;
     struct Planet {
-        i32 turn;
         FixedList<PlanetPlacementType, MAX_PLANET_PLACEMENTS> placements;
+        FixedList<i32, MAX_PLANET_PLACEMENTS>                 placementsTurns;
     };
 
     struct Building {
@@ -149,7 +147,37 @@ namespace atto {
         bool isTraining;
         i32 timeToTrainTurns;
         EntityType trainingEnt;
-        i32 giveEnergyAmount;
+
+        i32 timeToGiveEnergyTurns;
+        i32 amountToGiveEnergy;
+        i32 timeToGiveComputeTurns;
+        i32 amountToGiveCompute;
+    };
+
+    struct SolarSystemConnectionPair {
+        EntityHandle a;
+        EntityHandle b;
+
+        inline bool operator==( const SolarSystemConnectionPair & other ) { return a == other.a && b == other.b; }
+    };
+
+    struct SolarSystem {
+        SmallString                 name;
+        FixedList<EntityHandle, 8>  connections;
+    };
+
+    struct SimEntitySpawnInfo {
+        EntityType type;
+        PlayerNumber playerNumber;
+        TeamNumber  teamNumber;
+        SolarNumber solarNumber;
+        fp2 pos;
+        fp2 vel;
+        fp ori;
+
+        union {
+            SolarSystem solarSystem;
+        };
     };
 
     struct SimEntity {
@@ -158,14 +186,15 @@ namespace atto {
 
         PlayerNumber                playerNumber;
         TeamNumber                  teamNumber;
+        SolarNumber                 solarNumber;
 
         bool                        active;
 
-        fp2                   pos;
-        fp2                   vel;
-        fp2                   acc;
-        fp                    resistance;
-        fp                    ori;
+        fp2                         pos;
+        fp2                         vel;
+        fp2                         acc;
+        fp                          resistance;
+        fp                          ori;
 
         // Make these flags
         bool                        hasHitCollision;
@@ -176,22 +205,39 @@ namespace atto {
         FixedList<PlayerNumber, MAX_PLAYERS> selectedBy; // @TODO: Could be optimized to be a espcially if player number is bit 8, could store all of the state in i32 or i64 for 8 playes
         Collider2D                  selectionCollider;
 
+        i32                         maxHealth;
+        i32                         currentHealth;
+
         Unit                        unit;
         Bullet                      bullet;
         Navigator                   navigator;
         Planet                      planet;
         Building                    building;
+        SolarSystem                 solarSystem;
         MapActionBuffer             actions;
 
         // ============ Visual stuffies ============ 
+        glm::vec2                               visPos;
+        f32                                     visOri;
+        FixedList<PlayerNumber, MAX_PLAYERS>    visSelectedBy;
 
-        glm::vec2                   visPos;
-        f32                         visOri;
-        FixedList<PlayerNumber, MAX_PLAYERS> visSelectedBy;
-
-        SpriteAnimator                      spriteAnimator;
-        SpriteAnimator                      selectionAnimator;
-        FixedList< SpriteResource *, 8 >    spriteBank;
+        SpriteAnimator                          spriteAnimator;
+        SpriteAnimator                          engineAnimator;
+        SpriteAnimator                          shieldAnimator;
+        SpriteAnimator                          selectionAnimator;
+        union {
+            SpriteResource * spriteBank[8];
+            struct {
+                SpriteResource * base;
+                SpriteResource * engine;
+            } spriteUnit;
+            struct {
+                SpriteResource * base;
+                SpriteResource * exploding;
+            } sprBullet;
+        } ;
+        AudioResource *                         sndHello;
+        AudioResource *                         sndMove;
 
         Collider2D                  GetWorldCollisionCollider() const;
         Collider2D                  GetWorldSelectionCollider() const;
@@ -205,7 +251,8 @@ namespace atto {
 
         EntityListFilter *  Begin( EntList * activeEntities );
         EntityListFilter *  OwnedBy( PlayerNumber playerNumber );
-        EntityListFilter *  SelectedBy( PlayerNumber playerNumber );
+        EntityListFilter *  SimSelectedBy( PlayerNumber playerNumber );
+        EntityListFilter *  VisSelectedBy( PlayerNumber playerNumber );
         EntityListFilter *  Type( EntityType::_enumerated type );
         EntityListFilter *  IsTypeRange( EntityType::_enumerated start, EntityType::_enumerated end );
         EntityListFilter *  End();
@@ -218,7 +265,7 @@ namespace atto {
         FixedList<bool, MAX_ENTITIES>   marks;
     };
 
-    struct PlayerMonies {
+    struct MoneySet {
         i32 credits;
         i32 energy;
         i32 compute;
@@ -238,6 +285,11 @@ namespace atto {
         };
         std::vector<TurnAction> turns;
         BinaryBlob actionData;
+    };
+
+    enum class ViewMode {
+        SOLAR,
+        GALAXY
     };
 
     class SimMap {
@@ -267,16 +319,19 @@ namespace atto {
 
         // ============ Player Stuffies ============
         FixedList< PlayerNumber, 4 >                playerNumbers = {};
-        FixedList< PlayerMonies, 4 >                playerMonies = {};
+        FixedList< MoneySet, 4 >                playerMonies = {};
 
         // ================= Other =================
         SimMapReplay                                mapReplay = {};
 
         // ============ Visual Stuffies ============
-        bool                                        localIsDragging = false;
-        glm::vec2                                   localStartDrag = glm::vec2( 0.0f );
-        glm::vec2                                   localEndDrag = glm::vec2( 0.0f );
-        EntHandleList                               localDragSelection = {};
+        ViewMode                                    viewMode = ViewMode::SOLAR;
+        bool                                        viewIsDragging = false;
+        glm::vec2                                   viewStartDrag = glm::vec2( 0.0f );
+        glm::vec2                                   viewEndDrag = glm::vec2( 0.0f );
+        EntHandleList                               viewDragSelection = {};
+        SolarNumber                                 viewSolarNumber = {};
+        FixedList<SolarSystemConnectionPair, 1000>  viewSolarSystemConnections = {};
 
         UIContext                                   gameUI = {};
 
@@ -285,19 +340,25 @@ namespace atto {
         EntityType placingBuildingType = {};
         bool planetPlacementSubMenu = false;
         i32 planetPlacementSubMenuIndex = -1;
+        bool playSpawningSounds = false;
 
     public:
         void                    Initialize( Core * core );
         void                    Update( Core * core, f32 dt );
         
-        SimEntity *             SpawnEntity( EntityType type, PlayerNumber playerNumber, TeamNumber teamNumber, fp2 pos, fp ori, fp2 vel );
+        SimEntity *             SpawnEntity( SimEntitySpawnInfo * spawnInfo );
+        SimEntity *             SpawnEntity( EntityType type, PlayerNumber playerNumber, TeamNumber teamNumber, SolarNumber solarNumber, fp2 pos, fp ori, fp2 vel );
         void                    DestroyEntity( SimEntity * entity );
                                 
         void                    SimTick( MapTurn * turn1, MapTurn * turn2 );
         void                    Sim_ApplyActions( MapActionBuffer * actionBuffer );
         i64                     Sim_CheckSum();
 
-        void                    SimAction_SpawnEntity( i32 * type, PlayerNumber * playerNumberPtr, TeamNumber * teamNumber, fp2 * pos, fp * ori, fp2 * vel );
+        bool                    Vis_CanAfford( PlayerNumber playerNumber, MoneySet costSet );
+
+        bool                    SimUtil_CanAfford( PlayerNumber playerNumber, MoneySet costSet );
+        void                    SimUtil_Pay( PlayerNumber playerNumber, MoneySet costSet );
+        void                    SimAction_SpawnEntity( i32 * type, PlayerNumber * playerNumberPtr, TeamNumber * teamNumber, SolarNumber * solarNumberPtr, fp2 * pos, fp * ori, fp2 * vel );
         void                    SimAction_DestroyEntity( EntityHandle * handle );
         void                    SimAction_PlayerSelect( PlayerNumber * playerNumberPtr, EntHandleList * selection, EntitySelectionChange * change );
         void                    SimAction_Move( PlayerNumber * playerNumberPtr, fp2 * pos );

@@ -36,6 +36,17 @@ namespace atto {
         return z * width * height + y * width + x;
     }
 
+    inline f32 LerpAngle( f32 a, f32 b, f32 t ) {
+            f32 diff = b - a;
+        if( diff > glm::pi<f32>() ) {
+            b -= glm::two_pi<f32>();
+        }
+        else if( diff < -glm::pi<f32>() ) {
+            b += glm::two_pi<f32>();
+        }
+        return a + t * ( b - a );
+    }
+
     inline glm::vec2 Truncate( glm::vec2 v, f32 maxMag ) {
         f32 l = glm::length( v );
         if( l > maxMag ) {

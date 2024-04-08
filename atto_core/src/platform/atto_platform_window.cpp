@@ -79,6 +79,11 @@ namespace atto {
             monitorName = glfwGetMonitorName( monitor );
             //ATTOINFO("Using monitor name %s", os.monitorName.GetCStr());
         }
+        else {
+            core->LogOutput( LogLevel::ERR, "Could not find a monitor to render on." );
+            INVALID_CODE_PATH
+            return;
+        }
 
         GameSettings gameSettings = core->GetCurrentGameSettings();
 
@@ -112,6 +117,14 @@ namespace atto {
 
         if( gameSettings.windowStartPosX != -1 ) {
             glfwSetWindowPos( window, gameSettings.windowStartPosX, gameSettings.windowStartPosY );
+        }
+        else {
+            const GLFWvidmode * mode = glfwGetVideoMode( monitor );
+            i32 monitorWidth = mode->width;
+            i32 monitorHeight = mode->height;
+            i32 windowPosX = ( monitorWidth - windowWidth ) / 2;
+            i32 windowPosY = ( monitorHeight - windowHeight ) / 2;
+            glfwSetWindowPos( window, windowPosX, windowPosY );
         }
     }
 
@@ -167,7 +180,12 @@ namespace atto {
 
     void PlatformWindow::DisableFullscreen() {
         GameSettings gameSettings = core->GetCurrentGameSettings();
-        glfwSetWindowMonitor( window, nullptr, gameSettings.windowStartPosX, gameSettings.windowStartPosY, gameSettings.windowWidth, gameSettings.windowHeight, 0 );
+        const GLFWvidmode * mode = glfwGetVideoMode( monitor );
+        i32 monitorWidth = mode->width;
+        i32 monitorHeight = mode->height;
+        i32 windowPosX = ( monitorWidth - gameSettings.windowWidth ) / 2;
+        i32 windowPosY = ( monitorHeight - gameSettings.windowHeight ) / 2;
+        glfwSetWindowMonitor( window, nullptr, windowPosX, windowPosY, gameSettings.windowWidth, gameSettings.windowHeight, 0 );
         windowFullscreen = false;
     }
 

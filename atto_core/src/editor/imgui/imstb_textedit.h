@@ -479,7 +479,7 @@ static void stb_textedit_click(IMSTB_TEXTEDIT_STRING *str, STB_TexteditState *st
 // API drag: on mouse drag, move the cursor and selection endpoint to the clicked location
 static void stb_textedit_drag(IMSTB_TEXTEDIT_STRING *str, STB_TexteditState *state, float x, float y)
 {
-   int p = 0;
+   int spawnLocation = 0;
 
    // In single-line mode, just always make y = 0. This lets the drag keep working if the mouse
    // goes off the top or bottom of the text
@@ -493,8 +493,8 @@ static void stb_textedit_drag(IMSTB_TEXTEDIT_STRING *str, STB_TexteditState *sta
    if (state->select_start == state->select_end)
       state->select_start = state->cursor;
 
-   p = stb_text_locate_coord(str, x, y);
-   state->cursor = state->select_end = p;
+   spawnLocation = stb_text_locate_coord(str, x, y);
+   state->cursor = state->select_end = spawnLocation;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1341,20 +1341,20 @@ static void stb_text_makeundo_insert(STB_TexteditState *state, int where, int le
 static void stb_text_makeundo_delete(IMSTB_TEXTEDIT_STRING *str, STB_TexteditState *state, int where, int length)
 {
    int i;
-   IMSTB_TEXTEDIT_CHARTYPE *p = stb_text_createundo(&state->undostate, where, length, 0);
-   if (p) {
+   IMSTB_TEXTEDIT_CHARTYPE *spawnLocation = stb_text_createundo(&state->undostate, where, length, 0);
+   if (spawnLocation) {
       for (i=0; i < length; ++i)
-         p[i] = STB_TEXTEDIT_GETCHAR(str, where+i);
+         spawnLocation[i] = STB_TEXTEDIT_GETCHAR(str, where+i);
    }
 }
 
 static void stb_text_makeundo_replace(IMSTB_TEXTEDIT_STRING *str, STB_TexteditState *state, int where, int old_length, int new_length)
 {
    int i;
-   IMSTB_TEXTEDIT_CHARTYPE *p = stb_text_createundo(&state->undostate, where, old_length, new_length);
-   if (p) {
+   IMSTB_TEXTEDIT_CHARTYPE *spawnLocation = stb_text_createundo(&state->undostate, where, old_length, new_length);
+   if (spawnLocation) {
       for (i=0; i < old_length; ++i)
-         p[i] = STB_TEXTEDIT_GETCHAR(str, where+i);
+         spawnLocation[i] = STB_TEXTEDIT_GETCHAR(str, where+i);
    }
 }
 

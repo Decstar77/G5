@@ -658,9 +658,9 @@ extern "C" {
      *
      * No fields should be modified unless otherwise specified.
      */
-    typedef struct _ENetPeer {
+    struct ENetPeer {
         ENetListNode      dispatchList;
-        struct _ENetHost *host;
+        struct ENetHost  *host;
         enet_uint16       outgoingPeerID;
         enet_uint16       incomingPeerID;
         enet_uint32       connectID;
@@ -723,7 +723,7 @@ extern "C" {
         enet_uint32       unsequencedWindow[ENET_PEER_UNSEQUENCED_WINDOW_SIZE / 32];
         enet_uint32       eventData;
         size_t            totalWaitingData;
-    } ENetPeer;
+    };
 
     /** An ENet packet compressor for compressing UDP packets before socket sends or receives. */
     typedef struct _ENetCompressor {
@@ -744,7 +744,7 @@ extern "C" {
     typedef enet_uint32 (ENET_CALLBACK * ENetChecksumCallback)(const ENetBuffer *buffers, size_t bufferCount);
 
     /** Callback for intercepting received raw UDP packets. Should return 1 to intercept, 0 to ignore, or -1 to propagate an error. */
-    typedef int (ENET_CALLBACK * ENetInterceptCallback)(struct _ENetHost *host, void *event);
+    typedef int (ENET_CALLBACK * ENetInterceptCallback)(struct ENetHost *host, void *event);
 
     /** An ENet host for communicating with peers.
      *
@@ -761,7 +761,7 @@ extern "C" {
      *  @sa enet_host_bandwidth_limit()
      *  @sa enet_host_bandwidth_throttle()
      */
-    typedef struct _ENetHost {
+    struct ENetHost {
         ENetSocket            socket;
         ENetAddress           address;           /**< Internet address of the host */
         enet_uint32           incomingBandwidth; /**< downstream bandwidth of the host */
@@ -798,7 +798,7 @@ extern "C" {
         size_t                duplicatePeers;     /**< optional number of allowed peers from duplicate IPs, defaults to ENET_PROTOCOL_MAXIMUM_PEER_ID */
         size_t                maximumPacketSize;  /**< the maximum allowable packet size that may be sent or received on a peer */
         size_t                maximumWaitingData; /**< the maximum aggregate amount of buffer space a peer may use waiting for packets to be delivered */
-    } ENetHost;
+    };
 
     /**
      * An ENet event type, as specified in @ref ENetEvent.

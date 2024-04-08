@@ -56,7 +56,7 @@ namespace atto {
         virtual void                    ResourceWriteEntireBinaryFile( const char * path, const char * data, i32 size ) override;
         virtual i64                     ResourceGetFileSize( const char * path ) override;
 
-        virtual AudioSpeaker            AudioPlay( AudioResource * audioResource, glm::vec2 * pos ) override;
+        virtual void                    AudioPlay( AudioResource * audioResource, glm::vec2 * pos ) override;
         virtual void                    AudioSetListener( glm::vec2 pos ) override;
 
         virtual void                    RenderSubmit( DrawContext * dcxt, bool clearBackBuffers ) override;
@@ -83,11 +83,12 @@ namespace atto {
     #endif
 
     public:
-        ResourceRegistry                resources = {};
+        ResourceRegistry                    resources = {};
 
-        FMOD::ChannelGroup *            fmodMasterGroup;
-        FMOD::System *                  fmodSystem;
-        FixedList<AudioSpeaker, 32>     alSpeakers;
+        FMOD::ChannelGroup *                fmodMasterGroup;
+        FMOD::System *                      fmodSystem;
+        FixedObjectPool<AudioSpeaker, 1024> fmodSpeakers;
+        FixedList<AudioSpeaker * , 1024>    fmodActives;
 
         PlatformWindow                  window;
         VulkanState *                   vkState = nullptr;

@@ -10,6 +10,21 @@ namespace atto {
     static AudioResource * sndLaser1[23] = {};
     static AudioResource * sndLaser2[6] = {};
 
+    static AudioResource * sndBuildBuilding = nullptr;
+    static AudioResource * sndRogerRoger = nullptr;
+    static AudioResource * sndNotEnoughResources = nullptr;
+
+    static MoneySet costOfPlacementCredit = { 20, 50, 0 };
+    static MoneySet costOfPlacementSolar = { 50, 0, 0 };
+    static MoneySet costOfPlacementCompute = { 100, 50, 0 };
+
+    static MoneySet costOfBuildingStation = { 150, 0, 0 };
+    static MoneySet costOfBuildingSolar = { 100, 0, 0 };
+    static MoneySet costOfBuildingCompute = { 100, 100, 0 };
+
+    static MoneySet costOfWorker = { 50, 10, 50 };
+    static MoneySet costOfFighter = { 100, 50, 100 };
+
     EntityListFilter * EntityListFilter::Begin( EntList * activeEntities ) {
         this->activeEntities = activeEntities;
         const i32 entCount = activeEntities->GetCount();
@@ -34,12 +49,26 @@ namespace atto {
         return this;
     }
 
-    EntityListFilter * EntityListFilter::SelectedBy( PlayerNumber playerNumber ) {
+    EntityListFilter * EntityListFilter::SimSelectedBy( PlayerNumber playerNumber ) {
         const i32 entCount = activeEntities->GetCount();
         for ( i32 entityIndex = 0; entityIndex < entCount; entityIndex++ ) {
             if ( marks[ entityIndex ] == true ) {
                 SimEntity * ent = *activeEntities->Get( entityIndex );
                 if ( ent->selectedBy.Contains( playerNumber ) == false ) {
+                    marks[ entityIndex ] = false;
+                }
+            }
+        }
+
+        return this;
+    }
+
+    EntityListFilter * EntityListFilter::VisSelectedBy( PlayerNumber playerNumber ) {
+        const i32 entCount = activeEntities->GetCount();
+        for ( i32 entityIndex = 0; entityIndex < entCount; entityIndex++ ) {
+            if ( marks[ entityIndex ] == true ) {
+                SimEntity * ent = *activeEntities->Get( entityIndex );
+                if ( ent->visSelectedBy.Contains( playerNumber ) == false ) {
                     marks[ entityIndex ] = false;
                 }
             }
@@ -201,6 +230,8 @@ namespace atto {
             rpcTable[ ( i32 )MapActionType::SIM_MAP_MONIES_GIVE_COMPUTE ]               = new RpcMemberFunction( this, &SimMap::SimAction_GiveCompute );
         }
 
+        LoadAllAssets( core );
+
         mapReplay.Prepare();
 
         const f32 panelDim = 16 + 1;
@@ -233,8 +264,26 @@ namespace atto {
             sndLaser2[ i ] = core->ResourceGetAndCreateAudio( name.GetCStr(), true, false, 4000.0f, 10000.0f );
         }
 
+        sndBuildBuilding = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/starcraft/protoss-electric.mp3", true, false, 0, 0 );
+        sndBuildBuilding->maxInstances = 3;
+        sndBuildBuilding->stealMode = AudioStealMode::OLDEST;
+
+        sndRogerRoger = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/starwars/rogerroger.mp3", true, false, 0, 0 );
+        sndNotEnoughResources = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/starcraft/vespene.mp3", true, false, 0, 0 );
+
+        viewSolarNumber = SolarNumber::Create( 1 );
+
         playerNumbers.Add( PlayerNumber::Create( 1 ) );
         playerNumbers.Add( PlayerNumber::Create( 2 ) );
+
+        for ( i32 i = 0; i < playerNumbers.GetCount(); i++ ) {
+            //playerMonies[i].credits = 500;
+            //playerMonies[i].energy = 100;
+            //playerMonies[i].compute = 50;
+            playerMonies[i].credits = 10000;
+            playerMonies[i].energy = 10000;
+            playerMonies[i].compute = 10000;
+        }
 
         PlayerNumber p0 = PlayerNumber::Create( 0 );
         TeamNumber t0 = TeamNumber::Create( 0 );
@@ -242,26 +291,46 @@ namespace atto {
         TeamNumber t1 = TeamNumber::Create( 1 );
         PlayerNumber p2 = PlayerNumber::Create( 2 );
         TeamNumber t2 = TeamNumber::Create( 2 );
+        SolarNumber s1 = SolarNumber::Create( 1 );
+        SolarNumber s2 = SolarNumber::Create( 2 );
 
-        SpawnEntity( EntityType::Make( EntityType::PLANET ), p1, t1, Fp2( 500.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
-        SpawnEntity( EntityType::Make( EntityType::UNIT_WORKER ), p1, t1, Fp2( 700.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
-        
-        SpawnEntity( EntityType::Make( EntityType::PLANET ), p2, t2, Fp2( 2500.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
-        SpawnEntity( EntityType::Make( EntityType::UNIT_WORKER ), p2, t2, Fp2( 2400.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
-        
-        SpawnEntity( EntityType::Make( EntityType::STAR ), p0, t0, Fp2( 1500.0f, 1200.0f ), Fp( 0 ), Fp2( 0, 0 ) );
-        
-        SpawnEntity( EntityType::Make( EntityType::BUILDING_STATION ), p1, t1, Fp2( 500.0f, 1000.0f ), Fp( 0 ), Fp2( 0, 0 ) )->building.isBuilding = false;
-        
-        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p1, t1, Fp2( 800.2f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
-        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p1, t1, Fp2( 900.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
-        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p1, t1, Fp2( 1000.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
-        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p1, t1, Fp2( 1100.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
+        SimEntitySpawnInfo solarSystemSpawnInfo = {};
+        solarSystemSpawnInfo.type = EntityType::Make( EntityType::SOLAR_SYSTEM );
+        solarSystemSpawnInfo.playerNumber= p1;
+        solarSystemSpawnInfo.teamNumber = t1;
+        solarSystemSpawnInfo.solarNumber = s1;
+        solarSystemSpawnInfo.pos = Fp2( 100.0f, 360.0f / 2.0f );
+        solarSystemSpawnInfo.solarSystem.name = "TEXAS BBQ MEAL";
+        SimEntity * solarSystem16CM = SpawnEntity( &solarSystemSpawnInfo );
 
-        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p2, t2, Fp2( 2300.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
-        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p2, t2, Fp2( 2200.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
-        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p2, t2, Fp2( 2100.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
-        SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p2, t2, Fp2( 2000.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
+        solarSystemSpawnInfo.solarSystem.name = "BIG G";
+        solarSystemSpawnInfo.solarSystem.connections.AddUnique( solarSystem16CM->handle );
+        solarSystemSpawnInfo.pos = Fp2( 500.0f, 360.0f / 2.0f );
+        solarSystemSpawnInfo.solarNumber = s2;
+        SpawnEntity( &solarSystemSpawnInfo );
+
+        SpawnEntity( EntityType::Make( EntityType::PLANET ), p1, t1, s1, Fp2( 500.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
+        SpawnEntity( EntityType::Make( EntityType::UNIT_WORKER ), p1, t1, s1, Fp2( 700.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
+        
+        SpawnEntity( EntityType::Make( EntityType::PLANET ), p2, t2, s1, Fp2( 2500.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
+        SpawnEntity( EntityType::Make( EntityType::UNIT_WORKER ), p2, t2, s1, Fp2( 2200.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
+        
+        SpawnEntity( EntityType::Make( EntityType::STAR ), p0, t0, s1, Fp2( 1500.0f, 1200.0f ), Fp( 0 ), Fp2( 0, 0 ) );
+
+        //SpawnEntity( EntityType::Make( EntityType::BUILDING_STATION ), p2, t2, s1, Fp2( 500.0f, 1000.0f ), Fp( 0 ), Fp2( 0, 0 ) )->building.isBuilding = false;
+        //SpawnEntity( EntityType::Make( EntityType::BUILDING_COMPUTE ), p2, t2, s1, Fp2( 600.0f, 1000.0f ), Fp( 0 ), Fp2( 0, 0 ) )->building.isBuilding = false;
+
+        //SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p1, t1, s1, Fp2( 800.2f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
+        //SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p1, t1, s1, Fp2( 900.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
+        //SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p1, t1, s1, Fp2( 1000.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
+        //SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p1, t1, s1, Fp2( 1100.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
+        
+        //SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p2, t2, s1, Fp2( 2300.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
+        //SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p2, t2, s1, Fp2( 2200.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
+        //SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p2, t2, s1, Fp2( 2100.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
+        //SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p2, t2, s1, Fp2( 2000.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
+
+        playSpawningSounds = true;
     }
 
     void SimMap::Update( Core * core, f32 dt ) {
@@ -353,70 +422,84 @@ namespace atto {
         static TextureResource * sprUIMock = core->ResourceGetAndLoadTexture( "res/ents/test/ui_mock_01.png" );
         static TextureResource * sprMoveLocation = core->ResourceGetAndLoadTexture( "res/ents/test/move_location.png" );
 
-        const f32 cameraSpeed = 20.0f;
-        if ( core->InputKeyDown( KEY_CODE_W ) == true ) {
-            localCameraPos.y += cameraSpeed;
-        }
-        if ( core->InputKeyDown( KEY_CODE_S ) == true ) {
-            localCameraPos.y -= cameraSpeed;
-        }
-        if ( core->InputKeyDown( KEY_CODE_A ) == true ) {
-            localCameraPos.x -= cameraSpeed;
-        }
-        if ( core->InputKeyDown( KEY_CODE_D ) == true ) {
-            localCameraPos.x += cameraSpeed;
-        }
-
-        f32 zoomDelta = core->InputMouseWheelDelta();
-
-        // 16 : 9 resolutions
-        static glm::vec2 resolutions[] = {
-            glm::vec2( 640, 360 ),
-            glm::vec2( 960, 540 ),
-            glm::vec2( 1280, 720 ),
-            glm::vec2( 1600, 900 ),
-            glm::vec2( 1920, 1080 ),
-        };
-
-        if( zoomDelta > 0 ) {
-            localCameraZoomIndex--;
-        }
-        else if ( zoomDelta < 0 ) {
-            localCameraZoomIndex++;
-        }
-
-        localCameraZoomIndex = glm::clamp( localCameraZoomIndex, 0, 4 );
-
-        glm::vec2 wantedResolution = resolutions[ localCameraZoomIndex ];
-        glm::vec2 oldCameraWidth = localCameraZoomLerp;
-        localCameraZoomLerp = glm::mix( localCameraZoomLerp, wantedResolution, dt * 10.f );
-        if( glm::abs( localCameraZoomLerp.x - wantedResolution.x ) < 5 ) {
-            localCameraZoomLerp = wantedResolution;
-        }
-
-        localCameraPos -= ( localCameraZoomLerp - oldCameraWidth ) * 0.5f;
-
         DrawContext * spriteDrawContext = core->RenderGetDrawContext( 0, true );
         //DrawContext * backgroundDrawContext = core->RenderGetDrawContext( 1, true );
         DrawContext * uiDrawContext = core->RenderGetDrawContext( 2, true );
         DrawContext * debugDrawContext = core->RenderGetDrawContext( 3, true );
 
-        spriteDrawContext->SetCameraDims( localCameraZoomLerp.x, localCameraZoomLerp.y );
-        uiDrawContext->SetCameraDims( 640, 360 );
-        debugDrawContext->SetCameraDims( localCameraZoomLerp.x, localCameraZoomLerp.y );
+        if ( viewMode == ViewMode::SOLAR ) {
+            const f32 cameraSpeed = 20.0f;
+            if ( core->InputKeyDown( KEY_CODE_W ) == true ) {
+                localCameraPos.y += cameraSpeed;
+            }
+            if ( core->InputKeyDown( KEY_CODE_S ) == true ) {
+                localCameraPos.y -= cameraSpeed;
+            }
+            if ( core->InputKeyDown( KEY_CODE_A ) == true ) {
+                localCameraPos.x -= cameraSpeed;
+            }
+            if ( core->InputKeyDown( KEY_CODE_D ) == true ) {
+                localCameraPos.x += cameraSpeed;
+            }
 
-        const glm::vec2 mapMin = glm::vec2( 0.0f );
-        const glm::vec2 mapMax = glm::vec2( (f32)MAX_MAP_SIZE ) - glm::vec2( spriteDrawContext->GetCameraWidth(), spriteDrawContext->GetCameraHeight() );
-        localCameraPos = glm::clamp( localCameraPos, mapMin, mapMax );
+            f32 zoomDelta = core->InputMouseWheelDelta();
 
-        spriteDrawContext->SetCameraPos( localCameraPos );
-        debugDrawContext->SetCameraPos( localCameraPos );
+            // 16 : 9 resolutions
+            static glm::vec2 resolutions[] = {
+                glm::vec2( 640, 360 ),
+                glm::vec2( 960, 540 ),
+                glm::vec2( 1280, 720 ),
+                glm::vec2( 1600, 900 ),
+                glm::vec2( 1920, 1080 ),
+            };
 
-        const glm::vec2 localCameraCenter = localCameraPos + glm::vec2( spriteDrawContext->GetCameraWidth(), spriteDrawContext->GetCameraHeight() ) / 2.0f;
-        core->AudioSetListener( localCameraCenter );
-        //core->LogOutput( LogLevel::INFO, "%f, %f", localCameraCenter.x, localCameraCenter.y );
+            if ( zoomDelta > 0 ) {
+                localCameraZoomIndex--;
+            }
+            else if ( zoomDelta < 0 ) {
+                localCameraZoomIndex++;
+            }
 
-        spriteDrawContext->DrawTextureBL( background, glm::vec2( 0, 0 ) );
+            localCameraZoomIndex = glm::clamp( localCameraZoomIndex, 0, 4 );
+
+            glm::vec2 wantedResolution = resolutions[ localCameraZoomIndex ];
+            glm::vec2 oldCameraWidth = localCameraZoomLerp;
+            localCameraZoomLerp = glm::mix( localCameraZoomLerp, wantedResolution, dt * 10.f );
+            if ( glm::abs( localCameraZoomLerp.x - wantedResolution.x ) < 5 ) {
+                localCameraZoomLerp = wantedResolution;
+            }
+
+            localCameraPos -= ( localCameraZoomLerp - oldCameraWidth ) * 0.5f;
+
+            spriteDrawContext->SetCameraDims( localCameraZoomLerp.x, localCameraZoomLerp.y );
+            uiDrawContext->SetCameraDims( 640, 360 );
+            debugDrawContext->SetCameraDims( localCameraZoomLerp.x, localCameraZoomLerp.y );
+
+            const glm::vec2 mapMin = glm::vec2( 0.0f );
+            const glm::vec2 mapMax = glm::vec2( ( f32 )MAX_MAP_SIZE ) - glm::vec2( spriteDrawContext->GetCameraWidth(), spriteDrawContext->GetCameraHeight() );
+            localCameraPos = glm::clamp( localCameraPos, mapMin, mapMax );
+
+            spriteDrawContext->SetCameraPos( localCameraPos );
+            debugDrawContext->SetCameraPos( localCameraPos );
+
+            const glm::vec2 localCameraCenter = localCameraPos + glm::vec2( spriteDrawContext->GetCameraWidth(), spriteDrawContext->GetCameraHeight() ) / 2.0f;
+            core->AudioSetListener( localCameraCenter );
+
+            spriteDrawContext->DrawTextureBL( background, glm::vec2( 0, 0 ) );
+        } else if ( viewMode == ViewMode::GALAXY )  {
+            spriteDrawContext->SetCameraDims( 640, 360 );
+            uiDrawContext->SetCameraDims( 640, 360 );
+            debugDrawContext->SetCameraDims( 640, 360 );
+            spriteDrawContext->SetCameraPos( glm::vec2( 0 ) );
+            debugDrawContext->SetCameraPos( glm::vec2( 0 ) );
+        }
+
+        if ( core->InputKeyJustPressed( KEY_CODE_F1 ) ) {
+            viewMode = ViewMode::GALAXY;
+        }
+        if ( core->InputKeyJustPressed( KEY_CODE_F2 ) ) {
+            viewMode = ViewMode::SOLAR;
+        }
 
         const glm::vec2 mousePosPix = core->InputMousePosPixels();
         const glm::vec2 mousePosWorld = spriteDrawContext->ScreenPosToWorldPos( mousePosPix );
@@ -448,21 +531,27 @@ namespace atto {
 
         const bool onlyPlanetSelected = entityFilter->Begin( &entities )->
             OwnedBy( localPlayerNumber )->
-            SelectedBy( localPlayerNumber )->
+            VisSelectedBy( localPlayerNumber )->
             End()->
             ContainsOnlyOneOfType( EntityType::PLANET );
 
         const bool onlyWorkerSelected = entityFilter->Begin( &entities )->
             OwnedBy( localPlayerNumber )->
-            SelectedBy( localPlayerNumber )->
+            VisSelectedBy( localPlayerNumber )->
             End()->
             ContainsOnlyType( EntityType::UNIT_WORKER );
 
+
         const bool onlyBuildingSelected = entityFilter->Begin( &entities )->
             OwnedBy( localPlayerNumber )->
-            SelectedBy( localPlayerNumber )->
+            VisSelectedBy( localPlayerNumber )->
             End()->
             ContainsOnlyType( EntityType::BUILDING_STATION );
+
+        SimEntity * onlyBuildingSelectedEnt = nullptr;  
+        if ( onlyBuildingSelected == true ) {
+            onlyBuildingSelectedEnt = *entityFilter->result.Get( 0 );
+        }
 
         if ( onlyPlanetSelected == true ) {
             SimEntity * ent = entityFilter->result[ 0 ];
@@ -498,25 +587,31 @@ namespace atto {
                         } break;
                     }
                 }
-            } else {
+            } else { // @NOTE: Submenu
                 const glm::vec2 s = glm::vec2( 15 );
                 if ( gameUI.ButtonPix( 145, "", ui_LeftPanelCenters[0], s, Colors::GREEN ) ) {
-                    localActionBuffer.AddAction( MapActionType::SIM_ENTITY_PLANET_COMMAND_PLACE_PLACEMENT,
-                                                localPlayerNumber, planetPlacementSubMenuIndex, PlanetPlacementType::CREDIT_GENERATOR );
-                    planetPlacementSubMenu = false;
-                    planetPlacementSubMenuIndex = -1;
+                    if ( Vis_CanAfford( localPlayerNumber, costOfPlacementCredit ) == true ) {
+                        localActionBuffer.AddAction( MapActionType::SIM_ENTITY_PLANET_COMMAND_PLACE_PLACEMENT,
+                                                    localPlayerNumber, planetPlacementSubMenuIndex, PlanetPlacementType::CREDIT_GENERATOR );
+                        planetPlacementSubMenu = false;
+                        planetPlacementSubMenuIndex = -1;
+                    }
                 }
                 if ( gameUI.ButtonPix( 146, "", ui_LeftPanelCenters[1], s, Colors::GOLD ) ) {
-                    localActionBuffer.AddAction( MapActionType::SIM_ENTITY_PLANET_COMMAND_PLACE_PLACEMENT,
-                                                localPlayerNumber, planetPlacementSubMenuIndex, PlanetPlacementType::ENERGY_GENERATOR );
-                    planetPlacementSubMenu = false;
-                    planetPlacementSubMenuIndex = -1;
+                    if ( Vis_CanAfford( localPlayerNumber, costOfPlacementSolar ) == true ) {
+                        localActionBuffer.AddAction( MapActionType::SIM_ENTITY_PLANET_COMMAND_PLACE_PLACEMENT,
+                                                    localPlayerNumber, planetPlacementSubMenuIndex, PlanetPlacementType::ENERGY_GENERATOR );
+                        planetPlacementSubMenu = false;
+                        planetPlacementSubMenuIndex = -1;
+                    }
                 }
                 if ( gameUI.ButtonPix( 147, "", ui_LeftPanelCenters[2], s, Colors::SKY_BLUE ) ) {
-                    localActionBuffer.AddAction( MapActionType::SIM_ENTITY_PLANET_COMMAND_PLACE_PLACEMENT,
-                                                localPlayerNumber, planetPlacementSubMenuIndex, PlanetPlacementType::COMPUTE_GENERATOR );
-                    planetPlacementSubMenu = false;
-                    planetPlacementSubMenuIndex = -1;
+                    if ( Vis_CanAfford( localPlayerNumber, costOfPlacementCompute ) == true ) {
+                        localActionBuffer.AddAction( MapActionType::SIM_ENTITY_PLANET_COMMAND_PLACE_PLACEMENT,
+                                                    localPlayerNumber, planetPlacementSubMenuIndex, PlanetPlacementType::COMPUTE_GENERATOR );
+                        planetPlacementSubMenu = false;
+                        planetPlacementSubMenuIndex = -1;
+                    }
                 }
             }
         } else {
@@ -528,30 +623,46 @@ namespace atto {
             SimEntity * ent = entityFilter->result[ 0 ];
             Unit & unit = ent->unit;
 
-            if ( isPlacingBuilding == false ) {
+            if ( isPlacingBuilding == false ) { // @HACK: NO SIM CHECK, should be more concrete here. I don't think this works in all cases.
                 const glm::vec2 s = glm::vec2( 15 );
+                MoneySet & localPlayerMoney = playerMonies[ localPlayerNumber.value - 1 ];
+
                 if( core->InputKeyJustPressed( KEY_CODE_Q ) || gameUI.ButtonPix( 232, "Q", ui_RightPanelCenters[ 0 ], s, Colors::SKY_BLUE ) ) {
-                    isPlacingBuilding = true;
-                    placingBuildingType = EntityType::BUILDING_STATION;
+                    if ( Vis_CanAfford( localPlayerNumber, costOfBuildingStation ) == true ) {
+                        isPlacingBuilding = true;
+                        placingBuildingType = EntityType::BUILDING_STATION;
+                    }
                 }
                 if ( core->InputKeyJustPressed( KEY_CODE_E ) || gameUI.ButtonPix( 233, "E", ui_RightPanelCenters[ 1 ], s, Colors::SKY_BLUE ) ) {
-                    isPlacingBuilding = true;
-                    placingBuildingType = EntityType::BUILDING_SOLAR_ARRAY;
+                    if ( Vis_CanAfford( localPlayerNumber, costOfBuildingSolar ) == true ) {
+                        isPlacingBuilding = true;
+                        placingBuildingType = EntityType::BUILDING_SOLAR_ARRAY;
+                    }
                 }
                 if ( core->InputKeyJustPressed( KEY_CODE_C ) || gameUI.ButtonPix( 234, "C", ui_RightPanelCenters[ 2 ], s, Colors::SKY_BLUE ) ) {
-                    isPlacingBuilding = true;
-                    placingBuildingType = EntityType::BUILDING_COMPUTE;
+                    if ( Vis_CanAfford( localPlayerNumber, costOfBuildingCompute ) == true ) {
+                        isPlacingBuilding = true;
+                        placingBuildingType = EntityType::BUILDING_COMPUTE;
+                    }
                 }
             }
         }
 
         if ( onlyBuildingSelected == true ) {
-            const glm::vec2 s = glm::vec2( 15 );
-            if ( core->InputKeyJustPressed( KEY_CODE_Q ) || gameUI.ButtonPix( 242, "Q", ui_RightPanelCenters[ 0 ], s, Colors::SKY_BLUE ) ) {
-                localActionBuffer.AddAction( MapActionType::SIM_ENTITY_BUILDING_COMMAND_TRAIN_UNIT, localPlayerNumber, (i32)EntityType::UNIT_WORKER );
-            }
-            if ( core->InputKeyJustPressed( KEY_CODE_E ) || gameUI.ButtonPix( 243, "E", ui_RightPanelCenters[ 1 ], s, Colors::SKY_BLUE ) ) {
-                localActionBuffer.AddAction( MapActionType::SIM_ENTITY_BUILDING_COMMAND_TRAIN_UNIT, localPlayerNumber, (i32)EntityType::UNIT_TEST );
+            if ( onlyBuildingSelectedEnt->building.isBuilding == false ) {
+                const glm::vec2 s = glm::vec2( 15 );
+                if ( core->InputKeyJustPressed( KEY_CODE_Q ) || gameUI.ButtonPix( 242, "Q", ui_RightPanelCenters[ 0 ], s, Colors::SKY_BLUE ) ) {
+                    if ( Vis_CanAfford( localPlayerNumber, costOfWorker ) == true ) {
+                        localActionBuffer.AddAction( MapActionType::SIM_ENTITY_BUILDING_COMMAND_TRAIN_UNIT, localPlayerNumber, ( i32 )EntityType::UNIT_WORKER );
+                        core->AudioPlay( sndRogerRoger );
+                    }
+                }
+                if ( core->InputKeyJustPressed( KEY_CODE_E ) || gameUI.ButtonPix( 243, "E", ui_RightPanelCenters[ 1 ], s, Colors::SKY_BLUE ) ) {
+                    if ( Vis_CanAfford( localPlayerNumber, costOfFighter ) == true ) {
+                        localActionBuffer.AddAction( MapActionType::SIM_ENTITY_BUILDING_COMMAND_TRAIN_UNIT, localPlayerNumber, ( i32 )EntityType::UNIT_TEST );
+                        core->AudioPlay( sndRogerRoger );
+                    }
+                }
             }
         }
 
@@ -568,22 +679,23 @@ namespace atto {
 
                 if ( core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) == true ) {
                     isPlacingBuilding = false;
+                    core->AudioPlay( sndBuildBuilding );
                     localActionBuffer.AddAction( MapActionType::SIM_ENTITY_UNIT_COMMAND_CONSTRUCT_BUILDING, localPlayerNumber, ( i32 )placingBuildingType, mousePosWorldFp );
                 }
             } else {
                 if ( core->InputMouseButtonJustPressed( MOUSE_BUTTON_1 ) == true ) {
-                    localIsDragging = true;
-                    localStartDrag = mousePosWorld;
-                    localEndDrag = mousePosWorld;
-                    localDragSelection.Clear();
+                    viewIsDragging = true;
+                    viewStartDrag = mousePosWorld;
+                    viewEndDrag = mousePosWorld;
+                    viewDragSelection.Clear();
                 }
             }
         }
 
-        if ( localIsDragging == true ) {
-            localEndDrag = mousePosWorld;
+        if ( viewIsDragging == true ) {
+            viewEndDrag = mousePosWorld;
             if ( core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) == true ) {
-                localIsDragging = false;
+                viewIsDragging = false;
 
                 bool hasLocalPlayerUnits = false;
                 bool hasPlanetType = false;
@@ -591,9 +703,9 @@ namespace atto {
                 bool hasUnitType = false;
 
                 // @NOTE: Selection Priority
-                i32 selectionCount = localDragSelection.GetCount();
+                i32 selectionCount = viewDragSelection.GetCount();
                 for ( i32 selectionIndex = 0; selectionIndex < selectionCount; selectionIndex++ ) {
-                    EntityHandle handle = localDragSelection[ selectionIndex ];
+                    EntityHandle handle = viewDragSelection[ selectionIndex ];
                     SimEntity * selectionEnt = entityPool.Get( handle );
                     if ( selectionEnt != nullptr ) {
                         if ( selectionEnt->playerNumber == localPlayerNumber ) {
@@ -611,125 +723,193 @@ namespace atto {
                     }
                 }
 
-                for ( i32 selectionIndex = 0; selectionIndex < localDragSelection.GetCount(); selectionIndex++ ) {
-                    EntityHandle handle = localDragSelection[ selectionIndex ];
+                for ( i32 selectionIndex = 0; selectionIndex < viewDragSelection.GetCount(); selectionIndex++ ) {
+                    EntityHandle handle = viewDragSelection[ selectionIndex ];
                     SimEntity * selectionEnt = entityPool.Get( handle );
                     if ( selectionEnt != nullptr ) {
                         if ( hasLocalPlayerUnits == true && selectionEnt->playerNumber != localPlayerNumber ) {
-                            localDragSelection.RemoveIndex( selectionIndex );
+                            viewDragSelection.RemoveIndex( selectionIndex );
                             selectionIndex--;
                         }
                         else if ( hasUnitType == true ) {
                             if ( IsBuildingType( selectionEnt->type ) == true || selectionEnt->type == EntityType::PLANET ) {
-                                localDragSelection.RemoveIndex( selectionIndex );
+                                viewDragSelection.RemoveIndex( selectionIndex );
                                 selectionIndex--;
                             }
                         } else if ( hasBuildingType == true ) {
                             if ( selectionEnt->type == EntityType::PLANET ) {
-                                localDragSelection.RemoveIndex( selectionIndex );
+                                viewDragSelection.RemoveIndex( selectionIndex );
                                 selectionIndex--;
                             }
                         }
                     }
                 }
 
-                VisAction_PlayerSelect( &localPlayerNumber, &localDragSelection,  EntitySelectionChange::SET );
-                localActionBuffer.AddAction( MapActionType::PLAYER_SELECTION, localPlayerNumber, localDragSelection, EntitySelectionChange::SET );
+                if ( viewDragSelection.GetCount() >= 1 ) {
+                    SimEntity * soundEnt = entityPool.Get( viewDragSelection[0] );
+                    if ( soundEnt->sndHello != nullptr && soundEnt->playerNumber == localPlayerNumber ) {
+                        core->AudioPlay( soundEnt->sndHello );
+                    }
+                }
+
+                VisAction_PlayerSelect( &localPlayerNumber, &viewDragSelection,  EntitySelectionChange::SET );
+                localActionBuffer.AddAction( MapActionType::PLAYER_SELECTION, localPlayerNumber, viewDragSelection, EntitySelectionChange::SET );
             }
         }
 
         BoxBounds2D selectionBounds = {};
-        selectionBounds.min = glm::min( localStartDrag, localEndDrag );
-        selectionBounds.max = glm::max( localStartDrag, localEndDrag );
+        selectionBounds.min = glm::min( viewStartDrag, viewEndDrag );
+        selectionBounds.max = glm::max( viewStartDrag, viewEndDrag );
 
         const i32 entityCount = entities.GetCount();
         for( i32 entityIndexA = 0; entityIndexA < entityCount; entityIndexA++ ) {
             SimEntity * ent = entities[ entityIndexA ];
 
-            ent->visPos = glm::mix( ent->visPos, ToVec2( ent->pos ), dt * 7.0f );
-            ent->visOri = glm::mix( ent->visOri, ToFloat( ent->ori ), dt * 7.0f );
+            f32 visMove = ( 1 - glm::exp( -dt * 7 ) );
+            ent->visPos += ( ToVec2( ent->pos ) - ent->visPos ) * visMove;
+            ent->visOri = LerpAngle( ent->visOri, ToFloat( ent->ori ), dt * 7 );
+            //ent->visOri += ( ToFloat( ent->ori ) - ent->visOri ) * visMove;
 
-            glm::vec2 drawPos = ent->visPos;
-            f32 drawOri = ent->visOri;
-
-            if( ent->visSelectedBy.Contains( localPlayerNumber ) && ent->playerNumber == localPlayerNumber && ent->navigator.hasDest == true ) {
-                glm::vec2 dest = ToVec2( ent->navigator.dest );
-                spriteDrawContext->DrawTexture( sprMoveLocation, dest, 0.0f );
-            }
-
-            if( ent->visSelectedBy.Contains( localPlayerNumber ) && ent->selectionAnimator.sprite != nullptr ) {
-                //spriteDrawContext->DrawSprite( ent->selectionAnimator.sprite, ent->selectionAnimator.frameIndex, ent->pos, ent->ori );
-                spriteDrawContext->DrawSprite( ent->selectionAnimator.sprite, ent->selectionAnimator.frameIndex, drawPos, drawOri );
-            }
-
-            ent->spriteAnimator.Update( core, dt );
-            if( ent->spriteAnimator.sprite != nullptr ) {
-                spriteDrawContext->DrawSprite( ent->spriteAnimator.sprite, ent->spriteAnimator.frameIndex, drawPos, drawOri, glm::vec2( 1 ), ent->spriteAnimator.color );
-            }
-
-            if( IsUnitType( ent->type ) ) {
-                const Unit & unit = ent->unit;
-                const i32 turretCount = unit.turrets.GetCount();
-                for( i32 turretIndex = 0; turretIndex < turretCount; turretIndex++ ) {
-                    UnitTurret & turret = unit.turrets[ turretIndex ];
-                    glm::vec2 worldPos = ent->visPos + glm::rotate( ToVec2( turret.posOffset ), -ent->visOri );
-
-                    if( turret.size == WeaponSize::SMALL ) {
-                       // spriteDrawContext->DrawTexture( sprTurretSmol, worldPos, ToFloat( turret.ori ) );
-                    }
-                    else if( turret.size == WeaponSize::MEDIUM ) {
-                       // spriteDrawContext->DrawTexture( sprTurretMed, worldPos, ToFloat( turret.ori ) );
-                    }
-                }
-            }
-            else if ( IsBuildingType( ent->type ) ) {
-                const Building & building = ent->building;
-                if ( building.isBuilding == true ) {
-                    const f32 f = ( f32 ) building.turn / building.timeToBuildTurns;
-                    glm::vec2 bl = ent->visPos + glm::vec2( -50, 20 );
-                    glm::vec2 tr = ent->visPos + glm::vec2( 50, 30 );
-                    spriteDrawContext->DrawRect( bl, tr, glm::vec4( 0.7f ) );
-                    tr.x = glm::mix( bl.x, tr.x, f );
-                    spriteDrawContext->DrawRect( bl, tr, glm::vec4( 0.9f ) );
-                } else if ( building.isTraining == true ) {
-                    ent->spriteAnimator.SetSpriteIfDifferent( ent->spriteBank[ 1 ], false );
-                    const f32 f = ( f32 ) building.turn / building.timeToTrainTurns;
-                    glm::vec2 bl = ent->visPos + glm::vec2( -50, 20 );
-                    glm::vec2 tr = ent->visPos + glm::vec2( 50, 30 );
-                    spriteDrawContext->DrawRect( bl, tr, glm::vec4( 0.7f ) );
-                    tr.x = glm::mix( bl.x, tr.x, f );
-                    spriteDrawContext->DrawRect( bl, tr, glm::vec4( 0.9f ) );
-                } else {
-                    ent->spriteAnimator.SetSpriteIfDifferent( ent->spriteBank[ 0 ], false );
-                }
-            }
-
-            if ( localIsDragging == true && ent->isSelectable == true ) {
+            if ( viewIsDragging == true && ent->isSelectable == true ) {
                 Collider2D collider = ent->GetWorldSelectionCollider();
                 if ( collider.Intersects( selectionBounds ) == true ) {
-                    localDragSelection.AddUnique( ent->handle );
+                    viewDragSelection.AddUnique( ent->handle );
                 }
             }
 
-            if( isPlacingBuilding == true ) {
-                spriteDrawContext->DrawTexture( sprMoveLocation, mousePosWorld );
-            }
+            // @LOCATION: DRAW
+            if ( viewMode == ViewMode::SOLAR && ent->solarNumber == viewSolarNumber ) {
+                glm::vec2 drawPos = ent->visPos;
+                f32 drawOri = ent->visOri;
 
-            // DEBUG
-            #if ATTO_DEBUG
-            if ( false ) {
-                if ( ent->selectionCollider.type == ColliderType::COLLIDER_TYPE_CIRCLE ) {
-                    debugDrawContext->DrawCircle( ent->visPos, ent->selectionCollider.circle.rad );
-                } else if (ent->selectionCollider.type == ColliderType::COLLIDER_TYPE_AXIS_BOX ) {
-                    Collider2D c = ent->GetWorldSelectionCollider();
-                    debugDrawContext->DrawRect( c.box.min, c.box.max );
+                if ( ent->visSelectedBy.Contains( localPlayerNumber ) && ent->playerNumber == localPlayerNumber && ent->navigator.hasDest == true ) {
+                    glm::vec2 dest = ToVec2( ent->navigator.dest );
+                    spriteDrawContext->DrawTexture( sprMoveLocation, dest, 0.0f );
                 }
-            }
 
-            #endif
+                if ( ent->visSelectedBy.Contains( localPlayerNumber ) && ent->selectionAnimator.sprite != nullptr ) {
+                    //spriteDrawContext->DrawSprite( ent->selectionAnimator.sprite, ent->selectionAnimator.frameIndex, ent->pos, ent->ori );
+                    spriteDrawContext->DrawSprite( ent->selectionAnimator.sprite, ent->selectionAnimator.frameIndex, drawPos, drawOri );
+                }
+
+                ent->spriteAnimator.Update( core, dt );
+                if ( ent->spriteAnimator.sprite != nullptr ) {
+                    spriteDrawContext->DrawSprite( ent->spriteAnimator.sprite, ent->spriteAnimator.frameIndex, drawPos, drawOri, glm::vec2( 1 ), ent->spriteAnimator.color );
+                }
+
+                ent->engineAnimator.Update( core, dt );
+                if ( ent->engineAnimator.sprite != nullptr ) {
+                    spriteDrawContext->DrawSprite( ent->engineAnimator.sprite, ent->engineAnimator.frameIndex, drawPos, drawOri, glm::vec2( 1 ), ent->engineAnimator.color );
+                }
+
+                if ( IsUnitType( ent->type ) ) {
+                    const Unit & unit = ent->unit;
+                    if ( glm::length2( ToVec2( ent->vel ) ) > 2 ) {
+                        ent->engineAnimator.SetSpriteIfDifferent( ent->spriteUnit.engine, true );
+                    } else {
+                        ent->engineAnimator.SetSpriteIfDifferent ( nullptr, false );
+                    }
+
+                    const i32 turretCount = unit.turrets.GetCount();
+                    for ( i32 turretIndex = 0; turretIndex < turretCount; turretIndex++ ) {
+                        UnitTurret & turret = unit.turrets[ turretIndex ];
+                        glm::vec2 worldPos = ent->visPos + glm::rotate( ToVec2( turret.posOffset ), -ent->visOri );
+
+                        if ( turret.size == WeaponSize::SMALL ) {
+                            // spriteDrawContext->DrawTexture( sprTurretSmol, worldPos, ToFloat( turret.ori ) );
+                        }
+                        else if ( turret.size == WeaponSize::MEDIUM ) {
+                            // spriteDrawContext->DrawTexture( sprTurretMed, worldPos, ToFloat( turret.ori ) );
+                        }
+                    }
+                }
+                else if ( IsBuildingType( ent->type ) ) {
+                    const Building & building = ent->building;
+                    if ( building.isBuilding == true ) {
+                        const f32 f = ( f32 ) building.turn / building.timeToBuildTurns;
+                        glm::vec2 bl = ent->visPos + glm::vec2( -50, 20 );
+                        glm::vec2 tr = ent->visPos + glm::vec2( 50, 30 );
+                        spriteDrawContext->DrawRect( bl, tr, glm::vec4( 0.7f ) );
+                        tr.x = glm::mix( bl.x, tr.x, f );
+                        spriteDrawContext->DrawRect( bl, tr, glm::vec4( 0.9f ) );
+                    } else if ( building.isTraining == true ) {
+                        ent->spriteAnimator.SetSpriteIfDifferent( ent->spriteBank[ 1 ], false );
+                        const f32 f = ( f32 ) building.turn / building.timeToTrainTurns;
+                        glm::vec2 bl = ent->visPos + glm::vec2( -50, 20 );
+                        glm::vec2 tr = ent->visPos + glm::vec2( 50, 30 );
+                        spriteDrawContext->DrawRect( bl, tr, glm::vec4( 0.7f ) );
+                        tr.x = glm::mix( bl.x, tr.x, f );
+                        spriteDrawContext->DrawRect( bl, tr, glm::vec4( 0.9f ) );
+                    } else {
+                        ent->spriteAnimator.SetSpriteIfDifferent( ent->spriteBank[ 0 ], false );
+                    }
+                }
+
+  
+                if ( isPlacingBuilding == true ) {
+                    spriteDrawContext->DrawTexture( sprMoveLocation, mousePosWorld );
+                }
+
+                // DEBUG
+                #if ATTO_DEBUG
+                if ( false ) {
+                    if ( ent->selectionCollider.type == ColliderType::COLLIDER_TYPE_CIRCLE ) {
+                        debugDrawContext->DrawCircle( ent->visPos, ent->selectionCollider.circle.rad );
+                    } else if (ent->selectionCollider.type == ColliderType::COLLIDER_TYPE_AXIS_BOX ) {
+                        Collider2D c = ent->GetWorldSelectionCollider();
+                        debugDrawContext->DrawRect( c.box.min, c.box.max );
+                    }
+                }
+                #endif
+            }
         }
 
-        if( isMouseOverUI == false && core->InputMouseButtonJustPressed( MOUSE_BUTTON_2 ) == true ) {
+        if ( viewMode == ViewMode::GALAXY ) {
+
+            // @SPEED: We could cache this but I'm going to rebuild it every frame for now.
+            viewSolarSystemConnections.Clear();
+
+            for ( i32 entityIndexA = 0; entityIndexA < entityCount; entityIndexA++ ) {
+                SimEntity * ent = entities[ entityIndexA ];
+
+                if ( ent->type == EntityType::SOLAR_SYSTEM ) {
+                    const f32 r = 8;
+                    const f32 fontSize = 24;
+                    const glm::vec2 textPos = spriteDrawContext->WorldPosToScreenPos( ent->visPos + glm::vec2( 0, r + fontSize / 2.0f ) );
+                    spriteDrawContext->DrawTextScreen( fontHandle, textPos, fontSize, ent->solarSystem.name.GetCStr(), TextAlignment_H::FONS_ALIGN_CENTER, TextAlignment_V::FONS_ALIGN_MIDDLE );
+                    if ( ent->visSelectedBy.Contains( localPlayerNumber ) == true ) {
+                        spriteDrawContext->DrawCircle( ent->visPos, r + 1, Colors::GREEN );
+                    }
+                    spriteDrawContext->DrawCircle( ent->visPos, r, glm::vec4( 0.6, 0.6, 0.6, 1.0f ) );
+
+                    const i32 connectionCount = ent->solarSystem.connections.GetCount();
+                    for ( i32 connectionIndex = 0; connectionIndex < connectionCount; connectionIndex++ ) {
+                        EntityHandle conHandle = *ent->solarSystem.connections.Get( connectionIndex );
+
+                        SolarSystemConnectionPair pair = {};
+                        pair.a = ent->handle;
+                        pair.b = conHandle;
+
+                        viewSolarSystemConnections.AddUnique( pair );
+                    }
+                }
+            }
+
+            const i32 viewSolarSystemConnectionsCount = viewSolarSystemConnections.GetCount();
+            for ( i32 connectionIndex = 0; connectionIndex < viewSolarSystemConnectionsCount ; connectionIndex++ ) {
+                SolarSystemConnectionPair pair = *viewSolarSystemConnections.Get( connectionIndex );
+                SimEntity * entA = entityPool.Get( pair.a );
+                SimEntity * entB = entityPool.Get( pair.b );
+                if ( entA != nullptr && entB != nullptr ) {
+                    glm::vec2 p1 = entA->visPos;
+                    glm::vec2 p2 = entB->visPos;
+                    spriteDrawContext->DrawLine( p1, p2, 1 );
+                }
+            }
+
+        }
+
+        if ( isMouseOverUI == false && core->InputMouseButtonJustPressed( MOUSE_BUTTON_2 ) == true ) {
             bool inputMade = false;
             for( i32 entityIndexA = 0; entityIndexA < entityCount; entityIndexA++ ) {
                 const SimEntity * ent = entities[ entityIndexA ];
@@ -766,34 +946,48 @@ namespace atto {
 
             if( inputMade == false ) {
                 localActionBuffer.AddAction( MapActionType::SIM_ENTITY_UNIT_COMMAND_MOVE, localPlayerNumber, mousePosWorldFp );
+
+                
+                // @HACK: We should use a featured unit
+                for ( i32 entityIndex = 0; entityIndex < entityCount; entityIndex++ ) {
+                    const SimEntity * sndEnt = entities[ entityIndex ];
+                    if ( sndEnt->visSelectedBy.Contains( localPlayerNumber ) == true ) {
+                        if ( sndEnt->sndMove != nullptr ) {
+                            core->AudioPlay( sndEnt->sndMove );
+                            break;
+                        }
+                    }
+                }
             }
         }
 
-        if ( localIsDragging == true ) {
-            glm::vec2 minBox = glm::min( localStartDrag, localEndDrag );
-            glm::vec2 maxBox = glm::max( localStartDrag, localEndDrag );
+        if ( viewIsDragging == true ) {
+            glm::vec2 minBox = glm::min( viewStartDrag, viewEndDrag );
+            glm::vec2 maxBox = glm::max( viewStartDrag, viewEndDrag );
             spriteDrawContext->DrawRect( minBox, maxBox, Colors::BOX_SELECTION_COLOR );
         }
 
-        if( core->InputKeyJustPressed( KEY_CODE_F2 ) == true ) {
+        if( core->InputKeyJustPressed( KEY_CODE_F11 ) == true ) {
             mapReplay.PrintActions( core );
         }
 
         SmallString s = StringFormat::Small( "ping=%d", (i32)core->NetworkGetPing() );
-        spriteDrawContext->DrawTextScreen( fontHandle, glm::vec2( 128, 128 ), 32, s.GetCStr() );
+        spriteDrawContext->DrawTextScreen( fontHandle, glm::vec2( 0, 128 ), 32, s.GetCStr() );
         s = StringFormat::Small( "dt=%f", dt );
-        spriteDrawContext->DrawTextScreen( fontHandle, glm::vec2( 128, 160 ), 32, s.GetCStr() );
+        spriteDrawContext->DrawTextScreen( fontHandle, glm::vec2( 0, 160 ), 32, s.GetCStr() );
         s = StringFormat::Small( "fps=%f", 1.0f / dt );
-        spriteDrawContext->DrawTextScreen( fontHandle, glm::vec2( 128, 200 ), 32, s.GetCStr() );
-
+        spriteDrawContext->DrawTextScreen( fontHandle, glm::vec2( 0, 200 ), 32, s.GetCStr() );
+        s = StringFormat::Small( "turn=%d", turnNumber );
+        spriteDrawContext->DrawTextScreen( fontHandle, glm::vec2( 0, 230 ), 32, s.GetCStr() );
         //ScopedClock renderingClock( "Rendering clock", core );
+
         core->RenderSubmit( spriteDrawContext, true );
         //core->RenderSubmit( backgroundDrawContext, false );
         core->RenderSubmit( uiDrawContext, false );
         core->RenderSubmit( debugDrawContext, false );
     }
 
-    SimEntity * SimMap::SpawnEntity( EntityType type, PlayerNumber playerNumber, TeamNumber teamNumber, fp2 pos, fp ori, fp2 vel ) {
+    SimEntity * SimMap::SpawnEntity( SimEntitySpawnInfo * spawnInfo ) {
         EntityHandle handle = {};
         SimEntity * entity = entityPool.Add( handle );
         AssertMsg( entity != nullptr, "Spawn Entity is nullptr" );
@@ -802,24 +996,36 @@ namespace atto {
             entity->handle = handle;
 
             entity->active = true;
-            entity->type = type;
+            entity->type = spawnInfo->type;
             entity->resistance = ToFP( 14.0f );
-            entity->pos = pos;
-            entity->visPos = ToVec2( pos );
-            entity->ori = ori;
-            entity->visOri = ToFloat( ori );
-            entity->vel = vel;
-            entity->teamNumber = teamNumber;
-            entity->playerNumber = playerNumber;
+            entity->pos = spawnInfo->pos;
+            entity->visPos = ToVec2( spawnInfo->pos );
+            entity->ori = spawnInfo->ori;
+            entity->visOri = ToFloat( spawnInfo->ori );
+            entity->vel = spawnInfo->vel;
+            entity->teamNumber = spawnInfo->teamNumber;
+            entity->playerNumber = spawnInfo->playerNumber;
+            entity->solarNumber = spawnInfo->solarNumber;
 
             switch( entity->type ) {
                 case EntityType::UNIT_WORKER: {
-                    static SpriteResource * blueSprite = core->ResourceGetAndCreateSprite( "res/ents/test/worker_blue.png", 1, 32, 32, 0 );
-                    static SpriteResource * redSprite = core->ResourceGetAndCreateSprite( "res/ents/test/worker_red.png", 1, 32, 32, 0 );
                     static SpriteResource * selectionSprite = core->ResourceGetAndCreateSprite( "res/ents/test/ship_selected.png", 1, 48, 48, 0 );
-                    SpriteResource * mainSprite = teamNumber.value == 1 ? blueSprite : redSprite;
-                    entity->spriteAnimator.SetSpriteIfDifferent( mainSprite, false );
+
+                    static AudioResource * sndHello = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/huh.mp3", true, false, 0, 0 );
+                    static AudioResource * sndBuilt = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/starcraft/scv.mp3", true, false, 0, 0 );
+                    static AudioResource * sndMove = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/starcraft/overtime.mp3", true, false, 0, 0 );
+
+                    entity->spriteUnit.base = sprKlaedScoutBase;
+                    entity->spriteUnit.engine = sprKlaedScoutEngine;
+
+                    entity->spriteAnimator.SetSpriteIfDifferent( entity->spriteUnit.base, false );
                     entity->selectionAnimator.SetSpriteIfDifferent( selectionSprite, false );
+
+                    entity->sndHello = sndHello;
+                    entity->sndMove = sndMove;
+                    if ( playSpawningSounds == true ) {
+                        core->AudioPlay( sndBuilt );
+                    }
 
                     entity->isSelectable = true;
                     entity->selectionCollider.type = COLLIDER_TYPE_CIRCLE;
@@ -827,25 +1033,36 @@ namespace atto {
                     entity->selectionCollider.circle.rad = 16.0f;
                     
                     entity->unit.averageRange = ToFP( 40 );
-                    entity->unit.maxHealth = 50;
-                    entity->unit.currentHealth = entity->unit.maxHealth;
+                    entity->maxHealth = 50;
+                    entity->currentHealth = entity->maxHealth;
+
                 } break;
                 case EntityType::UNIT_TEST:
                 {
                     static SpriteResource * blueSprite = core->ResourceGetAndCreateSprite( "res/ents/test/ship_blue.png", 1, 48, 48, 0 );
                     static SpriteResource * redSprite = core->ResourceGetAndCreateSprite( "res/ents/test/ship_red.png", 1, 48, 48, 0 );
                     static SpriteResource * selectionSprite = core->ResourceGetAndCreateSprite( "res/ents/test/ship_selected.png", 1, 48, 48, 0 );
-                    SpriteResource * mainSprite = teamNumber.value == 1 ? blueSprite : redSprite;
+                    static AudioResource * sndHello = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/starcraft/shoot.mp3", true, false, 0, 0 );
+                    static AudioResource * sndBuilt = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/starcraft/five-by-five-hele.mp3", true, false, 0, 0 );
+                    static AudioResource * sndMove = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/starcraft/proceeding-seige.mp3", true, false, 0, 0 );
+
+                    SpriteResource * mainSprite = spawnInfo->teamNumber.value == 1 ? blueSprite : redSprite;
                     entity->spriteAnimator.SetSpriteIfDifferent( mainSprite, false );
                     entity->selectionAnimator.SetSpriteIfDifferent( selectionSprite, false );
+
+                    entity->sndHello = sndHello;
+                    entity->sndMove = sndMove;
+                    if ( playSpawningSounds == true ) {
+                        core->AudioPlay( sndBuilt );
+                    }
 
                     entity->isSelectable = true;
                     entity->selectionCollider.type = COLLIDER_TYPE_AXIS_BOX;
                     entity->selectionCollider.box.CreateFromCenterSize( glm::vec2( 0 ), glm::vec2( 26, 36 ) );
 
                     entity->unit.averageRange = ToFP( 400 );
-                    entity->unit.maxHealth = 100;
-                    entity->unit.currentHealth = entity->unit.maxHealth;
+                    entity->maxHealth = 100;
+                    entity->currentHealth = entity->maxHealth;
 
                     UnitTurret turret1 = {};
                     turret1.size = WeaponSize::SMALL;
@@ -879,7 +1096,6 @@ namespace atto {
                 {
                     static SpriteResource * mainSprite = core->ResourceGetAndCreateSprite( "res/ents/test/bullet_smol.png", 1, 7, 7, 0 );
                     static SpriteResource * sprVFX_SmallExplody = core->ResourceGetAndCreateSprite( "res/ents/test/bullet_hit_smol.png", 3, 16, 16, 10 );
-                    static AudioResource * audVFX_SmallExplody = core->ResourceGetAndCreateAudio( "res/sounds/tomwinandysfx_explosions_volume_i_closeexplosion_01.wav", true, false, 400.0f, 1000.0f );
 
                     entity->spriteBank[0] = mainSprite;
                     entity->spriteBank[1] = sprVFX_SmallExplody;
@@ -924,6 +1140,27 @@ namespace atto {
                     entity->planet.placements.Add( PlanetPlacementType::OPEN );
                     entity->planet.placements.Add( PlanetPlacementType::OPEN );
                 } break;
+                case EntityType::SOLAR_SYSTEM:
+                {
+                    entity->isSelectable = true;
+                    entity->selectionCollider.type = COLLIDER_TYPE_CIRCLE;
+                    entity->selectionCollider.circle.pos = glm::vec2( 0, 0 );
+                    entity->selectionCollider.circle.rad = 8;
+                    memcpy( &entity->solarSystem, &spawnInfo->solarSystem, sizeof( SolarSystem ) );
+
+                    // @NOTE: CREATE NEW CONNECTIONS
+                    const i32 connectionCount = entity->solarSystem.connections.GetCount();
+                    for ( i32 connectionIndex = 0; connectionIndex < connectionCount; connectionIndex++ ) {
+                        EntityHandle conHandle = *entity->solarSystem.connections.Get( connectionIndex );
+                        SimEntity * connectionEnt = entityPool.Get( conHandle );
+                        if ( connectionEnt != nullptr ) {
+                            Assert( connectionEnt->type == EntityType::SOLAR_SYSTEM );
+                            if ( connectionEnt->type == EntityType::SOLAR_SYSTEM ) {
+                                connectionEnt->solarSystem.connections.AddUnique( entity->handle );
+                            }
+                        }
+                    }
+                } break;
                 case EntityType::BUILDING_STATION:
                 {
                     static SpriteResource * blueSpriteOff = core->ResourceGetAndCreateSprite( "res/ents/test/building_station_blue_off.png", 1, 64, 64, 0 );
@@ -934,22 +1171,26 @@ namespace atto {
                     static SpriteResource * selectionSprite = core->ResourceGetAndCreateSprite( "res/ents/test/ship_selected.png", 1, 48, 48, 0 );
                     entity->selectionAnimator.SetSpriteIfDifferent( selectionSprite, false );
 
-                    if ( teamNumber.value == 1 ) {
+                    if ( spawnInfo->teamNumber.value == 1 ) {
                         entity->spriteAnimator.SetSpriteIfDifferent( blueSpriteOff, false );
-                        entity->spriteBank.Add( blueSpriteOff );
-                        entity->spriteBank.Add( blueSpriteOn );
+                        entity->spriteBank[ 0 ] =  blueSpriteOff;
+                        entity->spriteBank[ 1 ] = blueSpriteOn;
                     } else {
                         entity->spriteAnimator.SetSpriteIfDifferent( redSpriteOff, false );
-                        entity->spriteBank.Add( redSpriteOff );
-                        entity->spriteBank.Add( redSpriteOn );
+                        entity->spriteBank[ 0 ] = redSpriteOff;
+                        entity->spriteBank[ 1 ] = redSpriteOn;
                     }
 
                     entity->isSelectable = true;
                     entity->selectionCollider.type = COLLIDER_TYPE_AXIS_BOX;
                     entity->selectionCollider.box.CreateFromCenterSize( glm::vec2( 0 ), glm::vec2( 64, 64 ) );
 
+                    entity->maxHealth = 200;
+                    entity->currentHealth = entity->maxHealth;
+
                     entity->building.isBuilding = true;
                     entity->building.timeToBuildTurns = SecondsToTurns( 60 );
+
                 } break;
                 case EntityType::BUILDING_SOLAR_ARRAY:
                 {
@@ -959,44 +1200,56 @@ namespace atto {
                     static SpriteResource * selectionSprite = core->ResourceGetAndCreateSprite( "res/ents/test/ship_selected.png", 1, 48, 48, 0 );
                     entity->selectionAnimator.SetSpriteIfDifferent( selectionSprite, false );
 
-                    if ( teamNumber.value == 1 ) {
+                    if ( spawnInfo->teamNumber.value == 1 ) {
                         entity->spriteAnimator.SetSpriteIfDifferent( blueSprite, false );
-                        entity->spriteBank.Add( blueSprite );
+                        entity->spriteBank[ 0 ] = blueSprite;
                     } else {
                         entity->spriteAnimator.SetSpriteIfDifferent( redSprite, false );
-                        entity->spriteBank.Add( redSprite );
+                        entity->spriteBank[ 1 ] = redSprite;
                     }
 
-                    SpriteResource * mainSprite = teamNumber.value == 1 ? blueSprite : redSprite;
+                    SpriteResource * mainSprite = spawnInfo->teamNumber.value == 1 ? blueSprite : redSprite;
                     entity->spriteAnimator.SetSpriteIfDifferent( mainSprite, false );
 
                     entity->isSelectable = true;
                     entity->selectionCollider.type = COLLIDER_TYPE_AXIS_BOX;
                     entity->selectionCollider.box.CreateFromCenterSize( glm::vec2( 0 ), glm::vec2( 64, 32 ) );
 
-                    // @SPEED:
-                    simAction_ActiveEntities.Clear( false );
-                    entityPool.GatherActiveObjs( simAction_ActiveEntities );
-                    for( i32 starIndex = 0; starIndex < simAction_ActiveEntities.GetCount(); starIndex++ ) {
-                        if( simAction_ActiveEntities[ starIndex ]->type == EntityType::STAR ) {
-                            fp2 dir = simAction_ActiveEntities[ starIndex ]->pos - pos;
-                            entity->ori = FpATan2( dir.x, dir.y );
+                    entity->maxHealth = 100;
+                    entity->currentHealth = entity->maxHealth;
 
-                            // @SPEED:
-                            const fp dist = FpLength( dir );
-                            const fp minDist = Fp( 600 ); // @NOTE: Based of start 500
-                            const fp maxDist = Fp( 1250 );
-                            const fp t = FpClamp( dist, minDist, maxDist );
-                            // Make 0 - 1
-                            const fp t01 = ( t - minDist ) / ( maxDist - minDist );
-                            entity->building.giveEnergyAmount = (i32)( Fp( 1 ) + Fp( 4 ) * FpCos( t01 ) );
-                            entity->building.isBuilding = true;
-                            entity->building.timeToBuildTurns = SecondsToTurns( 30 );
-                            break;
-                        }
-                    }
+                    entity->building.isBuilding = true;
+                    entity->building.timeToBuildTurns = SecondsToTurns( 30 );
+
+                    const i32 energyPerMinute = 45;
+                    const i32 energyTickRate = 8;
+
+                    entity->building.timeToGiveEnergyTurns = SecondsToTurns( 60 ) / energyTickRate;
+                    entity->building.amountToGiveEnergy = energyPerMinute / energyTickRate;
+
+                    // @SPEED:
+                    //simAction_ActiveEntities.Clear( false );
+                    //entityPool.GatherActiveObjs( simAction_ActiveEntities );
+                    //for( i32 starIndex = 0; starIndex < simAction_ActiveEntities.GetCount(); starIndex++ ) {
+                    //    if( simAction_ActiveEntities[ starIndex ]->type == EntityType::STAR ) {
+                    //        fp2 dir = simAction_ActiveEntities[ starIndex ]->pos - spawnInfo->pos;
+                    //        entity->ori = FpATan2( dir.x, dir.y );
+                    //
+                    //        // @SPEED:
+                    //        const fp dist = FpLength( dir );
+                    //        const fp minDist = Fp( 600 ); // @NOTE: Based of start 500
+                    //        const fp maxDist = Fp( 1250 );
+                    //        const fp t = FpClamp( dist, minDist, maxDist );
+                    //        // Make 0 - 1
+                    //        const fp t01 = ( t - minDist ) / ( maxDist - minDist );
+                    //        entity->building.giveEnergyAmount = (i32)( Fp( 1 ) + Fp( 4 ) * FpCos( t01 ) );
+                    //        entity->building.isBuilding = true;
+                    //        entity->building.timeToBuildTurns = SecondsToTurns( 30 );
+                    //        break;
+                    //    }
+                    //}
                 } break;
-                case EntityType::BUILDING_COMPUTE: 
+                case EntityType::BUILDING_COMPUTE:
                 {
                     static SpriteResource * blueSpriteOff = core->ResourceGetAndCreateSprite( "res/ents/test/building_cpu_blue_off.png", 1, 48, 48, 0 );
                     static SpriteResource * blueSpriteOn =  core->ResourceGetAndCreateSprite( "res/ents/test/building_cpu_blue_on.png", 1, 48, 48, 0 );
@@ -1006,27 +1259,47 @@ namespace atto {
                     static SpriteResource * selectionSprite = core->ResourceGetAndCreateSprite( "res/ents/test/ship_selected.png", 1, 48, 48, 0 );
                     entity->selectionAnimator.SetSpriteIfDifferent( selectionSprite, false );
 
-                    if ( teamNumber.value == 1 ) {
+                    if ( spawnInfo->teamNumber.value == 1 ) {
                         entity->spriteAnimator.SetSpriteIfDifferent( blueSpriteOff, false );
-                        entity->spriteBank.Add( blueSpriteOff );
-                        entity->spriteBank.Add( blueSpriteOn );
+                        entity->spriteBank[ 0 ] =  blueSpriteOff;
+                        entity->spriteBank[ 1 ] =  blueSpriteOn;
                     } else {
                         entity->spriteAnimator.SetSpriteIfDifferent( redSpriteOff, false );
-                        entity->spriteBank.Add( redSpriteOff );
-                        entity->spriteBank.Add( redSpriteOn );
+                        entity->spriteBank[ 0 ] = redSpriteOff;
+                        entity->spriteBank[ 1 ] =  redSpriteOn ;
                     }
 
                     entity->isSelectable = true;
                     entity->selectionCollider.type = COLLIDER_TYPE_AXIS_BOX;
                     entity->selectionCollider.box.CreateFromCenterSize( glm::vec2( 0 ), glm::vec2( 64, 64 ) );
 
+                    entity->maxHealth = 75;
+                    entity->currentHealth = entity->maxHealth;
+
                     entity->building.isBuilding = true;
                     entity->building.timeToBuildTurns = SecondsToTurns( 40 );
+
+                    const i32 computePerMinute = 30;
+                    const i32 computeTickRate = 5;
+                    entity->building.timeToGiveComputeTurns = SecondsToTurns( 60 ) / computeTickRate;
+                    entity->building.amountToGiveCompute = computePerMinute / computeTickRate;
                 }
             }
         }
 
         return entity;
+    }
+
+    SimEntity * SimMap::SpawnEntity( EntityType type, PlayerNumber playerNumber, TeamNumber teamNumber, SolarNumber solarNumber, fp2 pos, fp ori, fp2 vel ) {
+        SimEntitySpawnInfo spawnInfo = {};
+        spawnInfo.type = type;
+        spawnInfo.playerNumber = playerNumber;
+        spawnInfo.teamNumber = teamNumber;
+        spawnInfo.solarNumber = solarNumber;
+        spawnInfo.pos = pos;
+        spawnInfo.vel = vel;
+        spawnInfo.ori = ori;
+        return SpawnEntity( &spawnInfo );
     }
 
     void SimMap::DestroyEntity( SimEntity * entity ) {
@@ -1035,14 +1308,15 @@ namespace atto {
         }
     }
 
-    void SimMap::SimAction_SpawnEntity( i32 * typePtr, PlayerNumber * playerNumberPtr, TeamNumber * teamNumberPtr, fp2 * posPtr, fp * oriPtr, fp2 * velPtr ) {
+    void SimMap::SimAction_SpawnEntity( i32 * typePtr, PlayerNumber * playerNumberPtr, TeamNumber * teamNumberPtr, SolarNumber * solarNumberPtr, fp2 * posPtr, fp * oriPtr, fp2 * velPtr ) {
         EntityType type = EntityType::Make( (EntityType::_enumerated)( * typePtr) );
         PlayerNumber playerNumber = *playerNumberPtr;
         TeamNumber teamNumber = *teamNumberPtr;
+        SolarNumber solarNumber = *solarNumberPtr;
         fp ori = *oriPtr;
         fp2 pos = *posPtr;
         fp2 vel = *velPtr;
-        SpawnEntity( type, playerNumber, teamNumber, pos, ori, vel );
+        SpawnEntity( type, playerNumber, teamNumber, solarNumber, pos, ori, vel );
     }
 
     void SimMap::SimAction_DestroyEntity( EntityHandle * handlePtr ) {
@@ -1088,7 +1362,7 @@ namespace atto {
             }
         }
 
-        VisAction_PlayerSelect( playerNumberPtr, selection, change );
+        //VisAction_PlayerSelect( playerNumberPtr, selection, change );
     }
 
     void SimMap::SimAction_Move( PlayerNumber * playerNumberPtr, fp2 * posPtr ) {
@@ -1133,7 +1407,7 @@ namespace atto {
 
                 if( dist > ent->unit.averageRange - Fp( 10 ) ) {
                      fp2 dir = d / dist;
-                     ent->navigator.dest = targetEnt->pos + dir * ent->unit.averageRange; // @HACK: The 10 is because firing range is from center ent so move in more forward for cannons at the back
+                     ent->navigator.dest = targetEnt->pos + dir * ent->unit.averageRange;
                  } else {
                      ent->navigator.dest = ent->pos;
                  }
@@ -1148,6 +1422,17 @@ namespace atto {
         EntityType type = EntityType::Make( (EntityType::_enumerated)( * typePtr) );
         fp2 pos = *posPtr;
 
+        // @HACK: Monies
+        if ( type == EntityType::BUILDING_STATION ) {
+            SimUtil_Pay( playerNumber, costOfBuildingStation );
+        }
+        if ( type == EntityType::BUILDING_SOLAR_ARRAY ) {
+            SimUtil_Pay( playerNumber, costOfBuildingSolar );
+        }
+        if ( type == EntityType::BUILDING_COMPUTE ) {
+            SimUtil_Pay( playerNumber, costOfBuildingCompute );
+        } 
+
         // @SPEED:
         simAction_ActiveEntities.Clear( false );
         entityPool.GatherActiveObjs( simAction_ActiveEntities );
@@ -1156,7 +1441,8 @@ namespace atto {
         for ( i32 entityIndex = 0; entityIndex < entityCount; entityIndex++ ) {
             SimEntity * ent = simAction_ActiveEntities[ entityIndex ];
             if ( ent->playerNumber == playerNumber && ent->type == EntityType::UNIT_WORKER && ent->selectedBy.Contains( playerNumber ) ) {
-                SimEntity * structure = SpawnEntity( type, playerNumber, ent->teamNumber, pos, Fp( 0 ), Fp2( 0, 0 ) );
+                SolarNumber s1 = SolarNumber::Create( 1 ); // @HACK SOLAR NUMBER
+                SimEntity * structure = SpawnEntity( type, playerNumber, ent->teamNumber, s1, pos, Fp( 0 ), Fp2( 0, 0 ) );
                 ent->unit.command.type = UnitCommandType::CONTRUCT_BUILDING;
                 ent->unit.command.targetEnt = structure->handle;
                 break;
@@ -1196,12 +1482,23 @@ namespace atto {
         const i32 placementIndex = *placementIndexPtr;
         const PlanetPlacementType placementType = *placementTypePtr;
 
+        // @HACK: Monies
+        if ( placementType == PlanetPlacementType::CREDIT_GENERATOR ) {
+            SimUtil_Pay( playerNumber, costOfPlacementCredit );
+        }
+        if ( placementType == PlanetPlacementType::ENERGY_GENERATOR ) {
+            SimUtil_Pay( playerNumber, costOfPlacementSolar );
+        }
+        if ( placementType == PlanetPlacementType::COMPUTE_GENERATOR ) {
+            SimUtil_Pay( playerNumber, costOfPlacementCompute );
+        }
+
         // @SPEED:
         simAction_ActiveEntities.Clear( false );
         entityPool.GatherActiveObjs( simAction_ActiveEntities );
 
         simAction_EntityFilter.Begin( &simAction_ActiveEntities )->
-            SelectedBy( playerNumber )->
+            SimSelectedBy( playerNumber )->
             OwnedBy( playerNumber )->
             Type( EntityType::PLANET )->
             End();
@@ -1228,10 +1525,10 @@ namespace atto {
         entityPool.GatherActiveObjs( simAction_ActiveEntities );
 
         simAction_EntityFilter.Begin( &simAction_ActiveEntities )->
-            SelectedBy( playerNumber )->
+            SimSelectedBy( playerNumber )->
             OwnedBy( playerNumber )->
             Type( EntityType::BUILDING_STATION )->
-            End();
+            End(); 
 
         const i32 count = simAction_EntityFilter.result.GetCount();
         for ( i32 entityIndex = 0; entityIndex < count; entityIndex++ ) {
@@ -1243,6 +1540,15 @@ namespace atto {
             // @HACK:
             // @TODO: We should have a queue here.
             if ( building.isTraining == false ) {
+
+                // @HACK: Monies
+                if ( type == EntityType::UNIT_WORKER ) {
+                    SimUtil_Pay( playerNumber, costOfWorker );
+                }
+                if ( type == EntityType::UNIT_TEST ) {
+                    SimUtil_Pay( playerNumber, costOfFighter );
+                }
+
                 building.turn = 0;
                 building.isTraining = true;
                 building.trainingEnt = type;
@@ -1256,9 +1562,9 @@ namespace atto {
         const EntityHandle target = *targetPtr;
         SimEntity * targetEnt = entityPool.Get( target );
         if( targetEnt != nullptr ) {
-            targetEnt->unit.currentHealth -= damage;
-            if( targetEnt->unit.currentHealth <= 0 ) {
-                targetEnt->unit.currentHealth = 0;
+            targetEnt->currentHealth -= damage;
+            if( targetEnt->currentHealth <= 0 ) {
+                targetEnt->currentHealth = 0;
             }
         }
         //core->LogOutput( LogLevel::INFO, "SimAction_ApplyDamage: Applying damage %d to %d, %d", damage, target.idx, target.gen );
@@ -1313,7 +1619,7 @@ namespace atto {
             {
                 Unit & unit = ent->unit;
 
-                if( unit.currentHealth == 0 ) {
+                if( ent->currentHealth == 0 ) { // HACK: I think this should go into the apply damange call??? Maybe something to do with death animations ?
                     ent->actions.AddAction( MapActionType::SIM_ENTITY_DESTROY, ent->handle );
                     break;
                 }
@@ -1443,7 +1749,7 @@ namespace atto {
                         }
 
                         const SimEntity * otherEnt = *entities->Get( entityIndexB );
-                        if( IsUnitType( otherEnt->type ) == false ) {
+                        if ( IsUnitType( otherEnt->type ) == false && IsBuildingType( otherEnt->type ) == false ) {
                             continue;
                         }
 
@@ -1461,7 +1767,7 @@ namespace atto {
                                 turret.fireTimer = turret.fireRate;
                                 EntityType btype = turret.size == WeaponSize::SMALL ? EntityType::Make( EntityType::BULLET_SMOL ) : EntityType::Make( EntityType::BULLET_MED );
                                 fp2 spawnPos = turret.size == WeaponSize::SMALL ? worldPos : worldPos + dir * Fp( 10 );
-                                ent->actions.AddAction( MapActionType::SIM_ENTITY_SPAWN, (i32)btype, ent->playerNumber, ent->teamNumber, spawnPos, turret.ori, dir * Fp( 250 ) );
+                                ent->actions.AddAction( MapActionType::SIM_ENTITY_SPAWN, (i32)btype, ent->playerNumber, ent->teamNumber, ent->solarNumber, spawnPos, turret.ori, dir * Fp( 250 ) );
                                 break;
                             }
                         }
@@ -1488,7 +1794,7 @@ namespace atto {
                     }
 
                     const SimEntity * otherEnt = *entities->Get( entityIndexB );
-                    if( IsUnitType( otherEnt->type ) == false ) {
+                    if( IsUnitType( otherEnt->type ) == false  && IsBuildingType( otherEnt->type ) == false ) {
                         continue;
                     }
 
@@ -1512,7 +1818,6 @@ namespace atto {
             case EntityType::PLANET:
             {
                 Planet & planet = ent->planet;
-                planet.turn++;
                 const i32 placementCount = planet.placements.GetCapcity();
                 for ( i32 placementIndex = 0; placementIndex < placementCount; placementIndex++ ) {
                     const PlanetPlacementType & placementType = planet.placements[ placementIndex ];
@@ -1521,18 +1826,36 @@ namespace atto {
                         case PlanetPlacementType::BLOCKED: {} break;
                         case PlanetPlacementType::OPEN: {} break;
                         case PlanetPlacementType::CREDIT_GENERATOR: {
-                            if ( planet.turn % 30 == 0 ) {
-                                ent->actions.AddAction( MapActionType::SIM_MAP_MONIES_GIVE_CREDITS, ent->playerNumber, 3 );
+                            const i32 ticker = 20;
+                            const i32 pm = SecondsToTurns( 60 ) / ticker;
+                            const i32 amountToGive = 100 / ticker;
+                            const i32 turn = planet.placementsTurns[placementIndex]++;
+
+                            if ( turn >= pm ) {
+                                ent->actions.AddAction( MapActionType::SIM_MAP_MONIES_GIVE_CREDITS, ent->playerNumber, amountToGive );
+                                planet.placementsTurns[placementIndex] = 0;
                             }
                         } break;
                         case PlanetPlacementType::ENERGY_GENERATOR: {
-                            if ( planet.turn % 40 == 0) {
-                                ent->actions.AddAction( MapActionType::SIM_MAP_MONIES_GIVE_ENERGY, ent->playerNumber, 3 );
+                            const i32 ticker = 5;
+                            const i32 pm = SecondsToTurns( 60 ) / ticker;
+                            const i32 amountToGive = 50 / ticker;
+                            const i32 turn = planet.placementsTurns[placementIndex]++;
+
+                            if ( turn >= pm ) {
+                                ent->actions.AddAction( MapActionType::SIM_MAP_MONIES_GIVE_ENERGY, ent->playerNumber, amountToGive );
+                                planet.placementsTurns[placementIndex] = 0;
                             }
                         } break;
                         case PlanetPlacementType::COMPUTE_GENERATOR: {
-                            if ( planet.turn % 60 == 0) {
-                                ent->actions.AddAction( MapActionType::SIM_MAP_MONIES_GIVE_COMPUTE, ent->playerNumber, 2 );
+                            const i32 ticker = 5;
+                            const i32 pm = SecondsToTurns( 60 ) / ticker;
+                            const i32 amountToGive = 25 / ticker;
+                            const i32 turn = planet.placementsTurns[placementIndex]++;
+
+                            if ( turn >= pm ) {
+                                ent->actions.AddAction( MapActionType::SIM_MAP_MONIES_GIVE_COMPUTE, ent->playerNumber, amountToGive );
+                                planet.placementsTurns[placementIndex] = 0;
                             }
                         } break;
                     }
@@ -1542,21 +1865,31 @@ namespace atto {
             case EntityType::BUILDING_SOLAR_ARRAY:
             case EntityType::BUILDING_COMPUTE:
             {
+                if( ent->currentHealth == 0 ) { // HACK: I think this should go into the apply damange call??? Maybe something to do with death animations ?
+                    ent->actions.AddAction( MapActionType::SIM_ENTITY_DESTROY, ent->handle );
+                    break;
+                }
+
                 Building & building = ent->building;
 
                 if ( building.isBuilding == false ) {
                     building.turn++;
                     if ( ent->type == EntityType::BUILDING_SOLAR_ARRAY ) {
-                        if ( building.turn == 60 ) {
+                        if ( building.turn >= building.timeToGiveEnergyTurns ) {
                             building.turn = 0;
-                            ent->actions.AddAction( MapActionType::SIM_MAP_MONIES_GIVE_ENERGY, ent->playerNumber, ent->building.giveEnergyAmount );
+                            ent->actions.AddAction( MapActionType::SIM_MAP_MONIES_GIVE_ENERGY, ent->playerNumber, ent->building.amountToGiveEnergy );
+                        }
+                    } else if ( ent->type == EntityType::BUILDING_COMPUTE ) {
+                        if ( building.turn >= building.timeToGiveComputeTurns ) {
+                            building.turn = 0;
+                            ent->actions.AddAction( MapActionType::SIM_MAP_MONIES_GIVE_COMPUTE, ent->playerNumber, ent->building.amountToGiveCompute );
                         }
                     }
                     else if ( ent->type == EntityType::BUILDING_STATION ) {
                         if ( building.isTraining == true && building.turn == building.timeToTrainTurns ) {
-                            fp2 p = ent->pos - Fp2( 0, 32 ); // @HACK
-                            fp o = FP_PI; // @HACK
-                            ent->actions.AddAction( MapActionType::SIM_ENTITY_SPAWN, ( i32 )building.trainingEnt, ent->playerNumber, ent->teamNumber, p, o, Fp2( 0, 0 ) );
+                            fp2 spawnLocation = ent->pos - Fp2( 0, 32 ); // @HACK
+                            fp spawnOri = FP_PI; // @HACK
+                            ent->actions.AddAction( MapActionType::SIM_ENTITY_SPAWN, ( i32 )building.trainingEnt, ent->playerNumber, ent->teamNumber, ent->solarNumber, spawnLocation, spawnOri, Fp2( 0, 0 ) );
                             building.turn = 0;
                             building.isTraining = false;
                             building.trainingEnt = EntityType::INVALID;
@@ -1650,6 +1983,7 @@ namespace atto {
 
         for( i32 threadIndex = 0; threadIndex < threadCount; threadIndex++ ) {
             core->taskScheduler.WaitforTaskSet( &updateTasks[ threadIndex ] );
+            
         }
     #else 
         const i32 entityCount = entities->GetCount();
@@ -1726,6 +2060,36 @@ namespace atto {
         }
 
         return checkSum;
+    }
+
+    bool SimMap::SimUtil_CanAfford( PlayerNumber playerNumber, MoneySet costSet ) {
+        MoneySet mon = playerMonies[playerNumber.value - 1];
+        if ( mon.credits >= costSet.credits && 
+            mon.energy >= costSet.energy && 
+            mon.compute >= costSet.compute ) {
+            return true;
+        }
+        return false;
+    }
+  
+    void SimMap::SimUtil_Pay( PlayerNumber playerNumber, MoneySet costSet ) {
+        Assert( SimUtil_CanAfford( playerNumber, costSet ) );
+        MoneySet & mon = playerMonies[ playerNumber.value - 1 ];
+        mon.credits -= costSet.credits;
+        mon.energy -= costSet.energy;
+        mon.compute -= costSet.compute;
+    }
+
+    bool SimMap::Vis_CanAfford( PlayerNumber playerNumber, MoneySet costSet ) {
+        MoneySet mon = playerMonies[playerNumber.value - 1];
+        if ( mon.credits >= costSet.credits && 
+            mon.energy >= costSet.energy && 
+            mon.compute >= costSet.compute ) {
+            return true;
+        } else {
+            core->AudioPlay( sndNotEnoughResources );
+        }
+        return false;
     }
 
     void SimMap::VisAction_PlayerSelect( PlayerNumber * playerNumberPtr, EntHandleList * selection, EntitySelectionChange change ) {

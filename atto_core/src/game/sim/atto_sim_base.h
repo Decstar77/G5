@@ -1,23 +1,29 @@
 #pragma once
 
 #include "../../shared/atto_core.h"
+#include "atto_sim_load_assets.h"
 
 namespace atto {
     class RpcHolder;
 
     constexpr static i32 MAX_ENTITIES = 1024;
-    constexpr static i32 MAX_PLAYERS = 4;
+    constexpr static i32 MAX_PLAYERS = 2;
 
     constexpr i32 TURNS_PER_SECOND = 10;
     constexpr float SIM_DT_FLOAT = 1.0f / TURNS_PER_SECOND;
     constexpr fp SIM_DT = Fp( 1.0f / TURNS_PER_SECOND );
     inline i32 SecondsToTurns( i32 s ) { return s * TURNS_PER_SECOND; }
-    
+    inline i32 MinutesToTurns( i32 m ) { return m * 60 * TURNS_PER_SECOND; }
+
     //inline static i32 MAX_MAP_SIZE = (i32)glm::sqrt( ToFloat( FP_MAX ) );// @NOTE: This comes to +5000
     inline static i32 MAX_MAP_SIZE = 3000;
 
-    typedef TypeSafeNumber<i32, class PlayerNumberType> PlayerNumber;
-    typedef TypeSafeNumber<i32, class TeamNumberType>   TeamNumber;
+    typedef TypeSafeNumber<i32, class PlayerNumberType>         PlayerNumber;
+    typedef TypeSafeNumber<i32, class TeamNumberType>           TeamNumber;
+    typedef TypeSafeNumber<i32, class SolaySystemNumberType>    SolarNumber;
+
+    constexpr SolarNumber SOLAR_INVALID = SolarNumber::Create( -1 );
+    constexpr SolarNumber SOLAR_GLOBAL = SolarNumber::Create( 0 );
 
     enum class MapActionType : u8 {
         NONE = 0,
@@ -101,16 +107,6 @@ namespace atto {
         PlayerNumber            playerNumber;
         MapActionBuffer         actions;
     };
-
-
-    //// @TODO: This is hardcoded to be 1 hours of game time for two players. We'll need a better system but for now this works.
-    //struct MapReplay {
-    //    static constexpr i64 Minutes = 120;
-    //    static constexpr i64 TurnCap = ( i64 )TURNS_PER_SECOND * Minutes * 60;
-    //    static constexpr i64 EstimatedSizeMB = ( ( ( sizeof( MapTurn ) * TurnCap ) / 1024 ) / 1024 );
-
-    //    FixedList<MapTurn, TurnCap> turns;
-    //};
 }
 
 

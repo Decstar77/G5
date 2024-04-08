@@ -27,6 +27,8 @@ namespace atto {
 
         window.Initialize( this );
 
+        NetworkStart();
+
         //RenderSetCameraDims( 320, 180 );
         //RenderSetCamera( 320 * 1.5f, 180 * 1.5f );
         //RenderSetCamera( 1280, 720 );
@@ -43,8 +45,6 @@ namespace atto {
         editor = new Editor();
         editor->Initialize( this );
     #endif
-        
-        client = new NetClient( this );
 
         //game = new GameModeGame();
         currentGameMode = new GameMode_MainMenu();
@@ -54,6 +54,12 @@ namespace atto {
 
         f32 simTickRate = 1.0f / 30.0f;
         f32 simTickCurrent = 0.0f;
+
+        static AudioResource * sovietMarch = ResourceGetAndCreateAudio( "res/sounds/not_legal/redaleart3/soviet_march.mp3", true, false, 0, 0);
+        //static AudioResource * sovietMarch = ResourceGetAndCreateAudio( "res/sounds/Shades_of_Defeat.mp3", true, false, 0, 0 );
+        static AudioResource * hellMarch = ResourceGetAndCreateAudio( "res/sounds/not_legal/redaleart3/hell_march.mp3", true, false, 0, 0);
+
+        //AudioPlay( sovietMarch, nullptr );
 
         this->deltaTime = 0;
         f64 startTime = window.GetTime();
@@ -115,8 +121,6 @@ namespace atto {
     #if ATTO_EDITOR
         //EngineImgui::Shutdown();
     #endif
-
-        delete client;
     }
 
     f64 WindowsCore::GetTheCurrentTime() const {

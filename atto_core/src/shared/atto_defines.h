@@ -103,7 +103,7 @@ namespace atto
     struct TypeSafeNumber {
         T value;
         
-        inline static TypeSafeNumber<T, _type_> Create( T value ) {
+        inline constexpr static TypeSafeNumber<T, _type_> Create( T value ) {
             TypeSafeNumber<T, _type_> result = {};
             result.value = (T)value;
             return result;

@@ -76,7 +76,9 @@ namespace atto {
             core->MoveToGameMode( new GameMode_SinglePlayerGame( parms ) );
         }
         if ( ui.Button( 55, "Mutliplayer", centerPos, paretPercent, textSize, Colors::ALIZARIN ) ) {
-            core->NetConnect();
+            if ( core->NetworkIsConnected() == false ) {
+                core->NetworkConnect();
+            }
         }
         if ( ui.Button( 66, "Options", centerPos, paretPercent, textSize, Colors::ALIZARIN ) ) {
             showOptions = true;

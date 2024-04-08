@@ -33,6 +33,7 @@ namespace atto {
         GLFWmonitor *               monitor = nullptr;
         LargeString                 monitorName = LargeString::FromLiteral( "" );
         f64                         monitorRefreshRate = 0;
+
         GLFWwindow *                window = nullptr;
         SmallString                 windowTitle = SmallString::FromLiteral( "Game" );
         bool                        windowFullscreen = false;

@@ -8,14 +8,13 @@
 #include "atto_network.h"
 #include "atto_clock.h"
 #include "atto_ui.h"
+#include "atto_client.h"
 
 #include "atto_reflection.h"
 #include "enki_task_scheduler.h"
 
 #include <memory>
 #include <mutex>
-
-struct GGPOSession;
 
 namespace atto {
     class Core;
@@ -66,13 +65,20 @@ namespace atto {
         REFLECT();
     };
 
+    enum class AudioStealMode {
+        NONE = 0,
+        OLDEST = 1,
+    };
+
     class AudioResource : public Resource {
     public:
-        bool        is2D;
-        bool        is3D;
-        f32         minDist;
-        f32         maxDist;
-        i32         audioSize;
+        bool            is2D;
+        bool            is3D;
+        f32             minDist;
+        f32             maxDist;
+        i32             audioSize;
+        i32             maxInstances;
+        AudioStealMode  stealMode;
 
         REFLECT();
     };
@@ -156,8 +162,18 @@ namespace atto {
         FixedList< StaticMeshResource *, 16>    meshes;
     };
 
+    struct AudioSpeaker;
+    typedef ObjectHandle<AudioSpeaker> AudioSpeakerHandle;
+
     struct AudioSpeaker {
-        i32             index;
+        Core * core;
+        AudioSpeakerHandle handle;
+        void * fmodChannel;
+        AudioResource * source;
+        f64 spawnTime;
+
+        bool IsPlaying();
+        void Stop();
     };
 
     enum class DrawCommandType {
@@ -435,18 +451,12 @@ namespace atto {
         f32                                 RenderGetMainSurfaceHeight() const { return mainSurfaceHeight; }
         virtual void                        RenderSubmit( DrawContext * dcxt, bool clearBackBuffers ) = 0;
 
-        virtual AudioSpeaker                AudioPlay( AudioResource * audioResource, glm::vec2 * pos = nullptr ) = 0;
+        virtual void                        AudioPlay( AudioResource * audioResource, glm::vec2 * pos = nullptr ) = 0;
         virtual void                        AudioSetListener( glm::vec2 pos ) = 0;
         template<i32 capcity>
         AudioResource *                     AudioPlayRandom( const FixedList<AudioResource *, capcity> & audioResources, glm::vec2 * pos = nullptr );
         template<typename... args>
         AudioResource *                     AudioPlayRandom( glm::vec2 * pos, args... audioResources );
-
-        void                                NetConnect();
-        bool                                NetIsConnected();
-        void                                NetDisconnect();
-        SmallString                         NetStatusText();
-        u32                                 NetGetPing();
 
         void *                              MemoryAllocatePermanent( u64 bytes );
         void *                              MemoryAllocateTransient( u64 bytes );
@@ -483,7 +493,8 @@ namespace atto {
         virtual bool                        WindowOpenNativeFileDialog( const char * basePath, const char * filter, LargeString & res ) = 0;
         virtual bool                        WindowOpenNativeFolderDialog( const char * basePath, LargeString & res ) = 0;
 
-        NetClient *                         GetNetClient();
+        void                                NetworkStart();
+        void                                NetworkUpdate();
         void                                NetworkConnect();
         bool                                NetworkIsConnected();
         void                                NetworkDisconnect();
@@ -491,6 +502,7 @@ namespace atto {
         void                                NetworkSend( const NetworkMessage & msg );
         bool                                NetworkRecieve( NetworkMessage & msg );
         u32                                 NetworkGetPing();
+        
 
         virtual void                        Run( int argc, char ** argv ) = 0;
 
@@ -508,11 +520,11 @@ namespace atto {
         FixedList<DrawContext, 8>           drawContexts = {};
         FrameInput                          input = {};
         UIState                             uiState = {};
+        ClientState                         client = {};
 
         GameMode *                          currentGameMode = nullptr;
         GameMode *                          nextGameMode = nullptr;
         Editor *                            editor = nullptr;
-        NetClient *                         client = nullptr;
 
         f32                                 deltaTime = 0.0f;
 
