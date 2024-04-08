@@ -13,9 +13,9 @@ namespace atto {
         i32       GetSlidingWindowWidth() { return slidingWindowWidth; }
 
     private:
-        i32                     slidingWindowWidth = 4;
-        FixedQueue<MapTurn, 10> player1Turns = {};
-        FixedQueue<MapTurn, 10> player2Turns = {};
+        i32                     slidingWindowWidth = 12;
+        FixedQueue<MapTurn, 100> player1Turns = {};
+        FixedQueue<MapTurn, 100> player2Turns = {};
     };
 }
 

@@ -731,6 +731,7 @@ namespace atto {
             }
 
             SetFrameRate( (f32)sprite->frameRate );
+            animate = true;
             frameIndex = 0;
             frameTimer = 0;
             loopCount = 0;
@@ -743,7 +744,7 @@ namespace atto {
     }
 
     void SpriteAnimator::Update( Core * core, f32 dt ) {
-        if( sprite != nullptr && sprite->frameCount > 1 ) {
+        if ( animate == true && sprite != nullptr && sprite->frameCount > 1 ) {
             if( frameTimer == 0.0f && frameIndex == 0 ) { // test to see if we have just started and neeed to play something
                 TestFrameActuations( core );
             }

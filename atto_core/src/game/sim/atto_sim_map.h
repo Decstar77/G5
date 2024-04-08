@@ -19,8 +19,14 @@ namespace atto {
     REFL_ENUM(  EntityType,
                 INVALID = 0,
                 UNITS_BEGIN,
-                UNIT_WORKER,
-                UNIT_TEST,
+                UNIT_KLAED_WORKER,
+                UNIT_KLAED_SCOUT,
+                UNIT_KLAED_FIGHTER,
+                UNIT_KLAED_BOMBER,
+                UNIT_KLAED_TORPEDO,
+                UNIT_KLAED_FRIGATE,
+                UNIT_KLAED_BATTLE_CRUISER,
+                UNIT_KLAED_BATTLE_DREADNOUGHT,
                 UNITS_END,
 
                 BULLETS_BEGIN,
@@ -61,26 +67,16 @@ namespace atto {
         "REMOVE"
     };
 
+    enum class NavigatorFacingMode {
+        VEL = 0,
+        TARGET,
+    };
+
     struct Navigator {
         bool                hasDest;
         fp2                 dest;
         fp                  slowRad;
-    };
-
-    enum class WeaponSize {
-        SMALL,
-        MEDIUM,
-        LARGE
-    };
-
-    struct UnitTurret {
-        WeaponSize          size;
-        i32                 idx;
-        fp2                 posOffset; // @NOTE: In Local Space
-        fp                  ori;
-        fp                  fireTimer;
-        fp                  fireRate;
-        fp                  fireRange;
+        NavigatorFacingMode facingMode;
     };
 
     enum class UnitCommandType {
@@ -97,16 +93,24 @@ namespace atto {
         EntityHandle    targetEnt;
     };
 
+    struct UnitWeapon {
+        fp2                         posOffset;
+
+        i32                         fireRateDelayTurns;
+        i32                         fireTimerDelayTurns;
+        bool                        hasFired;
+    };
+
     struct Unit {
         UnitCommand                 command;
-
-        fp                          averageRange;
-
-        FixedList<UnitTurret, 4>    turrets;
+        fp                          range;
+        fp                          speed;
+        i32                         fireTimerTurns;
+        i32                         fireRateTurns;
+        FixedList<UnitWeapon, 6>    weapons;
     };
 
     struct Bullet {
-        WeaponSize                  size;
         i32                         damage;
         fp                          speed;
         fp                          aliveTimer;
@@ -230,6 +234,8 @@ namespace atto {
             struct {
                 SpriteResource * base;
                 SpriteResource * engine;
+                SpriteResource * shield;
+                SpriteResource * weapons;
             } spriteUnit;
             struct {
                 SpriteResource * base;

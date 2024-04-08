@@ -15,8 +15,6 @@ namespace atto {
 
     inline SpriteResource * sprKlaedWorkerBase = nullptr;
     inline SpriteResource * sprKlaedWorkerEngine = nullptr;
-    inline SpriteResource * sprKlaedWorkerShield = nullptr;
-    inline SpriteResource * sprKlaedWorkerWeapon = nullptr;
     inline SpriteResource * sprKlaedWorkerDestruction = nullptr;
 
     inline SpriteResource * sprKlaedFighterBase = nullptr;
@@ -31,11 +29,11 @@ namespace atto {
     inline SpriteResource * sprKlaedBomberWeapon = nullptr;
     inline SpriteResource * sprKlaedBomberDestruction = nullptr;
 
-    inline SpriteResource * sprKlaedTorpedeBase = nullptr;
-    inline SpriteResource * sprKlaedTorpedeEngine = nullptr;
-    inline SpriteResource * sprKlaedTorpedeShield = nullptr;
-    inline SpriteResource * sprKlaedTorpedeWeapon = nullptr;
-    inline SpriteResource * sprKlaedTorpedeDestruction = nullptr;
+    inline SpriteResource * sprKlaedTorpedoBase = nullptr;
+    inline SpriteResource * sprKlaedTorpedoEngine = nullptr;
+    inline SpriteResource * sprKlaedTorpedoShield = nullptr;
+    inline SpriteResource * sprKlaedTorpedoWeapon = nullptr;
+    inline SpriteResource * sprKlaedTorpedoDestruction = nullptr;
 
     inline SpriteResource * sprKlaedFrigateBase = nullptr;
     inline SpriteResource * sprKlaedFrigateEngine = nullptr;

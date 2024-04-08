@@ -54,10 +54,6 @@ namespace atto {
     }
 
     AudioResource * WindowsCore::ResourceGetAndCreateAudio( const char * name, bool is2D, bool is3D, f32 minDist, f32 maxDist ) {
-        if ( theGameSettings.noAudio == true ) {
-            return nullptr;
-        }
-
         const i32 audioResourceCount = resources.audios.GetCount();
         for( i32 audioIndex = 0; audioIndex < audioResourceCount; audioIndex++ ) {
             AudioResource & audioResource = resources.audios[ audioIndex ];
@@ -76,25 +72,23 @@ namespace atto {
         audioResource.maxInstances = 1;
         audioResource.stealMode = AudioStealMode::NONE;
 
-        if( audioResource.is2D == true ) {
-            FMOD_RESULT result = fmodSystem->createSound( name, FMOD_DEFAULT, 0, &audioResource.sound2D );
-            ERRCHECK( result );
-        }
+        if( theGameSettings.noAudio == false ) {
+            if( audioResource.is2D == true ) {
+                FMOD_RESULT result = fmodSystem->createSound( name, FMOD_DEFAULT, 0, &audioResource.sound2D );
+                ERRCHECK( result );
+            }
 
-        if( audioResource.is3D == true ) {
-            FMOD_RESULT result = fmodSystem->createSound( name, FMOD_3D, 0, &audioResource.sound3D );
-            audioResource.sound3D->set3DMinMaxDistance( minDist, maxDist );
-            ERRCHECK( result );
+            if( audioResource.is3D == true ) {
+                FMOD_RESULT result = fmodSystem->createSound( name, FMOD_3D, 0, &audioResource.sound3D );
+                audioResource.sound3D->set3DMinMaxDistance( minDist, maxDist );
+                ERRCHECK( result );
+            }
         }
 
         return resources.audios.Add_MemCpyPtr( &audioResource );
     }
 
     AudioResource * WindowsCore::ResourceGetAndLoadAudio( const char * name ) {
-        if ( theGameSettings.noAudio == true ) {
-            return nullptr;
-        }
-
         const i32 audioResourceCount = resources.audios.GetCount();
         for( i32 audioIndex = 0; audioIndex < audioResourceCount; audioIndex++ ) {
             AudioResource & audioResource = resources.audios[ audioIndex ];

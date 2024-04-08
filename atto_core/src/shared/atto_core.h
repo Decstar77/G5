@@ -114,6 +114,7 @@ namespace atto {
     class SpriteAnimator {
     public:
         SpriteResource *    sprite;
+        bool                animate;
         i32                 frameIndex;
         f32                 frameTimer;
         f32                 frameDuration;

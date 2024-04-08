@@ -9,10 +9,11 @@ namespace atto {
     constexpr static i32 MAX_ENTITIES = 1024;
     constexpr static i32 MAX_PLAYERS = 2;
 
-    constexpr i32 TURNS_PER_SECOND = 10;
+    constexpr i32 TURNS_PER_SECOND = 24;
     constexpr float SIM_DT_FLOAT = 1.0f / TURNS_PER_SECOND;
     constexpr fp SIM_DT = Fp( 1.0f / TURNS_PER_SECOND );
     inline i32 SecondsToTurns( i32 s ) { return s * TURNS_PER_SECOND; }
+    inline i32 SecondsToTurns( i32 s, i32 decisecond ) { return s * TURNS_PER_SECOND + decisecond * TURNS_PER_SECOND / 10; }
     inline i32 MinutesToTurns( i32 m ) { return m * 60 * TURNS_PER_SECOND; }
 
     //inline static i32 MAX_MAP_SIZE = (i32)glm::sqrt( ToFloat( FP_MAX ) );// @NOTE: This comes to +5000

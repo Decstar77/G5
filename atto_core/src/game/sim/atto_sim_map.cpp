@@ -257,11 +257,15 @@ namespace atto {
         for ( i32 i = 0; i < 23; i++ ) {
             LargeString name = StringFormat::Large( "res/sounds/laser_1/blue_laser_%d.wav", i + 1 );
             sndLaser1[ i ] = core->ResourceGetAndCreateAudio( name.GetCStr(), true, false, 4000.0f, 10000.0f );
+            sndLaser1[ i ]->maxInstances = 4;
+            sndLaser1[ i ]->stealMode = AudioStealMode::OLDEST;
         }
 
         for ( i32 i = 0; i < 6; i++ ) {
             LargeString name = StringFormat::Large( "res/sounds/laser_2/sci-fi_weapon_plasma_pistol_0%d.wav", i + 1 );
             sndLaser2[ i ] = core->ResourceGetAndCreateAudio( name.GetCStr(), true, false, 4000.0f, 10000.0f );
+            sndLaser2[ i ]->maxInstances = 4;
+            sndLaser2[ i ]->stealMode = AudioStealMode::OLDEST;
         }
 
         sndBuildBuilding = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/starcraft/protoss-electric.mp3", true, false, 0, 0 );
@@ -310,15 +314,17 @@ namespace atto {
         SpawnEntity( &solarSystemSpawnInfo );
 
         SpawnEntity( EntityType::Make( EntityType::PLANET ), p1, t1, s1, Fp2( 500.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
-        SpawnEntity( EntityType::Make( EntityType::UNIT_WORKER ), p1, t1, s1, Fp2( 700.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
+        SpawnEntity( EntityType::Make( EntityType::UNIT_KLAED_WORKER ), p1, t1, s1, Fp2( 700.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
+        SpawnEntity( EntityType::Make( EntityType::UNIT_KLAED_SCOUT ), p1, t1, s1, Fp2( 800.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
+        SpawnEntity( EntityType::Make( EntityType::UNIT_KLAED_FIGHTER ), p1, t1, s1, Fp2( 900.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
         
         SpawnEntity( EntityType::Make( EntityType::PLANET ), p2, t2, s1, Fp2( 2500.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
-        SpawnEntity( EntityType::Make( EntityType::UNIT_WORKER ), p2, t2, s1, Fp2( 2200.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
+        //SpawnEntity( EntityType::Make( EntityType::UNIT_WORKER ), p2, t2, s1, Fp2( 2200.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
         
         SpawnEntity( EntityType::Make( EntityType::STAR ), p0, t0, s1, Fp2( 1500.0f, 1200.0f ), Fp( 0 ), Fp2( 0, 0 ) );
 
-        //SpawnEntity( EntityType::Make( EntityType::BUILDING_STATION ), p2, t2, s1, Fp2( 500.0f, 1000.0f ), Fp( 0 ), Fp2( 0, 0 ) )->building.isBuilding = false;
-        //SpawnEntity( EntityType::Make( EntityType::BUILDING_COMPUTE ), p2, t2, s1, Fp2( 600.0f, 1000.0f ), Fp( 0 ), Fp2( 0, 0 ) )->building.isBuilding = false;
+        SpawnEntity( EntityType::Make( EntityType::BUILDING_STATION ), p2, t2, s1, Fp2( 500.0f, 1000.0f ), Fp( 0 ), Fp2( 0, 0 ) )->building.isBuilding = false;
+        SpawnEntity( EntityType::Make( EntityType::BUILDING_COMPUTE ), p2, t2, s1, Fp2( 600.0f, 1000.0f ), Fp( 0 ), Fp2( 0, 0 ) )->building.isBuilding = false;
 
         //SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p1, t1, s1, Fp2( 800.2f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
         //SpawnEntity( EntityType::Make( EntityType::UNIT_TEST ), p1, t1, s1, Fp2( 900.0f, 700.0f ), Fp( 0 ), Fp2( 0, 0 ) );
@@ -539,7 +545,7 @@ namespace atto {
             OwnedBy( localPlayerNumber )->
             VisSelectedBy( localPlayerNumber )->
             End()->
-            ContainsOnlyType( EntityType::UNIT_WORKER );
+            ContainsOnlyType( EntityType::UNIT_KLAED_WORKER );
 
 
         const bool onlyBuildingSelected = entityFilter->Begin( &entities )->
@@ -653,13 +659,13 @@ namespace atto {
                 const glm::vec2 s = glm::vec2( 15 );
                 if ( core->InputKeyJustPressed( KEY_CODE_Q ) || gameUI.ButtonPix( 242, "Q", ui_RightPanelCenters[ 0 ], s, Colors::SKY_BLUE ) ) {
                     if ( Vis_CanAfford( localPlayerNumber, costOfWorker ) == true ) {
-                        localActionBuffer.AddAction( MapActionType::SIM_ENTITY_BUILDING_COMMAND_TRAIN_UNIT, localPlayerNumber, ( i32 )EntityType::UNIT_WORKER );
+                        localActionBuffer.AddAction( MapActionType::SIM_ENTITY_BUILDING_COMMAND_TRAIN_UNIT, localPlayerNumber, ( i32 )EntityType::UNIT_KLAED_WORKER );
                         core->AudioPlay( sndRogerRoger );
                     }
                 }
                 if ( core->InputKeyJustPressed( KEY_CODE_E ) || gameUI.ButtonPix( 243, "E", ui_RightPanelCenters[ 1 ], s, Colors::SKY_BLUE ) ) {
                     if ( Vis_CanAfford( localPlayerNumber, costOfFighter ) == true ) {
-                        localActionBuffer.AddAction( MapActionType::SIM_ENTITY_BUILDING_COMMAND_TRAIN_UNIT, localPlayerNumber, ( i32 )EntityType::UNIT_TEST );
+                        localActionBuffer.AddAction( MapActionType::SIM_ENTITY_BUILDING_COMMAND_TRAIN_UNIT, localPlayerNumber, ( i32 )EntityType::UNIT_KLAED_SCOUT );
                         core->AudioPlay( sndRogerRoger );
                     }
                 }
@@ -809,19 +815,6 @@ namespace atto {
                     } else {
                         ent->engineAnimator.SetSpriteIfDifferent ( nullptr, false );
                     }
-
-                    const i32 turretCount = unit.turrets.GetCount();
-                    for ( i32 turretIndex = 0; turretIndex < turretCount; turretIndex++ ) {
-                        UnitTurret & turret = unit.turrets[ turretIndex ];
-                        glm::vec2 worldPos = ent->visPos + glm::rotate( ToVec2( turret.posOffset ), -ent->visOri );
-
-                        if ( turret.size == WeaponSize::SMALL ) {
-                            // spriteDrawContext->DrawTexture( sprTurretSmol, worldPos, ToFloat( turret.ori ) );
-                        }
-                        else if ( turret.size == WeaponSize::MEDIUM ) {
-                            // spriteDrawContext->DrawTexture( sprTurretMed, worldPos, ToFloat( turret.ori ) );
-                        }
-                    }
                 }
                 else if ( IsBuildingType( ent->type ) ) {
                     const Building & building = ent->building;
@@ -852,12 +845,12 @@ namespace atto {
 
                 // DEBUG
                 #if ATTO_DEBUG
-                if ( false ) {
+                if ( true ) {
                     if ( ent->selectionCollider.type == ColliderType::COLLIDER_TYPE_CIRCLE ) {
                         debugDrawContext->DrawCircle( ent->visPos, ent->selectionCollider.circle.rad );
                     } else if (ent->selectionCollider.type == ColliderType::COLLIDER_TYPE_AXIS_BOX ) {
                         Collider2D c = ent->GetWorldSelectionCollider();
-                        debugDrawContext->DrawRect( c.box.min, c.box.max );
+                        debugDrawContext->DrawRect( c.box.min, c.box.max, glm::vec4( 1.0f, 1.0f, 1.0f, 0.5f ) );
                     }
                 }
                 #endif
@@ -924,13 +917,13 @@ namespace atto {
                                 // @TODO: Follow
                                 localActionBuffer.AddAction( MapActionType::SIM_ENTITY_UNIT_COMMAND_MOVE, localPlayerNumber, ent->pos );
                             }
-                        } else if ( IsBuildingType( ent->type ) == true && ent->building.isBuilding == true ) {
+                        } else if ( IsBuildingType( ent->type ) == true ) {
                             if ( ent->teamNumber != localPlayerTeamNumber ) {
                                 localActionBuffer.AddAction( MapActionType::SIM_ENTITY_UNIT_COMMAND_ATTACK, localPlayerNumber, ent->handle );
-                            } else {
+                            } else if ( ent->building.isBuilding == true ) {
                                 for ( i32 entityIndexB = 0; entityIndexB < entities.GetCount(); entityIndexB++ ) {
                                     const SimEntity * otherEnt = *entities.Get( entityIndexB );
-                                    if ( otherEnt->playerNumber == localPlayerNumber && otherEnt->type == EntityType::UNIT_WORKER ) {
+                                    if ( otherEnt->playerNumber == localPlayerNumber && otherEnt->type == EntityType::UNIT_KLAED_WORKER ) {
                                         localActionBuffer.AddAction( MapActionType::SIM_ENTITY_UNIT_COMMAND_CONSTRUCT_EXISTING_BUILDING, localPlayerNumber, ent->handle );
                                         break;
                                     }
@@ -1008,15 +1001,15 @@ namespace atto {
             entity->solarNumber = spawnInfo->solarNumber;
 
             switch( entity->type ) {
-                case EntityType::UNIT_WORKER: {
+                case EntityType::UNIT_KLAED_WORKER: {
                     static SpriteResource * selectionSprite = core->ResourceGetAndCreateSprite( "res/ents/test/ship_selected.png", 1, 48, 48, 0 );
 
                     static AudioResource * sndHello = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/huh.mp3", true, false, 0, 0 );
                     static AudioResource * sndBuilt = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/starcraft/scv.mp3", true, false, 0, 0 );
                     static AudioResource * sndMove = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/starcraft/overtime.mp3", true, false, 0, 0 );
 
-                    entity->spriteUnit.base = sprKlaedScoutBase;
-                    entity->spriteUnit.engine = sprKlaedScoutEngine;
+                    entity->spriteUnit.base = sprKlaedWorkerBase;
+                    entity->spriteUnit.engine = sprKlaedWorkerEngine;
 
                     entity->spriteAnimator.SetSpriteIfDifferent( entity->spriteUnit.base, false );
                     entity->selectionAnimator.SetSpriteIfDifferent( selectionSprite, false );
@@ -1031,23 +1024,27 @@ namespace atto {
                     entity->selectionCollider.type = COLLIDER_TYPE_CIRCLE;
                     entity->selectionCollider.circle.pos = glm::vec2( 0, 0 );
                     entity->selectionCollider.circle.rad = 16.0f;
-                    
-                    entity->unit.averageRange = ToFP( 40 );
+
                     entity->maxHealth = 50;
                     entity->currentHealth = entity->maxHealth;
 
+                    entity->unit.range = ToFP( 40 );
+                    entity->unit.speed = Fp( 25 );
+
                 } break;
-                case EntityType::UNIT_TEST:
+                case EntityType::UNIT_KLAED_SCOUT:
                 {
-                    static SpriteResource * blueSprite = core->ResourceGetAndCreateSprite( "res/ents/test/ship_blue.png", 1, 48, 48, 0 );
-                    static SpriteResource * redSprite = core->ResourceGetAndCreateSprite( "res/ents/test/ship_red.png", 1, 48, 48, 0 );
                     static SpriteResource * selectionSprite = core->ResourceGetAndCreateSprite( "res/ents/test/ship_selected.png", 1, 48, 48, 0 );
                     static AudioResource * sndHello = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/starcraft/shoot.mp3", true, false, 0, 0 );
                     static AudioResource * sndBuilt = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/starcraft/five-by-five-hele.mp3", true, false, 0, 0 );
                     static AudioResource * sndMove = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/starcraft/proceeding-seige.mp3", true, false, 0, 0 );
 
-                    SpriteResource * mainSprite = spawnInfo->teamNumber.value == 1 ? blueSprite : redSprite;
-                    entity->spriteAnimator.SetSpriteIfDifferent( mainSprite, false );
+                    entity->spriteUnit.base = sprKlaedScoutBase;
+                    entity->spriteUnit.engine = sprKlaedScoutEngine;
+                    entity->spriteUnit.shield = sprKlaedScoutShield;
+                    entity->spriteUnit.weapons = sprKlaedScoutWeapon;
+
+                    entity->spriteAnimator.SetSpriteIfDifferent( entity->spriteUnit.base, false );
                     entity->selectionAnimator.SetSpriteIfDifferent( selectionSprite, false );
 
                     entity->sndHello = sndHello;
@@ -1060,51 +1057,50 @@ namespace atto {
                     entity->selectionCollider.type = COLLIDER_TYPE_AXIS_BOX;
                     entity->selectionCollider.box.CreateFromCenterSize( glm::vec2( 0 ), glm::vec2( 26, 36 ) );
 
-                    entity->unit.averageRange = ToFP( 400 );
-                    entity->maxHealth = 100;
+                    entity->maxHealth = 150;
                     entity->currentHealth = entity->maxHealth;
 
-                    UnitTurret turret1 = {};
-                    turret1.size = WeaponSize::SMALL;
-                    turret1.posOffset = Fp2( -4, 7 );
-                    turret1.fireRate = Fp( 1.25f );
-                    turret1.fireRange = Fp( 400 );
-                    entity->unit.turrets.Add( turret1 );
+                    entity->unit.speed = Fp( 75 );
+                    entity->unit.range = ToFP( 400 );
+                    entity->unit.fireRateTurns = SecondsToTurns( 0, 5 );
+                    entity->unit.weapons.SetCount( 1 );
+                    entity->unit.weapons[ 0 ].posOffset = Fp2( 0, 12 );
+                    entity->unit.weapons[ 0 ].fireRateDelayTurns = SecondsToTurns( 0 );
+                } break;
+                case EntityType::UNIT_KLAED_FIGHTER: {
+                    static SpriteResource * selectionSprite = core->ResourceGetAndCreateSprite( "res/ents/test/ship_selected.png", 1, 48, 48, 0 );
 
-                    UnitTurret turret2 = {};
-                    turret2.size = WeaponSize::SMALL;
-                    turret2.posOffset = Fp2( 4, 7 );
-                    turret2.fireRate = Fp( 1.25f );
-                    turret2.fireRange = Fp( 400 );
-                    entity->unit.turrets.Add( turret2 );
+                    entity->spriteUnit.base = sprKlaedFighterBase;
+                    entity->spriteUnit.engine = sprKlaedFighterEngine;
+                    entity->spriteUnit.shield = sprKlaedFighterShield;
+                    entity->spriteUnit.weapons = sprKlaedFighterWeapon;
 
-                    UnitTurret turret3 = {};
-                    turret3.size = WeaponSize::MEDIUM;
-                    turret3.posOffset = Fp2( -7, -5 );
-                    turret3.fireRate = Fp( 1.25f );
-                    turret3.fireRange = Fp( 400 );
-                    entity->unit.turrets.Add( turret3 );
+                    entity->spriteAnimator.SetSpriteIfDifferent( entity->spriteUnit.base, false );
+                    entity->selectionAnimator.SetSpriteIfDifferent( selectionSprite, false );
 
-                    UnitTurret turret4 = {};
-                    turret4.size = WeaponSize::MEDIUM;
-                    turret4.posOffset = Fp2( 7, -5 );
-                    turret4.fireRate = Fp( 1.25f );
-                    turret4.fireRange = Fp( 400 );
-                    entity->unit.turrets.Add( turret4 );
+                    entity->isSelectable = true;
+                    entity->selectionCollider.type = COLLIDER_TYPE_AXIS_BOX;
+                    entity->selectionCollider.box.CreateFromCenterSize( glm::vec2( 0 ), glm::vec2( 26, 26 ) );
+
+                    entity->maxHealth = 150;
+                    entity->currentHealth = entity->maxHealth;
+
+                    entity->unit.speed = Fp( 35 );
+                    entity->unit.range = ToFP( 400 );
+                    entity->unit.fireRateTurns = SecondsToTurns( 0, 5 );
+                    entity->unit.weapons.SetCount( 2 );
+                    entity->unit.weapons[ 0 ].posOffset = Fp2( 6, 4 );
+                    entity->unit.weapons[ 0 ].fireRateDelayTurns = SecondsToTurns( 0 );
+                    entity->unit.weapons[ 1 ].posOffset = Fp2( -6, 4 );
+                    entity->unit.weapons[ 1 ].fireRateDelayTurns = SecondsToTurns( 0, 2 );
                 } break;
                 case EntityType::BULLET_SMOL:
                 {
-                    static SpriteResource * mainSprite = core->ResourceGetAndCreateSprite( "res/ents/test/bullet_smol.png", 1, 7, 7, 0 );
-                    static SpriteResource * sprVFX_SmallExplody = core->ResourceGetAndCreateSprite( "res/ents/test/bullet_hit_smol.png", 3, 16, 16, 10 );
-
-                    entity->spriteBank[0] = mainSprite;
-                    entity->spriteBank[1] = sprVFX_SmallExplody;
-                    entity->spriteAnimator.SetSpriteIfDifferent( mainSprite, false );
-
+                    entity->sprBullet.base = sprKlaedProjectileBullet;
+                    entity->spriteAnimator.SetSpriteIfDifferent( entity->sprBullet.base, true );
                     entity->bullet.aliveTime = Fp( 1.87f );
                     entity->bullet.damage = 5;
-
-                    core->AudioPlay( sndLaser1[ Random::Int( 6 ) ] );
+                    core->AudioPlay( sndLaser2[ Random::Int( 6 ) ] );
                 } break;
                 case EntityType::BULLET_MED:
                 {
@@ -1401,18 +1397,8 @@ namespace atto {
         for( i32 entityIndex = 0; entityIndex < entityCount; entityIndex++ ) {
             SimEntity * ent = simAction_ActiveEntities[ entityIndex ];
             if( ent->playerNumber == playerNumber && ent->selectedBy.Contains( playerNumber ) ) {
-                ent->navigator.hasDest = true;
-                fp2 d = ( ent->pos - targetEnt->pos );
-                fp dist = FpLength( d );
-
-                if( dist > ent->unit.averageRange - Fp( 10 ) ) {
-                     fp2 dir = d / dist;
-                     ent->navigator.dest = targetEnt->pos + dir * ent->unit.averageRange;
-                 } else {
-                     ent->navigator.dest = ent->pos;
-                 }
-
-                ent->navigator.slowRad = Fp( 100 );
+                ent->unit.command.type = UnitCommandType::ATTACK;
+                ent->unit.command.targetEnt = target;
             }
         }
     }
@@ -1440,7 +1426,7 @@ namespace atto {
         const i32 entityCount = simAction_ActiveEntities.GetCount();
         for ( i32 entityIndex = 0; entityIndex < entityCount; entityIndex++ ) {
             SimEntity * ent = simAction_ActiveEntities[ entityIndex ];
-            if ( ent->playerNumber == playerNumber && ent->type == EntityType::UNIT_WORKER && ent->selectedBy.Contains( playerNumber ) ) {
+            if ( ent->playerNumber == playerNumber && ent->type == EntityType::UNIT_KLAED_WORKER && ent->selectedBy.Contains( playerNumber ) ) {
                 SolarNumber s1 = SolarNumber::Create( 1 ); // @HACK SOLAR NUMBER
                 SimEntity * structure = SpawnEntity( type, playerNumber, ent->teamNumber, s1, pos, Fp( 0 ), Fp2( 0, 0 ) );
                 ent->unit.command.type = UnitCommandType::CONTRUCT_BUILDING;
@@ -1467,7 +1453,7 @@ namespace atto {
                 const i32 entityCount = simAction_ActiveEntities.GetCount();
                 for ( i32 entityIndex = 0; entityIndex < entityCount; entityIndex++ ) {
                     SimEntity * ent = simAction_ActiveEntities[ entityIndex ];
-                    if ( ent->playerNumber == playerNumber && ent->type == EntityType::UNIT_WORKER && ent->selectedBy.Contains( playerNumber ) ) {
+                    if ( ent->playerNumber == playerNumber && ent->type == EntityType::UNIT_KLAED_WORKER && ent->selectedBy.Contains( playerNumber ) ) {
                         ent->unit.command.type = UnitCommandType::CONTRUCT_BUILDING;
                         ent->unit.command.targetEnt = targetEnt->handle;
                         break;
@@ -1542,17 +1528,17 @@ namespace atto {
             if ( building.isTraining == false ) {
 
                 // @HACK: Monies
-                if ( type == EntityType::UNIT_WORKER ) {
+                if ( type == EntityType::UNIT_KLAED_WORKER ) {
                     SimUtil_Pay( playerNumber, costOfWorker );
                 }
-                if ( type == EntityType::UNIT_TEST ) {
+                if ( type == EntityType::UNIT_KLAED_SCOUT ) {
                     SimUtil_Pay( playerNumber, costOfFighter );
                 }
 
                 building.turn = 0;
                 building.isTraining = true;
                 building.trainingEnt = type;
-                building.timeToTrainTurns = type == EntityType::UNIT_WORKER ? SecondsToTurns( 12 ) :SecondsToTurns( 38 ) ;
+                building.timeToTrainTurns = type == EntityType::UNIT_KLAED_WORKER ? SecondsToTurns( 12 ) :SecondsToTurns( 38 ) ;
             }
         }
     }
@@ -1607,15 +1593,15 @@ namespace atto {
     }
 
     static void SimTick_SelfUpdate( const ConstEntList * entities, const EntPool * entityPool, i32 index, SimEntity * ent ) {
-        const fp playerSpeed = Fp( 2500.0f / 100.0f );
         const fp maxForce = Fp( 20.0f );
         const fp invMass = Fp( 1.0f / 10.0f );
 
         ZeroStruct( ent->actions );
 
         switch( ent->type ) {
-            case EntityType::UNIT_WORKER:
-            case EntityType::UNIT_TEST:
+            case EntityType::UNIT_KLAED_WORKER:
+            case EntityType::UNIT_KLAED_SCOUT:
+            case EntityType::UNIT_KLAED_FIGHTER:
             {
                 Unit & unit = ent->unit;
 
@@ -1624,23 +1610,108 @@ namespace atto {
                     break;
                 }
 
+                {
+                    unit.fireTimerTurns++;
+                    if ( unit.fireTimerTurns > unit.fireRateTurns ) {
+                        unit.fireTimerTurns = unit.fireRateTurns;
+                    }
+
+                    bool allFired = true;
+                    bool hasSomeFired = false;
+                    bool hasNoneFired = false;
+                    const i32 weaponCount = unit.weapons.GetCount();
+                    for ( i32 weaponIndex = 0; weaponIndex < weaponCount; weaponIndex++ ) {
+                        UnitWeapon & weapon = unit.weapons[weaponIndex];
+                        if ( weapon.hasFired == false ) {
+                            hasNoneFired = true;
+                        } else {
+                            hasSomeFired = true;
+                        }
+
+                        allFired = allFired && weapon.hasFired;
+                    }
+                    
+                    // @NOTE: I'm not too sure about this, will have to keep an eye out for it.
+                    if ( unit.command.type == UnitCommandType::ATTACK ) {
+                        if ( allFired == true ) {
+                            unit.fireTimerTurns = 0;
+                            for ( i32 weaponIndex = 0; weaponIndex < weaponCount; weaponIndex++ ) {
+                                UnitWeapon & weapon = unit.weapons[weaponIndex];
+                                weapon.fireTimerDelayTurns = 0;
+                                weapon.hasFired = false;
+                            }
+                        }
+                    } else {
+                        if ( hasNoneFired == true && hasSomeFired == true ) {
+                            unit.fireTimerTurns = 0;
+                            for ( i32 weaponIndex = 0; weaponIndex < weaponCount; weaponIndex++ ) {
+                                UnitWeapon & weapon = unit.weapons[weaponIndex];
+                                weapon.fireTimerDelayTurns = 0;
+                                weapon.hasFired = false;
+                            }
+                        }
+                    }
+                }
+
                 if ( unit.command.type == UnitCommandType::IDLE ) {
+                    ent->navigator = {};
+                    ent->spriteAnimator.SetSpriteIfDifferent( ent->spriteUnit.base, false );
                 }
                 else if ( unit.command.type == UnitCommandType::MOVE ) {
                     ent->navigator.hasDest = true;
                     ent->navigator.dest = unit.command.targetPos;
                     ent->navigator.slowRad = Fp( 100 );
+                    ent->navigator.facingMode = NavigatorFacingMode::VEL;
+                    ent->spriteAnimator.SetSpriteIfDifferent( ent->spriteUnit.base, true );
                 }
                 else if ( unit.command.type == UnitCommandType::ATTACK ) {
+                    const SimEntity * targetEnt = entityPool->Get( ent->unit.command.targetEnt );
+                    if ( targetEnt != nullptr ) {
+                        fp2 dir = ( ent->pos - targetEnt->pos );
+                        fp dist = FpLength( dir );
+                        dir = dir / dist;
+                        if ( dist > ent->unit.range ) {
+                            ent->navigator.hasDest = true;
+                            ent->navigator.dest = targetEnt->pos + dir * ( ent->unit.range - Fp( 16 ) ); // @HACK: Range
+                            ent->navigator.slowRad = Fp( 100 );
+                            ent->navigator.facingMode = NavigatorFacingMode::VEL;
+                            ent->spriteAnimator.SetSpriteIfDifferent( ent->spriteUnit.base, true );
+                        }
+                        else {
+                            ent->navigator.hasDest = false;
+                            ent->navigator.facingMode = NavigatorFacingMode::TARGET;
+                            ent->spriteAnimator.SetSpriteIfDifferent( ent->spriteUnit.weapons, true );
+
+                            const i32 weaponCount = unit.weapons.GetCount();
+                            for ( i32 weaponIndex = 0; weaponIndex < weaponCount; weaponIndex++ ) {
+                                UnitWeapon & weapon = unit.weapons[weaponIndex];
+                                if ( unit.fireTimerTurns == unit.fireRateTurns ) { // If we are at the base fire rate
+                                    weapon.fireTimerDelayTurns++;
+                                    if ( weapon.fireTimerDelayTurns >= weapon.fireRateDelayTurns && weapon.hasFired == false ) { // If we are past the delay
+                                        weapon.hasFired = true;
+                                        fp spawnOri = FpATan2( -dir.x, -dir.y );
+                                        fp2 spawnPos = ent->pos + FpRotate( weapon.posOffset, -spawnOri );
+                                        fp2 spawnVel = - dir * Fp( 250 );
+                                        ent->actions.AddAction( MapActionType::SIM_ENTITY_SPAWN, ( i32 )EntityType::BULLET_SMOL, ent->playerNumber, ent->teamNumber, ent->solarNumber, spawnPos, spawnOri, spawnVel );
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else {
+                        unit.command.type = UnitCommandType::IDLE;
+                        unit.command.targetPos = {};
+                        unit.command.targetEnt = {};
+                    }
                 }
                 else if ( unit.command.type == UnitCommandType::FOLLOW ) {
                 }
                 else if ( unit.command.type == UnitCommandType::CONTRUCT_BUILDING ) {
-                    if ( ent->type == EntityType::UNIT_WORKER ) {
+                    if ( ent->type == EntityType::UNIT_KLAED_WORKER ) {
                         const SimEntity * target = entityPool->Get( unit.command.targetEnt );
                         if ( target != nullptr ) {
                             fp dist2 = FpDistance2( target->pos, ent->pos );
-                            if ( dist2 < unit.averageRange * unit.averageRange ) {
+                            if ( dist2 < unit.range * unit.range ) {
                                 // Build
                                 ent->navigator.hasDest = false;
                                 ent->actions.AddAction( MapActionType::SIM_ENTITY_APPLY_CONSTRUCTION, target->handle );
@@ -1664,11 +1735,11 @@ namespace atto {
                             desiredVel = Fp2( 0, 0 );
                         }
                         else {
-                            desiredVel = FpNormalize( desiredVel ) * playerSpeed * ( dist / ent->navigator.slowRad );
+                            desiredVel = FpNormalize( desiredVel ) * unit.speed * ( dist / ent->navigator.slowRad );
                         }
                     }
                     else {
-                        desiredVel = FpNormalize( desiredVel ) * playerSpeed;
+                        desiredVel = FpNormalize( desiredVel ) * unit.speed;
                     }
 
                 #if 0
@@ -1700,7 +1771,7 @@ namespace atto {
                             if( dist < Fp( 100 ) && dist > Fp( 1 ) ) {
                                 fp2 dir = ( ent->pos - otherEnt->pos ) / dist;
                                 //steering += dir * playerSpeed * 0.2f;
-                                steering = steering + dir * playerSpeed * FpClamp( ( 1 - dist / Fp( 50 ) ), Fp( 0 ), Fp( 1 ) );
+                                steering = steering + dir * unit.speed * FpClamp( ( 1 - dist / Fp( 50 ) ), Fp( 0 ), Fp( 1 ) );
                             }
                         }
                     }
@@ -1708,7 +1779,7 @@ namespace atto {
                     steering = FpTruncateLength( steering, maxForce );
                     steering = steering * invMass;
 
-                    ent->vel = FpTruncateLength( ent->vel + steering, playerSpeed );
+                    ent->vel = FpTruncateLength( ent->vel + steering, unit.speed );
                 } else {
                     ent->vel = ent->vel * Fp( 0.95f );
                     if( ent->vel != Fp2( 0, 0 ) && FpLength( ent->vel ) < Fp( 1 ) ) {
@@ -1717,9 +1788,17 @@ namespace atto {
                 }
 
                 // Update orientation
-                if( FpLength2( ent->vel ) >= Fp( 1 ) ) {
-                    fp2 nvel = FpNormalize( ent->vel );
-                    ent->ori = FpATan2( nvel.x, nvel.y );
+                if ( ent->navigator.facingMode == NavigatorFacingMode::VEL ) {
+                    if ( FpLength2( ent->vel ) >= Fp( 1 ) ) {
+                        fp2 nvel = FpNormalize( ent->vel );
+                        ent->ori = FpATan2( nvel.x, nvel.y );
+                    }
+                } else if ( ent->navigator.facingMode == NavigatorFacingMode::TARGET ) {
+                    const SimEntity * targetEnt = entityPool->Get( ent->unit.command.targetEnt );
+                    if ( targetEnt != nullptr ) {
+                        fp2 dir = ( targetEnt->pos - ent->pos );
+                        ent->ori = FpATan2( dir.x, dir.y );
+                    }
                 }
 
                 /*
@@ -1731,52 +1810,6 @@ namespace atto {
                 else {
                     ent->acc += glm::normalize( toTarget ) * playerSpeed;
                 }*/
-
-                const i32 turretCount = unit.turrets.GetCount();
-                for( i32 turretIndex = 0; turretIndex < turretCount; turretIndex++ ) {
-                    UnitTurret & turret = unit.turrets[ turretIndex ];
-                    fp2 worldPos = ent->pos + FpRotate( turret.posOffset, -ent->ori );
-
-                    turret.fireTimer -= SIM_DT;
-                    if( turret.fireTimer < Fp(0) ) {
-                        turret.fireTimer = Fp( 0 );
-                    }
-
-                    bool hasTarget = false;
-                    for( i32 entityIndexB = 0; entityIndexB < entities->GetCount(); entityIndexB++ ) {
-                        if( entityIndexB == index ) {
-                            continue;
-                        }
-
-                        const SimEntity * otherEnt = *entities->Get( entityIndexB );
-                        if ( IsUnitType( otherEnt->type ) == false && IsBuildingType( otherEnt->type ) == false ) {
-                            continue;
-                        }
-
-                        if( otherEnt->teamNumber == ent->teamNumber ) {
-                            continue;
-                        }
-
-                        fp dist2 = FpDistance2( worldPos, otherEnt->pos );
-                        if( dist2 <= turret.fireRange * turret.fireRange ) {
-                            fp2 dir = FpNormalize( otherEnt->pos - worldPos );
-                            turret.ori = FpATan2( dir.x, dir.y );
-                            hasTarget = true;
-
-                            if( turret.fireTimer == Fp( 0 ) ) {
-                                turret.fireTimer = turret.fireRate;
-                                EntityType btype = turret.size == WeaponSize::SMALL ? EntityType::Make( EntityType::BULLET_SMOL ) : EntityType::Make( EntityType::BULLET_MED );
-                                fp2 spawnPos = turret.size == WeaponSize::SMALL ? worldPos : worldPos + dir * Fp( 10 );
-                                ent->actions.AddAction( MapActionType::SIM_ENTITY_SPAWN, (i32)btype, ent->playerNumber, ent->teamNumber, ent->solarNumber, spawnPos, turret.ori, dir * Fp( 250 ) );
-                                break;
-                            }
-                        }
-                    }
-
-                    if( hasTarget == false ) {
-                        turret.ori = ent->ori;
-                    }
-                }
             } break;
             case EntityType::BULLET_SMOL: // Fall 
             case EntityType::BULLET_MED:
