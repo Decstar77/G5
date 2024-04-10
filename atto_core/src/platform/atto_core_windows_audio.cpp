@@ -69,6 +69,7 @@ namespace atto {
         audioResource.is3D = is3D;
         audioResource.minDist = minDist;
         audioResource.maxDist = maxDist;
+        audioResource.volumeMultiplier = 1.0f;
         audioResource.maxInstances = 1;
         audioResource.stealMode = AudioStealMode::NONE;
 
@@ -164,7 +165,7 @@ namespace atto {
                 ERRCHECK( result );
 
                 //channel->setVolume( 0.15f );
-                channel->setVolume( 1.0f );
+                channel->setVolume( audio->volumeMultiplier * 0.3f );
                 channel->setCallback( ChannelCallback );
 
                 if ( audio->name.Contains( "vespene" ) ) { // @HACK:

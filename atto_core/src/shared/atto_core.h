@@ -77,6 +77,7 @@ namespace atto {
         f32             minDist;
         f32             maxDist;
         i32             audioSize;
+        f32             volumeMultiplier;
         i32             maxInstances;
         AudioStealMode  stealMode;
 

@@ -92,12 +92,15 @@ namespace atto {
     glm::vec2   ToVec2( const fp2 & v );
     fp2         ToFP2( const glm::vec2 & v );
 
+    fp          FpRound( fp f );
     fp          FpSin( fp f );
     fp          FpCos( fp f );
     fp          FpTan( fp f );
     fp          FpASin( fp f );
     fp          FpACos( fp f );
     fp          FpATan2( fp y, fp x );
+    fp          FpMin( fp a, fp b );
+    fp          FpMax( fp a, fp b );
     fp          FpClamp( fp f, fp min, fp max );
     fp          FpLerp( fp a, fp b, fp t );
     fp          FpLength( fp2 v );
@@ -146,18 +149,10 @@ namespace atto {
         fp2 normal;
     };
 
-    struct FpCollider {
-        ColliderType type;
-        union {
-            FpCircle circle;
-            FpAxisBox box;
-        };
-    };
-
     FpCircle        FpCircleCreate( fp2 pos, fp rad );
-    bool            FpCircleIntersects( FpCircle other );
-    bool            FpCircleCollision( FpCircle other, FpManifold & manifold );
-    bool            FpCircleContains( fp2 point );
+    bool            FpCircleIntersects( FpCircle a, FpCircle b );
+    bool            FpCircleCollision( FpCircle a, FpCircle b, FpManifold & manifold );
+    bool            FpCircleContains( FpCircle a, fp2 point );
 
     FpAxisBox       FpAxisBoxCreateFromMinMax( fp2 min, fp2 max );
     FpAxisBox       FpAxisBoxCreateFromCenterSize( fp2 center, fp2 size );
@@ -167,10 +162,22 @@ namespace atto {
     fp2             FpAxisBoxGetSize( FpAxisBox b );
     void            FpAxisBoxTranslate( FpAxisBox * b, fp2 translation );
     bool            FpAxisBoxIntersects( FpAxisBox a, FpAxisBox b );
-    bool            FpAxisBoxIntersects( FpCircle c );
+    bool            FpAxisBoxIntersects( FpAxisBox b, FpCircle c );
+    fp2             FpClosestPointBox( FpAxisBox b, fp2 p );
     bool            FpAxisBoxCollision( FpAxisBox a, FpAxisBox b, FpManifold & manifold );
-    bool            FpAxisBoxCollision( FpCircle other, FpManifold & manifold );
-    bool            FpAxisBoxContains( fp p );
+    bool            FpAxisBoxContains( FpAxisBox a , fp2 p );
+
+    struct FpCollider {
+        ColliderType type;
+        union {
+            FpCircle circle;
+            FpAxisBox box;
+        };
+    };
+
+    bool            FpColliderIntersects( FpCollider a, FpCircle b );
+    bool            FpColliderIntersects( FpCollider a, FpAxisBox b );
+    bool            FpColliderIntersects( FpCollider a, FpCollider b );
 
     struct RNG {
         i32 index;

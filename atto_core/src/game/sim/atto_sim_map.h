@@ -27,10 +27,17 @@ namespace atto {
                 UNIT_KLAED_FRIGATE,
                 UNIT_KLAED_BATTLE_CRUISER,
                 UNIT_KLAED_BATTLE_DREADNOUGHT,
+
+                UNIT_NAIRAN_WORKER,
+                UNIT_NAIRAN_SCOUT,
+                UNIT_NAIRAN_FIGHTER,
+
                 UNITS_END,
 
                 BULLETS_BEGIN,
-                BULLET_SMOL,
+                BULLET_KLARD_BULLET,
+                PROJECTILE_NAIRAN_BOLT,
+                PROJECTILE_NAIRAN_ROCKET,
                 BULLET_MED,
                 BULLETS_END,
 
@@ -95,7 +102,6 @@ namespace atto {
 
     struct UnitWeapon {
         fp2                         posOffset;
-
         i32                         fireRateDelayTurns;
         i32                         fireTimerDelayTurns;
         bool                        hasFired;
@@ -107,6 +113,7 @@ namespace atto {
         fp                          speed;
         i32                         fireTimerTurns;
         i32                         fireRateTurns;
+        EntityType                  weaponType;
         FixedList<UnitWeapon, 6>    weapons;
     };
 
@@ -148,9 +155,7 @@ namespace atto {
         i32 turn;
         bool isBuilding;
         i32 timeToBuildTurns;
-        bool isTraining;
-        i32 timeToTrainTurns;
-        EntityType trainingEnt;
+        FixedQueue< EntityType, 64 > trainingQueue;
 
         i32 timeToGiveEnergyTurns;
         i32 amountToGiveEnergy;
@@ -202,28 +207,30 @@ namespace atto {
 
         // Make these flags
         bool                        hasHitCollision;
-        bool                        isCollisionStatic;
-        Collider2D                  collisionCollider;  // @NOTE: Used for movement | In Local Space
+        FpCollider                  collisionCollider;  // @NOTE: Used for movement | In Local Space
 
         bool                        isSelectable;
         FixedList<PlayerNumber, MAX_PLAYERS> selectedBy; // @TODO: Could be optimized to be a espcially if player number is bit 8, could store all of the state in i32 or i64 for 8 playes
-        Collider2D                  selectionCollider;
 
         i32                         maxHealth;
         i32                         currentHealth;
 
-        Unit                        unit;
-        Bullet                      bullet;
+        union {
+            Unit                        unit;
+            Planet                      planet;
+            Building                    building;
+            SolarSystem                 solarSystem;
+            Bullet                      bullet;
+        };
+
         Navigator                   navigator;
-        Planet                      planet;
-        Building                    building;
-        SolarSystem                 solarSystem;
         MapActionBuffer             actions;
 
         // ============ Visual stuffies ============ 
         glm::vec2                               visPos;
         f32                                     visOri;
         FixedList<PlayerNumber, MAX_PLAYERS>    visSelectedBy;
+        Collider2D                              visSelectionCollider;
 
         SpriteAnimator                          spriteAnimator;
         SpriteAnimator                          engineAnimator;
@@ -236,16 +243,19 @@ namespace atto {
                 SpriteResource * engine;
                 SpriteResource * shield;
                 SpriteResource * weapons;
+                SpriteResource * destruction;
             } spriteUnit;
             struct {
                 SpriteResource * base;
-                SpriteResource * exploding;
+                SpriteResource * destruction;
             } sprBullet;
-        } ;
+        };
+
         AudioResource *                         sndHello;
         AudioResource *                         sndMove;
+        FixedList<AudioResource *, 4>           sndDestructions;
 
-        Collider2D                  GetWorldCollisionCollider() const;
+        FpCollider                  GetWorldCollisionCollider() const;
         Collider2D                  GetWorldSelectionCollider() const;
 
         REFLECT();
@@ -298,6 +308,15 @@ namespace atto {
         GALAXY
     };
 
+    struct Particle {
+        glm::vec2 pos;
+        f32 ori;
+        bool alive;
+        SpriteAnimator spriteAnimator;
+    };
+
+    i32 GetTrainTimeForEntityType( EntityType type );
+
     class SimMap {
     public:
         Core *                                      core = nullptr;
@@ -325,7 +344,7 @@ namespace atto {
 
         // ============ Player Stuffies ============
         FixedList< PlayerNumber, 4 >                playerNumbers = {};
-        FixedList< MoneySet, 4 >                playerMonies = {};
+        FixedList< MoneySet, 4 >                    playerMonies = {};
 
         // ================= Other =================
         SimMapReplay                                mapReplay = {};
@@ -338,6 +357,8 @@ namespace atto {
         EntHandleList                               viewDragSelection = {};
         SolarNumber                                 viewSolarNumber = {};
         FixedList<SolarSystemConnectionPair, 1000>  viewSolarSystemConnections = {};
+        i32                                         viewParticleAliveCount = 0;
+        FixedList< Particle, 1000 >                 viewParticles = {};
 
         UIContext                                   gameUI = {};
 
@@ -351,7 +372,7 @@ namespace atto {
     public:
         void                    Initialize( Core * core );
         void                    Update( Core * core, f32 dt );
-        
+
         SimEntity *             SpawnEntity( SimEntitySpawnInfo * spawnInfo );
         SimEntity *             SpawnEntity( EntityType type, PlayerNumber playerNumber, TeamNumber teamNumber, SolarNumber solarNumber, fp2 pos, fp ori, fp2 vel );
         void                    DestroyEntity( SimEntity * entity );

@@ -12,6 +12,10 @@ namespace atto {
         return { fp( v.x ), fp( v.y ) };
     }
 
+    fp FpRound( fp f ) {
+        return fpm::round( f );
+    }
+
     fp FpSin( fp f ) {
         return fpm::sin( f );
     }
@@ -27,7 +31,7 @@ namespace atto {
     fp FpASin( fp f ) {
         return fpm::asin( f );
     }
-
+    
     fp FpACos( fp f ) {
         return fpm::acos( f );
     }
@@ -36,14 +40,16 @@ namespace atto {
         return fpm::atan2( y, x );
     }
 
+    fp FpMin(fp a, fp b) {
+        return a < b ? a : b;
+    }
+
+    fp FpMax(fp a, fp b) {
+        return a > b ? a : b;
+    }
+
     fp FpClamp( fp f, fp min, fp max ) {
-        if ( f < min ) {
-            f = min;
-        }
-        if ( f > max ) {
-            f = max;
-        }
-        return f;
+        return FpMax( min, FpMin( f, max ) );
     }
 
     fp FpLerp( fp a, fp b, fp t ) {
@@ -130,6 +136,171 @@ namespace atto {
 
     fp2 operator/( const fp & a, const fp2 & b ) {
         return { b.x / a, b.y / a };
+    }
+
+    FpCircle FpCircleCreate( fp2 pos, fp rad ) {
+        FpCircle c = {};
+        c.rad = rad;
+        c.pos = pos;
+        return c;
+    }
+
+    bool FpCircleIntersects( FpCircle a, FpCircle b ) {
+        fp distSqrd = FpDistance2( a.pos, b.pos );
+        fp radSum = a.rad + b.rad;
+        return distSqrd < radSum * radSum;
+    }
+
+    bool FpCircleCollision( FpCircle a, FpCircle b, FpManifold & manifold ) {
+        if ( FpCircleIntersects( a, b ) == false ) {
+            return false;
+        }
+
+        fp2 normal = a.pos - b.pos;
+        fp dist = FpLength( normal );
+        fp radSum = a.rad + b.rad;
+        if( dist > radSum ) {
+            return false;
+        }
+
+        manifold.normal = normal / dist;
+        manifold.penetration = radSum - dist;
+        manifold.pointA = a.pos + manifold.normal * a.rad;
+        manifold.pointB = b.pos - manifold.normal * b.rad;
+        return true;
+    }
+
+    bool FpCircleContains( FpCircle a, fp2 point ) {
+        return FpDistance2( a.pos, point ) < a.rad * a.rad;
+    }
+
+    FpAxisBox FpAxisBoxCreateFromMinMax( fp2 min, fp2 max ) {
+        FpAxisBox box = {};
+        box.min = min;
+        box.max = max;
+        return box;
+    }
+    
+    FpAxisBox FpAxisBoxCreateFromCenterSize( fp2 center, fp2 size ) {
+        FpAxisBox box = {};
+        box.min = center - size / Fp(2);
+        box.max = center + size / Fp(2);
+        return box;
+    }
+
+    fp FpAxisBoxGetWidth( FpAxisBox b ) {
+        return b.max.x - b.min.x;
+    }
+
+    fp FpAxisBoxGetHeight( FpAxisBox b ) {
+        return b.max.y - b.min.y;
+    }
+
+    fp2 FpAxisBoxGetCenter( FpAxisBox b ) {
+        return ( b.min + b.max ) / Fp(2);
+    }
+
+    fp2 FpAxisBoxGetSize( FpAxisBox b ) {
+        return b.max - b.min;
+    }
+
+    void FpAxisBoxTranslate( FpAxisBox * b, fp2 translation ) {
+        b->min = b->min + translation;
+        b->max = b->max + translation;
+    }
+    
+    bool FpAxisBoxIntersects( FpAxisBox a, FpAxisBox b ) {
+        return ( a.max.x >= b.min.x && a.min.x <= b.max.x ) &&
+            ( a.max.y >= b.min.y && a.min.y <= b.max.y );
+    }
+    
+    bool FpAxisBoxIntersects( FpAxisBox b, FpCircle c ) {
+        fp2 closestPoint = FpClosestPointBox( b, c.pos );
+        fp distSqrd = FpDistance2( c.pos, closestPoint );
+        return distSqrd < c.rad * c.rad;
+    }
+
+    fp2 FpClosestPointBox( FpAxisBox b, fp2 p ) {
+        fp2 result = p;
+        result.x = FpClamp( result.x, b.min.x, b.max.x );
+        result.y = FpClamp( result.y, b.min.y, b.max.y );
+        return result;
+    }
+
+    bool FpAxisBoxCollision( FpAxisBox a, FpAxisBox b, FpManifold & manifold ) {
+        if( FpAxisBoxIntersects( a, b ) ) {
+            fp xOverlap = FpMin( a.max.x, b.max.x ) - FpMax( a.min.x, b.min.x );
+            fp yOverlap = FpMin( a.max.y, b.max.y ) - FpMax( a.min.y, b.min.y );
+
+            if( xOverlap < yOverlap ) {
+                if( a.max.x > b.max.x ) {
+                    manifold.normal = Fp2( -1.0f, 0.0f );
+                }
+                else {
+                    manifold.normal = Fp2( 1.0f, 0.0f );
+                }
+
+                manifold.penetration = xOverlap;
+            }
+            else {
+                if( a.max.y > b.max.y ) {
+                    manifold.normal = Fp2( 0.0f, -1.0f );
+                }
+                else {
+                    manifold.normal = Fp2( 0.0f, 1.0f );
+                }
+
+                manifold.penetration = yOverlap;
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    bool FpAxisBoxContains( FpAxisBox a , fp2 p ) {
+        return ( p.x >= a.min.x && p.x <= a.max.x ) &&
+            ( p.y >= a.min.y && p.y <= a.max.y );
+    }
+
+    bool FpColliderIntersects( FpCollider a, FpCircle b ) {
+        switch ( a.type ) {
+            case COLLIDER_TYPE_CIRCLE: return FpCircleIntersects( a.circle, b );
+            case COLLIDER_TYPE_AXIS_BOX: return FpAxisBoxIntersects( a.box, b );
+        }
+        INVALID_CODE_PATH;
+        return false;
+    }
+
+    bool FpColliderIntersects( FpCollider a, FpAxisBox b ) {
+        switch ( a.type ) {
+            case COLLIDER_TYPE_CIRCLE: return FpAxisBoxIntersects( b, a.circle );
+            case COLLIDER_TYPE_AXIS_BOX: return FpAxisBoxIntersects( a.box, b );
+        }
+        INVALID_CODE_PATH;
+        return false;
+    }
+
+    bool FpColliderIntersects( FpCollider a, FpCollider b ) {
+        if ( a.type == COLLIDER_TYPE_CIRCLE ) {
+            if ( b.type == COLLIDER_TYPE_CIRCLE ) {
+                return FpCircleIntersects( a.circle, b.circle );
+            }
+            else if ( b.type == COLLIDER_TYPE_AXIS_BOX ) {
+                return FpAxisBoxIntersects( b.box, a.circle );
+            }
+        }
+        else if ( a.type == COLLIDER_TYPE_AXIS_BOX ) {
+            if ( b.type == COLLIDER_TYPE_CIRCLE ) {
+                return FpAxisBoxIntersects( a.box, b.circle );
+            }
+            else if ( b.type == COLLIDER_TYPE_AXIS_BOX ) {
+                return FpAxisBoxIntersects( a.box, b.box );
+            }
+        }
+        INVALID_CODE_PATH;
+        return false;
     }
 
     bool Circle::Intersects( const Circle & circle ) const {
