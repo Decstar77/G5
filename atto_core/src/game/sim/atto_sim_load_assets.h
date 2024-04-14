@@ -1,10 +1,18 @@
 #pragma once
 #include "../../shared/atto_defines.h"
+#include "../../shared/atto_math.h"
 
 namespace atto {
     class SpriteResource;
     class AudioResource;
     class Core;
+
+    struct MoneySet {
+        i32 credits;
+        i32 energy;
+        i32 compute;
+    };
+
     void LoadAllAssets( Core * core );
     
     inline bool GameAssetsLoaded = false;
@@ -17,18 +25,33 @@ namespace atto {
 
     inline SpriteResource * sprSmolSelection = nullptr;
 
+    inline SpriteResource * sprBuildingStationBlueOff = nullptr;
+    inline SpriteResource * sprBuildingStationBlueOn = nullptr;
+    inline SpriteResource * sprBuildingStationRedOff = nullptr;
+    inline SpriteResource * sprBuildingStationRedOn = nullptr;
+    inline FpCollider       colBuildingStation = {};
+
+    inline SpriteResource * sprBuildingTradeBlue = nullptr;
+    inline SpriteResource * sprBuildingTradeRed = nullptr;
+    inline FpCollider       colBuildingTrade = {};
+
+    inline SpriteResource * sprBuildingSolarBlue = nullptr;
+    inline SpriteResource * sprBuildingSolarRed = nullptr;
+    inline FpCollider       colBuildingSolar = {};
+
+    inline SpriteResource * sprBuildingComputeBlueOff = nullptr;
+    inline SpriteResource * sprBuildingComputeBlueOn = nullptr;
+    inline SpriteResource * sprBuildingComputeRedOff = nullptr;
+    inline SpriteResource * sprBuildingComputeRedOn = nullptr;
+    inline FpCollider       colBuildingCompute = {};
+
+    inline AudioResource *  sndCantPlaceBuilding = nullptr;
+
     /*
     ======================================================
     ========================KLAED=========================
     ======================================================
     */
-
-    inline SpriteResource * sprKlaedScoutBase = nullptr;
-    inline SpriteResource * sprKlaedScoutEngine = nullptr;
-    inline SpriteResource * sprKlaedScoutShield = nullptr;
-    inline SpriteResource * sprKlaedScoutWeapon = nullptr;
-    inline SpriteResource * sprKlaedScoutDestruction = nullptr;
-    inline i32              cfgKlaedScoutTrainTimeTurns = 0;
 
     inline SpriteResource * sprKlaedWorkerBase = nullptr;
     inline SpriteResource * sprKlaedWorkerEngine = nullptr;
@@ -41,6 +64,18 @@ namespace atto {
     inline AudioResource *  sndKlaedWorkerDestruction3 = nullptr;
     inline AudioResource *  sndKlaedWorkerDestruction4= nullptr;
     inline i32              cfgKlaedWorkerTrainTimeTurns = 0;
+    inline MoneySet         cfgKlaedWorkerCost = {};
+
+    inline SpriteResource * sprKlaedScoutBase = nullptr;
+    inline SpriteResource * sprKlaedScoutEngine = nullptr;
+    inline SpriteResource * sprKlaedScoutShield = nullptr;
+    inline SpriteResource * sprKlaedScoutWeapon = nullptr;
+    inline SpriteResource * sprKlaedScoutDestruction = nullptr;
+    inline AudioResource *  sndKlaedScoutHello = nullptr;
+    inline AudioResource *  sndKlaedScoutBuilt = nullptr;
+    inline AudioResource *  sndKlaedScoutMove = nullptr;
+    inline i32              cfgKlaedScoutTrainTimeTurns = 0;
+    inline MoneySet         cfgKlaedScoutCost = {};
 
     inline SpriteResource * sprKlaedFighterBase = nullptr;
     inline SpriteResource * sprKlaedFighterEngine = nullptr;
@@ -48,6 +83,7 @@ namespace atto {
     inline SpriteResource * sprKlaedFighterWeapon = nullptr;
     inline SpriteResource * sprKlaedFighterDestruction = nullptr;
     inline i32              cfgKlaedFighterTrainTimeTurns = 0;
+    inline MoneySet         cfgKlaedFighterCost = {};
 
     inline SpriteResource * sprKlaedBomberBase = nullptr;
     inline SpriteResource * sprKlaedBomberEngine = nullptr;
@@ -85,6 +121,12 @@ namespace atto {
     inline SpriteResource * sprKlaedProjectileTorpedo = nullptr;
 
     inline SpriteResource * sprKlaedProjectileBulletHit = nullptr;
+    inline AudioResource *  sndKlaedProjectileBulletDestruction1 = nullptr;
+    inline AudioResource *  sndKlaedProjectileBulletDestruction2 = nullptr;
+
+    inline AudioResource * sndKlaedBuildBuilding = nullptr;
+    inline AudioResource * sndKlaedBuidlingQueue = nullptr;
+    inline AudioResource * sndKlaedNotEnoughResources = nullptr;
 
     /*
     ======================================================
@@ -92,15 +134,15 @@ namespace atto {
     ======================================================
     */
 
+    inline SpriteResource * sprNairanWorkerBase = nullptr;
+    inline SpriteResource * sprNairanWorkerEngine = nullptr;
+    inline SpriteResource * sprNairanWorkerDestruction = nullptr;
+
     inline SpriteResource * sprNairanScoutBase = nullptr;
     inline SpriteResource * sprNairanScoutEngine = nullptr;
     inline SpriteResource * sprNairanScoutShield = nullptr;
     inline SpriteResource * sprNairanScoutWeapon = nullptr;
     inline SpriteResource * sprNairanScoutDestruction = nullptr;
-
-    inline SpriteResource * sprNairanWorkerBase = nullptr;
-    inline SpriteResource * sprNairanWorkerEngine = nullptr;
-    inline SpriteResource * sprNairanWorkerDestruction = nullptr;
 
     inline SpriteResource * sprNairanFighterBase = nullptr;
     inline SpriteResource * sprNairanFighterEngine = nullptr;
@@ -117,15 +159,15 @@ namespace atto {
     ======================================================
     */
 
+    inline SpriteResource * sprNautolanWorkerBase = nullptr;
+    inline SpriteResource * sprNautolanWorkerEngine = nullptr;
+    inline SpriteResource * sprNautolanWorkerDestruction = nullptr;
+
     inline SpriteResource * sprNautolanScoutBase = nullptr;
     inline SpriteResource * sprNautolanScoutEngine = nullptr;
     inline SpriteResource * sprNautolanScoutShield = nullptr;
     inline SpriteResource * sprNautolanScoutWeapon = nullptr;
     inline SpriteResource * sprNautolanScoutDestruction = nullptr;
-
-    inline SpriteResource * sprNautolanWorkerBase = nullptr;
-    inline SpriteResource * sprNautolanWorkerEngine = nullptr;
-    inline SpriteResource * sprNautolanWorkerDestruction = nullptr;
 
     inline SpriteResource * sprNautolanFighterBase = nullptr;
     inline SpriteResource * sprNautolanFighterEngine = nullptr;

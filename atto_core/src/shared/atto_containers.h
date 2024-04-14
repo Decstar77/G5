@@ -1274,6 +1274,9 @@ namespace atto {
         const T *       Peek() const;
         bool            Contains( const T & value );
         inline i32      GetCount() { return count; }
+        T *             Get( i32 index );
+        const T *       Get( i32 index ) const;
+        T *             RemoveIndex( i32 index );
 
     private:
         T data[ capcity ];
@@ -1361,6 +1364,31 @@ namespace atto {
         }
 
         return false;
+    }
+
+    template<typename T, i32 capcity>
+    T * FixedQueue<T, capcity>::Get( i32 index ) {
+        Assert( index < count );
+        return &data[ ( head + index ) % capcity ];
+    }
+
+    template<typename T, i32 capcity>
+    const T * FixedQueue<T, capcity>::Get( i32 index ) const {
+        Assert( index < count );
+        return &data[ ( head + index ) % capcity ];
+    }
+
+    template<typename T, i32 capcity>
+    T * FixedQueue<T, capcity>::RemoveIndex( i32 index ) {
+        Assert( index < count );
+        T * result = &data[ ( head + index ) % capcity ];
+        for( i32 i = index; i < count - 1; i++ ) {
+            data[ ( head + i ) % capcity ] = data[ ( head + i + 1 ) % capcity ];
+        }
+
+        count--;
+        tail = ( tail - 1 + capcity ) % capcity;
+        return result;
     }
 
     template<typename T, i32 capcity>

@@ -69,6 +69,7 @@ namespace atto {
         virtual void                    WindowSetTitle(const char* title) override;
         virtual void                    WindowSetVSync( bool value ) override;
         virtual bool                    WindowGetVSync() override;
+        virtual bool                    WindowIsFullscreen() override;
         virtual bool                    WindowOpenNativeFileDialog( const char * basePath, const char * filter, LargeString & res ) override;
         virtual bool                    WindowOpenNativeFolderDialog( const char * basePath, LargeString & res ) override;
 

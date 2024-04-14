@@ -38,6 +38,7 @@ namespace atto {
         SIM_ENTITY_UNIT_COMMAND_CONSTRUCT_EXISTING_BUILDING,
         SIM_ENTITY_PLANET_COMMAND_PLACE_PLACEMENT,
         SIM_ENTITY_BUILDING_COMMAND_TRAIN_UNIT,
+        SIM_ENTITY_BUILDING_COMMAND_CANCEL_UNIT,
 
         // These are all the actions that can be taken by the simulation, they are not serialized across the network. It's expected that the determinism of the simulation will be the same across all clients.
         SIM_ENTITY_SPAWN,

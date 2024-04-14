@@ -12,6 +12,10 @@ namespace atto {
         return { fp( v.x ), fp( v.y ) };
     }
 
+    fp FpAbs( fp f ) {
+        return fpm::abs( f );
+    }
+
     fp FpRound( fp f ) {
         return fpm::round( f );
     }
@@ -54,6 +58,10 @@ namespace atto {
 
     fp FpLerp( fp a, fp b, fp t ) {
         return b * t + a * ( 1 - t );
+    }
+
+    fp2 FpAbs( fp2 v ) {
+        return { FpAbs( v.x ), FpAbs( v.y ) };
     }
 
     fp FpLength( fp2 v ) {
@@ -151,6 +159,10 @@ namespace atto {
         return distSqrd < radSum * radSum;
     }
 
+    fp FpColliderSurfaceDistance( FpCircle a, FpCircle b ) {
+        return FpDistance( a.pos, b.pos ) - a.rad - b.rad;
+    }
+
     bool FpCircleCollision( FpCircle a, FpCircle b, FpManifold & manifold ) {
         if ( FpCircleIntersects( a, b ) == false ) {
             return false;
@@ -208,7 +220,20 @@ namespace atto {
         b->min = b->min + translation;
         b->max = b->max + translation;
     }
+
+    fp FpColliderSurfaceDistance( FpAxisBox a, FpAxisBox b ) {
+        fp2 aCenter = FpAxisBoxGetCenter( a );
+        fp2 bCenter = FpAxisBoxGetCenter( b );
+        fp2 dist = FpAbs( aCenter - bCenter ) - ( FpAxisBoxGetSize( a ) + FpAxisBoxGetSize( b ) ) / Fp( 2 );
+        return FpMax( dist.x, dist.y );
+    }
     
+    fp FpColliderSurfaceDistance( FpAxisBox a, FpCircle c ) {
+        fp2 closestPoint = FpClosestPointBox( a, c.pos );
+        fp dist = FpDistance( c.pos, closestPoint );
+        return dist - c.rad;
+    }
+
     bool FpAxisBoxIntersects( FpAxisBox a, FpAxisBox b ) {
         return ( a.max.x >= b.min.x && a.min.x <= b.max.x ) &&
             ( a.max.y >= b.min.y && a.min.y <= b.max.y );
@@ -262,6 +287,36 @@ namespace atto {
     bool FpAxisBoxContains( FpAxisBox a , fp2 p ) {
         return ( p.x >= a.min.x && p.x <= a.max.x ) &&
             ( p.y >= a.min.y && p.y <= a.max.y );
+    }
+
+    void FpColliderSetPos( FpCollider * a, fp2 p ) {
+        switch ( a->type ) {
+            case COLLIDER_TYPE_CIRCLE: a->circle.pos = p; return;
+            case COLLIDER_TYPE_AXIS_BOX: a->box = FpAxisBoxCreateFromCenterSize( p, FpAxisBoxGetSize( a->box ) ); return;
+        }
+        INVALID_CODE_PATH;
+    }
+
+    fp FpColliderSurfaceDistance( FpCollider a, FpCollider b ) {
+        if ( a.type == COLLIDER_TYPE_CIRCLE ) {
+            if ( b.type == COLLIDER_TYPE_CIRCLE ) {
+                return FpColliderSurfaceDistance( a.circle, b.circle );
+            }
+            else if ( b.type == COLLIDER_TYPE_AXIS_BOX ) {
+                return FpColliderSurfaceDistance( b.box, a.circle );
+            }
+        }
+        else if ( a.type == COLLIDER_TYPE_AXIS_BOX ) {
+            if ( b.type == COLLIDER_TYPE_CIRCLE ) {
+                return FpColliderSurfaceDistance( a.box, b.circle );
+            }
+            else if ( b.type == COLLIDER_TYPE_AXIS_BOX ) {
+                return FpColliderSurfaceDistance( a.box, b.box );
+            }
+        }
+
+        INVALID_CODE_PATH;
+        return Fp( -1 );
     }
 
     bool FpColliderIntersects( FpCollider a, FpCircle b ) {

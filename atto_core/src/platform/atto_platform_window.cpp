@@ -89,8 +89,7 @@ namespace atto {
 
         i32 windowWidth = gameSettings.windowWidth;
         i32 windowHeight = gameSettings.windowHeight;
-        //windowFullscreen = true;
-        window = glfwCreateWindow( windowWidth, windowHeight, windowTitle.GetCStr(), windowFullscreen ? monitor : nullptr, 0 );
+        window = glfwCreateWindow( windowWidth, windowHeight, windowTitle.GetCStr(), nullptr, 0 );
 
         if( window == nullptr ) {
             core->LogOutput( LogLevel::FATAL, "Could not create window, your windows is :( " );
@@ -115,16 +114,20 @@ namespace atto {
         glfwSetScrollCallback( window, ScrollCallback );
         glfwSetFramebufferSizeCallback( window, FramebufferCallback );
 
-        if( gameSettings.windowStartPosX != -1 ) {
-            glfwSetWindowPos( window, gameSettings.windowStartPosX, gameSettings.windowStartPosY );
-        }
-        else {
-            const GLFWvidmode * mode = glfwGetVideoMode( monitor );
-            i32 monitorWidth = mode->width;
-            i32 monitorHeight = mode->height;
-            i32 windowPosX = ( monitorWidth - windowWidth ) / 2;
-            i32 windowPosY = ( monitorHeight - windowHeight ) / 2;
-            glfwSetWindowPos( window, windowPosX, windowPosY );
+        if ( gameSettings.fullscreen == false ) {
+            if ( gameSettings.windowStartPosX != -1 ) {
+                glfwSetWindowPos( window, gameSettings.windowStartPosX, gameSettings.windowStartPosY );
+            }
+            else {
+                const GLFWvidmode * mode = glfwGetVideoMode( monitor );
+                i32 monitorWidth = mode->width;
+                i32 monitorHeight = mode->height;
+                i32 windowPosX = ( monitorWidth - windowWidth ) / 2;
+                i32 windowPosY = ( monitorHeight - windowHeight ) / 2;
+                glfwSetWindowPos( window, windowPosX, windowPosY );
+            }
+        } else {
+            EnableFullscreen();
         }
     }
 

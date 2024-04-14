@@ -14,6 +14,7 @@ namespace atto {
         REFLECT_STRUCT_MEMBER( usePackedAssets )
         REFLECT_STRUCT_MEMBER( basePath )
         REFLECT_STRUCT_MEMBER( masterVolume )
+        REFLECT_STRUCT_MEMBER( serverIp )
         REFLECT_STRUCT_END()
 
         REFLECT_STRUCT_BEGIN( TextureResource )

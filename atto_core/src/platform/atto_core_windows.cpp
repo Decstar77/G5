@@ -10,6 +10,7 @@
 #include "../editor/atto_editor.h"
 #include "../game/modes/atto_game_mode_game.h"
 #include "../game/modes/atto_game_mode_main_menu.h"
+#include "../game/sim/atto_sim_load_assets.h"
 
 #include "opengl/atto_opengl.h"
 #include "vulkan/atto_vulkan.h"
@@ -29,10 +30,6 @@ namespace atto {
 
         NetworkStart();
 
-        //RenderSetCameraDims( 320, 180 );
-        //RenderSetCamera( 320 * 1.5f, 180 * 1.5f );
-        //RenderSetCamera( 1280, 720 );
-
         GLStart();
         //VkStart();
 
@@ -49,17 +46,14 @@ namespace atto {
         //game = new GameModeGame();
         currentGameMode = new GameMode_MainMenu();
         currentGameMode->Initialize( this );
-        
-        bool showDemoWindow = true;
-
-        f32 simTickRate = 1.0f / 30.0f;
-        f32 simTickCurrent = 0.0f;
 
         static AudioResource * sovietMarch = ResourceGetAndCreateAudio( "res/sounds/not_legal/redaleart3/soviet_march.mp3", true, false, 0, 0);
         //static AudioResource * sovietMarch = ResourceGetAndCreateAudio( "res/sounds/Shades_of_Defeat.mp3", true, false, 0, 0 );
         static AudioResource * hellMarch = ResourceGetAndCreateAudio( "res/sounds/not_legal/redaleart3/hell_march.mp3", true, false, 0, 0);
 
         //AudioPlay( sovietMarch, nullptr );
+
+        LoadAllAssets( this );
 
         this->deltaTime = 0;
         f64 startTime = window.GetTime();
@@ -277,6 +271,10 @@ namespace atto {
 
     bool WindowsCore::WindowGetVSync() {
         return theGameSettings.vsync;
+    }
+
+    bool WindowsCore::WindowIsFullscreen() {
+        return window.windowFullscreen;
     }
 
     void WindowsCore::OsParseStartArgs( int argc, char ** argv ) {

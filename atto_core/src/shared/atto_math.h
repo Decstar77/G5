@@ -92,6 +92,7 @@ namespace atto {
     glm::vec2   ToVec2( const fp2 & v );
     fp2         ToFP2( const glm::vec2 & v );
 
+    fp          FpAbs( fp f );
     fp          FpRound( fp f );
     fp          FpSin( fp f );
     fp          FpCos( fp f );
@@ -103,6 +104,7 @@ namespace atto {
     fp          FpMax( fp a, fp b );
     fp          FpClamp( fp f, fp min, fp max );
     fp          FpLerp( fp a, fp b, fp t );
+    fp2         FpAbs( fp2 v );
     fp          FpLength( fp2 v );
     fp          FpLength2( fp2 v );
     fp          FpDistance( fp2 v1, fp2 v2 );
@@ -121,7 +123,6 @@ namespace atto {
     fp2         operator-( const fp2 & a );
     bool        operator==( const fp2 & a, const fp2 & b );
     bool        operator!=( const fp2 & a, const fp2 & b );
-    
 
     enum ColliderType {
         COLLIDER_TYPE_NONE,
@@ -151,6 +152,7 @@ namespace atto {
 
     FpCircle        FpCircleCreate( fp2 pos, fp rad );
     bool            FpCircleIntersects( FpCircle a, FpCircle b );
+    fp              FpColliderSurfaceDistance( FpCircle a, FpCircle b );
     bool            FpCircleCollision( FpCircle a, FpCircle b, FpManifold & manifold );
     bool            FpCircleContains( FpCircle a, fp2 point );
 
@@ -161,6 +163,8 @@ namespace atto {
     fp2             FpAxisBoxGetCenter( FpAxisBox b );
     fp2             FpAxisBoxGetSize( FpAxisBox b );
     void            FpAxisBoxTranslate( FpAxisBox * b, fp2 translation );
+    fp              FpColliderSurfaceDistance( FpAxisBox a, FpAxisBox b );
+    fp              FpColliderSurfaceDistance( FpAxisBox a, FpCircle c );
     bool            FpAxisBoxIntersects( FpAxisBox a, FpAxisBox b );
     bool            FpAxisBoxIntersects( FpAxisBox b, FpCircle c );
     fp2             FpClosestPointBox( FpAxisBox b, fp2 p );
@@ -175,6 +179,8 @@ namespace atto {
         };
     };
 
+    void            FpColliderSetPos( FpCollider * a, fp2 p );
+    fp              FpColliderSurfaceDistance( FpCollider a, FpCollider b );
     bool            FpColliderIntersects( FpCollider a, FpCircle b );
     bool            FpColliderIntersects( FpCollider a, FpAxisBox b );
     bool            FpColliderIntersects( FpCollider a, FpCollider b );

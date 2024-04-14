@@ -34,7 +34,8 @@ namespace atto {
         bool            usePackedAssets;
         SmallString     basePath;
         f32             masterVolume;
-        
+        SmallString     serverIp;
+
         static GameSettings CreateSensibleDefaults();
 
         REFLECT();
@@ -50,7 +51,6 @@ namespace atto {
 
     class TextureResource : public Resource {
     public:
-        
         i32     width;
         i32     height;
         i32     channels;
@@ -79,6 +79,7 @@ namespace atto {
         i32             audioSize;
         f32             volumeMultiplier;
         i32             maxInstances;
+        f64             minTimeToPassForAnotherSubmission;
         AudioStealMode  stealMode;
 
         REFLECT();
@@ -367,25 +368,6 @@ namespace atto {
         FixedList<DrawCommand, 2000> drawList;
     };
 
-    enum PlayerConnectState {
-        PLAYER_CONNECTION_STATE_CONNECTING = 0,
-        PLAYER_CONNECTION_STATE_SYNCHRONIZING,
-        PLAYER_CONNECTION_STATE_RUNNING,
-        PLAYER_CONNECTION_STATE_DISCONNECTED,
-        PLAYER_CONNECTION_STATE_DISCONNECTING,
-    };
-
-    inline SmallString PlayerConnectStateToString( PlayerConnectState state ) {
-        switch( state ) {
-            case PLAYER_CONNECTION_STATE_CONNECTING: return SmallString::FromLiteral( "Connecting" );
-            case PLAYER_CONNECTION_STATE_SYNCHRONIZING: return SmallString::FromLiteral( "Synchronizing" );
-            case PLAYER_CONNECTION_STATE_RUNNING: return SmallString::FromLiteral( "Running" );
-            case PLAYER_CONNECTION_STATE_DISCONNECTED: return SmallString::FromLiteral( "Disconnected" );
-            case PLAYER_CONNECTION_STATE_DISCONNECTING: return SmallString::FromLiteral( "Disconnecting" );
-            default: return SmallString::FromLiteral( "Unknown" );
-        }
-    }
-
     struct UIButton {
         glm::vec2 textPos;
         glm::vec2 center;
@@ -403,8 +385,6 @@ namespace atto {
         friend class VulkanState;
     public:
         void                                LogOutput( LogLevel level, const char * message, ... );
-        //template<typename... _types_>
-        //void                                LogOutput2( LogLevel level, _types_... args );
 
         f32                                 GetDeltaTime() const;
         virtual f64                         GetTheCurrentTime() const = 0;
@@ -489,9 +469,7 @@ namespace atto {
         virtual void                        WindowSetTitle( const char * title ) = 0;
         virtual void                        WindowSetVSync( bool value ) = 0;
         virtual bool                        WindowGetVSync() = 0;
-        //virtual void                        WindowSetFullscreen(bool fullscreen) = 0;
-        //virtual void                        WindowSetCursorVisible(bool visible) = 0;
-        //virtual void                        WindowSetCursorLocked(bool locked) = 0;
+        virtual bool                        WindowIsFullscreen() = 0;
         virtual bool                        WindowOpenNativeFileDialog( const char * basePath, const char * filter, LargeString & res ) = 0;
         virtual bool                        WindowOpenNativeFolderDialog( const char * basePath, LargeString & res ) = 0;
 
@@ -504,7 +482,6 @@ namespace atto {
         void                                NetworkSend( const NetworkMessage & msg );
         bool                                NetworkRecieve( NetworkMessage & msg );
         u32                                 NetworkGetPing();
-        
 
         virtual void                        Run( int argc, char ** argv ) = 0;
 
@@ -537,24 +514,24 @@ namespace atto {
 
         glm::vec2                           listenerPos;
 
-        u8 * thePermanentMemory = nullptr;
-        u64 thePermanentMemorySize = 0;
-        u64 thePermanentMemoryCurrent = 0;
-        std::mutex thePermanentMemoryMutex;
+        u8 *                                thePermanentMemory = nullptr;
+        u64                                 thePermanentMemorySize = 0;
+        u64                                 thePermanentMemoryCurrent = 0;
+        std::mutex                          thePermanentMemoryMutex;
 
-        u8 * theTransientMemory = nullptr;
-        u64 theTransientMemorySize = 0;
-        u64 theTransientMemoryCurrent = 0;
-        std::mutex theTransientMemoryMutex;
+        u8 *                                theTransientMemory = nullptr;
+        u64                                 theTransientMemorySize = 0;
+        u64                                 theTransientMemoryCurrent = 0;
+        std::mutex                          theTransientMemoryMutex;
 
-        void    MemoryMakePermanent( u64 bytes );
-        void    MemoryClearPermanent();
-        void    MemoryMakeTransient( u64 bytes );
-        void    MemoryClearTransient();
+        void                                MemoryMakePermanent( u64 bytes );
+        void                                MemoryClearPermanent();
+        void                                MemoryMakeTransient( u64 bytes );
+        void                                MemoryClearTransient();
 
-        virtual u64  OsGetFileLastWriteTime( const char * fileName ) = 0;
-        virtual void OsLogMessage( const char * message, u8 colour ) = 0;
-        virtual void OsErrorBox( const char * msg ) = 0;
+        virtual u64                         OsGetFileLastWriteTime( const char * fileName ) = 0;
+        virtual void                        OsLogMessage( const char * message, u8 colour ) = 0;
+        virtual void                        OsErrorBox( const char * msg ) = 0;
     };
 
     template<typename _type_>

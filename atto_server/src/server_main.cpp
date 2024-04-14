@@ -19,12 +19,12 @@ using namespace atto;
 
 static std::unordered_map<u64, ENetPeer *> peers;
 
-static u64 peerIdCounter = 0;
-static u64 sessionIdCounter = 0;
+static u64 peerIdCounter = 2;
+static u64 sessionIdCounter = 1;
 
 struct PeerData {
-    u64 peerId;
-    u64 sessionId;
+    u64 peerId = 0;
+    u64 sessionId = 0;
 };
 
 struct Session {
@@ -54,7 +54,6 @@ static void StartGameForPeers( const Session & session ) {
 static std::unordered_map<u64, Session>    sessions;
 
 int main( int argc, char * argv[] ) {
-
     Logger logger;
 
     if( enet_initialize() != 0 ) {
@@ -95,15 +94,17 @@ int main( int argc, char * argv[] ) {
 
                 peerIdCounter++;
 
-                if( peerIdCounter == 2 ) {
+                logger.Info( "Peer counter %d", ( u32 )peerIdCounter );
+
+                if( peerIdCounter % 2 == 0 ) {
                     logger.Info( "Started game!!" );
 
                     Session session = {};
-                    session.peer1 = 0;
-                    session.peer2 = 1;
+                    session.peer1 = peerIdCounter - 2;
+                    session.peer2 = peerIdCounter - 1;
 
-                    ( (PeerData *)( peers[ 0 ]->data ) )->sessionId = sessionIdCounter;
-                    ( (PeerData *)( peers[ 1 ]->data ) )->sessionId = sessionIdCounter;
+                    ( (PeerData *)( peers[ peerIdCounter - 2 ]->data ) )->sessionId = sessionIdCounter;
+                    ( (PeerData *)( peers[ peerIdCounter - 1 ]->data ) )->sessionId = sessionIdCounter;
 
                     StartGameForPeers( session );
 
@@ -114,24 +115,14 @@ int main( int argc, char * argv[] ) {
             } break;
             case ENET_EVENT_TYPE_RECEIVE:
             {
-                //logger.Info( "ENET_EVENT_TYPE_RECEIVE.\n", event.peer->address.host, event.peer->address.port );
-                
                 u64 sid =( (PeerData *)( event.peer->data ) )->sessionId;
                 Session & session = sessions[ sid ];
-
                 if( session.peer1 == ( (PeerData *)( event.peer->data ) )->peerId ) {
                     enet_peer_send( peers[ session.peer2 ], 0, event.packet );
                 }
                 else {
                     enet_peer_send( peers[ session.peer1 ], 0, event.packet );
                 }
-
-                
-                //Session * session = ( (PeerData *)( event.peer->data ) )->session;
-                //if( session != nullptr ) {
-                //    session->Recieve( event.peer, event.packet );
-                //}
-
                 //enet_packet_destroy( event.packet );
             } break;
             case ENET_EVENT_TYPE_DISCONNECT:
@@ -141,7 +132,6 @@ int main( int argc, char * argv[] ) {
             case ENET_EVENT_TYPE_DISCONNECT_TIMEOUT:
             {
                 logger.Info( "Disconnected due to timeout.\n" );
-                //event.peer->data = NULL;
             } break;
             case ENET_EVENT_TYPE_NONE:
             {
@@ -149,10 +139,5 @@ int main( int argc, char * argv[] ) {
         }
     }
 
-
     return 0;
-
-    //atto::Server* s = new atto::Server(27164, 32);
-    //s->Run();
-    //return 0;
 }

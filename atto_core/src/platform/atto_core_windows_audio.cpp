@@ -72,6 +72,7 @@ namespace atto {
         audioResource.volumeMultiplier = 1.0f;
         audioResource.maxInstances = 1;
         audioResource.stealMode = AudioStealMode::NONE;
+        audioResource.minTimeToPassForAnotherSubmission = 0.0f;
 
         if( theGameSettings.noAudio == false ) {
             if( audioResource.is2D == true ) {
@@ -137,21 +138,35 @@ namespace atto {
 
         if( pos == nullptr ) {
             if( win32Audio->sound2D != nullptr ) {
-                if ( audio->maxInstances > 0 ) {
-                    i32 count = 0;
-                    AudioSpeaker * oldest = nullptr;
-                    const i32 activeCount = fmodActives.GetCount();
-                    for ( i32 speakerIndex = 0; speakerIndex < activeCount; speakerIndex++ ) {
-                        AudioSpeaker * speaker = fmodActives[speakerIndex];
-                        if ( speaker->source == audio ) {
-                            if ( oldest == nullptr || oldest->spawnTime > speaker->spawnTime ) {
-                                oldest = speaker;
-                            }
-                            count++;
-                        }
-                    }
+                const f64 currentTime = GetTheCurrentTime();
 
-                    if ( count >= audio->maxInstances ) {
+                i32 playingCount = 0;
+                AudioSpeaker * oldest = nullptr;
+                AudioSpeaker * newest = nullptr;
+                const i32 activeCount = fmodActives.GetCount();
+                for ( i32 speakerIndex = 0; speakerIndex < activeCount; speakerIndex++ ) {
+                    AudioSpeaker * speaker = fmodActives[speakerIndex];
+                    if ( speaker->source == audio ) {
+                        if ( oldest == nullptr || speaker->spawnTime < oldest->spawnTime ) {
+                            oldest = speaker;
+                        }
+                        if ( newest == nullptr || speaker->spawnTime > newest->spawnTime ) {
+                            newest = speaker;
+                        }
+                        playingCount++;
+                    }
+                }
+
+                if ( newest != nullptr ) {
+                    if ( currentTime - newest->spawnTime < audio->minTimeToPassForAnotherSubmission ) {
+                        return;
+                    }
+                }
+
+                if ( audio->maxInstances > 0 ) {
+                    if ( playingCount >= audio->maxInstances ) {
+                        Assert( oldest != nullptr );
+
                         if ( audio->stealMode == AudioStealMode::NONE ) {
                             return;
                         } else if ( audio->stealMode == AudioStealMode::OLDEST ) {
@@ -165,7 +180,9 @@ namespace atto {
                 ERRCHECK( result );
 
                 //channel->setVolume( 0.15f );
-                channel->setVolume( audio->volumeMultiplier * 0.3f );
+                f32 m = 1.0f;
+                //f32 m = 0.3f;
+                channel->setVolume( audio->volumeMultiplier * m );
                 channel->setCallback( ChannelCallback );
 
                 if ( audio->name.Contains( "vespene" ) ) { // @HACK:
@@ -181,8 +198,11 @@ namespace atto {
                     speaker->source = audio;
                     speaker->fmodChannel = channel;
                     speaker->core = this;
-                    speaker->spawnTime = GetTheCurrentTime();
+                    speaker->spawnTime = currentTime;
                 }
+
+                fmodActives.Add( speaker );
+
                 channel->setUserData( speaker );
                 channel->setPaused( false );
             }

@@ -26,7 +26,7 @@ namespace atto {
                 UNIT_KLAED_TORPEDO,
                 UNIT_KLAED_FRIGATE,
                 UNIT_KLAED_BATTLE_CRUISER,
-                UNIT_KLAED_BATTLE_DREADNOUGHT,
+                UNIT_KLAED_DREADNOUGHT,
 
                 UNIT_NAIRAN_WORKER,
                 UNIT_NAIRAN_SCOUT,
@@ -47,6 +47,7 @@ namespace atto {
 
                 BUILDING_BEGIN,
                 BUILDING_STATION,
+                BUILDING_TRADE,
                 BUILDING_SOLAR_ARRAY,
                 BUILDING_COMPUTE,
                 BUILDING_END,
@@ -61,6 +62,12 @@ namespace atto {
     inline bool IsBuildingType( EntityType type ) {
         return type > EntityType::BUILDING_BEGIN && type < EntityType::BUILDING_END;
     }
+
+    i32                 GetUnitTrainTimeForEntityType( EntityType type );
+    MoneySet            GetUnitCostForEntityType( EntityType type );
+    char                GetUnitSymbolForEntityType( EntityType type );
+    SpriteResource *    GetSpriteForBuildingType( EntityType type );
+    FpCollider          GetBaseColliderForBuildingType( EntityType type );
 
     enum class EntitySelectionChange : u8 {
         SET,
@@ -161,6 +168,8 @@ namespace atto {
         i32 amountToGiveEnergy;
         i32 timeToGiveComputeTurns;
         i32 amountToGiveCompute;
+        i32 timeToGiveCreditsTurns;
+        i32 amountToGiveCredits;
     };
 
     struct SolarSystemConnectionPair {
@@ -229,6 +238,8 @@ namespace atto {
         // ============ Visual stuffies ============ 
         glm::vec2                               visPos;
         f32                                     visOri;
+        bool                                    visHasDest;
+        glm::vec2                               visDestPos;
         FixedList<PlayerNumber, MAX_PLAYERS>    visSelectedBy;
         Collider2D                              visSelectionCollider;
 
@@ -270,7 +281,8 @@ namespace atto {
         EntityListFilter *  SimSelectedBy( PlayerNumber playerNumber );
         EntityListFilter *  VisSelectedBy( PlayerNumber playerNumber );
         EntityListFilter *  Type( EntityType::_enumerated type );
-        EntityListFilter *  IsTypeRange( EntityType::_enumerated start, EntityType::_enumerated end );
+        EntityListFilter *  Types( EntityType * types, i32 count );
+        EntityListFilter *  TypeRange( EntityType::_enumerated start, EntityType::_enumerated end );
         EntityListFilter *  End();
 
         bool                ContainsOnlyType( EntityType::_enumerated type );
@@ -279,12 +291,6 @@ namespace atto {
     private:
         EntList *                       activeEntities;
         FixedList<bool, MAX_ENTITIES>   marks;
-    };
-
-    struct MoneySet {
-        i32 credits;
-        i32 energy;
-        i32 compute;
     };
 
     class SimMapReplay {
@@ -303,19 +309,12 @@ namespace atto {
         BinaryBlob actionData;
     };
 
-    enum class ViewMode {
-        SOLAR,
-        GALAXY
-    };
-
     struct Particle {
         glm::vec2 pos;
         f32 ori;
         bool alive;
         SpriteAnimator spriteAnimator;
     };
-
-    i32 GetTrainTimeForEntityType( EntityType type );
 
     class SimMap {
     public:
@@ -350,7 +349,6 @@ namespace atto {
         SimMapReplay                                mapReplay = {};
 
         // ============ Visual Stuffies ============
-        ViewMode                                    viewMode = ViewMode::SOLAR;
         bool                                        viewIsDragging = false;
         glm::vec2                                   viewStartDrag = glm::vec2( 0.0f );
         glm::vec2                                   viewEndDrag = glm::vec2( 0.0f );
@@ -394,6 +392,7 @@ namespace atto {
         void                    SimAction_ContructExistingBuilding( PlayerNumber * playerNumberPtr, EntityHandle * target );
         void                    SimAction_PlanetPlacePlacement( PlayerNumber * playerNumberPtr, i32 * placementIndexPtr, PlanetPlacementType * placementTypePtr );
         void                    SimAction_BuildingTrainUnit( PlayerNumber * playerNumberPtr , i32 * typePtr );
+        void                    SimAction_BuildingCancelUnit( PlayerNumber * playerNumberPtr , i32 * indexPtr );
         void                    SimAction_ApplyDamage( i32 * damage, EntityHandle * target );
         void                    SimAction_ApplyContruction( EntityHandle * target );
         void                    SimAction_GiveCredits( PlayerNumber * playerNumberPtr, i32 * amountPtr );
