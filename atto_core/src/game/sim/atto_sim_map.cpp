@@ -1857,26 +1857,26 @@ namespace atto {
         }
     }
 
-    void SimMap::SimAction_SpawnEntity( i32 * typePtr, PlayerNumber * playerNumberPtr, TeamNumber * teamNumberPtr, SolarNumber * solarNumberPtr, fp2 * posPtr, fp * oriPtr, fp2 * velPtr ) {
-        EntityType type = EntityType::Make( (EntityType::_enumerated)( * typePtr) );
-        PlayerNumber playerNumber = *playerNumberPtr;
-        TeamNumber teamNumber = *teamNumberPtr;
-        SolarNumber solarNumber = *solarNumberPtr;
-        fp ori = *oriPtr;
-        fp2 pos = *posPtr;
-        fp2 vel = *velPtr;
+    void SimMap::SimAction_SpawnEntity( i32 typePtr, PlayerNumber playerNumberPtr, TeamNumber teamNumberPtr, SolarNumber solarNumberPtr, fp2 posPtr, fp oriPtr, fp2 velPtr ) {
+        EntityType type = EntityType::Make( (EntityType::_enumerated)( typePtr) );
+        PlayerNumber playerNumber = playerNumberPtr;
+        TeamNumber teamNumber = teamNumberPtr;
+        SolarNumber solarNumber = solarNumberPtr;
+        fp ori = oriPtr;
+        fp2 pos = posPtr;
+        fp2 vel = velPtr;
         SpawnEntity( type, playerNumber, teamNumber, solarNumber, pos, ori, vel );
     }
 
-    void SimMap::SimAction_DestroyEntity( EntityHandle * handlePtr ) {
-        EntityHandle handle = *handlePtr;
+    void SimMap::SimAction_DestroyEntity( EntityHandle handlePtr ) {
+        EntityHandle handle = handlePtr;
         SimEntity * ent = entityPool.Get( handle );
         DestroyEntity( ent );
     }
 
-    void SimMap::SimAction_PlayerSelect( PlayerNumber * playerNumberPtr, EntHandleList * selection, EntitySelectionChange * changePtr ) {
-        PlayerNumber playerNumber = *playerNumberPtr;
-        EntitySelectionChange change = *changePtr;
+    void SimMap::SimAction_PlayerSelect( PlayerNumber playerNumberPtr, EntHandleList selection, EntitySelectionChange changePtr ) {
+        PlayerNumber playerNumber = playerNumberPtr;
+        EntitySelectionChange change = changePtr;
 
         // @SPEED:
         simAction_ActiveEntities.Clear( false );
@@ -1890,10 +1890,10 @@ namespace atto {
             }
         }
 
-        const i32 selectionCount = selection->GetCount();
+        const i32 selectionCount = selection.GetCount();
         if( change == EntitySelectionChange::SET || change == EntitySelectionChange::ADD ) {
             for( i32 entityHandleIndex = 0; entityHandleIndex < selectionCount; entityHandleIndex++ ) {
-                EntityHandle handle = *selection->Get( entityHandleIndex );
+                EntityHandle handle = *selection.Get( entityHandleIndex );
                 SimEntity * ent = entityPool.Get( handle );
                 if( ent != nullptr ) {
                     ent->selectedBy.Add( playerNumber );
@@ -1903,7 +1903,7 @@ namespace atto {
 
         if( change == EntitySelectionChange::REMOVE ) {
             for( i32 entityHandleIndex = 0; entityHandleIndex < selectionCount; entityHandleIndex++ ) {
-                EntityHandle handle = *selection->Get( entityHandleIndex );
+                EntityHandle handle = *selection.Get( entityHandleIndex );
                 SimEntity * ent = entityPool.Get( handle );
                 if( ent != nullptr ) {
                     ent->selectedBy.RemoveValue( playerNumber );
@@ -1914,9 +1914,9 @@ namespace atto {
         //VisAction_PlayerSelect( playerNumberPtr, selection, change );
     }
 
-    void SimMap::SimAction_Move( PlayerNumber * playerNumberPtr, fp2 * posPtr ) {
-        PlayerNumber playerNumber = *playerNumberPtr;
-        fp2 pos = *posPtr;
+    void SimMap::SimAction_Move( PlayerNumber playerNumberPtr, fp2 posPtr ) {
+        PlayerNumber playerNumber = playerNumberPtr;
+        fp2 pos = posPtr;
 
         // @SPEED:
         simAction_ActiveEntities.Clear( false );
@@ -1933,9 +1933,9 @@ namespace atto {
         }
     }
 
-    void SimMap::SimAction_Attack( PlayerNumber * playerNumberPtr, EntityHandle * targetPtr ) {
-        PlayerNumber playerNumber = *playerNumberPtr;
-        EntityHandle target = *targetPtr;
+    void SimMap::SimAction_Attack( PlayerNumber playerNumberPtr, EntityHandle targetPtr ) {
+        PlayerNumber playerNumber = playerNumberPtr;
+        EntityHandle target = targetPtr;
 
         // @SPEED:
         simAction_ActiveEntities.Clear( false );
@@ -1956,10 +1956,10 @@ namespace atto {
         }
     }
 
-    void SimMap::SimAction_ContructBuilding( PlayerNumber * playerNumberPtr, i32 * typePtr, fp2 * posPtr ) {
-        PlayerNumber playerNumber = *playerNumberPtr;
-        EntityType type = EntityType::Make( (EntityType::_enumerated)( * typePtr) );
-        fp2 pos = *posPtr;
+    void SimMap::SimAction_ContructBuilding( PlayerNumber playerNumberPtr, i32 typePtr, fp2 posPtr ) {
+        PlayerNumber playerNumber = playerNumberPtr;
+        EntityType type = EntityType::Make( (EntityType::_enumerated)( typePtr) );
+        fp2 pos = posPtr;
 
         // @HACK: Monies
         MoneySet buildingCost = GetBuildingCostForEntityType( type );
@@ -1982,9 +1982,9 @@ namespace atto {
         }
     }
 
-    void SimMap::SimAction_ContructExistingBuilding( PlayerNumber * playerNumberPtr, EntityHandle * targetPtr ) {
-        PlayerNumber playerNumber = *playerNumberPtr;
-        const EntityHandle target = *targetPtr;
+    void SimMap::SimAction_ContructExistingBuilding( PlayerNumber playerNumberPtr, EntityHandle targetPtr ) {
+        PlayerNumber playerNumber = playerNumberPtr;
+        const EntityHandle target = targetPtr;
         
         SimEntity * targetEnt = entityPool.Get( target );
 
@@ -2009,10 +2009,10 @@ namespace atto {
         }
     }
 
-    void SimMap::SimAction_PlanetPlacePlacement( PlayerNumber * playerNumberPtr, i32 * placementIndexPtr, PlanetPlacementType * placementTypePtr ) {
-        const PlayerNumber playerNumber = *playerNumberPtr;
-        const i32 placementIndex = *placementIndexPtr;
-        const PlanetPlacementType placementType = *placementTypePtr;
+    void SimMap::SimAction_PlanetPlacePlacement( PlayerNumber playerNumberPtr, i32 placementIndexPtr, PlanetPlacementType placementTypePtr ) {
+        const PlayerNumber playerNumber = playerNumberPtr;
+        const i32 placementIndex = placementIndexPtr;
+        const PlanetPlacementType placementType = placementTypePtr;
 
         // @HACK: Monies
         if ( placementType == PlanetPlacementType::CREDIT_GENERATOR ) {
@@ -2046,9 +2046,9 @@ namespace atto {
         }
     }
 
-    void SimMap::SimAction_BuildingTrainUnit( PlayerNumber * playerNumberPtr , i32 * typePtr ) {
-        PlayerNumber playerNumber = *playerNumberPtr;
-        EntityType type = EntityType::Make( (EntityType::_enumerated)( * typePtr) );
+    void SimMap::SimAction_BuildingTrainUnit( PlayerNumber playerNumberPtr, i32 typePtr ) {
+        PlayerNumber playerNumber = playerNumberPtr;
+        EntityType type = EntityType::Make( (EntityType::_enumerated)( typePtr ) );
 
         Assert( IsUnitType( type ) == true );
 
@@ -2081,9 +2081,9 @@ namespace atto {
         }
     }
 
-    void SimMap::SimAction_BuildingCancelUnit( PlayerNumber * playerNumberPtr , i32 * indexPtr ) {
-        PlayerNumber playerNumber = *playerNumberPtr;
-        i32 index = *indexPtr;
+    void SimMap::SimAction_BuildingCancelUnit( PlayerNumber playerNumberPtr, i32 indexPtr ) {
+        PlayerNumber playerNumber = playerNumberPtr;
+        i32 index = indexPtr;
 
         // @SPEED:
         simAction_ActiveEntities.Clear( false );
@@ -2106,9 +2106,9 @@ namespace atto {
         }
     }
 
-    void SimMap::SimAction_ApplyDamage( i32 * damagePtr, EntityHandle * targetPtr ) {
-        const i32 damage = *damagePtr;
-        const EntityHandle target = *targetPtr;
+    void SimMap::SimAction_ApplyDamage( i32 damagePtr, EntityHandle targetPtr ) {
+        const i32 damage = damagePtr;
+        const EntityHandle target = targetPtr;
         SimEntity * targetEnt = entityPool.Get( target );
         if( targetEnt != nullptr ) {
             targetEnt->currentHealth -= damage;
@@ -2119,8 +2119,8 @@ namespace atto {
         //core->LogOutput( LogLevel::INFO, "SimAction_ApplyDamage: Applying damage %d to %d, %d", damage, target.idx, target.gen );
     }
 
-    void SimMap::SimAction_ApplyContruction( EntityHandle * targetPtr ) {
-        const EntityHandle target = *targetPtr;
+    void SimMap::SimAction_ApplyContruction( EntityHandle targetPtr ) {
+        const EntityHandle target = targetPtr;
         SimEntity * targetEnt = entityPool.Get( target );
         if ( targetEnt != nullptr ) {
             Assert( IsBuildingType( targetEnt->type ) == true );
@@ -2144,28 +2144,28 @@ namespace atto {
         }
     }
 
-    void SimMap::SimAction_GiveCredits( PlayerNumber * playerNumberPtr, i32 * amountPtr ) {
-        const PlayerNumber playerNumber = *playerNumberPtr;
-        const i32 amount = *amountPtr;
+    void SimMap::SimAction_GiveCredits( PlayerNumber playerNumberPtr, i32 amountPtr ) {
+        const PlayerNumber playerNumber = playerNumberPtr;
+        const i32 amount = amountPtr;
         Assert( playerNumber.value != 0 );
         playerMonies[ playerNumber.value - 1 ].credits += amount;
     }
 
-    void SimMap::SimAction_GiveEnergy( PlayerNumber * playerNumberPtr, i32 * amountPtr ) {
-        const PlayerNumber playerNumber = *playerNumberPtr;
-        const i32 amount = *amountPtr;
+    void SimMap::SimAction_GiveEnergy( PlayerNumber playerNumberPtr, i32 amountPtr ) {
+        const PlayerNumber playerNumber = playerNumberPtr;
+        const i32 amount = amountPtr;
         Assert( playerNumber.value != 0 );
         playerMonies[ playerNumber.value - 1 ].energy += amount;
     }
 
-    void SimMap::SimAction_GiveCompute( PlayerNumber * playerNumberPtr, i32 * amountPtr ) {
-        const PlayerNumber playerNumber = *playerNumberPtr;
-        const i32 amount = *amountPtr;
+    void SimMap::SimAction_GiveCompute( PlayerNumber playerNumberPtr, i32 amountPtr ) {
+        const PlayerNumber playerNumber = playerNumberPtr;
+        const i32 amount = amountPtr;
         Assert( playerNumber.value != 0 );
         playerMonies[ playerNumber.value - 1 ].compute += amount;
     }
 
-    void SimMap::SimAction_Test( GrowableList<i32> *test ) {
+    void SimMap::SimAction_Test( GrowableList<i32> test ) {
         int a = 2;
     }
 

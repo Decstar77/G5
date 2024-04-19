@@ -73,14 +73,16 @@ namespace atto {
 
         template<typename _type_>
         inline _type_ Convert( size_t argIndex, const std::array< size_t, sizeof...( _args_ ) > & sizes, char * data ) {
-            static_assert( std::is_pointer_v<_type_> == true, "RpcBase :: Argument should be a pointer" );
+            static_assert( std::is_pointer_v<_type_> == false, "RpcBase :: Argument can't be a pointer" );
 
             size_t dataOffset = 0;
             for( size_t i = 0; i < argIndex; i++ ) {
                 dataOffset += sizes[ i ];
             }
             
-            return ( _type_ )( data + dataOffset );
+            _type_ result = *(_type_ *)( data + dataOffset );
+
+            return result;
         }
 
         template<size_t... S>
@@ -137,9 +139,9 @@ namespace atto {
 
         virtual _ret_ Call( char * data ) override {
             auto seq = std::index_sequence_for< _args_... >{};
-            auto sizes = std::array< size_t, sizeof...( _args_ ) > { GetSize< std::remove_pointer_t< _args_ > >()... };
-            auto fixedMarks = std::array< bool, sizeof...( _args_ ) > { MarkFixedList< std::remove_pointer_t< _args_ > >()... };
-            auto growMarks = std::array< bool, sizeof...( _args_ ) > { MarkGrowList< std::remove_pointer_t< _args_ > >()... };
+            auto sizes = std::array< size_t, sizeof...( _args_ ) > { GetSize< _args_ >()... };
+            auto fixedMarks = std::array< bool, sizeof...( _args_ ) > { MarkFixedList< _args_ >()... };
+            auto growMarks = std::array< bool, sizeof...( _args_ ) > { MarkGrowList< _args_ >()... };
 
             lastCallSize = 0;
             for( size_t i = 0; i < sizeof...( _args_ ); i++ ) {
@@ -155,17 +157,17 @@ namespace atto {
 
         template<typename _type_>
         inline LargeString ConvertString( size_t argIndex, const std::array< size_t, sizeof...( _args_ ) > & sizes, char * data ) {
-            static_assert( std::is_pointer_v<_type_> == true, "RpcBase :: Argument should be a pointer" );
+            static_assert( std::is_pointer_v<_type_> == false, "RpcBase :: Argument can't be a pointer" );
 
             size_t dataOffset = 0;
             for( size_t i = 0; i < argIndex; i++ ) {
                 dataOffset += sizes[ i ];
             }
 
-            _type_ objPtr = (_type_)( data + dataOffset );
-
-            TypeDescriptor * leType = TypeResolver< std::remove_pointer_t<_type_> >::get();
+            _type_ * objPtr = (_type_ *)( data + dataOffset );
+            TypeDescriptor * leType = TypeResolver< _type_ >::get();
             LargeString res = leType->ToString( objPtr );
+
             return res;
         }
 
@@ -186,9 +188,9 @@ namespace atto {
 
         virtual LargeString Log( char * data ) override {
             auto seq = std::index_sequence_for< _args_... >{};
-            auto sizes = std::array< size_t, sizeof...( _args_ ) > { GetSize< std::remove_pointer_t< _args_ > >()... };
-            auto fixedMarks = std::array< bool, sizeof...( _args_ ) > { MarkFixedList< std::remove_pointer_t< _args_ > >()... };
-            auto growMarks = std::array< bool, sizeof...( _args_ ) > { MarkGrowList< std::remove_pointer_t< _args_ > >()... };
+            auto sizes = std::array< size_t, sizeof...( _args_ ) > { GetSize< _args_ >()... };
+            auto fixedMarks = std::array< bool, sizeof...( _args_ ) > { MarkFixedList< _args_ >()... };
+            auto growMarks = std::array< bool, sizeof...( _args_ ) > { MarkGrowList< _args_ >()... };
 
             lastCallSize = 0;
             for( size_t i = 0; i < sizeof...( _args_ ); i++ ) {
@@ -256,7 +258,7 @@ namespace atto {
         template<typename... _types_>
         inline void AddAction( i32 funcId, _types_... args ) {
             #if ATTO_GAME_CHECK_RPC_FUNCTION_TYPES
-            bool sameParms = GlobalRpcTable[ (i32)funcId ]->AreParamtersTheSame<void, std::add_pointer_t< _types_ >...>();
+            bool sameParms = GlobalRpcTable[ (i32)funcId ]->AreParamtersTheSame<void, _types_...>();
             AssertMsg( sameParms, "AddAction :: Adding an action with no corrasponding RPC function, most likey the parameters are not the same. " );
             #endif
 
