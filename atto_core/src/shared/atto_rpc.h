@@ -246,37 +246,37 @@ namespace atto {
         }
     };
 
-    //inline FixedList< RpcHolder *, 256 > GlobalRpcTable = {};
+    inline FixedList< RpcHolder *, 256 > GlobalRpcTable = {};
 
-    //class RpcBuffer {
-    //public:
-    //    FixedBinaryBlob<200>    data;
+    class RpcBuffer {
+    public:
+        FixedBinaryBlob<200>    data;
 
-    //public:
-    //    template<typename... _types_>
-    //    inline void AddAction( i32 funcId, _types_... args ) {
-    //        #if ATTO_GAME_CHECK_RPC_FUNCTION_TYPES
-    //        bool sameParms = GlobalRpcTable[ (i32)funcId ]->AreParamtersTheSame<void, std::add_pointer_t< _types_ >...>();
-    //        AssertMsg( sameParms, "AddAction :: Adding an action with no corrasponding RPC function, most likey the parameters are not the same. " );
-    //        #endif
+    public:
+        template<typename... _types_>
+        inline void AddAction( i32 funcId, _types_... args ) {
+            #if ATTO_GAME_CHECK_RPC_FUNCTION_TYPES
+            bool sameParms = GlobalRpcTable[ (i32)funcId ]->AreParamtersTheSame<void, std::add_pointer_t< _types_ >...>();
+            AssertMsg( sameParms, "AddAction :: Adding an action with no corrasponding RPC function, most likey the parameters are not the same. " );
+            #endif
 
-    //        data.Write( &funcId );
-    //        DoSerialize( args... );
-    //    }
+            data.Write( &funcId );
+            DoSerialize( args... );
+        }
 
-    //private:
-    //    template< typename _type_ >
-    //    inline void DoSerialize( _type_ type ) {
-    //        static_assert( std::is_pointer<_type_>::value == false, "AddAction :: Cannot take pointers" );
-    //        data.Write( &type );
-    //    }
+    private:
+        template< typename _type_ >
+        inline void DoSerialize( _type_ type ) {
+            static_assert( std::is_pointer<_type_>::value == false, "AddAction :: Cannot take pointers" );
+            data.Write( &type );
+        }
 
-    //    template< typename _type_, typename... _types_ >
-    //    inline void DoSerialize( _type_ type, _types_... args ) {
-    //        static_assert( std::is_pointer<_type_>::value == false, "AddAction :: Cannot take pointers" );
-    //        data.Write( &type );
-    //        DoSerialize( args... );
-    //    }
-    //};
+        template< typename _type_, typename... _types_ >
+        inline void DoSerialize( _type_ type, _types_... args ) {
+            static_assert( std::is_pointer<_type_>::value == false, "AddAction :: Cannot take pointers" );
+            data.Write( &type );
+            DoSerialize( args... );
+        }
+    };
 
 }

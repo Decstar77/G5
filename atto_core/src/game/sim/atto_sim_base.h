@@ -1,6 +1,8 @@
 #pragma once
 
 #include "../../shared/atto_core.h"
+#include "../../shared/atto_rpc.h"
+
 #include "atto_sim_load_assets.h"
 
 namespace atto {
@@ -76,7 +78,7 @@ namespace atto {
               TYPE_PROP
               );
 
-    enum class MapActionType : u8 {
+    enum class MapActionType : i32 {
         NONE = 0,
 
         // These are all the actions that can be taken by the player and serialized across the network.
@@ -127,8 +129,6 @@ namespace atto {
 
     static_assert( (i32)ArrayCount( MapActionTypeStrings ) == (i32)MapActionType::COUNT, "You are missing an MapActionTypeString" );
 
-    inline FixedList< RpcHolder *, 256 >         rpcTable = {};
-
     enum class EntitySelectionChange : u8 {
         SET,
         ADD,
@@ -141,40 +141,11 @@ namespace atto {
         "REMOVE"
     };
 
-    class MapActionBuffer {
+    class MapActionBuffer : public RpcBuffer {
     public:
         void PlayerSelect( PlayerNumber playerNumber, const EntHandleList & entList, EntitySelectionChange change );
         void ConstructBuilding( PlayerNumber playerNumber, EntityType::_enumerated buildingType, fp2 pos );
         void TrainUnit( PlayerNumber playerNumber, EntityType::_enumerated unitType );
-
-    public:
-        FixedBinaryBlob<200>    data;
-
-        template<typename... _types_>
-        inline void AddAction( MapActionType type, _types_... args ) {
-            static_assert( is_present<EntityType, _types_...>::value == false, "AddAction :: Must pass EntityType as i32" );
-            static_assert( is_present<EntityType::_enumerated, _types_...>::value == false, "AddAction :: Must pass EntityType as i32" );
-        #if ATTO_GAME_CHECK_RPC_FUNCTION_TYPES
-            bool sameParms = rpcTable[ (i32)type ]->AreParamtersTheSame<void, std::add_pointer_t< _types_ >...>();
-            AssertMsg( sameParms, "AddAction :: Adding an action with no corrasponding RPC function, most likey the parameters are not the same. " );
-        #endif
-            data.Write( &type );
-            DoSimSerialize( args... );
-        }
-
-    private:
-        template< typename _type_ >
-        inline void DoSimSerialize( _type_ type ) {
-            static_assert( std::is_pointer<_type_>::value == false, "AddAction :: Cannot take pointers" );
-            data.Write( &type );
-        }
-
-        template< typename _type_, typename... _types_ >
-        inline void DoSimSerialize( _type_ type, _types_... args ) {
-            static_assert( std::is_pointer<_type_>::value == false, "AddAction :: Cannot take pointers" );
-            data.Write( &type );
-            DoSimSerialize( args... );
-        }
     };
 
     struct MapTurn {

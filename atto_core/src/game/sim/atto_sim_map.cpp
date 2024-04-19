@@ -326,27 +326,26 @@ namespace atto {
 
     void SimMap::Initialize( Core * core ) {
         // @TODO: This won't work if we have more than one map instance !!
-        if( rpcTable[ 1 ] == nullptr ) {
-            rpcTable[ ( i32 )MapActionType::PLAYER_SELECTION ]                          = new RpcMemberFunction( this, &SimMap::SimAction_PlayerSelect );
-            rpcTable[ ( i32 )MapActionType::SIM_ENTITY_UNIT_COMMAND_MOVE ]              = new RpcMemberFunction( this, &SimMap::SimAction_Move );
-            rpcTable[ ( i32 )MapActionType::SIM_ENTITY_UNIT_COMMAND_ATTACK ]            = new RpcMemberFunction( this, &SimMap::SimAction_Attack );
-            rpcTable[ ( i32 )MapActionType::SIM_ENTITY_UNIT_COMMAND_CONSTRUCT_BUILDING ] = new RpcMemberFunction( this, &SimMap::SimAction_ContructBuilding );
-            rpcTable[ ( i32 )MapActionType::SIM_ENTITY_UNIT_COMMAND_CONSTRUCT_EXISTING_BUILDING ] = new RpcMemberFunction( this, &SimMap::SimAction_ContructExistingBuilding );
-            rpcTable[ ( i32 )MapActionType::SIM_ENTITY_PLANET_COMMAND_PLACE_PLACEMENT]  = new RpcMemberFunction( this, &SimMap::SimAction_PlanetPlacePlacement );
-            rpcTable[ ( i32 )MapActionType::SIM_ENTITY_BUILDING_COMMAND_TRAIN_UNIT ]    = new RpcMemberFunction( this, &SimMap::SimAction_BuildingTrainUnit );
-            rpcTable[ ( i32 )MapActionType::SIM_ENTITY_BUILDING_COMMAND_CANCEL_UNIT ]    = new RpcMemberFunction( this, &SimMap::SimAction_BuildingCancelUnit );
+        if( GlobalRpcTable[ 1 ] == nullptr ) {
+            GlobalRpcTable[ ( i32 )MapActionType::PLAYER_SELECTION ]                          = new RpcMemberFunction( this, &SimMap::SimAction_PlayerSelect );
+            GlobalRpcTable[ ( i32 )MapActionType::SIM_ENTITY_UNIT_COMMAND_MOVE ]              = new RpcMemberFunction( this, &SimMap::SimAction_Move );
+            GlobalRpcTable[ ( i32 )MapActionType::SIM_ENTITY_UNIT_COMMAND_ATTACK ]            = new RpcMemberFunction( this, &SimMap::SimAction_Attack );
+            GlobalRpcTable[ ( i32 )MapActionType::SIM_ENTITY_UNIT_COMMAND_CONSTRUCT_BUILDING ] = new RpcMemberFunction( this, &SimMap::SimAction_ContructBuilding );
+            GlobalRpcTable[ ( i32 )MapActionType::SIM_ENTITY_UNIT_COMMAND_CONSTRUCT_EXISTING_BUILDING ] = new RpcMemberFunction( this, &SimMap::SimAction_ContructExistingBuilding );
+            GlobalRpcTable[ ( i32 )MapActionType::SIM_ENTITY_PLANET_COMMAND_PLACE_PLACEMENT]  = new RpcMemberFunction( this, &SimMap::SimAction_PlanetPlacePlacement );
+            GlobalRpcTable[ ( i32 )MapActionType::SIM_ENTITY_BUILDING_COMMAND_TRAIN_UNIT ]    = new RpcMemberFunction( this, &SimMap::SimAction_BuildingTrainUnit );
+            GlobalRpcTable[ ( i32 )MapActionType::SIM_ENTITY_BUILDING_COMMAND_CANCEL_UNIT ]    = new RpcMemberFunction( this, &SimMap::SimAction_BuildingCancelUnit );
 
-            rpcTable[ ( i32 )MapActionType::SIM_ENTITY_SPAWN ]                          = new RpcMemberFunction( this, &SimMap::SimAction_SpawnEntity );
-            rpcTable[ ( i32 )MapActionType::SIM_ENTITY_DESTROY ]                        = new RpcMemberFunction( this, &SimMap::SimAction_DestroyEntity );
+            GlobalRpcTable[ ( i32 )MapActionType::SIM_ENTITY_SPAWN ]                          = new RpcMemberFunction( this, &SimMap::SimAction_SpawnEntity );
+            GlobalRpcTable[ ( i32 )MapActionType::SIM_ENTITY_DESTROY ]                        = new RpcMemberFunction( this, &SimMap::SimAction_DestroyEntity );
 
-            rpcTable[ ( i32 )MapActionType::SIM_ENTITY_APPLY_DAMAGE ]                   = new RpcMemberFunction( this, &SimMap::SimAction_ApplyDamage );
-            rpcTable[ ( i32 )MapActionType::SIM_ENTITY_APPLY_CONSTRUCTION ]             = new RpcMemberFunction( this, &SimMap::SimAction_ApplyContruction );
+            GlobalRpcTable[ ( i32 )MapActionType::SIM_ENTITY_APPLY_DAMAGE ]                   = new RpcMemberFunction( this, &SimMap::SimAction_ApplyDamage );
+            GlobalRpcTable[ ( i32 )MapActionType::SIM_ENTITY_APPLY_CONSTRUCTION ]             = new RpcMemberFunction( this, &SimMap::SimAction_ApplyContruction );
 
-            rpcTable[ ( i32 )MapActionType::SIM_MAP_MONIES_GIVE_CREDITS ]               = new RpcMemberFunction( this, &SimMap::SimAction_GiveCredits );
-            rpcTable[ ( i32 )MapActionType::SIM_MAP_MONIES_GIVE_ENERGY ]                = new RpcMemberFunction( this, &SimMap::SimAction_GiveEnergy );
-            rpcTable[ ( i32 )MapActionType::SIM_MAP_MONIES_GIVE_COMPUTE ]               = new RpcMemberFunction( this, &SimMap::SimAction_GiveCompute );
-
-            rpcTable[ ( i32 )MapActionType::TEST ]                                      = new RpcMemberFunction( this, &SimMap::SimAction_Test );
+            GlobalRpcTable[ ( i32 )MapActionType::SIM_MAP_MONIES_GIVE_CREDITS ]               = new RpcMemberFunction( this, &SimMap::SimAction_GiveCredits );
+            GlobalRpcTable[ ( i32 )MapActionType::SIM_MAP_MONIES_GIVE_ENERGY ]                = new RpcMemberFunction( this, &SimMap::SimAction_GiveEnergy );
+            GlobalRpcTable[ ( i32 )MapActionType::SIM_MAP_MONIES_GIVE_COMPUTE ]               = new RpcMemberFunction( this, &SimMap::SimAction_GiveCompute );
+            GlobalRpcTable[ ( i32 )MapActionType::TEST ]                                      = new RpcMemberFunction( this, &SimMap::SimAction_Test );
         }
 
         mapReplay.Prepare();
@@ -448,9 +447,9 @@ namespace atto {
         aiThinker.map = this;
         aiThinker.core = core;
 
-        GrowableList<i32> aa = {};
-        aa.Add( 37 );
-        localActionBuffer.AddAction( MapActionType::TEST, aa );
+        //GrowableList<i32> aa = {};
+        //aa.Add( 37 );
+        //localActionBuffer.AddAction( (i32)MapActionType::TEST, aa );
 
 
         #if 0
@@ -738,7 +737,7 @@ namespace atto {
                 const glm::vec2 s = glm::vec2( 15 );
                 if ( gameUI.ButtonPix( 145, "", ui_LeftPanelCenters[0], s, Colors::GREEN ) ) {
                     if ( Vis_CanAfford( localPlayerNumber, costOfPlacementCredit ) == true ) {
-                        localActionBuffer.AddAction( MapActionType::SIM_ENTITY_PLANET_COMMAND_PLACE_PLACEMENT,
+                        localActionBuffer.AddAction( (i32)MapActionType::SIM_ENTITY_PLANET_COMMAND_PLACE_PLACEMENT,
                                                     localPlayerNumber, planetPlacementSubMenuIndex, PlanetPlacementType::CREDIT_GENERATOR );
                         planetPlacementSubMenu = false;
                         planetPlacementSubMenuIndex = -1;
@@ -746,7 +745,7 @@ namespace atto {
                 }
                 if ( gameUI.ButtonPix( 146, "", ui_LeftPanelCenters[1], s, Colors::GOLD ) ) {
                     if ( Vis_CanAfford( localPlayerNumber, costOfPlacementSolar ) == true ) {
-                        localActionBuffer.AddAction( MapActionType::SIM_ENTITY_PLANET_COMMAND_PLACE_PLACEMENT,
+                        localActionBuffer.AddAction( (i32)MapActionType::SIM_ENTITY_PLANET_COMMAND_PLACE_PLACEMENT,
                                                     localPlayerNumber, planetPlacementSubMenuIndex, PlanetPlacementType::ENERGY_GENERATOR );
                         planetPlacementSubMenu = false;
                         planetPlacementSubMenuIndex = -1;
@@ -754,7 +753,7 @@ namespace atto {
                 }
                 if ( gameUI.ButtonPix( 147, "", ui_LeftPanelCenters[2], s, Colors::SKY_BLUE ) ) {
                     if ( Vis_CanAfford( localPlayerNumber, costOfPlacementCompute ) == true ) {
-                        localActionBuffer.AddAction( MapActionType::SIM_ENTITY_PLANET_COMMAND_PLACE_PLACEMENT,
+                        localActionBuffer.AddAction( (i32)MapActionType::SIM_ENTITY_PLANET_COMMAND_PLACE_PLACEMENT,
                                                     localPlayerNumber, planetPlacementSubMenuIndex, PlanetPlacementType::COMPUTE_GENERATOR );
                         planetPlacementSubMenu = false;
                         planetPlacementSubMenuIndex = -1;
@@ -851,7 +850,7 @@ namespace atto {
                 if ( core->InputKeyJustPressed( KEY_CODE_Q ) || gameUI.ButtonPix( 242, "Q", ui_RightPanelCenters[ 0 ], s, Colors::SKY_BLUE ) ) {
                     EntityType type = EntityType::Make( EntityType::UNIT_KLAED_WORKER );
                     if ( Vis_CanAfford( localPlayerNumber, GetUnitCostForEntityType( type ) ) == true ) {
-                        localActionBuffer.AddAction( MapActionType::SIM_ENTITY_BUILDING_COMMAND_TRAIN_UNIT, localPlayerNumber, ( i32 )type );
+                        localActionBuffer.AddAction( (i32)MapActionType::SIM_ENTITY_BUILDING_COMMAND_TRAIN_UNIT, localPlayerNumber, ( i32 )type );
                         core->AudioPlay( sndKlaedBuidlingQueue );
                     }
                 }
@@ -859,7 +858,7 @@ namespace atto {
                 if ( core->InputKeyJustPressed( KEY_CODE_E ) || gameUI.ButtonPix( 243, "E", ui_RightPanelCenters[ 1 ], s, Colors::SKY_BLUE ) ) {
                     EntityType type =  EntityType::Make( EntityType::UNIT_KLAED_SCOUT );
                     if ( Vis_CanAfford( localPlayerNumber, GetUnitCostForEntityType( type ) ) == true ) {
-                        localActionBuffer.AddAction( MapActionType::SIM_ENTITY_BUILDING_COMMAND_TRAIN_UNIT, localPlayerNumber, ( i32 )type );
+                        localActionBuffer.AddAction( (i32)MapActionType::SIM_ENTITY_BUILDING_COMMAND_TRAIN_UNIT, localPlayerNumber, ( i32 )type );
                         core->AudioPlay( sndKlaedBuidlingQueue );
                     }
                 }
@@ -867,7 +866,7 @@ namespace atto {
                 if ( core->InputKeyJustPressed( KEY_CODE_F ) || gameUI.ButtonPix( 244, "F", ui_RightPanelCenters[ 2 ], s, Colors::SKY_BLUE ) ) {
                     EntityType type =  EntityType::Make( EntityType::UNIT_KLAED_FIGHTER );
                     if ( Vis_CanAfford( localPlayerNumber, GetUnitCostForEntityType( type ) ) == true ) {
-                        localActionBuffer.AddAction( MapActionType::SIM_ENTITY_BUILDING_COMMAND_TRAIN_UNIT, localPlayerNumber, ( i32 )type );
+                        localActionBuffer.AddAction( (i32)MapActionType::SIM_ENTITY_BUILDING_COMMAND_TRAIN_UNIT, localPlayerNumber, ( i32 )type );
                         core->AudioPlay( sndKlaedBuidlingQueue );
                     }
                 }
@@ -885,7 +884,7 @@ namespace atto {
                 }
 
                 if ( cancelIndex != -1 ) {
-                    localActionBuffer.AddAction( MapActionType::SIM_ENTITY_BUILDING_COMMAND_CANCEL_UNIT, localPlayerNumber, cancelIndex );
+                    localActionBuffer.AddAction( (i32)MapActionType::SIM_ENTITY_BUILDING_COMMAND_CANCEL_UNIT, localPlayerNumber, cancelIndex );
                 }
             }
         }
@@ -919,7 +918,7 @@ namespace atto {
                     if ( intersectsOtherEnt == false ) {
                         isPlacingBuilding = false;
                         core->AudioPlay( sndKlaedBuildBuilding );
-                        localActionBuffer.AddAction( MapActionType::SIM_ENTITY_UNIT_COMMAND_CONSTRUCT_BUILDING, localPlayerNumber, ( i32 )placingBuildingType, mousePosWorldFp );
+                        localActionBuffer.AddAction( (i32)MapActionType::SIM_ENTITY_UNIT_COMMAND_CONSTRUCT_BUILDING, localPlayerNumber, ( i32 )placingBuildingType, mousePosWorldFp );
                     } else {
                         core->AudioPlay( sndCantPlaceBuilding );
                     }
@@ -995,7 +994,7 @@ namespace atto {
                 }
 
                 VisAction_PlayerSelect( &localPlayerNumber, &viewDragSelection,  EntitySelectionChange::SET );
-                localActionBuffer.AddAction( MapActionType::PLAYER_SELECTION, localPlayerNumber, viewDragSelection, EntitySelectionChange::SET );
+                localActionBuffer.AddAction( (i32)MapActionType::PLAYER_SELECTION, localPlayerNumber, viewDragSelection, EntitySelectionChange::SET );
             }
         }
 
@@ -1131,7 +1130,7 @@ namespace atto {
                     if( selectionCollider.Contains( mousePosWorld ) ) {
                         if ( IsUnitType( ent->type ) ) {
                             if ( ent->teamNumber != localPlayerTeamNumber ) {
-                                localActionBuffer.AddAction( MapActionType::SIM_ENTITY_UNIT_COMMAND_ATTACK, localPlayerNumber, ent->handle );
+                                localActionBuffer.AddAction( (i32)MapActionType::SIM_ENTITY_UNIT_COMMAND_ATTACK, localPlayerNumber, ent->handle );
                             }
                             else {
                                 // @TODO: Follow
@@ -1139,12 +1138,12 @@ namespace atto {
                             }
                         } else if ( IsBuildingType( ent->type ) == true ) {
                             if ( ent->teamNumber != localPlayerTeamNumber ) {
-                                localActionBuffer.AddAction( MapActionType::SIM_ENTITY_UNIT_COMMAND_ATTACK, localPlayerNumber, ent->handle );
+                                localActionBuffer.AddAction( (i32)MapActionType::SIM_ENTITY_UNIT_COMMAND_ATTACK, localPlayerNumber, ent->handle );
                             } else if ( ent->building.isBuilding == true ) {
                                 for ( i32 entityIndexB = 0; entityIndexB < entities.GetCount(); entityIndexB++ ) {
                                     const SimEntity * otherEnt = *entities.Get( entityIndexB );
                                     if ( otherEnt->playerNumber == localPlayerNumber && IsWorkerType( otherEnt->type ) == true ) {
-                                        localActionBuffer.AddAction( MapActionType::SIM_ENTITY_UNIT_COMMAND_CONSTRUCT_EXISTING_BUILDING, localPlayerNumber, ent->handle );
+                                        localActionBuffer.AddAction( (i32)MapActionType::SIM_ENTITY_UNIT_COMMAND_CONSTRUCT_EXISTING_BUILDING, localPlayerNumber, ent->handle );
                                         break;
                                     }
                                 }
@@ -1158,7 +1157,7 @@ namespace atto {
             }
 
             if( inputMade == false ) {
-                localActionBuffer.AddAction( MapActionType::SIM_ENTITY_UNIT_COMMAND_MOVE, localPlayerNumber, mousePosWorldFp );
+                localActionBuffer.AddAction( (i32)MapActionType::SIM_ENTITY_UNIT_COMMAND_MOVE, localPlayerNumber, mousePosWorldFp );
                 for ( i32 entityIndex = 0; entityIndex < entityCount; entityIndex++ ) {
                     SimEntity * visEnt = entities[ entityIndex ];
                     if ( visEnt->visSelectedBy.Contains( localPlayerNumber ) == true && visEnt->playerNumber == localPlayerNumber ) {
@@ -2194,7 +2193,7 @@ namespace atto {
                 Unit & unit = ent->unit;
 
                 if( ent->currentHealth == 0 ) { // HACK: I think this should go into the apply damange call??? Maybe something to do with death animations ?
-                    ent->actions.AddAction( MapActionType::SIM_ENTITY_DESTROY, ent->handle );
+                    ent->actions.AddAction( (i32)MapActionType::SIM_ENTITY_DESTROY, ent->handle );
                     break;
                 }
 
@@ -2283,7 +2282,7 @@ namespace atto {
                                         fp2 spawnPos = ent->pos + FpRotate( weapon.posOffset, -spawnOri );
                                         fp2 spawnVel = - dir * Fp( 250 );
                                         Assert( unit.weaponType != EntityType::INVALID );
-                                        ent->actions.AddAction( MapActionType::SIM_ENTITY_SPAWN, ( i32 )unit.weaponType, ent->playerNumber, ent->teamNumber, ent->solarNumber, spawnPos, spawnOri, spawnVel );
+                                        ent->actions.AddAction( (i32)MapActionType::SIM_ENTITY_SPAWN, ( i32 )unit.weaponType, ent->playerNumber, ent->teamNumber, ent->solarNumber, spawnPos, spawnOri, spawnVel );
                                     }
                                 }
                             }
@@ -2306,7 +2305,7 @@ namespace atto {
                                 // Build
                                 ent->vel = Fp2( 0, 0 );
                                 ent->navigator.hasDest = false;
-                                ent->actions.AddAction( MapActionType::SIM_ENTITY_APPLY_CONSTRUCTION, target->handle );
+                                ent->actions.AddAction( (i32)MapActionType::SIM_ENTITY_APPLY_CONSTRUCTION, target->handle );
                             } else {
                                 // Move towards building
                                 ent->navigator.hasDest = true;
@@ -2420,7 +2419,7 @@ namespace atto {
                 Bullet & bullet = ent->bullet;
                 bullet.aliveTimer += SIM_DT;
                 if( bullet.aliveTimer > bullet.aliveTime ) {
-                    ent->actions.AddAction( MapActionType::SIM_ENTITY_DESTROY, ent->handle );
+                    ent->actions.AddAction( (i32)MapActionType::SIM_ENTITY_DESTROY, ent->handle );
                     break;
                 }
 
@@ -2444,8 +2443,8 @@ namespace atto {
                         bool changed = ent->spriteAnimator.SetSpriteIfDifferent( ent->spriteBank[1], false );
                         ent->vel = Fp2( 0, 0 );
                         if( changed == true ) {
-                            ent->actions.AddAction( MapActionType::SIM_ENTITY_APPLY_DAMAGE, bullet.damage, otherEnt->handle );
-                            ent->actions.AddAction( MapActionType::SIM_ENTITY_DESTROY, ent->handle );
+                            ent->actions.AddAction( (i32)MapActionType::SIM_ENTITY_APPLY_DAMAGE, bullet.damage, otherEnt->handle );
+                            ent->actions.AddAction( (i32)MapActionType::SIM_ENTITY_DESTROY, ent->handle );
                         }
                         break;
                     }
@@ -2468,7 +2467,7 @@ namespace atto {
                             const i32 turn = planet.placementsTurns[placementIndex]++;
 
                             if ( turn >= pm ) {
-                                ent->actions.AddAction( MapActionType::SIM_MAP_MONIES_GIVE_CREDITS, ent->playerNumber, amountToGive );
+                                ent->actions.AddAction( (i32)MapActionType::SIM_MAP_MONIES_GIVE_CREDITS, ent->playerNumber, amountToGive );
                                 planet.placementsTurns[placementIndex] = 0;
                             }
                         } break;
@@ -2479,7 +2478,7 @@ namespace atto {
                             const i32 turn = planet.placementsTurns[placementIndex]++;
 
                             if ( turn >= pm ) {
-                                ent->actions.AddAction( MapActionType::SIM_MAP_MONIES_GIVE_ENERGY, ent->playerNumber, amountToGive );
+                                ent->actions.AddAction( (i32)MapActionType::SIM_MAP_MONIES_GIVE_ENERGY, ent->playerNumber, amountToGive );
                                 planet.placementsTurns[placementIndex] = 0;
                             }
                         } break;
@@ -2490,7 +2489,7 @@ namespace atto {
                             const i32 turn = planet.placementsTurns[placementIndex]++;
 
                             if ( turn >= pm ) {
-                                ent->actions.AddAction( MapActionType::SIM_MAP_MONIES_GIVE_COMPUTE, ent->playerNumber, amountToGive );
+                                ent->actions.AddAction( (i32)MapActionType::SIM_MAP_MONIES_GIVE_COMPUTE, ent->playerNumber, amountToGive );
                                 planet.placementsTurns[placementIndex] = 0;
                             }
                         } break;
@@ -2503,7 +2502,7 @@ namespace atto {
             case EntityType::BUILDING_COMPUTE:
             {
                 if( ent->currentHealth == 0 ) { // HACK: I think this should go into the apply damange call??? Maybe something to do with death animations ?
-                    ent->actions.AddAction( MapActionType::SIM_ENTITY_DESTROY, ent->handle );
+                    ent->actions.AddAction( (i32)MapActionType::SIM_ENTITY_DESTROY, ent->handle );
                     break;
                 }
 
@@ -2514,12 +2513,12 @@ namespace atto {
                     if ( ent->type == EntityType::BUILDING_SOLAR_ARRAY ) {
                         if ( building.turn >= building.timeToGiveEnergyTurns ) {
                             building.turn = 0;
-                            ent->actions.AddAction( MapActionType::SIM_MAP_MONIES_GIVE_ENERGY, ent->playerNumber, ent->building.amountToGiveEnergy );
+                            ent->actions.AddAction( (i32)MapActionType::SIM_MAP_MONIES_GIVE_ENERGY, ent->playerNumber, ent->building.amountToGiveEnergy );
                         }
                     } else if ( ent->type == EntityType::BUILDING_COMPUTE ) {
                         if ( building.turn >= building.timeToGiveComputeTurns ) {
                             building.turn = 0;
-                            ent->actions.AddAction( MapActionType::SIM_MAP_MONIES_GIVE_COMPUTE, ent->playerNumber, ent->building.amountToGiveCompute );
+                            ent->actions.AddAction( (i32)MapActionType::SIM_MAP_MONIES_GIVE_COMPUTE, ent->playerNumber, ent->building.amountToGiveCompute );
                         }
                     }
                     else if ( ent->type == EntityType::BUILDING_STATION ) {
@@ -2529,7 +2528,7 @@ namespace atto {
                             if ( building.turn == timeToTrainTurns ) {
                                 fp2 spawnLocation = ent->pos - Fp2( 0, 32 ); // @HACK
                                 fp spawnOri = FP_PI; // @HACK
-                                ent->actions.AddAction( MapActionType::SIM_ENTITY_SPAWN, ( i32 )trainingEnt, ent->playerNumber, ent->teamNumber, ent->solarNumber, spawnLocation, spawnOri, Fp2( 0, 0 ) );
+                                ent->actions.AddAction( (i32)MapActionType::SIM_ENTITY_SPAWN, ( i32 )trainingEnt, ent->playerNumber, ent->teamNumber, ent->solarNumber, spawnLocation, spawnOri, Fp2( 0, 0 ) );
                                 building.turn = 0;
                                 building.trainingQueue.Dequeue();
                             }
@@ -2537,7 +2536,7 @@ namespace atto {
                     } else if ( ent->type == EntityType::BUILDING_TRADE ) {
                         if ( building.turn >= building.timeToGiveCreditsTurns ) {
                             building.turn = 0;
-                            ent->actions.AddAction( MapActionType::SIM_MAP_MONIES_GIVE_CREDITS, ent->playerNumber, ent->building.amountToGiveCredits );
+                            ent->actions.AddAction( (i32)MapActionType::SIM_MAP_MONIES_GIVE_CREDITS, ent->playerNumber, ent->building.amountToGiveCredits );
                         }
                     }
                 }
@@ -2673,7 +2672,7 @@ namespace atto {
 
             offset += sizeof( MapActionType );
 
-            RpcHolder * holder = rpcTable[ (i32)actionType ];
+            RpcHolder * holder = GlobalRpcTable[ (i32)actionType ];
             holder->Call( turnData + offset );
             i32 lastCallSize = holder->GetLastCallSize();
             offset += lastCallSize;
@@ -2869,7 +2868,7 @@ namespace atto {
 
                 byte * data = &actionData.buffer.at( actionOffset );
                 
-                RpcHolder * holder = rpcTable[ (i32)actionType ];
+                RpcHolder * holder = GlobalRpcTable[ (i32)actionType ];
                 LargeString rpcString = holder->Log( (char *)data );
                 i32 lastCallSize = holder->GetLastCallSize();
                 actionOffset += lastCallSize;
