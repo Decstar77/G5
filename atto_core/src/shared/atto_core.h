@@ -7,7 +7,6 @@
 #include "atto_input.h"
 #include "atto_network.h"
 #include "atto_clock.h"
-#include "atto_ui.h"
 #include "atto_client.h"
 
 #include "atto_reflection.h"

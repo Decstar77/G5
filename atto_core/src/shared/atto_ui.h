@@ -6,15 +6,13 @@
 namespace atto {
     class Core;
     class DrawContext;
-
-    enum class RESOURCE_HANDLE_FONT {};
-    typedef ObjectHandle<RESOURCE_HANDLE_FONT> FontHandle;
+    class TextureResource;
 
     enum class UI_SizeType {
         NONE,
         PIXELS,
         TEXTCONTENT,
-        PERCENTOFPARENT,
+        PERCENT_OF_PARENT,
         CHILDRENSUM,
         CHILDRENMAX,
     };
@@ -27,8 +25,9 @@ namespace atto {
     enum class UI_PosType {
         NONE,
         PIXELS,
+        ALIGNED_LEFT,
         CENTER,
-        PERCENT_OF_PARENT, 
+        PERCENT_OF_PARENT,
     };
 
     struct UIWidgetPos {
@@ -72,13 +71,14 @@ namespace atto {
         UIWidgetSize    size[ 2 ];
         glm::vec4       col;
 
+        TextureResource * image;
+
         glm::vec2   computedPos;
         glm::vec2   computedSize;
         BoxBounds2D computedBounds;
 
         SmallString text;
         UISlider slider;
-
 
         UIWidget * parent;
         FixedList<UIWidget *, 32> child; // @NOTE: Probably shouldn't do this...
@@ -88,17 +88,27 @@ namespace atto {
     public:
         void Begin( glm::vec2 dims );
         void End();
-        UIWidget *  Widget( i32 id, const char * text, UIWidgetPos pos, UIWidgetSize sizeX, UIWidgetSize sizeY, i32 flags, glm::vec4 col = glm::vec4( 1 ) );
+        UIWidget *  Widget( i32 id, const char * text, UIWidgetPos pos, UIWidgetSize sizeX, UIWidgetSize sizeY, i32 flags, glm::vec4 col = glm::vec4( 0 ) );
+
         void        ColorBlockPix( i32 id, glm::vec2 center, glm::vec2 size, glm::vec4 col );
+
+        void        Seperator( i32 id );
+
+        void        Lable( const char * text, bool center = false );
+        void        Lable( const SmallString & text, bool center = false );
         void        LablePix( const char * text, glm::vec2 center );
-        bool        Button( i32 id, const char * text, UIWidgetPos pos, UIWidgetSize sizeX, UIWidgetSize sizeY, glm::vec4 col = glm::vec4( 1 ) );
-        bool        ButtonPix( i32 id, const char * text, glm::vec2 center, glm::vec2 size, glm::vec4 col = glm::vec4( 1 ) );
-        bool        Slider( const char * text, f32 * value, glm::vec4 col = glm::vec4( 1 ) );
 
-        void BeginVBox( i32 id, UIWidgetPos pos, UIWidgetSize sizeX, UIWidgetSize sizeY, i32 flags = 0, glm::vec4 c = glm::vec4( 1 ) );
-        void EndVBox();
+        void        Image( i32 id, TextureResource * image );
 
-        void UpdateAndRender( Core * core, DrawContext * uiDraw );
+        bool        Button( const char * text, UIWidgetPos pos, UIWidgetSize sizeX, UIWidgetSize sizeY, glm::vec4 col = glm::vec4( 0 ) );
+        bool        ButtonPix( i32 id, const char * text, glm::vec2 center, glm::vec2 size, glm::vec4 col = glm::vec4( 0 ) );
+        
+        bool        Slider( const char * text, f32 * value, glm::vec4 col = glm::vec4( 0 ) );
+
+        void        BeginVBox( i32 id, UIWidgetPos pos, UIWidgetSize sizeX, UIWidgetSize sizeY, i32 flags = 0, glm::vec4 col = glm::vec4( 0 ) );
+        void        EndVBox();
+
+        void        UpdateAndRender( Core * core, DrawContext * uiDraw );
         
         UIWidget * AllocWidget();
         UIWidget * FindWidgetWithId( i32 id );
@@ -109,6 +119,7 @@ namespace atto {
         void ComputeRelativePositions( UIWidget * widget );
         void ComputeBounds( UIWidget * widget, glm::vec2 pos );
 
+        i32 hoverId = -1;
         i32 clickedId = -1;
         i32 pressedId = -1;
         glm::vec2 normalizedHoverPos = glm::vec2( 0, 0 );
@@ -118,8 +129,8 @@ namespace atto {
         FixedList< UIWidget, 32 > widgets;
         FixedQueue< UIWidget *, 32 > traversalQueue;
         FixedStack< i32, 32 > idStack;
-        f32 fontSize = 12;
-        FontHandle font;
+        f32 fontSize = 10;
+        FontHandle fontHandle;
     };
 }
 

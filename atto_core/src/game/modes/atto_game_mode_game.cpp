@@ -12,9 +12,9 @@ namespace atto {
     }
 
     void GameMode_SinglePlayerGame::Initialize( Core * core ) {
-        simMap.Initialize( core );
         simMap.localPlayerNumber.value = 1;
         simMap.localPlayerTeamNumber.value = 1;
+        simMap.Initialize( core );
     }
 
     void GameMode_SinglePlayerGame::UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags updateAndRenderFlags ) {

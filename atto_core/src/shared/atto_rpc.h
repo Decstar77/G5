@@ -2,6 +2,7 @@
 
 #include <array>
 #include "atto_containers.h"
+#include "atto_binary_file.h"
 
 #include "atto_reflection.h"
 
@@ -15,6 +16,18 @@ namespace atto {
     struct is_fixed_list< FixedList< _type_, cap > > {
         static const bool value = true;
         static const size_t sizeOfElement = sizeof( _type_ );
+    };
+
+    template< typename _type_ >
+    struct is_grow_list {
+        static const bool value = false;
+    };
+
+    template< typename _type_ >
+    struct is_grow_list< GrowableList< _type_ > > {
+        static const bool value = true;
+        static const size_t sizeOfElement = sizeof( _type_ );
+        typedef _type_ innner_type;
     };
 
     template<typename What, typename ... Args>
@@ -66,7 +79,7 @@ namespace atto {
             for( size_t i = 0; i < argIndex; i++ ) {
                 dataOffset += sizes[ i ];
             }
-
+            
             return ( _type_ )( data + dataOffset );
         }
 
@@ -76,13 +89,18 @@ namespace atto {
         }
 
         template<typename _type_>
-        inline size_t GetSize( typename std::enable_if< !is_fixed_list< _type_ >::value >::type * = 0 ) {
+        inline size_t GetSize( typename std::enable_if< !is_fixed_list< _type_ >::value >::type * = 0, typename std::enable_if< !is_grow_list< _type_ >::value >::type * = 0 ) {
             return sizeof( _type_ );
         }
 
         template<typename _type_>
         inline size_t GetSize( typename std::enable_if< is_fixed_list< _type_ >::value >::type * = 0 ) {
             return is_fixed_list< _type_ >::sizeOfElement;
+        }
+
+        template<typename _type_>
+        inline size_t GetSize( typename std::enable_if< is_grow_list< _type_ >::value >::type * = 0 ) {
+            return is_grow_list< _type_ >::sizeOfElement;
         }
 
         template<typename _type_>
@@ -95,6 +113,16 @@ namespace atto {
             return true;
         }
 
+        template<typename _type_>
+        inline bool MarkGrowList( typename std::enable_if< !is_grow_list< _type_ >::value >::type * = 0 ) {
+            return false;
+        }
+
+        template<typename _type_>
+        inline bool MarkGrowList( typename std::enable_if< is_grow_list< _type_ >::value >::type * = 0 ) {
+            return true;
+        }
+
         inline size_t GetSizeFromData( size_t index, const std::array< size_t, sizeof...( _args_ ) > & sizes, char * data ) {
             size_t dataOffset = 0;
             for( size_t i = 0; i < index; i++ ) {
@@ -103,20 +131,22 @@ namespace atto {
 
             const i32 count = *(i32 *)( data + dataOffset );
             const i32 size = (i32)sizes[ index ] * count;
-            const i32 total = size + (i32)sizeof( i32 );// size of the list + size of the count
+            const i32 total = size + (i32)sizeof( i32 ) + (i32)sizeof( i32 );// size of the list + size of the count + size of the capacity/padding
             return (size_t)total;
         }
 
         virtual _ret_ Call( char * data ) override {
             auto seq = std::index_sequence_for< _args_... >{};
             auto sizes = std::array< size_t, sizeof...( _args_ ) > { GetSize< std::remove_pointer_t< _args_ > >()... };
-            auto marks = std::array< bool, sizeof...( _args_ ) > { MarkFixedList< std::remove_pointer_t< _args_ > >()... };
+            auto fixedMarks = std::array< bool, sizeof...( _args_ ) > { MarkFixedList< std::remove_pointer_t< _args_ > >()... };
+            auto growMarks = std::array< bool, sizeof...( _args_ ) > { MarkGrowList< std::remove_pointer_t< _args_ > >()... };
 
             lastCallSize = 0;
             for( size_t i = 0; i < sizeof...( _args_ ); i++ ) {
-                if( marks[ i ] == true ) {
+                if( fixedMarks[ i ] == true || growMarks[ i ] == true ) {
                     sizes[ i ] = GetSizeFromData( i, sizes, data );
                 }
+                
                 lastCallSize += sizes[ i ];
             }
 
@@ -157,13 +187,15 @@ namespace atto {
         virtual LargeString Log( char * data ) override {
             auto seq = std::index_sequence_for< _args_... >{};
             auto sizes = std::array< size_t, sizeof...( _args_ ) > { GetSize< std::remove_pointer_t< _args_ > >()... };
-            auto marks = std::array< bool, sizeof...( _args_ ) > { MarkFixedList< std::remove_pointer_t< _args_ > >()... };
+            auto fixedMarks = std::array< bool, sizeof...( _args_ ) > { MarkFixedList< std::remove_pointer_t< _args_ > >()... };
+            auto growMarks = std::array< bool, sizeof...( _args_ ) > { MarkGrowList< std::remove_pointer_t< _args_ > >()... };
 
             lastCallSize = 0;
             for( size_t i = 0; i < sizeof...( _args_ ); i++ ) {
-                if( marks[ i ] == true ) {
+                if( fixedMarks[ i ] == true || growMarks[ i ] == true ) {
                     sizes[ i ] = GetSizeFromData( i, sizes, data );
                 }
+                
                 lastCallSize += sizes[ i ];
             }
 
@@ -213,4 +245,38 @@ namespace atto {
             return ( objectPtr->*functionPtr )( std::forward<_args_>( args )... );
         }
     };
+
+    //inline FixedList< RpcHolder *, 256 > GlobalRpcTable = {};
+
+    //class RpcBuffer {
+    //public:
+    //    FixedBinaryBlob<200>    data;
+
+    //public:
+    //    template<typename... _types_>
+    //    inline void AddAction( i32 funcId, _types_... args ) {
+    //        #if ATTO_GAME_CHECK_RPC_FUNCTION_TYPES
+    //        bool sameParms = GlobalRpcTable[ (i32)funcId ]->AreParamtersTheSame<void, std::add_pointer_t< _types_ >...>();
+    //        AssertMsg( sameParms, "AddAction :: Adding an action with no corrasponding RPC function, most likey the parameters are not the same. " );
+    //        #endif
+
+    //        data.Write( &funcId );
+    //        DoSerialize( args... );
+    //    }
+
+    //private:
+    //    template< typename _type_ >
+    //    inline void DoSerialize( _type_ type ) {
+    //        static_assert( std::is_pointer<_type_>::value == false, "AddAction :: Cannot take pointers" );
+    //        data.Write( &type );
+    //    }
+
+    //    template< typename _type_, typename... _types_ >
+    //    inline void DoSerialize( _type_ type, _types_... args ) {
+    //        static_assert( std::is_pointer<_type_>::value == false, "AddAction :: Cannot take pointers" );
+    //        data.Write( &type );
+    //        DoSerialize( args... );
+    //    }
+    //};
+
 }

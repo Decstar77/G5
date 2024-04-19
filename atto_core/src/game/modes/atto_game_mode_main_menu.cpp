@@ -61,29 +61,29 @@ namespace atto {
         UIWidgetPos  centerPos = {};
         centerPos.type = UI_PosType::CENTER;
         UIWidgetSize paretPercent = {};
-        paretPercent.type = UI_SizeType::PERCENTOFPARENT;
+        paretPercent.type = UI_SizeType::PERCENT_OF_PARENT;
         paretPercent.value = 1.0f;
 
         ui.Begin( draw->GetCameraDims() ); 
         ui.BeginVBox( 1, centerPos, childMax, childSum, UI_FLAG_TREAT_POS_AS_CENTER, Colors::MIDNIGHT_BLUE );
-        ui.Button( 22, "The game name is here", centerPos, textSize, textSize, Colors::ALIZARIN );
+        ui.Button( "The game name is here", centerPos, textSize, textSize, Colors::ALIZARIN );
 
         ui.BeginVBox( 2, centerPos, paretPercent, childSum, 0, Colors::SKY_BLUE );
         //ui.Button( 33, "Tutorial", centerPos, paretPercent, textSize , Colors::ALIZARIN );
-        if ( ui.Button( 44, "Single Player",  centerPos, paretPercent, textSize, Colors::ALIZARIN ) ) {
+        if ( ui.Button( "Single Player",  centerPos, paretPercent, textSize, Colors::ALIZARIN ) ) {
             GameStartParams parms = {};
             parms.isMutliplayer = false;
             core->MoveToGameMode( new GameMode_SinglePlayerGame( parms ) );
         }
-        if ( ui.Button( 55, "Mutliplayer", centerPos, paretPercent, textSize, Colors::ALIZARIN ) ) {
+        if ( ui.Button( "Mutliplayer", centerPos, paretPercent, textSize, Colors::ALIZARIN ) ) {
             if ( core->NetworkIsConnected() == false ) {
                 core->NetworkConnect();
             }
         }
-        if ( ui.Button( 66, "Options", centerPos, paretPercent, textSize, Colors::ALIZARIN ) ) {
+        if ( ui.Button( "Options", centerPos, paretPercent, textSize, Colors::ALIZARIN ) ) {
             showOptions = true;
         }
-        if ( ui.Button( 77, "Quit", centerPos, paretPercent, textSize, Colors::ALIZARIN ) ) {
+        if ( ui.Button( "Quit", centerPos, paretPercent, textSize, Colors::ALIZARIN ) ) {
             core->WindowClose();
         }
 
@@ -96,16 +96,16 @@ namespace atto {
             parentPos.type = UI_PosType::PERCENT_OF_PARENT;
             parentPos.value = glm::vec2( 0.65f, 0.5f );
             ui.BeginVBox( 3, parentPos, childMax, childSum, UI_FLAG_TREAT_POS_AS_CENTER, Colors::MIDNIGHT_BLUE );
-            if ( ui.Button( 88, "Video", centerPos, textSize, textSize, Colors::ALIZARIN ) ) {
+            if ( ui.Button( "Video", centerPos, textSize, textSize, Colors::ALIZARIN ) ) {
             }
-            if ( ui.Button( 99, "Audio", centerPos, textSize, textSize, Colors::ALIZARIN ) ) {
+            if ( ui.Button( "Audio", centerPos, textSize, textSize, Colors::ALIZARIN ) ) {
                 showOptionsAudio = true;
             }
-            if ( ui.Button( 111, "Game", centerPos, textSize, textSize, Colors::ALIZARIN ) ) {
+            if ( ui.Button( "Game", centerPos, textSize, textSize, Colors::ALIZARIN ) ) {
             }
-            if ( ui.Button( 122, "Input", centerPos, textSize, textSize, Colors::ALIZARIN ) ) {
+            if ( ui.Button( "Input", centerPos, textSize, textSize, Colors::ALIZARIN ) ) {
             }
-            if ( ui.Button( 133, "System", centerPos, textSize, textSize, Colors::ALIZARIN ) ) {
+            if ( ui.Button( "System", centerPos, textSize, textSize, Colors::ALIZARIN ) ) {
             }
             ui.EndVBox();
         }

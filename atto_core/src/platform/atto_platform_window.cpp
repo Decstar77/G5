@@ -11,6 +11,9 @@ namespace atto {
     static void KeyCallback( GLFWwindow * window, int key, int scancode, int action, int mods ) {
         Core * core = (Core *)glfwGetWindowUserPointer( window );
         FrameInput & fi = core->InputGetFrameInput();
+        if( key == KEY_CODE_UNKNOWN ) {
+            return;
+        }
         fi.keys[ key ] = action != GLFW_RELEASE;
     }
 

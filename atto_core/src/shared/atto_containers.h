@@ -23,6 +23,16 @@ namespace atto {
         memset( t, 0, sizeof( _type_ ) );
     }
 
+    template<typename _type_>
+    struct Span {
+        _type_ &            operator[]( i32 index ) { Assert( index >= 0 && index < count );  return data[ index ]; }
+        const _type_ &      operator[]( i32 index ) const { Assert( index >= 0 && index < count );  return data[ index ]; }
+
+        i32         count;
+        i32         padding;
+        _type_ *    data;
+    };
+
     template<typename T, i32 capcity>
     class FixedList {
     public:
@@ -62,13 +72,16 @@ namespace atto {
         T *             Get( const i32 & index );
         const T *       Get( const i32 & index ) const;
 
+        inline Span<T>  GetSpan() { return { count, 0, data }; }
+
         void            Sort( SortFunc f );
 
         T & operator[]( const i32 & index );
         T operator[]( const i32 & index ) const;
 
     private:
-        i32 count;          // @NOTE: It's imperative that this is the first member of the struct as the rpc system relies on this. It does a cast
+        i32 count;
+        i32 pad;
         T data[ capcity ];
     };
 
@@ -302,6 +315,12 @@ namespace atto {
     public:
         typedef         i32( *SortFunc )( T & a, T & b );
 
+                        GrowableList();
+                        GrowableList( i32 capcity );
+                        GrowableList( const GrowableList<T> & other );
+                        GrowableList( GrowableList<T> && other ); // Move constructor
+                        ~GrowableList();
+
         T *             GetData();
         const T *       GetData() const;
         i32             GetCapcity() const;
@@ -325,22 +344,68 @@ namespace atto {
         T *             Get( const i32 & index );
         const T *       Get( const i32 & index ) const;
 
+        inline Span<T>  GetSpan() { return { count, 0, data }; }
+
         void            Sort( SortFunc f );
 
         T &             operator[]( const i32 & index );
         T               operator[]( const i32 & index ) const;
 
     private:
-
         void           Grow( i32 minCapcity );
-
-        T * data;
         i32 count;
         i32 capcity;
+        T * data;
     };
 
     template<typename T>
+    GrowableList<T>::GrowableList() {
+        count = 0;
+        capcity = 0;
+        data = nullptr;
+    }
+
+    template<typename T>
+    GrowableList<T>::GrowableList( i32 capcity ) {
+        count = 0;
+        this->capcity = capcity;
+        data = new T[ capcity ];
+    }
+
+    template<typename T>
+    GrowableList<T>::GrowableList( const GrowableList<T> & other ) {
+        count = other.count;
+        capcity = other.capcity;
+        data = new T[ capcity ];
+        for( i32 i = 0; i < count; i++ ) {
+            data[ i ] = other.data[ i ];
+        }
+    }
+
+    template<typename T>
+    GrowableList<T>::GrowableList( GrowableList<T> && other ) {
+        count = other.count;
+        capcity = other.capcity;
+        data = other.data;
+
+        other.count = 0;
+        other.capcity = 0;
+        other.data = nullptr;
+    }
+
+    template<typename T>
+    GrowableList<T>::~GrowableList() {
+        if( data != nullptr ) {
+            delete data;
+        }
+    }
+
+    template<typename T>
     void GrowableList<T>::Grow( i32 minCapcity ) {
+        if( capcity == 0 ) {
+            minCapcity = 10;
+        }
+
         if( minCapcity <= capcity ) {
             return;
         }
@@ -1815,4 +1880,7 @@ namespace atto {
         }
     }
 
+    // HACK:
+    enum class RESOURCE_HANDLE_FONT {};
+    typedef ObjectHandle<RESOURCE_HANDLE_FONT> FontHandle;
 }

@@ -224,7 +224,7 @@ namespace atto {
             this->itemType = TypeResolver<_type_>::get();
         }
 
-        virtual nlohmann::json TypeDescriptor_FixedList::JSON_Write( const void * obj ) override {
+        virtual nlohmann::json JSON_Write( const void * obj ) override {
             const FixedList< _type_, cap > * list = ( const FixedList< _type_, cap > * )obj;
             nlohmann::json j = nlohmann::json::array();
             for( i32 i = 0; i < list->GetCount(); i++ ) {
@@ -236,13 +236,10 @@ namespace atto {
         virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             FixedList< _type_, cap > * list = ( FixedList< _type_, cap > * )obj;
             list->Clear( true );
-            _type_ * item = new _type_();
             for( const nlohmann::json & jj : j ) {
-                ZeroStructPtr( item );
+                _type_ * item = &list->AddEmpty();
                 itemType->JSON_Read( jj, item );
-                list->Add_MemCpyPtr( item );
             }
-            delete item;
         }
 
         virtual LargeString ToString( const void * obj ) override {
@@ -314,6 +311,109 @@ namespace atto {
     public:
         static TypeDescriptor * get() {
             static TypeDescriptor_FixedList<T, cap> typeDesc( ( T * )nullptr );
+            return &typeDesc;
+        }
+    };
+
+    template <typename _type_>
+    struct TypeDescriptor_GrowList : TypeDescriptor {
+        static_assert( std::is_trivial<_type_>::value, "Type must be trivial" );
+        TypeDescriptor * itemType;
+
+        TypeDescriptor_GrowList( _type_ * ) {
+            this->size = sizeof( GrowableList<_type_> );
+            this->name = SmallString::FromLiteral( "GrowableList" );
+            this->itemType = TypeResolver<_type_>::get();
+        }
+
+        virtual nlohmann::json JSON_Write( const void * obj ) override {
+            const GrowableList< _type_ > * list = ( const GrowableList< _type_ > * )obj;
+            nlohmann::json j = nlohmann::json::array();
+            for( i32 i = 0; i < list->GetCount(); i++ ) {
+                j.push_back( itemType->JSON_Write( list->Get( i ) ) );
+            }
+            return j;
+        }
+
+        virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+            GrowableList< _type_ > * list = ( GrowableList< _type_ > * )obj;
+            list->Clear( true );
+            for( const nlohmann::json & jj : j ) {
+                _type_ * item = &list->AddEmpty();
+                itemType->JSON_Read( jj, item );
+            }
+        }
+
+        virtual LargeString ToString( const void * obj ) override {
+            GrowableList< _type_ > * list = ( GrowableList< _type_ > * )obj;
+            LargeString result = {};
+            result.Add( "{" );
+            for( i32 i = 0; i < list->GetCount(); i++ ) {
+                result.Add( itemType->ToString( list->Get( i ) ) );
+            }
+            result.Add( "}" );
+            return result;
+        }
+
+        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
+            GrowableList< _type_ > * list = ( GrowableList< _type_ > * )obj;
+        #if 1
+            if( ImGui::TreeNodeEx( memberName, ImGuiTreeNodeFlags_DefaultOpen ) ) {
+                for( i32 i = 0; i < list->GetCount(); i++ ) {
+                    ImGui::PushID( i );
+                    if( ImGui::Button( "-" ) == true ) {
+                        list->RemoveIndex( i );
+                        ImGui::PopID();
+                        break;
+                    }
+                    ImGui::PopID();
+                    ImGui::SameLine();
+                    SmallString n = StringFormat::Small( "Index:%d", i );
+                    itemType->Imgui_Draw( list->Get( i ), n.GetCStr() );
+                }
+                if( list->IsFull() == false && ImGui::Button( "+" ) ) {
+                    list->AddEmpty();
+                }
+                ImGui::TreePop();
+            }
+        #else 
+            if( ImGui::BeginListBox( memberName ) ) {
+                for( i32 i = 0; i < list->GetCount(); i++ ) {
+                    SmallString n = StringFormat::Small( "Index:%d", i );
+                    itemType->Imgui_Draw( list->Get( i ), n.GetCStr() );
+                }
+                ImGui::EndListBox();
+            }
+        #endif
+        }
+
+        virtual void Binary_Read( void * obj, BinaryBlob & f ) override {
+            GrowableList< _type_ > * list = ( GrowableList< _type_ > * )obj;
+            list->Clear( true );
+            i32 count = 0;
+            f.Read( &count );
+            for( i32 i = 0; i < count; i++ ) {
+                _type_ * t = &list->AddEmpty();
+                itemType->Binary_Read( t, f );
+            }
+        }
+
+        virtual void Binary_Write( const void * obj, BinaryBlob & f ) override {
+            const GrowableList< _type_ > * list = ( const GrowableList< _type_ > * )obj;
+            const i32 count = list->GetCount();
+            f.Write( &count );
+            for( i32 i = 0; i < count; i++ ) {
+                itemType->Binary_Write( list->Get( i ), f );
+            }
+        }
+    };
+
+
+    template <typename T>
+    class TypeResolver<GrowableList<T>> {
+    public:
+        static TypeDescriptor * get() {
+            static TypeDescriptor_GrowList<T> typeDesc( ( T * )nullptr );
             return &typeDesc;
         }
     };
@@ -472,11 +572,29 @@ namespace atto {
 #define MAP31(m, x, ...) m(x) IDENTITY(MAP30(m, __VA_ARGS__))
 #define MAP32(m, x, ...) m(x) IDENTITY(MAP31(m, __VA_ARGS__))
 #define MAP33(m, x, ...) m(x) IDENTITY(MAP32(m, __VA_ARGS__))
+#define MAP34(m, x, ...) m(x) IDENTITY(MAP33(m, __VA_ARGS__))
+#define MAP35(m, x, ...) m(x) IDENTITY(MAP34(m, __VA_ARGS__))
+#define MAP36(m, x, ...) m(x) IDENTITY(MAP35(m, __VA_ARGS__))
+#define MAP37(m, x, ...) m(x) IDENTITY(MAP36(m, __VA_ARGS__))
+#define MAP38(m, x, ...) m(x) IDENTITY(MAP37(m, __VA_ARGS__))
+#define MAP39(m, x, ...) m(x) IDENTITY(MAP38(m, __VA_ARGS__))
+#define MAP40(m, x, ...) m(x) IDENTITY(MAP39(m, __VA_ARGS__))
+#define MAP41(m, x, ...) m(x) IDENTITY(MAP40(m, __VA_ARGS__))
+#define MAP42(m, x, ...) m(x) IDENTITY(MAP41(m, __VA_ARGS__))
+#define MAP43(m, x, ...) m(x) IDENTITY(MAP42(m, __VA_ARGS__))
+#define MAP44(m, x, ...) m(x) IDENTITY(MAP43(m, __VA_ARGS__))
+#define MAP45(m, x, ...) m(x) IDENTITY(MAP44(m, __VA_ARGS__))
+#define MAP46(m, x, ...) m(x) IDENTITY(MAP45(m, __VA_ARGS__))
+#define MAP47(m, x, ...) m(x) IDENTITY(MAP46(m, __VA_ARGS__))
+#define MAP48(m, x, ...) m(x) IDENTITY(MAP47(m, __VA_ARGS__))
+#define MAP49(m, x, ...) m(x) IDENTITY(MAP48(m, __VA_ARGS__))
+#define MAP50(m, x, ...) m(x) IDENTITY(MAP49(m, __VA_ARGS__))
 
-#define EVALUATE_COUNT(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, count, ...) count
+
+#define EVALUATE_COUNT(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36, _37, _38, _39, _40, count, ...) count
 
 #define COUNT(...) \
-    IDENTITY(EVALUATE_COUNT(__VA_ARGS__, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1))
+    IDENTITY(EVALUATE_COUNT(__VA_ARGS__, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1))
 
 
     struct ignore_assign {

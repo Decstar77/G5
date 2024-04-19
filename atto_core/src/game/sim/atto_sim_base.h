@@ -7,7 +7,7 @@ namespace atto {
     class RpcHolder;
 
     constexpr static i32 MAX_ENTITIES = 1024;
-    constexpr static i32 MAX_PLAYERS = 2;
+    constexpr static i32 MAX_PLAYERS = 4;
 
     constexpr i32 TURNS_PER_SECOND = 24;
     constexpr float SIM_DT_FLOAT = 1.0f / TURNS_PER_SECOND;
@@ -24,8 +24,57 @@ namespace atto {
     typedef TypeSafeNumber<i32, class TeamNumberType>           TeamNumber;
     typedef TypeSafeNumber<i32, class SolaySystemNumberType>    SolarNumber;
 
-    constexpr SolarNumber SOLAR_INVALID = SolarNumber::Create( -1 );
-    constexpr SolarNumber SOLAR_GLOBAL = SolarNumber::Create( 0 );
+    class SimMap;
+    struct SimEntity;
+
+    typedef ObjectHandle<SimEntity> EntityHandle;
+    typedef FixedList<SimEntity *, MAX_ENTITIES>        EntList;
+    typedef FixedList<const SimEntity *, MAX_ENTITIES>  ConstEntList;
+    typedef FixedList<SimEntity, MAX_ENTITIES>          EntCacheList;
+    typedef FixedList<EntityHandle, MAX_ENTITIES>       EntHandleList;
+    typedef FixedObjectPool<SimEntity, MAX_ENTITIES>    EntPool;
+
+    REFL_ENUM( EntityType,
+              INVALID = 0,
+              UNITS_BEGIN,
+              UNIT_KLAED_WORKER,
+              UNIT_KLAED_SCOUT,
+              UNIT_KLAED_FIGHTER,
+              UNIT_KLAED_BOMBER,
+              UNIT_KLAED_TORPEDO,
+              UNIT_KLAED_FRIGATE,
+              UNIT_KLAED_BATTLE_CRUISER,
+              UNIT_KLAED_DREADNOUGHT,
+
+              UNIT_NAIRAN_WORKER,
+              UNIT_NAIRAN_SCOUT,
+              UNIT_NAIRAN_FIGHTER,
+
+              UNIT_NAUTOLAN_WORKER,
+              UNIT_NAUTOLAN_SCOUT,
+              UNIT_NAUTOLAN_FIGHTER,
+
+              UNITS_END,
+
+              BULLETS_BEGIN,
+              BULLET_KLARD_BULLET,
+              PROJECTILE_NAIRAN_BOLT,
+              PROJECTILE_NAIRAN_ROCKET,
+              BULLET_MED,
+              BULLETS_END,
+
+              STAR,
+              PLANET,
+
+              BUILDING_BEGIN,
+              BUILDING_STATION,
+              BUILDING_TRADE,
+              BUILDING_SOLAR_ARRAY,
+              BUILDING_COMPUTE,
+              BUILDING_END,
+
+              TYPE_PROP
+              );
 
     enum class MapActionType : u8 {
         NONE = 0,
@@ -49,7 +98,11 @@ namespace atto {
 
         SIM_MAP_MONIES_GIVE_CREDITS,
         SIM_MAP_MONIES_GIVE_ENERGY,
-        SIM_MAP_MONIES_GIVE_COMPUTE
+        SIM_MAP_MONIES_GIVE_COMPUTE,
+
+        TEST,
+
+        COUNT
     };
 
     inline const char * MapActionTypeStrings[] = {
@@ -61,33 +114,53 @@ namespace atto {
         "SIM_ENTITY_UNIT_COMMAND_CONSTRUCT_EXISTING_BUILDING",
         "SIM_ENTITY_PLANET_COMMAND_PLACE_PLACEMENT",
         "SIM_ENTITY_BUILDING_COMMAND_TRAIN_UNIT",
+        "SIM_ENTITY_BUILDING_COMMAND_CANCEL_UNIT",
         "SIM_ENTITY_SPAWN",
         "SIM_ENTITY_DESTROY",
         "SIM_ENTITY_APPLY_DAMAGE",
         "SIM_ENTITY_APPLY_CONSTRUCTION",
         "SIM_MAP_MONIES_GIVE_CREDITS",
         "SIM_MAP_MONIES_GIVE_ENERGY",
-        "SIM_MAP_MONIES_GIVE_COMPUTE"
+        "SIM_MAP_MONIES_GIVE_COMPUTE",
+        "TEST"
     };
+
+    static_assert( (i32)ArrayCount( MapActionTypeStrings ) == (i32)MapActionType::COUNT, "You are missing an MapActionTypeString" );
 
     inline FixedList< RpcHolder *, 256 >         rpcTable = {};
 
+    enum class EntitySelectionChange : u8 {
+        SET,
+        ADD,
+        REMOVE
+    };
+
+    inline static const char * EntitySelectionChangeStrings[] = { 
+        "SET",
+        "ADD",
+        "REMOVE"
+    };
+
     class MapActionBuffer {
     public:
+        void PlayerSelect( PlayerNumber playerNumber, const EntHandleList & entList, EntitySelectionChange change );
+        void ConstructBuilding( PlayerNumber playerNumber, EntityType::_enumerated buildingType, fp2 pos );
+        void TrainUnit( PlayerNumber playerNumber, EntityType::_enumerated unitType );
+
+    public:
+        FixedBinaryBlob<200>    data;
+
         template<typename... _types_>
         inline void AddAction( MapActionType type, _types_... args ) {
             static_assert( is_present<EntityType, _types_...>::value == false, "AddAction :: Must pass EntityType as i32" );
             static_assert( is_present<EntityType::_enumerated, _types_...>::value == false, "AddAction :: Must pass EntityType as i32" );
-            #if ATTO_GAME_CHECK_RPC_FUNCTION_TYPES
+        #if ATTO_GAME_CHECK_RPC_FUNCTION_TYPES
             bool sameParms = rpcTable[ (i32)type ]->AreParamtersTheSame<void, std::add_pointer_t< _types_ >...>();
-            AssertMsg( sameParms, "AddAction :: Adding an action with no corrasponding RPC function, most likey the parameters are not the same. ");
-            #endif
+            AssertMsg( sameParms, "AddAction :: Adding an action with no corrasponding RPC function, most likey the parameters are not the same. " );
+        #endif
             data.Write( &type );
             DoSimSerialize( args... );
         }
-
-    public:
-        FixedBinaryBlob<256>    data;
 
     private:
         template< typename _type_ >
@@ -108,7 +181,8 @@ namespace atto {
         i64                     checkSum;
         i32                     turnNumber;
         PlayerNumber            playerNumber;
-        MapActionBuffer         actions;
+        MapActionBuffer         playerActions;
+        MapActionBuffer         aiActions;
     };
 }
 

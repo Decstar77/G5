@@ -59,7 +59,7 @@ namespace atto {
         sndKlaedWorkerDestruction3          = core->ResourceGetAndCreateAudio( "res/sounds/worker_explosion_03.wav", true, false, 0, 0 );
         sndKlaedWorkerDestruction4          = core->ResourceGetAndCreateAudio( "res/sounds/worker_explosion_04.wav", true, false, 0, 0 );
         cfgKlaedWorkerTrainTimeTurns        = SecondsToTurns( 12 );
-        cfgKlaedWorkerCost                   = { 50, 10, 50 };
+        cfgKlaedWorkerCost                  = { 50, 10, 5 };
 
         sprKlaedScoutBase                   = core->ResourceGetAndCreateSprite( "res/game/fleet_1/Klaed/Base/PNGs/Kla'ed - Scout - Base.png", 1, 64, 64, 0 );
         sprKlaedScoutEngine                 = core->ResourceGetAndCreateSprite( "res/game/fleet_1/Klaed/Engine/PNGs/Kla'ed - Scout - Engine.png", 10, 64, 64, 10 );
@@ -69,8 +69,8 @@ namespace atto {
         sndKlaedScoutHello                  = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/starcraft/shoot.mp3", true, false, 0, 0 );
         sndKlaedScoutBuilt                  = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/starcraft/five-by-five-hele.mp3", true, false, 0, 0 );
         sndKlaedScoutMove                   = core->ResourceGetAndCreateAudio( "res/sounds/not_legal/starcraft/proceeding-seige.mp3", true, false, 0, 0 );
-        cfgKlaedScoutTrainTimeTurns         = SecondsToTurns( 12 );
-        cfgKlaedScoutCost                   = { 70, 20, 50 };
+        cfgKlaedScoutTrainTimeTurns         = SecondsToTurns( 18 );
+        cfgKlaedScoutCost                   = { 70, 20, 10 };
 
         sprKlaedFighterBase                 = core->ResourceGetAndCreateSprite( "res/game/fleet_1/Klaed/Base/PNGs/Kla'ed - Fighter - Base.png", 1, 64, 64, 0 );
         sprKlaedFighterEngine               = core->ResourceGetAndCreateSprite( "res/game/fleet_1/Klaed/Engine/PNGs/Kla'ed - Fighter - Engine.png", 10, 64, 64, 10 );
@@ -78,7 +78,7 @@ namespace atto {
         sprKlaedFighterWeapon               = core->ResourceGetAndCreateSprite( "res/game/fleet_1/Klaed/Weapons/PNGs/Kla'ed - Fighter - Weapons.png", 6, 64, 64, 10 );
         sprKlaedFighterDestruction          = core->ResourceGetAndCreateSprite( "res/game/fleet_1/Klaed/Destruction/PNGs/Kla'ed - Fighter - Destruction.png", 9, 64, 64, 10 );
         cfgKlaedFighterTrainTimeTurns       = SecondsToTurns( 38 );
-        cfgKlaedFighterCost                 = { 100, 50, 70 };
+        cfgKlaedFighterCost                 = { 100, 50, 50 };
 
         sprKlaedBomberBase                  = core->ResourceGetAndCreateSprite( "res/game/fleet_1/Klaed/Base/PNGs/Kla'ed - Bomber - Base.png", 1, 64, 64, 0 );
         sprKlaedBomberEngine                = core->ResourceGetAndCreateSprite( "res/game/fleet_1/Klaed/Engine/PNGs/Kla'ed - Bomber - Engine.png", 10, 64, 64, 10 );
@@ -169,17 +169,24 @@ namespace atto {
         sprNautolanWorkerBase           = core->ResourceGetAndCreateSprite( "res/game/fleet_3/Nautolan/Base/PNGs/Nautolan Ship - Support - Base.png", 1, 64, 64, 0 );
         sprNautolanWorkerEngine         = core->ResourceGetAndCreateSprite( "res/game/fleet_3/Nautolan/Engine/PNGs/Nautolan Ship - Support - Engine.png", 8, 64, 64, 10 );
         sprNautolanWorkerDestruction    = core->ResourceGetAndCreateSprite( "res/game/fleet_3/Nautolan/Destruction/PNGs/Nautolan Ship - Support.png", 8, 64, 64, 10 );
+        cfgNautolanWorkerTrainTimeTurns = SecondsToTurns( 12 );
+        cfgNautolanWorkerCost           = { 50, 10, 5 };
 
         sprNautolanScoutBase            = core->ResourceGetAndCreateSprite( "res/game/fleet_3/Nautolan/Base/PNGs/Nautolan Ship - Scout - Base.png", 1, 64, 64, 0 );
         sprNautolanScoutEngine          = core->ResourceGetAndCreateSprite( "res/game/fleet_3/Nautolan/Engine/PNGs/Nautolan Ship - Scout - Engine.png", 8, 64, 64, 10 );
         sprNautolanScoutShield          = core->ResourceGetAndCreateSprite( "res/game/fleet_3/Nautolan/Shield/PNGs/Nautolan Ship - Scout - Shield.png", 13, 64, 64, 10 );
         sprNautolanScoutWeapon          = core->ResourceGetAndCreateSprite( "res/game/fleet_3/Nautolan/Weapons/PNGs/Nautolan Ship - Scout - Weapons.png", 7, 64, 64, 10 );
         sprNautolanScoutDestruction     = core->ResourceGetAndCreateSprite( "res/game/fleet_3/Nautolan/Destruction/PNGs/Nautolan Ship - Scout.png", 9 ,64, 64, 10 );
+        cfgNautolanScoutTrainTimeTurns  = SecondsToTurns( 18 );
+        cfgNautolanScoutCost            = { 70, 20, 10 };
 
         sprNautolanFighterBase          = core->ResourceGetAndCreateSprite( "res/game/fleet_3/Nautolan/Base/PNGs/Nautolan Ship - Fighter - Base.png", 1, 64, 64, 0 );
         sprNautolanFighterEngine        = core->ResourceGetAndCreateSprite( "res/game/fleet_3/Nautolan/Engine/PNGs/Nautolan Ship - Fighter - Engine.png", 8, 64, 64, 10 );
         sprNautolanFighterShield        = core->ResourceGetAndCreateSprite( "res/game/fleet_3/Nautolan/Shield/PNGs/Nautolan Ship - Fighter - Shield.png", 10, 64, 64, 10 );
         sprNautolanFighterWeapon        = core->ResourceGetAndCreateSprite( "res/game/fleet_3/Nautolan/Weapons/PNGs/Nautolan Ship - Fighter - Weapons.png", 9, 64, 64, 10 );
         sprNautolanFighterDestruction   = core->ResourceGetAndCreateSprite( "res/game/fleet_3/Nautolan/Destruction/PNGs/Nautolan Ship - Fighter.png", 9, 64, 64, 10 );
+        cfgNautolanFighterTrainTimeTurns = SecondsToTurns( 30 );
+        cfgNautolanFighterCost          = { 100, 50, 50 };
+
     }
 }

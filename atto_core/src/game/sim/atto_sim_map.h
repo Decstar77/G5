@@ -2,84 +2,23 @@
 
 #include "atto_sim_base.h"
 #include "atto_sim_sync_queues.h"
+#include "../../shared/atto_ui.h"
 
 namespace atto {
     class Core;
-    class SimMap;
-    struct SimEntity;
     class RpcHolder;
 
-    typedef ObjectHandle<SimEntity> EntityHandle;
-    typedef FixedList<SimEntity *, MAX_ENTITIES>        EntList;
-    typedef FixedList<const SimEntity *, MAX_ENTITIES>  ConstEntList;
-    typedef FixedList<SimEntity, MAX_ENTITIES>          EntCacheList;
-    typedef FixedList<EntityHandle, MAX_ENTITIES>       EntHandleList;
-    typedef FixedObjectPool<SimEntity, MAX_ENTITIES>    EntPool;
 
-    REFL_ENUM(  EntityType,
-                INVALID = 0,
-                UNITS_BEGIN,
-                UNIT_KLAED_WORKER,
-                UNIT_KLAED_SCOUT,
-                UNIT_KLAED_FIGHTER,
-                UNIT_KLAED_BOMBER,
-                UNIT_KLAED_TORPEDO,
-                UNIT_KLAED_FRIGATE,
-                UNIT_KLAED_BATTLE_CRUISER,
-                UNIT_KLAED_DREADNOUGHT,
-
-                UNIT_NAIRAN_WORKER,
-                UNIT_NAIRAN_SCOUT,
-                UNIT_NAIRAN_FIGHTER,
-
-                UNITS_END,
-
-                BULLETS_BEGIN,
-                BULLET_KLARD_BULLET,
-                PROJECTILE_NAIRAN_BOLT,
-                PROJECTILE_NAIRAN_ROCKET,
-                BULLET_MED,
-                BULLETS_END,
-
-                STAR,
-                PLANET,
-                SOLAR_SYSTEM,
-
-                BUILDING_BEGIN,
-                BUILDING_STATION,
-                BUILDING_TRADE,
-                BUILDING_SOLAR_ARRAY,
-                BUILDING_COMPUTE,
-                BUILDING_END,
-
-                TYPE_PROP
-    );
-
-    inline bool IsUnitType( EntityType type ) {
-        return type > EntityType::UNITS_BEGIN && type < EntityType::UNITS_END;
-    }
-
-    inline bool IsBuildingType( EntityType type ) {
-        return type > EntityType::BUILDING_BEGIN && type < EntityType::BUILDING_END;
-    }
+    inline bool IsUnitType( EntityType type ) { return type > EntityType::UNITS_BEGIN && type < EntityType::UNITS_END; }
+    inline bool IsBuildingType( EntityType type ) { return type > EntityType::BUILDING_BEGIN && type < EntityType::BUILDING_END; }
+    inline bool IsWorkerType( EntityType type ) { return type == EntityType::UNIT_KLAED_WORKER || type == EntityType::UNIT_NAUTOLAN_WORKER || type == EntityType::UNIT_NAIRAN_WORKER; }
 
     i32                 GetUnitTrainTimeForEntityType( EntityType type );
     MoneySet            GetUnitCostForEntityType( EntityType type );
     char                GetUnitSymbolForEntityType( EntityType type );
     SpriteResource *    GetSpriteForBuildingType( EntityType type );
+    MoneySet            GetBuildingCostForEntityType( EntityType type );
     FpCollider          GetBaseColliderForBuildingType( EntityType type );
-
-    enum class EntitySelectionChange : u8 {
-        SET,
-        ADD,
-        REMOVE
-    };
-
-    inline static const char * EntitySelectionChangeStrings[] = { 
-        "SET",
-        "ADD",
-        "REMOVE"
-    };
 
     enum class NavigatorFacingMode {
         VEL = 0,
@@ -179,11 +118,6 @@ namespace atto {
         inline bool operator==( const SolarSystemConnectionPair & other ) { return a == other.a && b == other.b; }
     };
 
-    struct SolarSystem {
-        SmallString                 name;
-        FixedList<EntityHandle, 8>  connections;
-    };
-
     struct SimEntitySpawnInfo {
         EntityType type;
         PlayerNumber playerNumber;
@@ -192,10 +126,6 @@ namespace atto {
         fp2 pos;
         fp2 vel;
         fp ori;
-
-        union {
-            SolarSystem solarSystem;
-        };
     };
 
     struct SimEntity {
@@ -228,7 +158,6 @@ namespace atto {
             Unit                        unit;
             Planet                      planet;
             Building                    building;
-            SolarSystem                 solarSystem;
             Bullet                      bullet;
         };
 
@@ -316,6 +245,22 @@ namespace atto {
         SpriteAnimator spriteAnimator;
     };
 
+    class AIThinker {
+    public:
+        bool                clientHasAuth = false;
+        PlayerNumber        aiNumber = {};
+        MapActionBuffer     actionBuffer = {};
+        SimMap *            map = nullptr;
+        Core *              core = nullptr;
+        EntHandleList       selection = {};
+        i32                 nextThinkTurn = 0;
+        i32                 lastBuildingTurn = 0;
+
+
+        void                Think( EntList & activeEntities );
+        bool                FindBuildingLocation( EntList & activeEntities, EntityType buildingType, fp2 basePos, fp2 & pos );
+    };
+
     class SimMap {
     public:
         Core *                                      core = nullptr;
@@ -342,8 +287,10 @@ namespace atto {
         SyncQueues                                  syncQueues = {};
 
         // ============ Player Stuffies ============
-        FixedList< PlayerNumber, 4 >                playerNumbers = {};
-        FixedList< MoneySet, 4 >                    playerMonies = {};
+        FixedList< PlayerNumber, MAX_PLAYERS >      playerNumbers = {};
+        FixedList< MoneySet, MAX_PLAYERS >          playerMonies = {};
+
+        AIThinker                                   aiThinker = {};
 
         // ================= Other =================
         SimMapReplay                                mapReplay = {};
@@ -382,7 +329,9 @@ namespace atto {
         bool                    Vis_CanAfford( PlayerNumber playerNumber, MoneySet costSet );
 
         bool                    SimUtil_CanAfford( PlayerNumber playerNumber, MoneySet costSet );
-        void                    SimUtil_Pay( PlayerNumber playerNumber, MoneySet costSet );
+        bool                    SimUtil_CanPlaceBuilding( EntityListFilter * entityFilter, EntList & entities, FpCollider collider );
+
+        void                    SimAction_Pay( PlayerNumber playerNumber, MoneySet costSet );
         void                    SimAction_SpawnEntity( i32 * type, PlayerNumber * playerNumberPtr, TeamNumber * teamNumber, SolarNumber * solarNumberPtr, fp2 * pos, fp * ori, fp2 * vel );
         void                    SimAction_DestroyEntity( EntityHandle * handle );
         void                    SimAction_PlayerSelect( PlayerNumber * playerNumberPtr, EntHandleList * selection, EntitySelectionChange * change );
@@ -398,6 +347,8 @@ namespace atto {
         void                    SimAction_GiveCredits( PlayerNumber * playerNumberPtr, i32 * amountPtr );
         void                    SimAction_GiveEnergy( PlayerNumber * playerNumberPtr, i32 * amountPtr );
         void                    SimAction_GiveCompute( PlayerNumber * playerNumberPtr, i32 * amountPtr );
+
+        void                    SimAction_Test( GrowableList<i32> *test );
 
         void                    VisAction_PlayerSelect( PlayerNumber * playerNumberPtr, EntHandleList * selection, EntitySelectionChange change );
 

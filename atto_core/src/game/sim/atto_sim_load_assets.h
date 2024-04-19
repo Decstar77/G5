@@ -162,17 +162,23 @@ namespace atto {
     inline SpriteResource * sprNautolanWorkerBase = nullptr;
     inline SpriteResource * sprNautolanWorkerEngine = nullptr;
     inline SpriteResource * sprNautolanWorkerDestruction = nullptr;
+    inline i32              cfgNautolanWorkerTrainTimeTurns = 0;
+    inline MoneySet         cfgNautolanWorkerCost = {};
 
     inline SpriteResource * sprNautolanScoutBase = nullptr;
     inline SpriteResource * sprNautolanScoutEngine = nullptr;
     inline SpriteResource * sprNautolanScoutShield = nullptr;
     inline SpriteResource * sprNautolanScoutWeapon = nullptr;
     inline SpriteResource * sprNautolanScoutDestruction = nullptr;
+    inline i32              cfgNautolanScoutTrainTimeTurns = 0;
+    inline MoneySet         cfgNautolanScoutCost = {};
 
     inline SpriteResource * sprNautolanFighterBase = nullptr;
     inline SpriteResource * sprNautolanFighterEngine = nullptr;
     inline SpriteResource * sprNautolanFighterShield = nullptr;
     inline SpriteResource * sprNautolanFighterWeapon = nullptr;
     inline SpriteResource * sprNautolanFighterDestruction = nullptr;
+    inline i32              cfgNautolanFighterTrainTimeTurns = 0;
+    inline MoneySet         cfgNautolanFighterCost = {};
 
 }

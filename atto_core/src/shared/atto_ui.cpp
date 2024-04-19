@@ -56,6 +56,34 @@ namespace atto {
         Widget( id, "", pos, sizeX, sizeY, 0, col );
     }
 
+    void UIContext::Seperator( i32 id ) {
+        UIWidgetPos pos = {};
+        pos.type = UI_PosType::CENTER;
+        UIWidgetSize sizeX = {};
+        sizeX.type = UI_SizeType::PERCENT_OF_PARENT;
+        sizeX.value = 1.0f;
+        UIWidgetSize sizeY = {};
+        sizeY.type = UI_SizeType::PIXELS;
+        sizeY.value = 1.0f;
+        Widget( id, "", pos, sizeX, sizeY, 0, glm::vec4( 1, 1, 1, 1 ) );
+    }
+
+    void UIContext::Lable( const char * text, bool center ) {
+        UIWidgetPos pos = {};
+        pos.type = center ? UI_PosType::CENTER : UI_PosType::ALIGNED_LEFT;
+        UIWidgetSize sizeX = {};
+        sizeX.type = center ? UI_SizeType::PERCENT_OF_PARENT : UI_SizeType::TEXTCONTENT;
+        sizeX.value = 1;
+        UIWidgetSize sizeY = {};
+        sizeY.type = UI_SizeType::TEXTCONTENT;
+        i32 id = ( i32 )StringHash::Hash( text );
+        Widget( id, text, pos, sizeX, sizeY, 0, glm::vec4( 0 ) );
+    }
+
+    void UIContext::Lable( const SmallString & s, bool center ) {
+        Lable( s.GetCStr(), center );
+    }
+
     void UIContext::LablePix( const char * text, glm::vec2 center ) {
         UIWidgetPos pos = {};
         pos.type = UI_PosType::PIXELS;
@@ -68,7 +96,22 @@ namespace atto {
         Widget( id, text, pos, sizeX, sizeY, UI_FLAG_TREAT_POS_AS_CENTER, glm::vec4( 0 ) );
     }
 
-    bool UIContext::Button( i32 id, const char * text, UIWidgetPos pos, UIWidgetSize sizeX, UIWidgetSize sizeY, glm::vec4 col ) {
+    void UIContext::Image( i32 id, TextureResource * image ) {
+        UIWidgetPos pos = {};
+        pos.type = UI_PosType::CENTER;
+        glm::vec2 size = glm::vec2( image->width, image->height );
+        UIWidgetSize sizeX = {};
+        sizeX.type = UI_SizeType::PIXELS;
+        sizeX.value = size.x;
+        UIWidgetSize sizeY = {};
+        sizeY.type = UI_SizeType::PIXELS;
+        sizeY.value = size.y;
+        UIWidget * w = Widget( id, "", pos, sizeX, sizeY, UI_FLAG_TREAT_POS_AS_CENTER, glm::vec4( 0 ) );
+        w->image = image;
+    }
+
+    bool UIContext::Button( const char * text, UIWidgetPos pos, UIWidgetSize sizeX, UIWidgetSize sizeY, glm::vec4 col ) {
+        i32 id = ( i32 )StringHash::Hash( text );
         UIWidget * w = Widget( id, text, pos, sizeX, sizeY, UI_FLAG_HOVERABLE | UI_FLAG_CLICKABLE, col );
         return w->id == clickedId;
     }
@@ -85,7 +128,8 @@ namespace atto {
         UIWidgetSize sizeY = {};
         sizeY.type = UI_SizeType::PIXELS;
         sizeY.value = size.y;
-        return Button( id, text, pos, sizeX, sizeY, col );
+        UIWidget * w = Widget( id, text, pos, sizeX, sizeY, UI_FLAG_HOVERABLE | UI_FLAG_CLICKABLE, col );
+        return w->id == clickedId;
     }
 
     bool UIContext::Slider( const char * text, f32 * value, glm::vec4 col ) {
@@ -123,7 +167,7 @@ namespace atto {
     }
 
     void UIContext::UpdateAndRender( Core * core, DrawContext * uiDraw ) {
-        static FontHandle fontHandle = core->ResourceGetFont( "default" ); // @HACK
+        fontHandle = core->ResourceGetFont( "ken" ); // @HACK
 
         const glm::vec2 mousePosPix = core->InputMousePosPixels();
         const glm::vec2 mousePos = uiDraw->ScreenPosToWorldPos( mousePosPix );
@@ -144,6 +188,7 @@ namespace atto {
         mouseOverAnyElements = false;
         clickedId = -1;
         pressedId = -1;
+        hoverId = -1;
         traversalQueue.Clear();
         traversalQueue.Enqueue( &widgets[ 0 ] );
         while ( traversalQueue.IsEmpty() == false ) {
@@ -154,9 +199,9 @@ namespace atto {
                 glm::vec4 col = child->col;
                 if ( EnumHasFlag( child->flags, UI_FLAG_HOVERABLE ) && child->computedBounds.Contains( mousePos ) == true ) {
                     mouseOverAnyElements = true;
-                    col *= 1.1f;
-
+                    hoverId = child->id;
                     normalizedHoverPos = ( mousePos - child->computedBounds.min ) / child->computedBounds.GetSize() ;
+                    col *= 1.1f;
 
                     if ( EnumHasFlag( child->flags, UI_FLAG_CLICKABLE ) && mousePressed == true ) {
                         col *= 1.1f;
@@ -172,6 +217,10 @@ namespace atto {
                     uiDraw->DrawRect( child->computedBounds.min, child->computedBounds.max, col );
                 }
 
+                if ( child->image != nullptr ) { 
+                    uiDraw->DrawTexture( child->image, child->computedBounds.GetCenter(), 0.0f );
+                }
+
                 if ( child->type == UI_WIDGET_TYPE_SLIDER ) {
                     glm::vec2 start = child->computedBounds.min;
                     glm::vec2 end = child->computedBounds.max;
@@ -185,9 +234,17 @@ namespace atto {
                 }
 
                 if ( child->text.GetLength() != 0 ) {
-                    glm::vec2 screenPos = uiDraw->WorldPosToScreenPos( child->computedBounds.GetCenter() );
-                    glm::vec2 screenFontSize = uiDraw->WorldPosToScreenPos( glm::vec2( 0, fontSize ) );
-                    uiDraw->DrawTextScreen( fontHandle, screenPos, screenFontSize.y, child->text.GetCStr(), TextAlignment_H::FONS_ALIGN_CENTER, TextAlignment_V::FONS_ALIGN_MIDDLE );
+                    if  ( child->pos.type == UI_PosType::ALIGNED_LEFT ) {
+                        glm::vec2 padding = glm::vec2( 2, 0 ); // @HACK: PADDING
+                        glm::vec2 screenPos = uiDraw->WorldPosToScreenPos( child->computedBounds.min + padding );
+                        glm::vec2 screenFontSize = uiDraw->WorldPosToScreenPos( glm::vec2( 0, fontSize ) );
+                        uiDraw->DrawTextScreen( fontHandle, screenPos, screenFontSize.y, child->text.GetCStr(), TextAlignment_H::FONS_ALIGN_LEFT, TextAlignment_V::FONS_ALIGN_MIDDLE );
+                    } else {
+                        glm::vec2 center = child->computedBounds.GetCenter();
+                        glm::vec2 screenPos = uiDraw->WorldPosToScreenPos( center );
+                        glm::vec2 screenFontSize = uiDraw->WorldPosToScreenPos( glm::vec2( 0, fontSize ) );
+                        uiDraw->DrawTextScreen( fontHandle, screenPos, screenFontSize.y, child->text.GetCStr(), TextAlignment_H::FONS_ALIGN_CENTER, TextAlignment_V::FONS_ALIGN_MIDDLE );
+                    }
                 }
 
                 traversalQueue.Enqueue( child );
@@ -230,7 +287,7 @@ namespace atto {
                 }
                 else if ( size.type == UI_SizeType::TEXTCONTENT ) {
                     BoxBounds2D bounds = {};
-                    core->FontGetTextBounds( font, fontSize, widget->text.GetCStr(), glm::vec2( 0, 0 ), bounds, TextAlignment_H::FONS_ALIGN_CENTER, TextAlignment_V::FONS_ALIGN_MIDDLE );
+                    core->FontGetTextBounds( fontHandle, fontSize, widget->text.GetCStr(), glm::vec2( 0, 0 ), bounds, TextAlignment_H::FONS_ALIGN_CENTER, TextAlignment_V::FONS_ALIGN_MIDDLE );
                     widget->computedSize[ axis ] = bounds.GetSize()[ axis ];
                 }
             }
@@ -267,7 +324,7 @@ namespace atto {
     void UIContext::ComputeSizePercentOfParent( UIWidget * widget ) {
         for ( i32 axis = 0; axis < UI_AXIS_COUNT; axis++ ) {
             UIWidgetSize size = widget->size[ axis ];
-            if ( size.type == UI_SizeType::PERCENTOFPARENT ) {
+            if ( size.type == UI_SizeType::PERCENT_OF_PARENT ) {
                 widget->computedSize[ axis ] = size.value * widget->parent->computedSize[ axis ];
             }
         }
@@ -294,6 +351,10 @@ namespace atto {
                     child->computedPos = child->pos.value;
                 }
             } 
+            else if ( child->pos.type == UI_PosType::ALIGNED_LEFT ) {
+                child->computedPos = p;
+                p.y -= child->computedSize.y;
+            }
             else if ( child->pos.type == UI_PosType::CENTER ) {
                 if( widget->id == 0 ) { // @HACK   
                     child->computedPos = widget->computedSize / 2.0f;

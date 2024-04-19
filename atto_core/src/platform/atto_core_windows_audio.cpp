@@ -180,8 +180,8 @@ namespace atto {
                 ERRCHECK( result );
 
                 //channel->setVolume( 0.15f );
-                f32 m = 1.0f;
-                //f32 m = 0.3f;
+                //f32 m = 1.0f;
+                f32 m = 0.3f;
                 channel->setVolume( audio->volumeMultiplier * m );
                 channel->setCallback( ChannelCallback );
 
