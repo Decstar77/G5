@@ -28,8 +28,10 @@ namespace atto {
         _type_ &            operator[]( i32 index ) { Assert( index >= 0 && index < count );  return data[ index ]; }
         const _type_ &      operator[]( i32 index ) const { Assert( index >= 0 && index < count );  return data[ index ]; }
 
+        _type_ *            Get( i32 index ) { Assert( index >= 0 && index < count );  return data + index; }
+        const _type_ *      Get( i32 index ) const { Assert( index >= 0 && index < count );  return data + index; }
+
         i32         count;
-        i32         padding;
         _type_ *    data;
     };
 
@@ -72,7 +74,8 @@ namespace atto {
         T *             Get( const i32 & index );
         const T *       Get( const i32 & index ) const;
 
-        inline Span<T>  GetSpan() { return { count, 0, data }; }
+        inline Span<T>       GetSpan() { return { count, data }; }
+        inline Span<const T> GetConstSpan() const { return { count, data }; }
 
         void            Sort( SortFunc f );
 
@@ -81,7 +84,6 @@ namespace atto {
 
     private:
         i32 count;
-        i32 pad;
         T data[ capcity ];
     };
 
@@ -344,7 +346,8 @@ namespace atto {
         T *             Get( const i32 & index );
         const T *       Get( const i32 & index ) const;
 
-        inline Span<T>  GetSpan() { return { count, 0, data }; }
+        inline Span<T>          GetSpan() { return { count, data }; }
+        inline Span<const T>    GetConstSpan() const { return { count, data }; }
 
         void            Sort( SortFunc f );
 

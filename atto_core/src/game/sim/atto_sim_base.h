@@ -143,7 +143,7 @@ namespace atto {
 
     class MapActionBuffer : public RpcBuffer {
     public:
-        void PlayerSelect( PlayerNumber playerNumber, const EntHandleList & entList, EntitySelectionChange change );
+        void PlayerSelect( PlayerNumber playerNumber, EntHandleList & entList, EntitySelectionChange change );
         void ConstructBuilding( PlayerNumber playerNumber, EntityType::_enumerated buildingType, fp2 pos );
         void TrainUnit( PlayerNumber playerNumber, EntityType::_enumerated unitType );
     };

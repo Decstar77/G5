@@ -2,8 +2,8 @@
 #include "atto_sim_map.h"
 
 namespace atto {
-    void MapActionBuffer::PlayerSelect( PlayerNumber playerNumber, const EntHandleList & entList, EntitySelectionChange change ) {
-        AddAction( (i32)MapActionType::PLAYER_SELECTION, playerNumber, entList, change );
+    void MapActionBuffer::PlayerSelect( PlayerNumber playerNumber, EntHandleList & entList, EntitySelectionChange change ) {
+        AddAction( (i32)MapActionType::PLAYER_SELECTION, playerNumber, entList.GetSpan(), change );
     }
 
     void MapActionBuffer::ConstructBuilding( PlayerNumber playerNumber, EntityType::_enumerated buildingType, fp2 pos ) {

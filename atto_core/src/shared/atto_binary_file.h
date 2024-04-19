@@ -33,54 +33,48 @@ namespace atto {
             return Write( (void *)obj, (i32)sizeof( _type_ ) );
         }
 
+        template<typename _type_>
+        inline i32 Write( const Span<_type_> * span ) {
+            Write( &span->count );
+            return Write( (const void *)span->data, span->count * sizeof( _type_ ) );
+        }
+
+        template<typename _type_>
+        inline i32 Write( const Span<const _type_> * span ) {
+            Write( &span->count );
+            return Write( (const void *)span->data, span->count * sizeof( _type_ ) );
+        }
+
+        template<typename _type_>
+        inline i32 Read( const Span<_type_> * span ) {
+            static_assert( false, "NoIMpl" );
+        }
+
+        template<typename _type_>
+        inline i32 Read( const Span<const _type_> * span ) {
+            static_assert( false, "NoIMpl" );
+        }
+        
         template<typename _type_, i32 cap>
         inline i32 Write( const FixedList<_type_, cap> * list ) {
-            const i32 count = list->GetCount();
-            const i32 padding = 0; // @NOTE: Padding bytes to align the data
-            Write( &count );
-            Write( &padding );
-            return Write( (const void *)list->GetData(), count * sizeof( _type_ ) );
+            Span<const _type_> span = list->GetConstSpan();
+            return Write( &span );
         }
 
         template<typename _type_, i32 cap>
         inline void Read( FixedList<_type_, cap> * list ) {
-            i32 count;
-            Read( &count );
-            i32 padding; // @NOTE: Padding bytes to align the data
-            Read( &padding );
-            list->Clear();
-
-            // @SPEED:
-            for( i32 i = 0; i < count; i++ ) {
-                _type_ obj = {};
-                Read( &obj );
-                list->Add( obj );
-            }
+            static_assert( false, "NoIMpl" );
         }
 
         template<typename _type_>
         inline i32 Write( const GrowableList<_type_> * list ) {
-            const i32 count = list->GetCount();
-            const i32 capcity = list->GetCapcity();
-            Write( &count );
-            Write( &capcity );
-            return Write( (const void *)list->GetData(), count * sizeof( _type_ ) );
+            Span<const _type_> span = list->GetConstSpan();
+            return Write( &span );
         }
 
         template<typename _type_>
         inline void Read( GrowableList<_type_> * list ) {
-            i32 count;
-            Read( &count );
-            i32 capcity; 
-            Read( &capcity );
-            list->Clear();
-
-            // @SPEED:
-            for( i32 i = 0; i < count; i++ ) {
-                _type_ obj = {};
-                Read( &obj );
-                list->Add( obj );
-            }
+            static_assert( false, "NoIMpl" );
         }
 
         inline void Reset() {

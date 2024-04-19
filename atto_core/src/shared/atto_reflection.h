@@ -418,6 +418,54 @@ namespace atto {
         }
     };
 
+    template <typename _type_>
+    struct TypeDescriptor_Span : TypeDescriptor {
+        static_assert( std::is_trivial<_type_>::value, "Type must be trivial" );
+        TypeDescriptor * itemType;
+
+        TypeDescriptor_Span( _type_ * ) {
+            this->size = sizeof( Span<_type_> );
+            this->name = SmallString::FromLiteral( "Span" );
+            this->itemType = TypeResolver<_type_>::get();
+        }
+
+        virtual nlohmann::json JSON_Write( const void * obj ) override {
+            AssertMsg( false, "Spans cannot be JSON written" );
+            nlohmann::json j;
+            return j;
+        }
+
+        virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+            AssertMsg( false, "Spans cannot be JSON read" );
+        }
+
+        virtual LargeString ToString( const void * obj ) override {
+            AssertMsg( false, "NOT IMPL" );
+            return {};
+        }
+
+        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
+            AssertMsg( false, "NOT IMPL" );
+        }
+
+        virtual void Binary_Read( void * obj, BinaryBlob & f ) override {
+            AssertMsg( false, "NOT IMPL" );
+        }
+
+        virtual void Binary_Write( const void * obj, BinaryBlob & f ) override {
+            AssertMsg( false, "NOT IMPL" );
+        }
+    };
+
+    template <typename T>
+    class TypeResolver<Span<T>> {
+    public:
+        static TypeDescriptor * get() {
+            static TypeDescriptor_Span<T> typeDesc( ( T * )nullptr );
+            return &typeDesc;
+        }
+    };
+
     template<typename _type_ >
     struct TypeDescriptor_ObjectHandle : TypeDescriptor {
         virtual nlohmann::json JSON_Write( const void * obj ) override {

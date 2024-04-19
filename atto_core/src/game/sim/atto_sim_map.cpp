@@ -994,7 +994,7 @@ namespace atto {
                 }
 
                 VisAction_PlayerSelect( &localPlayerNumber, &viewDragSelection,  EntitySelectionChange::SET );
-                localActionBuffer.AddAction( (i32)MapActionType::PLAYER_SELECTION, localPlayerNumber, viewDragSelection, EntitySelectionChange::SET );
+                localActionBuffer.AddAction( (i32)MapActionType::PLAYER_SELECTION, localPlayerNumber, viewDragSelection.GetSpan(), EntitySelectionChange::SET );
             }
         }
 
@@ -1874,7 +1874,7 @@ namespace atto {
         DestroyEntity( ent );
     }
 
-    void SimMap::SimAction_PlayerSelect( PlayerNumber playerNumberPtr, EntHandleList selection, EntitySelectionChange changePtr ) {
+    void SimMap::SimAction_PlayerSelect( PlayerNumber playerNumberPtr, Span<EntityHandle> selection, EntitySelectionChange changePtr ) {
         PlayerNumber playerNumber = playerNumberPtr;
         EntitySelectionChange change = changePtr;
 
@@ -1890,10 +1890,10 @@ namespace atto {
             }
         }
 
-        const i32 selectionCount = selection.GetCount();
+        const i32 selectionCount = selection.count;
         if( change == EntitySelectionChange::SET || change == EntitySelectionChange::ADD ) {
             for( i32 entityHandleIndex = 0; entityHandleIndex < selectionCount; entityHandleIndex++ ) {
-                EntityHandle handle = *selection.Get( entityHandleIndex );
+                EntityHandle handle = selection[ entityHandleIndex ];
                 SimEntity * ent = entityPool.Get( handle );
                 if( ent != nullptr ) {
                     ent->selectedBy.Add( playerNumber );
@@ -1903,7 +1903,7 @@ namespace atto {
 
         if( change == EntitySelectionChange::REMOVE ) {
             for( i32 entityHandleIndex = 0; entityHandleIndex < selectionCount; entityHandleIndex++ ) {
-                EntityHandle handle = *selection.Get( entityHandleIndex );
+                EntityHandle handle = selection[ entityHandleIndex ];
                 SimEntity * ent = entityPool.Get( handle );
                 if( ent != nullptr ) {
                     ent->selectedBy.RemoveValue( playerNumber );
@@ -2165,7 +2165,7 @@ namespace atto {
         playerMonies[ playerNumber.value - 1 ].compute += amount;
     }
 
-    void SimMap::SimAction_Test( GrowableList<i32> test ) {
+    void SimMap::SimAction_Test( Span<i32> test ) {
         int a = 2;
     }
 

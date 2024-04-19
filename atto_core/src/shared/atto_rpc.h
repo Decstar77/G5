@@ -8,6 +8,18 @@
 
 namespace atto {
     template< typename _type_ >
+    struct is_span {
+        static const bool value = false;
+    };
+
+    template< typename _type_ >
+    struct is_span< Span< _type_ > > {
+        static const bool value = true;
+        static const size_t sizeOfElement = sizeof( _type_ );
+        typedef _type_ innner_type;
+    };
+
+    template< typename _type_ >
     struct is_fixed_list {
         static const bool value = false;
     };
@@ -79,8 +91,13 @@ namespace atto {
             for( size_t i = 0; i < argIndex; i++ ) {
                 dataOffset += sizes[ i ];
             }
-            
+
             _type_ result = *(_type_ *)( data + dataOffset );
+
+            if constexpr( is_span< _type_ >::value ) {
+                using InnerType = typename is_span<_type_>::innner_type;
+                result.data = (InnerType *)( data + dataOffset + sizeof( i32 ) );
+            }
 
             return result;
         }
@@ -91,41 +108,26 @@ namespace atto {
         }
 
         template<typename _type_>
-        inline size_t GetSize( typename std::enable_if< !is_fixed_list< _type_ >::value >::type * = 0, typename std::enable_if< !is_grow_list< _type_ >::value >::type * = 0 ) {
+        inline size_t GetSize( typename std::enable_if< !is_span< _type_ >::value >::type * = 0 ) {
             return sizeof( _type_ );
         }
 
         template<typename _type_>
-        inline size_t GetSize( typename std::enable_if< is_fixed_list< _type_ >::value >::type * = 0 ) {
-            return is_fixed_list< _type_ >::sizeOfElement;
+        inline size_t GetSize( typename std::enable_if< is_span< _type_ >::value >::type * = 0 ) {
+            return is_span< _type_ >::sizeOfElement;
         }
 
         template<typename _type_>
-        inline size_t GetSize( typename std::enable_if< is_grow_list< _type_ >::value >::type * = 0 ) {
-            return is_grow_list< _type_ >::sizeOfElement;
-        }
-
-        template<typename _type_>
-        inline bool MarkFixedList( typename std::enable_if< !is_fixed_list< _type_ >::value >::type * = 0 ) {
+        inline bool MarkSpan( typename std::enable_if< !is_span< _type_ >::value >::type * = 0 ) {
             return false;
         }
 
         template<typename _type_>
-        inline bool MarkFixedList( typename std::enable_if< is_fixed_list< _type_ >::value >::type * = 0 ) {
+        inline bool MarkSpan( typename std::enable_if< is_span< _type_ >::value >::type * = 0 ) {
             return true;
         }
 
-        template<typename _type_>
-        inline bool MarkGrowList( typename std::enable_if< !is_grow_list< _type_ >::value >::type * = 0 ) {
-            return false;
-        }
-
-        template<typename _type_>
-        inline bool MarkGrowList( typename std::enable_if< is_grow_list< _type_ >::value >::type * = 0 ) {
-            return true;
-        }
-
-        inline size_t GetSizeFromData( size_t index, const std::array< size_t, sizeof...( _args_ ) > & sizes, char * data ) {
+        inline size_t GetSizeFromSpan( size_t index, const std::array< size_t, sizeof...( _args_ ) > & sizes, char * data ) {
             size_t dataOffset = 0;
             for( size_t i = 0; i < index; i++ ) {
                 dataOffset += sizes[ i ];
@@ -133,20 +135,19 @@ namespace atto {
 
             const i32 count = *(i32 *)( data + dataOffset );
             const i32 size = (i32)sizes[ index ] * count;
-            const i32 total = size + (i32)sizeof( i32 ) + (i32)sizeof( i32 );// size of the list + size of the count + size of the capacity/padding
+            const i32 total = size + (i32)sizeof( i32 );// size of the list + size of the count
             return (size_t)total;
         }
 
         virtual _ret_ Call( char * data ) override {
             auto seq = std::index_sequence_for< _args_... >{};
             auto sizes = std::array< size_t, sizeof...( _args_ ) > { GetSize< _args_ >()... };
-            auto fixedMarks = std::array< bool, sizeof...( _args_ ) > { MarkFixedList< _args_ >()... };
-            auto growMarks = std::array< bool, sizeof...( _args_ ) > { MarkGrowList< _args_ >()... };
+            auto spanMarks = std::array< bool, sizeof...( _args_ ) > { MarkSpan< _args_ >()... };
 
             lastCallSize = 0;
             for( size_t i = 0; i < sizeof...( _args_ ); i++ ) {
-                if( fixedMarks[ i ] == true || growMarks[ i ] == true ) {
-                    sizes[ i ] = GetSizeFromData( i, sizes, data );
+                if( spanMarks[ i ] == true ) {
+                    sizes[ i ] = GetSizeFromSpan( i, sizes, data );
                 }
                 
                 lastCallSize += sizes[ i ];
@@ -158,6 +159,8 @@ namespace atto {
         template<typename _type_>
         inline LargeString ConvertString( size_t argIndex, const std::array< size_t, sizeof...( _args_ ) > & sizes, char * data ) {
             static_assert( std::is_pointer_v<_type_> == false, "RpcBase :: Argument can't be a pointer" );
+            static_assert( is_fixed_list<_type_>::value == false, "RpcBase cannot take Raw Lists, please use a Span" );
+            static_assert( is_grow_list<_type_>::value == false, "RpcBase cannot take Raw Lists, please use a Span" );
 
             size_t dataOffset = 0;
             for( size_t i = 0; i < argIndex; i++ ) {
@@ -189,13 +192,12 @@ namespace atto {
         virtual LargeString Log( char * data ) override {
             auto seq = std::index_sequence_for< _args_... >{};
             auto sizes = std::array< size_t, sizeof...( _args_ ) > { GetSize< _args_ >()... };
-            auto fixedMarks = std::array< bool, sizeof...( _args_ ) > { MarkFixedList< _args_ >()... };
-            auto growMarks = std::array< bool, sizeof...( _args_ ) > { MarkGrowList< _args_ >()... };
+            auto spanMarks = std::array< bool, sizeof...( _args_ ) > { MarkSpan< _args_ >()... };
 
             lastCallSize = 0;
             for( size_t i = 0; i < sizeof...( _args_ ); i++ ) {
-                if( fixedMarks[ i ] == true || growMarks[ i ] == true ) {
-                    sizes[ i ] = GetSizeFromData( i, sizes, data );
+                if( spanMarks[ i ] == true ) {
+                    sizes[ i ] = GetSizeFromSpan( i, sizes, data );
                 }
                 
                 lastCallSize += sizes[ i ];
@@ -270,12 +272,16 @@ namespace atto {
         template< typename _type_ >
         inline void DoSerialize( _type_ type ) {
             static_assert( std::is_pointer<_type_>::value == false, "AddAction :: Cannot take pointers" );
+            static_assert( is_fixed_list<_type_>::value == false, "RpcBuffer cannot take Raw Lists, please cast/pass in a Span : list.GetSpan()" );
+            static_assert( is_grow_list<_type_>::value == false, "RpcBuffer cannot take Raw Lists, please cast/pass in a Span : list.GetSpan()" );
             data.Write( &type );
         }
-
+        
         template< typename _type_, typename... _types_ >
         inline void DoSerialize( _type_ type, _types_... args ) {
             static_assert( std::is_pointer<_type_>::value == false, "AddAction :: Cannot take pointers" );
+            static_assert( is_fixed_list<_type_>::value == false, "RpcBuffer cannot take Raw Lists, please cast/pass in a Span : list.GetSpan()" );
+            static_assert( is_grow_list<_type_>::value == false, "RpcBuffer cannot take Raw Lists, please cast/pass in a Span : list.GetSpan()" );
             data.Write( &type );
             DoSerialize( args... );
         }

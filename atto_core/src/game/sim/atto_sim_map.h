@@ -334,7 +334,7 @@ namespace atto {
         void                    SimAction_Pay( PlayerNumber playerNumber, MoneySet costSet );
         void                    SimAction_SpawnEntity( i32 type, PlayerNumber playerNumberPtr, TeamNumber teamNumber, SolarNumber solarNumberPtr, fp2 pos, fp ori, fp2  vel );
         void                    SimAction_DestroyEntity( EntityHandle handle );
-        void                    SimAction_PlayerSelect( PlayerNumber playerNumberPtr, EntHandleList selection, EntitySelectionChange change );
+        void                    SimAction_PlayerSelect( PlayerNumber playerNumberPtr, Span<EntityHandle> selection, EntitySelectionChange change );
         void                    SimAction_Move( PlayerNumber playerNumberPtr, fp2 pos );
         void                    SimAction_Attack( PlayerNumber playerNumberPtr, EntityHandle target );
         void                    SimAction_ContructBuilding( PlayerNumber playerNumberPtr, i32 typePtr, fp2 posPtr );
@@ -347,7 +347,7 @@ namespace atto {
         void                    SimAction_GiveCredits( PlayerNumber playerNumberPtr, i32 amountPtr );
         void                    SimAction_GiveEnergy( PlayerNumber playerNumberPtr, i32 amountPtr );
         void                    SimAction_GiveCompute( PlayerNumber playerNumberPtr, i32 amountPtr );
-        void                    SimAction_Test( GrowableList<i32> test );
+        void                    SimAction_Test( Span<i32> test );
 
         void                    VisAction_PlayerSelect( PlayerNumber * playerNumberPtr, EntHandleList * selection, EntitySelectionChange change );
 
