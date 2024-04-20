@@ -214,6 +214,7 @@ namespace atto {
         EntityListFilter *  TypeRange( EntityType::_enumerated start, EntityType::_enumerated end );
         EntityListFilter *  End();
 
+        bool                ContainsOnlyWorker();
         bool                ContainsOnlyType( EntityType::_enumerated type );
         bool                ContainsOnlyOneOfType( EntityType::_enumerated type );
 

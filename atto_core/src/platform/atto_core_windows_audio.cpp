@@ -54,6 +54,8 @@ namespace atto {
     }
 
     AudioResource * WindowsCore::ResourceGetAndCreateAudio( const char * name, bool is2D, bool is3D, f32 minDist, f32 maxDist ) {
+        //ScopedClock ProfileClock( "ResourceGetAndCreateAudio", this );
+
         const i32 audioResourceCount = resources.audios.GetCount();
         for( i32 audioIndex = 0; audioIndex < audioResourceCount; audioIndex++ ) {
             AudioResource & audioResource = resources.audios[ audioIndex ];
@@ -76,12 +78,12 @@ namespace atto {
 
         if( theGameSettings.noAudio == false ) {
             if( audioResource.is2D == true ) {
-                FMOD_RESULT result = fmodSystem->createSound( name, FMOD_DEFAULT, 0, &audioResource.sound2D );
+                FMOD_RESULT result = fmodSystem->createSound( name, FMOD_DEFAULT | FMOD_NONBLOCKING, 0, &audioResource.sound2D );
                 ERRCHECK( result );
             }
 
             if( audioResource.is3D == true ) {
-                FMOD_RESULT result = fmodSystem->createSound( name, FMOD_3D, 0, &audioResource.sound3D );
+                FMOD_RESULT result = fmodSystem->createSound( name, FMOD_3D | FMOD_NONBLOCKING, 0, &audioResource.sound3D );
                 audioResource.sound3D->set3DMinMaxDistance( minDist, maxDist );
                 ERRCHECK( result );
             }

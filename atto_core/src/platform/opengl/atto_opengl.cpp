@@ -542,6 +542,9 @@ namespace atto {
     }
 
     TextureResource * OpenglState::ResourceGetAndCreateTexture( const char * name, bool genMips, bool genAnti ) {
+        //LargeString ProfileName = StringFormat::Large( "ResourceGetAndCreateTexture %s", name );
+        //ScopedClock ProfileClock( ProfileName.GetCStr(), core );
+
         const i32 textureResourceCount = textures.GetCount();
         for( i32 i = 0; i < textureResourceCount; i++ ) {
             TextureResource & textureResource = textures[ i ];

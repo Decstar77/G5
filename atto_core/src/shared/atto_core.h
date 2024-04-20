@@ -494,7 +494,6 @@ namespace atto {
     protected:
         inline static Core *                theCore = nullptr;
         GameSettings                        theGameSettings = {};
-        LoggingState                        logger = {};
         FixedList<DrawContext, 8>           drawContexts = {};
         FrameInput                          input = {};
         UIState                             uiState = {};
@@ -527,10 +526,6 @@ namespace atto {
         void                                MemoryClearPermanent();
         void                                MemoryMakeTransient( u64 bytes );
         void                                MemoryClearTransient();
-
-        virtual u64                         OsGetFileLastWriteTime( const char * fileName ) = 0;
-        virtual void                        OsLogMessage( const char * message, u8 colour ) = 0;
-        virtual void                        OsErrorBox( const char * msg ) = 0;
     };
 
     template<typename _type_>

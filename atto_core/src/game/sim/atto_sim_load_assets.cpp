@@ -144,18 +144,24 @@ namespace atto {
         sprNairanWorkerBase             = core->ResourceGetAndCreateSprite( "res/game/fleet_2/Nairan/Base/PNGs/Nairan - Support Ship - Base.png", 1, 64, 64, 0 );
         sprNairanWorkerEngine           = core->ResourceGetAndCreateSprite( "res/game/fleet_2/Nairan/Engine/PNGs/Nairan - Support Ship - Engine.png", 8, 64, 64, 10 );
         sprNairanWorkerDestruction      = core->ResourceGetAndCreateSprite( "res/game/fleet_2/Nairan/Destruction/PNGs/Nairan - Support Ship - Destruction.png", 16, 64, 64, 10 );
+        cfgKlaedWorkerTrainTimeTurns    = SecondsToTurns( 12 );
+        cfgNairanWorkerCost             = { 50, 10, 5 };
 
         sprNairanScoutBase              = core->ResourceGetAndCreateSprite( "res/game/fleet_2/Nairan/Base/PNGs/Nairan - Scout - Base.png", 1, 64, 64, 0 );
         sprNairanScoutEngine            = core->ResourceGetAndCreateSprite( "res/game/fleet_2/Nairan/Engine/PNGs/Nairan - Scout - Engine.png", 8, 64, 64, 10 );
         sprNairanScoutShield            = core->ResourceGetAndCreateSprite( "res/game/fleet_2/Nairan/Shield/PNGs/Nairan - Scout - Shield.png", 18, 64, 64, 10 );
         sprNairanScoutWeapon            = core->ResourceGetAndCreateSprite( "res/game/fleet_2/Nairan/Weapons/PNGs/Nairan - Scout - Weapons.png", 6, 64, 64, 10 );
         sprNairanScoutDestruction       = core->ResourceGetAndCreateSprite( "res/game/fleet_2/Nairan/Destruction/PNGs/Nairan - Scout - Destruction.png", 16 ,64, 64, 10 );
+        cfgNairanScoutTrainTimeTurns    = SecondsToTurns( 18 );
+        cfgNairanScoutCost              = { 70, 20, 10 };
 
         sprNairanFighterBase            = core->ResourceGetAndCreateSprite( "res/game/fleet_2/Nairan/Base/PNGs/Nairan - Fighter - Base.png", 1, 64, 64, 0 );
         sprNairanFighterEngine          = core->ResourceGetAndCreateSprite( "res/game/fleet_2/Nairan/Engine/PNGs/Nairan - Fighter - Engine.png", 8, 64, 64, 10 );
         sprNairanFighterShield          = core->ResourceGetAndCreateSprite( "res/game/fleet_2/Nairan/Shield/PNGs/Nairan - Fighter - Shield.png", 20, 64, 64, 10 );
         sprNairanFighterWeapon          = core->ResourceGetAndCreateSprite( "res/game/fleet_2/Nairan/Weapons/PNGs/Nairan - Fighter - Weapons.png", 28, 64, 64, 10 );
         sprNairanFighterDestruction     = core->ResourceGetAndCreateSprite( "res/game/fleet_2/Nairan/Destruction/PNGs/Nairan - Fighter - Destruction.png", 18, 64, 64, 10 );
+        cfgNairanFighterTrainTimeTurns  = SecondsToTurns( 38 );
+        cfgNairanFighterCost            = { 100, 50, 50 };
 
         sprNairanProjectileBolt         = core->ResourceGetAndCreateSprite( "res/game/fleet_2/Nairan/Projectiles/PNGs/Nairan - Bolt.png", 5, 9, 9, 10 );
         sprNairanProjectileRocket       = core->ResourceGetAndCreateSprite( "res/game/fleet_2/Nairan/Projectiles/PNGs/Nairan - Rocket.png", 4, 9, 16, 10 );

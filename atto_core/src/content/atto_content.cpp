@@ -161,7 +161,6 @@ namespace atto {
         }
     }
 
-
     bool PixelArtMeshCreator::LoadFromFile( const char * file ) {
         i32 width = 0;
         i32 height = 0;

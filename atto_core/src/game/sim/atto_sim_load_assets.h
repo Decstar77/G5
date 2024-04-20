@@ -137,18 +137,24 @@ namespace atto {
     inline SpriteResource * sprNairanWorkerBase = nullptr;
     inline SpriteResource * sprNairanWorkerEngine = nullptr;
     inline SpriteResource * sprNairanWorkerDestruction = nullptr;
+    inline i32              cfgNairanWorkerTrainTimeTurns = 0;
+    inline MoneySet         cfgNairanWorkerCost = {};
 
     inline SpriteResource * sprNairanScoutBase = nullptr;
     inline SpriteResource * sprNairanScoutEngine = nullptr;
     inline SpriteResource * sprNairanScoutShield = nullptr;
     inline SpriteResource * sprNairanScoutWeapon = nullptr;
     inline SpriteResource * sprNairanScoutDestruction = nullptr;
+    inline i32              cfgNairanScoutTrainTimeTurns = 0;
+    inline MoneySet         cfgNairanScoutCost = {};
 
     inline SpriteResource * sprNairanFighterBase = nullptr;
     inline SpriteResource * sprNairanFighterEngine = nullptr;
     inline SpriteResource * sprNairanFighterShield = nullptr;
     inline SpriteResource * sprNairanFighterWeapon = nullptr;
     inline SpriteResource * sprNairanFighterDestruction = nullptr;
+    inline i32              cfgNairanFighterTrainTimeTurns = 0;
+    inline MoneySet         cfgNairanFighterCost = {};
 
     inline SpriteResource * sprNairanProjectileBolt = nullptr;
     inline SpriteResource * sprNairanProjectileRocket = nullptr;

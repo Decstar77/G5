@@ -31,7 +31,7 @@ namespace atto {
         return strTo;
     }
 
-    void WindowsCore::OsLogMessage(const char* message, u8 colour) {
+    void PlatformLogMessage(const char* message, u8 colour) {
         HANDLE console_handle = GetStdHandle(STD_OUTPUT_HANDLE);
         // @NOTE: FATAL, ERROR, WARN, INFO, DEBUG, TRACE
         static u8 levels[6] = { 64, 4, 6, 2, 1, 8 };
@@ -48,7 +48,7 @@ namespace atto {
         SetConsoleTextAttribute(console_handle, 8);
     }
 
-    void WindowsCore::OsErrorBox(const char* msg) {
+    void PlatformErrorBox(const char* msg) {
         MessageBeep(MB_ICONERROR);
         MessageBoxA(NULL, msg, "Catastrophic Error !!! (BOOOM) ", MB_ICONERROR);
     }
@@ -62,16 +62,16 @@ namespace atto {
         return dateTime.QuadPart;
     }
 
-    u64 WindowsCore::OsGetFileLastWriteTime(const char* fileName) {
+    u64 PlatformGetFileLastWriteTime( const char* fileName ) {
         FILETIME lastWriteTime = {};
         HANDLE fileHandle = CreateFileA(fileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
 
         if (fileHandle == INVALID_HANDLE_VALUE) {
-            LogOutput(LogLevel::ERR, "OsGetFileLastWriteTime :: Failed to open file %s. Error: %d", fileName, GetLastError());
+            LoggerLogOutput(LogLevel::ERR, "OsGetFileLastWriteTime :: Failed to open file %s. Error: %d", fileName, GetLastError());
         }
         else {
             if (GetFileTime(fileHandle, NULL, NULL, &lastWriteTime) == 0) {
-                LogOutput(LogLevel::ERR, "OsGetFileLastWriteTime :: Failed to get file time, %s. Error: %d", fileName, GetLastError());
+                LoggerLogOutput(LogLevel::ERR, "OsGetFileLastWriteTime :: Failed to get file time, %s. Error: %d", fileName, GetLastError());
             }
             CloseHandle(fileHandle);
         }

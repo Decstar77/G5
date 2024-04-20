@@ -27,6 +27,12 @@ namespace atto {
             return cfgKlaedScoutTrainTimeTurns;
         } else if ( type == EntityType::UNIT_KLAED_FIGHTER ) {
             return cfgKlaedFighterTrainTimeTurns;
+        } else if ( type == EntityType::UNIT_NAIRAN_WORKER) {
+            return cfgNairanWorkerTrainTimeTurns;
+        } else if ( type == EntityType::UNIT_NAIRAN_SCOUT ) {
+            return cfgNairanScoutTrainTimeTurns;
+        } else if ( type == EntityType::UNIT_NAIRAN_FIGHTER ) {
+            return cfgNairanFighterTrainTimeTurns;
         } else if ( type == EntityType::UNIT_NAUTOLAN_WORKER ) {
             return cfgNautolanWorkerTrainTimeTurns;
         } else if ( type == EntityType::UNIT_NAUTOLAN_SCOUT ) {
@@ -46,6 +52,12 @@ namespace atto {
             return cfgKlaedScoutCost;
         } else if ( type == EntityType::UNIT_KLAED_FIGHTER ) {
             return cfgKlaedFighterCost;
+        } else if ( type == EntityType::UNIT_NAIRAN_WORKER) {
+            return cfgNairanWorkerCost;
+        } else if ( type == EntityType::UNIT_NAIRAN_SCOUT ) {
+            return cfgNairanScoutCost;
+        } else if ( type == EntityType::UNIT_NAIRAN_FIGHTER ) {
+            return cfgNairanFighterCost;
         } else if ( type == EntityType::UNIT_NAUTOLAN_WORKER ) {
             return cfgNautolanWorkerCost;
         } else if ( type == EntityType::UNIT_NAUTOLAN_SCOUT ) {
@@ -64,6 +76,12 @@ namespace atto {
         } else if ( type == EntityType::UNIT_KLAED_SCOUT ) {
             return 'E';
         } else if ( type == EntityType::UNIT_KLAED_FIGHTER ) {
+            return 'F';
+        } else if ( type == EntityType::UNIT_NAIRAN_WORKER ) {
+            return 'Q';
+        } else if ( type == EntityType::UNIT_NAIRAN_SCOUT ) {
+            return 'E';
+        } else if ( type == EntityType::UNIT_NAIRAN_FIGHTER ) {
             return 'F';
         }
 
@@ -286,6 +304,22 @@ namespace atto {
         return &typeDesc;
     }
 
+    bool EntityListFilter::ContainsOnlyWorker() {
+        const i32 entCount = result.GetCount();
+        if( entCount == 0 ) {
+            return false;
+        }
+
+        for ( i32 entityIndex = 0; entityIndex < entCount; entityIndex++ ) {
+            SimEntity * ent = *result.Get( entityIndex );
+            if ( IsWorkerType( ent->type ) == false ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     bool EntityListFilter::ContainsOnlyType( EntityType::_enumerated type ) {
         const i32 entCount = result.GetCount();
         if( entCount == 0 ) {
@@ -298,6 +332,7 @@ namespace atto {
                 return false;
             }
         }
+
         return true;
     }
 
@@ -316,12 +351,6 @@ namespace atto {
             }
         }
         return count == 1;
-    }
-
-    static GrowableList<i32> SomethingTewst() {
-        GrowableList<i32> ee = {};
-        ee.Add( 2 );
-        return ee;
     }
 
     void SimMap::Initialize( Core * core ) {
@@ -686,7 +715,7 @@ namespace atto {
             OwnedBy( localPlayerNumber )->
             VisSelectedBy( localPlayerNumber )->
             End()->
-            ContainsOnlyType( EntityType::UNIT_KLAED_WORKER );
+            ContainsOnlyWorker();
 
         const bool onlyBuildingSelected = entityFilter->Begin( &entities )->
             OwnedBy( localPlayerNumber )->
@@ -848,7 +877,7 @@ namespace atto {
             if ( onlyBuildingSelectedEnt->building.isBuilding == false ) {
                 const glm::vec2 s = glm::vec2( 15 );
                 if ( core->InputKeyJustPressed( KEY_CODE_Q ) || gameUI.ButtonPix( 242, "Q", ui_RightPanelCenters[ 0 ], s, Colors::SKY_BLUE ) ) {
-                    EntityType type = EntityType::Make( EntityType::UNIT_KLAED_WORKER );
+                    EntityType type = EntityType::Make( localPlayerNumber.value == 1 ? EntityType::UNIT_KLAED_WORKER : EntityType::UNIT_NAIRAN_WORKER );
                     if ( Vis_CanAfford( localPlayerNumber, GetUnitCostForEntityType( type ) ) == true ) {
                         localActionBuffer.AddAction( (i32)MapActionType::SIM_ENTITY_BUILDING_COMMAND_TRAIN_UNIT, localPlayerNumber, ( i32 )type );
                         core->AudioPlay( sndKlaedBuidlingQueue );
@@ -856,7 +885,7 @@ namespace atto {
                 }
 
                 if ( core->InputKeyJustPressed( KEY_CODE_E ) || gameUI.ButtonPix( 243, "E", ui_RightPanelCenters[ 1 ], s, Colors::SKY_BLUE ) ) {
-                    EntityType type =  EntityType::Make( EntityType::UNIT_KLAED_SCOUT );
+                    EntityType type =  EntityType::Make( localPlayerNumber.value == 1 ? EntityType::UNIT_KLAED_SCOUT : EntityType::UNIT_NAIRAN_SCOUT );
                     if ( Vis_CanAfford( localPlayerNumber, GetUnitCostForEntityType( type ) ) == true ) {
                         localActionBuffer.AddAction( (i32)MapActionType::SIM_ENTITY_BUILDING_COMMAND_TRAIN_UNIT, localPlayerNumber, ( i32 )type );
                         core->AudioPlay( sndKlaedBuidlingQueue );
@@ -864,7 +893,7 @@ namespace atto {
                 }
 
                 if ( core->InputKeyJustPressed( KEY_CODE_F ) || gameUI.ButtonPix( 244, "F", ui_RightPanelCenters[ 2 ], s, Colors::SKY_BLUE ) ) {
-                    EntityType type =  EntityType::Make( EntityType::UNIT_KLAED_FIGHTER );
+                    EntityType type =  EntityType::Make( localPlayerNumber.value == 1 ? EntityType::UNIT_KLAED_FIGHTER : EntityType::UNIT_NAIRAN_FIGHTER );
                     if ( Vis_CanAfford( localPlayerNumber, GetUnitCostForEntityType( type ) ) == true ) {
                         localActionBuffer.AddAction( (i32)MapActionType::SIM_ENTITY_BUILDING_COMMAND_TRAIN_UNIT, localPlayerNumber, ( i32 )type );
                         core->AudioPlay( sndKlaedBuidlingQueue );
@@ -1438,7 +1467,7 @@ namespace atto {
                     entity->maxHealth = 50;
                     entity->currentHealth = entity->maxHealth;
 
-                    entity->unit.range = ToFP( 40 );
+                    entity->unit.range = ToFP( 60 );
                     entity->unit.speed = Fp( 25 );
                 } break;
                 case EntityType::UNIT_NAIRAN_SCOUT:
@@ -1531,7 +1560,7 @@ namespace atto {
                     entity->currentHealth = entity->maxHealth;
 
                     entity->unit.speed = Fp( 25 );
-                    entity->unit.range = ToFP( 50 );
+                    entity->unit.range = ToFP( 60 );
                 } break;
                 case EntityType::UNIT_NAUTOLAN_SCOUT: {
                     entity->spriteUnit.base = sprNautolanScoutBase;
@@ -2131,7 +2160,6 @@ namespace atto {
                 if ( true ) {
                     targetEnt->building.turn = 0;
                     targetEnt->building.isBuilding = false;
-                    return;
                 }
                 #endif
 

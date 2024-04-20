@@ -30,7 +30,6 @@ IDEAS:
     SHEILD BAR
     ENERGY BAR
 
-
 */
 
 

@@ -21,17 +21,19 @@ namespace atto {
         FixedList<LargeString, 10000>   logs = {};
     };
 
+    void LoggerLogOutput( LogLevel level, const char * message, ... );
+
     // Logs a fatal-level message.
-#define ATTOFATAL(message, ...) atto::LogOutput(atto::LogLevel::FATAL, message, ##__VA_ARGS__);
+    #define ATTOFATAL(message, ...) atto::LoggerLogOutput(atto::LogLevel::FATAL, message, ##__VA_ARGS__);
 
 #ifndef ATTOERROR
 // Logs an error-level message.
-#define ATTOERROR(message, ...) atto::LogOutput(atto::LogLevel::ERR, message, ##__VA_ARGS__);
+    #define ATTOERROR(message, ...) atto::LoggerLogOutput(atto::LogLevel::ERR, message, ##__VA_ARGS__);
 #endif
 
 #if LOG_WARN_ENABLED == 1
 // Logs a warning-level message.
-#define ATTOWARN(message, ...) atto::LogOutput(atto::LogLevel::WARN, message, ##__VA_ARGS__);
+    #define ATTOWARN(message, ...) atto::LoggerLogOutput(atto::LogLevel::WARN, message, ##__VA_ARGS__);
 #else
 // Does nothing when LOG_WARN_ENABLED != 1
 #define ATTOWARN(message, ...)
@@ -39,7 +41,7 @@ namespace atto {
 
 #if LOG_INFO_ENABLED == 1
 // Logs a info-level message.
-#define ATTOINFO(message, ...) atto::LogOutput(atto::LogLevel::INFO, message, ##__VA_ARGS__);
+    #define ATTOINFO(message, ...) atto::LoggerLogOutput(atto::LogLevel::INFO, message, ##__VA_ARGS__);
 #else
 // Does nothing when LOG_INFO_ENABLED != 1
 #define ATTOINFO(message, ...)
@@ -47,7 +49,7 @@ namespace atto {
 
 #if LOG_DEBUG_ENABLED == 1
 // Logs a debug-level message.
-#define ATTODEBUG(message, ...) atto::LogOutput(atto::LogLevel::DEBUG, message, ##__VA_ARGS__);
+    #define ATTODEBUG(message, ...) atto::LoggerLogOutput(atto::LogLevel::DEBUG, message, ##__VA_ARGS__);
 #else
 // Does nothing when LOG_DEBUG_ENABLED != 1
 #define ATTODEBUG(message, ...)
@@ -55,7 +57,7 @@ namespace atto {
 
 #if LOG_TRACE_ENABLED == 0
 // Logs a trace-level message.
-#define ATTOTRACE(message, ...) atto::LogOutput(atto::LogLevel::TRACE, message, ##__VA_ARGS__);
+    #define ATTOTRACE(message, ...) atto::LoggerLogOutput(atto::LogLevel::TRACE, message, ##__VA_ARGS__);
 #else
 // Does nothing when LOG_TRACE_ENABLED != 1
 #define ATTOTRACE(message, ...)

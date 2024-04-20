@@ -4,6 +4,9 @@
 #include "../shared/atto_containers.h"
 #include "../shared/atto_core.h"
 
+#include "atto_content_bmp.h"
+#include "atto_content_sprite_atlas.h"
+
 struct aiScene;
 struct aiNode;
 struct aiMesh;
@@ -39,7 +42,6 @@ namespace atto {
         };
 
         std::vector<PixyPoint> points;
-
     };
 
 }

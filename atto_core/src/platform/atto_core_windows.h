@@ -95,9 +95,6 @@ namespace atto {
         VulkanState *                   vkState = nullptr;
         OpenglState *                   glState = nullptr;
 
-        u64             OsGetFileLastWriteTime( const char * fileName ) override;
-        void            OsLogMessage( const char * message, u8 colour ) override;
-        void            OsErrorBox( const char * msg ) override;
         void            OsParseStartArgs( int argc, char ** argv );
 
         bool            AudioInitialize();
