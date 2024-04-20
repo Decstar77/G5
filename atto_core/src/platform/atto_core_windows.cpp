@@ -53,7 +53,7 @@ namespace atto {
 
         //AudioPlay( sovietMarch, nullptr );
 
-        LoadAllAssets( this );
+        //LoadAllAssets( this );
 
         this->deltaTime = 0;
         f64 startTime = window.GetTime();

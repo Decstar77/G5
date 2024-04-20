@@ -269,7 +269,6 @@ namespace atto {
 
         bool                                        runSim = false;
         LargeString                                 mapName = {};
-        EntPool                                     entityPool = {};
 
         f32                                         dtAccumulator = 0.0f;
 
@@ -282,75 +281,11 @@ namespace atto {
         MapTurn                                     localMapTurn = {};
         MapActionBuffer                             localActionBuffer = {}; // Player inputs
 
-        // ============ Syncing Stuffies ============
-        i32                                         syncTurnAttempts = {};
-        i32                                         syncWaitTurnCounter = {};
-        SyncQueues                                  syncQueues = {};
-
-        // ============ Player Stuffies ============
-        FixedList< PlayerNumber, MAX_PLAYERS >      playerNumbers = {};
-        FixedList< MoneySet, MAX_PLAYERS >          playerMonies = {};
-
-        AIThinker                                   aiThinker = {};
-
-        // ================= Other =================
-        SimMapReplay                                mapReplay = {};
-
-        // ============ Visual Stuffies ============
-        bool                                        viewIsDragging = false;
-        glm::vec2                                   viewStartDrag = glm::vec2( 0.0f );
-        glm::vec2                                   viewEndDrag = glm::vec2( 0.0f );
-        EntHandleList                               viewDragSelection = {};
-        SolarNumber                                 viewSolarNumber = {};
-        FixedList<SolarSystemConnectionPair, 1000>  viewSolarSystemConnections = {};
-        i32                                         viewParticleAliveCount = 0;
-        FixedList< Particle, 1000 >                 viewParticles = {};
-
-        UIContext                                   gameUI = {};
-
-        // @HACK:
-        bool isPlacingBuilding = false;
-        EntityType placingBuildingType = {};
-        bool planetPlacementSubMenu = false;
-        i32 planetPlacementSubMenuIndex = -1;
-        bool playSpawningSounds = false;
 
     public:
         void                    Initialize( Core * core );
         void                    Update( Core * core, f32 dt );
 
-        SimEntity *             SpawnEntity( SimEntitySpawnInfo * spawnInfo );
-        SimEntity *             SpawnEntity( EntityType type, PlayerNumber playerNumber, TeamNumber teamNumber, SolarNumber solarNumber, fp2 pos, fp ori, fp2 vel );
-        void                    DestroyEntity( SimEntity * entity );
-                                
-        void                    SimTick( MapTurn * turn1, MapTurn * turn2 );
-        void                    Sim_ApplyActions( MapActionBuffer * actionBuffer );
-        i64                     Sim_CheckSum();
-
-        bool                    Vis_CanAfford( PlayerNumber playerNumber, MoneySet costSet );
-
-        bool                    SimUtil_CanAfford( PlayerNumber playerNumber, MoneySet costSet );
-        bool                    SimUtil_CanPlaceBuilding( EntityListFilter * entityFilter, EntList & entities, FpCollider collider );
-
-        void                    SimAction_Pay( PlayerNumber playerNumber, MoneySet costSet );
-        void                    SimAction_SpawnEntity( i32 type, PlayerNumber playerNumberPtr, TeamNumber teamNumber, SolarNumber solarNumberPtr, fp2 pos, fp ori, fp2  vel );
-        void                    SimAction_DestroyEntity( EntityHandle handle );
-        void                    SimAction_PlayerSelect( PlayerNumber playerNumberPtr, Span<EntityHandle> selection, EntitySelectionChange change );
-        void                    SimAction_Move( PlayerNumber playerNumberPtr, fp2 pos );
-        void                    SimAction_Attack( PlayerNumber playerNumberPtr, EntityHandle target );
-        void                    SimAction_ContructBuilding( PlayerNumber playerNumberPtr, i32 typePtr, fp2 posPtr );
-        void                    SimAction_ContructExistingBuilding( PlayerNumber playerNumberPtr, EntityHandle target );
-        void                    SimAction_PlanetPlacePlacement( PlayerNumber playerNumberPtr, i32 placementIndexPtr, PlanetPlacementType placementTypePtr );
-        void                    SimAction_BuildingTrainUnit( PlayerNumber playerNumberPtr , i32 typePtr );
-        void                    SimAction_BuildingCancelUnit( PlayerNumber playerNumberPtr , i32 indexPtr );
-        void                    SimAction_ApplyDamage( i32 damage, EntityHandle target );
-        void                    SimAction_ApplyContruction( EntityHandle target );
-        void                    SimAction_GiveCredits( PlayerNumber playerNumberPtr, i32 amountPtr );
-        void                    SimAction_GiveEnergy( PlayerNumber playerNumberPtr, i32 amountPtr );
-        void                    SimAction_GiveCompute( PlayerNumber playerNumberPtr, i32 amountPtr );
-        void                    SimAction_Test( Span<i32> test );
-
-        void                    VisAction_PlayerSelect( PlayerNumber * playerNumberPtr, EntHandleList * selection, EntitySelectionChange change );
 
         REFLECT();
 
