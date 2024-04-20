@@ -37,6 +37,7 @@ namespace atto {
         void Run(int argc, char** argv) override;
         
         virtual f64                     GetTheCurrentTime() const override;
+        virtual void                    SetTheCurrentTime( f64 t ) override;
 
         virtual TextureResource *       ResourceGetAndCreateTexture( const char * name, bool genMips, bool genAnti ) override;
         virtual TextureResource *       ResourceGetAndLoadTexture( const char * name ) override;

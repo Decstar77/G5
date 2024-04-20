@@ -13,6 +13,7 @@ namespace atto {
     public:
         void    Initialize( Core * core );
         f64     GetTime() const;
+        void    SetTime( f64 t );
         bool    ShouldClose();
         void    PollEvents();
         void    SwapBuffers();

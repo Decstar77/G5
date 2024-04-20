@@ -121,6 +121,10 @@ namespace atto {
         return window.GetTime();
     }
 
+    void WindowsCore::SetTheCurrentTime( f64 t ) {
+        window.SetTime( t );
+    }
+
     void WindowsCore::RenderSubmit( DrawContext * dcxt, bool clearBackBuffers ) {
     #if ATTO_OPENGL
         return glState->RenderSubmit( dcxt, clearBackBuffers );

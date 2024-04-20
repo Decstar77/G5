@@ -146,15 +146,26 @@ namespace atto {
         void PlayerSelect( PlayerNumber playerNumber, EntHandleList & entList, EntitySelectionChange change );
         void ConstructBuilding( PlayerNumber playerNumber, EntityType::_enumerated buildingType, fp2 pos );
         void TrainUnit( PlayerNumber playerNumber, EntityType::_enumerated unitType );
+    };    
+    
+    struct VariableKeyFrame {
+        glm::vec2 value;
+        f32 t;
     };
 
     struct MapTurn {
-        i64                     checkSum;
         i32                     turnNumber;
-        PlayerNumber            playerNumber;
 
-        bool madeMove;
-        fp2 moveLoc;
+        bool    isSync;
+        f32     serverTime;
+
+        bool isReq;
+        glm::vec2 reqPos;
+
+        i32 ent;
+        f32 kTimeRemoval;
+        VariableKeyFrame k1;
+        VariableKeyFrame k2;
 
         MapActionBuffer         playerActions;
     };

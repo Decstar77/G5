@@ -138,6 +138,10 @@ namespace atto {
         return glfwGetTime();
     }
 
+    void PlatformWindow::SetTime( f64 t ) {
+        glfwSetTime( t );
+    }
+
     bool PlatformWindow::ShouldClose() {
         return glfwWindowShouldClose( window );
     }

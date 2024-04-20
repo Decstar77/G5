@@ -387,6 +387,7 @@ namespace atto {
 
         f32                                 GetDeltaTime() const;
         virtual f64                         GetTheCurrentTime() const = 0;
+        virtual void                        SetTheCurrentTime( f64 t ) = 0;
         Camera                              CreateDefaultCamera() const;
 
         inline GameSettings                 GetCurrentGameSettings() const { return theGameSettings; }

@@ -409,36 +409,117 @@ namespace atto {
         TeamNumber t2 = TeamNumber::Create( 2 );
 
         SolarNumber s1 = SolarNumber::Create( 1 );
-
-
-
     }
 
-    struct RollBackEnt {
-        fp2 p;
-        fp2 dest;
-        glm::vec2 vp;
+
+    class VariableTimeline {
+    public:
+        GrowableList<VariableKeyFrame>  keyFrames;
+
+        VariableKeyFrame AddKeyFrame( glm::vec2 value, f32 t ) {
+            VariableKeyFrame newKeyFrame;
+            newKeyFrame.value = value;
+            newKeyFrame.t = t;
+
+            if (keyFrames.GetCount() == 0 ) {
+                keyFrames.Add( newKeyFrame );
+                return newKeyFrame;
+            }
+
+            if ( t <= keyFrames[0].t ) {
+                keyFrames.Insert( 0, newKeyFrame );
+                return newKeyFrame;
+            }
+
+            for (i32 i = 0; i < keyFrames.GetCount() - 1; ++i ) {
+                if (t >= keyFrames[i].t && t <= keyFrames[i + 1].t ) {
+                    keyFrames.Insert( i + 1, newKeyFrame );
+                    return newKeyFrame;
+                }
+            }
+
+            keyFrames.Add( newKeyFrame );
+
+            return newKeyFrame;
+        }
+
+        void RemoveKeyFramesPast( f32 t ) {
+            const i32 keyCount = keyFrames.GetCount();
+            if( keyCount == 0 ) {
+                return;
+            }
+            
+            for( i32 i = keyCount - 1; i >= 0; --i ) {
+                if( keyFrames[ i ].t <= t ) {
+                    keyFrames.SetCount( i + 1 );
+                    return;
+                }
+            }
+        }
+
+        glm::vec2 ValueForTime( f32 t ) {
+            const i32 keyCount = keyFrames.GetCount();
+            if( keyCount == 0 ) {
+                ATTOWARN( "ValueForTime has no keyframes" );
+                return glm::vec2( 0.0f, 0.0f );
+            }
+
+            if( t <= keyFrames[ 0 ].t ) {
+                return keyFrames[ 0 ].value;
+            }
+            else if( t >= keyFrames[ keyCount - 1 ].t ) {
+                return keyFrames[ keyCount - 1 ].value;
+            }
+
+            VariableKeyFrame * left = nullptr;
+            VariableKeyFrame * right = nullptr;
+            KeysFromTime( &left, &right, t );
+
+            f32 deltaT = right->t - left->t;
+            if( deltaT == 0.0 ) {
+                return left->value;
+            }
+
+            f32 factor = ( t - left->t ) / deltaT;
+            return left->value + factor * ( right->value - left->value );
+        }
+        
+        void KeysFromTime( VariableKeyFrame ** left, VariableKeyFrame ** right, f32 t ) {
+            *left = nullptr;
+            *right = nullptr;
+
+            const i32 keyCount = keyFrames.GetCount();
+            for( i32 keyIndex = 0; keyIndex < keyCount; keyIndex++ ) {
+                if( t >= keyFrames[ keyIndex ].t ) {
+                    *left = &keyFrames[ keyIndex ];
+                } else if ( t < keyFrames[ keyIndex ].t ) {
+                    *right = &keyFrames[ keyIndex ];
+                    break; // @NOTE: We can break here because the key array is assumed to be sorted.
+                }
+            }
+        }
+    };
+
+    struct GameEnt {
+        VariableTimeline p;
     };
 
     struct GameState {
-        int turnNumber;
-        RollBackEnt e1;
-        RollBackEnt e2;
+        GameEnt e1;
+        GameEnt e2;
     };
 
     void SimMap::Update( Core * core, f32 dt ) {
         //ScopedClock timer( "Update", core );
-        static FixedList<GameState, 10000> gameStates = {};
+
+        const f32 currentTime = (f32)core->GetTheCurrentTime();
 
         static bool inited = false;
+        static GameState gs = {};
         if ( inited == false ) {
             inited = true;
-            GameState & gs = gameStates.AddEmpty();
-            gs.turnNumber = gameStates.GetCount() - 1;
-            gs.e1.p = Fp2( 200, 200 );
-            gs.e1.dest = gs.e1.p;
-            gs.e2.p = Fp2( 400, 200 );
-            gs.e2.dest = gs.e2.p;
+            gs.e1.p.AddKeyFrame( glm::vec2( 200, 200 ), currentTime );
+            gs.e2.p.AddKeyFrame( glm::vec2( 400, 200 ), currentTime );
         }
 
         DrawContext * spriteDrawContext = core->RenderGetDrawContext( 0, true );
@@ -446,6 +527,9 @@ namespace atto {
 
         const glm::vec2 mousePosPix = core->InputMousePosPixels();
         const glm::vec2 mousePosWorld = spriteDrawContext->ScreenPosToWorldPos( mousePosPix );
+
+        static bool hasSyncedTime = false;
+        static f32 serverTimeDelta = 0.0f;
 
         static bool mousePressed = false;
         if ( core->InputMouseButtonJustPressed( MouseButton::MOUSE_BUTTON_2 ) ) {
@@ -458,6 +542,19 @@ namespace atto {
                 dtAccumulator -= SIM_DT_FLOAT;
 
                 NetworkMessage & msg = *core->MemoryAllocateTransient< NetworkMessage >();
+
+                if ( hasSyncedTime == false && localPlayerNumber.value == 1 ) {
+                    hasSyncedTime = true;
+                    ZeroStruct( msg );
+                    msg.type = NetworkMessageType::MAP_TURN;
+                    localMapTurn.isSync = true;
+                    localMapTurn.serverTime = currentTime;
+                    NetworkMessagePush( msg, localMapTurn );
+                    core->NetworkSend( msg );
+                    ZeroStruct( localMapTurn );
+                    ZeroStruct( msg );
+                }
+
                 while( core->NetworkRecieve( msg ) ) {
                     switch( msg.type ) {
                         case NetworkMessageType::MAP_TURN:
@@ -465,116 +562,101 @@ namespace atto {
                             i32 offset = 0;
                             MapTurn turn = NetworkMessagePop<MapTurn>( msg, offset );
 
-                            if ( turn.madeMove == true ) {
-                                i32 index = turn.turnNumber; 
+                            if ( turn.isSync == true ) {
+                                //core->SetTheCurrentTime( 0 );
+                                serverTimeDelta = turn.serverTime - currentTime; // @TODO: Take into account ping
+                            } else if ( turn.isReq == true ) {
+                                f32 activeTime = currentTime + 0.25f / 2.0f + 0.04f;
+                                const glm::vec2 starting = gs.e2.p.ValueForTime( activeTime );
+                                const f32 speed = 100.0f;
+                                const f32 dist = glm::distance( starting, turn.reqPos );
+                                const f32 travelTime = dist / speed;
+                                gs.e2.p.RemoveKeyFramesPast( activeTime );
+                                VariableKeyFrame k1 = gs.e2.p.AddKeyFrame( starting, activeTime );
+                                VariableKeyFrame k2 = gs.e2.p.AddKeyFrame( turn.reqPos, activeTime + travelTime );
 
-                                GameState lastGs = gameStates.Last();
-
-                                for ( i32 i = index; i < gameStates.GetCount(); i++ ) {
-                                    gameStates[ i ] = gameStates[ i - 1 ];
-                                    GameState & recomputedGs = gameStates[ i ];
-                                    if ( i == index ) {
-                                        if ( localPlayerNumber.value == 1 ) {
-                                            recomputedGs.e2.dest = turn.moveLoc;
-                                        } else {
-                                            recomputedGs.e1.dest = turn.moveLoc;
-                                        }
-                                    }
-                                    if ( FpDistance( recomputedGs.e1.p, recomputedGs.e1.dest ) > Fp( 5 ) ) {
-                                        recomputedGs.e1.p = recomputedGs.e1.p + FpNormalize( recomputedGs.e1.dest - recomputedGs.e1.p ) * Fp( 100 ) * SIM_DT;
-                                    }
-                                    if ( FpDistance( recomputedGs.e2.p, recomputedGs.e2.dest ) > Fp( 5 ) ) {
-                                        recomputedGs.e2.p = recomputedGs.e2.p + FpNormalize( recomputedGs.e2.dest - recomputedGs.e2.p ) * Fp( 100 ) * SIM_DT;
-                                    }
+                                ZeroStruct( msg );
+                                msg.type = NetworkMessageType::MAP_TURN;
+                                localMapTurn.ent = 2;
+                                localMapTurn.kTimeRemoval = activeTime;
+                                localMapTurn.k1 = k1;
+                                localMapTurn.k2 = k2;
+                                NetworkMessagePush( msg, localMapTurn );
+                                core->NetworkSend( msg );
+                                ZeroStruct( localMapTurn );
+                            } else {
+                                if ( turn.ent == 1 ) {
+                                    core->LogOutput(LogLevel::DEBUG, "here %f  ||  %f || %f", turn.k1.t, currentTime, currentTime + serverTimeDelta );
+                                    gs.e1.p.RemoveKeyFramesPast( turn.kTimeRemoval );
+                                    gs.e1.p.AddKeyFrame( turn.k1.value, turn.k1.t );
+                                    gs.e1.p.AddKeyFrame( turn.k2.value, turn.k2.t );
+                                } else if ( turn.ent == 2 ) {
+                                    gs.e2.p.RemoveKeyFramesPast( turn.kTimeRemoval );
+                                    gs.e2.p.AddKeyFrame( turn.k1.value, turn.k1.t );
+                                    gs.e2.p.AddKeyFrame( turn.k2.value, turn.k2.t );
                                 }
-
-                                GameState &newLast= gameStates.Last();
-                                newLast.e1.vp = lastGs.e1.vp;
-                                newLast.e2.vp = lastGs.e2.vp;
                             }
 
                         } break;
                     }
                 }
 
-                GameState & gs = gameStates.Last();
-                gs.turnNumber = gameStates.GetCount();
-
-                if ( mousePressed ) {
+                if ( mousePressed == true ) {
                     mousePressed = false;
                     if ( localPlayerNumber.value == 1 ) {
-                        gs.e1.dest = Fp2( mousePosWorld );
-                        localMapTurn.madeMove = true;
-                        localMapTurn.moveLoc = gs.e1.dest;
+                        f32 activeTime = currentTime + 0.25f + 0.04f;
+                        const glm::vec2 starting = gs.e1.p.ValueForTime( activeTime );
+                        const f32 speed = 100.0f;
+                        const f32 dist = glm::distance( starting, mousePosWorld );
+                        const f32 travelTime = dist / speed;
+                        gs.e1.p.RemoveKeyFramesPast( activeTime );
+                        VariableKeyFrame k1 = gs.e1.p.AddKeyFrame( starting, activeTime );
+                        VariableKeyFrame k2 = gs.e1.p.AddKeyFrame( mousePosWorld, activeTime + travelTime );
+
+                        ZeroStruct( msg );
+                        msg.type = NetworkMessageType::MAP_TURN;
+                        localMapTurn.ent = 1;
+                        localMapTurn.kTimeRemoval = activeTime;
+                        localMapTurn.k1 = k1;
+                        localMapTurn.k2 = k2;
+                        NetworkMessagePush( msg, localMapTurn );
+                        core->NetworkSend( msg );
+                        ZeroStruct( localMapTurn );
                     } else {
-                        gs.e2.dest = Fp2( mousePosWorld );
-                        localMapTurn.madeMove = true ;
-                        localMapTurn.moveLoc = gs.e2.dest;
+                        ZeroStruct( msg );
+                        msg.type = NetworkMessageType::MAP_TURN;
+                        localMapTurn.isReq = true;
+                        localMapTurn.reqPos = mousePosWorld;
+                        NetworkMessagePush( msg, localMapTurn );
+                        core->NetworkSend( msg );
+                        ZeroStruct( localMapTurn );
                     }
                 }
-
-                
-                if ( FpDistance( gs.e1.p, gs.e1.dest ) > Fp( 5 ) ) {
-                    gs.e1.p = gs.e1.p + FpNormalize( gs.e1.dest - gs.e1.p ) * Fp( 100 ) * SIM_DT;
-                }
-                if ( FpDistance( gs.e2.p, gs.e2.dest ) > Fp( 5 ) ) {
-                    gs.e2.p = gs.e2.p + FpNormalize( gs.e2.dest - gs.e2.p ) * Fp( 100 ) * SIM_DT;
-                }
-
-                gameStates.Add( gs );
-
-                localMapTurn.turnNumber = gs.turnNumber;
-
-                ZeroStruct( msg );
-                msg.type = NetworkMessageType::MAP_TURN;
-                NetworkMessagePush( msg, localMapTurn );
-
-                core->NetworkSend( msg );
-
-                ZeroStruct( localMapTurn );
-                ZeroStruct( localActionBuffer );
             }
         }
         else {
             dtAccumulator += dt;
             if ( dtAccumulator > SIM_DT_FLOAT ) {
-                GameState & gs = gameStates.Last();
-                gs.turnNumber = gameStates.GetCount();
-
-                dtAccumulator -= SIM_DT_FLOAT;
-                if ( mousePressed ) {
+                if ( mousePressed == true ) {
                     mousePressed = false;
                     if ( localPlayerNumber.value == 1 ) {
-                        gs.e1.dest = Fp2( mousePosWorld );
+                        f32 activeTime = currentTime;
+                        const glm::vec2 starting = gs.e1.p.ValueForTime( activeTime );
+                        const f32 speed = 100.0f;
+                        const f32 dist = glm::distance( starting, mousePosWorld );
+                        const f32 travelTime = dist / speed;
+                        gs.e1.p.RemoveKeyFramesPast( activeTime );
+                        gs.e1.p.AddKeyFrame( starting, activeTime );
+                        gs.e1.p.AddKeyFrame( mousePosWorld, activeTime + travelTime );
                     } else {
-                        gs.e2.dest = Fp2( mousePosWorld );
+                        gs.e2.p.AddKeyFrame( mousePosWorld, currentTime + 1.0f );
                     }
                 }
-
-                if ( FpDistance( gs.e1.p, gs.e1.dest ) > Fp( 5 ) ) {
-                    gs.e1.p = gs.e1.p + FpNormalize( gs.e1.dest - gs.e1.p ) * Fp( 100 ) * SIM_DT;
-                }
-                if ( FpDistance( gs.e2.p, gs.e2.dest ) > Fp( 5 ) ) {
-                    gs.e2.p = gs.e2.p + FpNormalize( gs.e2.dest - gs.e2.p ) * Fp( 100 ) * SIM_DT;
-                }
-
-                gameStates.Add( gs );
             }
         }
 
-        GameState & gs = gameStates.Last();
-        //spriteDrawContext->DrawCircle( ToVec2( gs.e1.p ), 4 );
-        //spriteDrawContext->DrawCircle( ToVec2( gs.e2.p ), 4 );
-
-        //f32 visMove = ( 1 - glm::exp( -dt * 16 ) );
-        //gs.e1.vp += ( ToVec2( gs.e1.p ) - gs.e1.vp ) * visMove;
-        //gs.e2.vp += ( ToVec2( gs.e2.p ) - gs.e2.vp ) * visMove;
-
-        gs.e1.vp = glm::mix( gs.e1.vp, ToVec2( gs.e1.p ), dt * 10 );
-        gs.e2.vp = glm::mix( gs.e2.vp, ToVec2( gs.e2.p ), dt * 10 );
-
-        spriteDrawContext->DrawCircle( gs.e1.vp, 4 );
-        spriteDrawContext->DrawCircle( gs.e2.vp, 4 );
+        spriteDrawContext->DrawCircle( gs.e1.p.ValueForTime( currentTime + serverTimeDelta ), 4 );
+        spriteDrawContext->DrawCircle( gs.e2.p.ValueForTime( currentTime + serverTimeDelta ) , 4 );
 
         //DrawContext * backgroundDrawContext = core->RenderGetDrawContext( 1, true );
         DrawContext * uiDrawContext = core->RenderGetDrawContext( 2, true );
