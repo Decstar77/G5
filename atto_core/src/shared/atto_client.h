@@ -1,7 +1,6 @@
 #pragma once
 
 #include "atto_containers.h"
-#include "atto_containers_thread_safe.h"
 
 #include "atto_network.h"
 

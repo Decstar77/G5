@@ -2,7 +2,7 @@
 
 #include "atto_sim_base.h"
 #include "atto_sim_sync_queues.h"
-#include "../../shared/atto_ui.h"
+#include "../atto_ui.h"
 
 namespace atto {
     class Core;

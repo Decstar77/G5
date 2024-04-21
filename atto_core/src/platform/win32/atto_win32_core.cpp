@@ -1,16 +1,16 @@
-#include "../shared/atto_client.h"
-#include "../game/atto_game.h"
-#include "../shared/atto_colors.h"
-#include "../shared/atto_mesh_generation.h"
-#include "../content/atto_content.h"
+#include "../../shared/atto_client.h"
+#include "../../game/atto_game.h"
+#include "../../shared/atto_colors.h"
 
-#include "atto_core_windows.h"
+#include "../../content/atto_content.h"
+
+#include "atto_win32_core.h"
 
 #include <fstream>
-#include "../editor/atto_editor.h"
-#include "../game/modes/atto_game_mode_game.h"
-#include "../game/modes/atto_game_mode_main_menu.h"
-#include "../game/sim/atto_sim_load_assets.h"
+#include "../../editor/atto_editor.h"
+#include "../../game/modes/atto_game_mode_game.h"
+#include "../../game/modes/atto_game_mode_main_menu.h"
+#include "../../game/sim/atto_sim_load_assets.h"
 
 #include "opengl/atto_opengl.h"
 #include "vulkan/atto_vulkan.h"

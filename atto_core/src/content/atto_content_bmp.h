@@ -3,6 +3,8 @@
 #include "../shared/atto_defines.h"
 #include "../shared/atto_containers.h"
 
+#include <vector>
+
 namespace atto {
      // https://github.com/sol-prog/cpp-bmp-images
 #pragma pack(push, 1)

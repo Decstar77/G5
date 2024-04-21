@@ -12,9 +12,6 @@
 #include "atto_reflection.h"
 #include "enki_task_scheduler.h"
 
-#include <memory>
-#include <mutex>
-
 namespace atto {
     class Core;
     class GameMode;
@@ -131,6 +128,11 @@ namespace atto {
         void                TestFrameActuations( Core * core );
 
         REFLECT();
+    };
+
+    class GeometryFuncs {
+    public:
+        static void SortPointsIntoClockWiseOrder( glm::vec2 * points, i32 numPoints );
     };
 
     struct StaticMeshResource {
@@ -375,10 +377,6 @@ namespace atto {
         SmallString text;
     };
 
-    struct UIState {
-        FixedList<UIButton, 64> buttons;
-    };
-
     class Core {
         friend class OpenglState;
         friend class VulkanState;
@@ -496,7 +494,6 @@ namespace atto {
         GameSettings                        theGameSettings = {};
         FixedList<DrawContext, 8>           drawContexts = {};
         FrameInput                          input = {};
-        UIState                             uiState = {};
         ClientState                         client = {};
 
         GameMode *                          currentGameMode = nullptr;
@@ -515,12 +512,10 @@ namespace atto {
         u8 *                                thePermanentMemory = nullptr;
         u64                                 thePermanentMemorySize = 0;
         u64                                 thePermanentMemoryCurrent = 0;
-        std::mutex                          thePermanentMemoryMutex;
 
         u8 *                                theTransientMemory = nullptr;
         u64                                 theTransientMemorySize = 0;
         u64                                 theTransientMemoryCurrent = 0;
-        std::mutex                          theTransientMemoryMutex;
 
         void                                MemoryMakePermanent( u64 bytes );
         void                                MemoryClearPermanent();

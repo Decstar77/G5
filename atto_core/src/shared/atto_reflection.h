@@ -56,8 +56,8 @@ namespace atto {
         virtual nlohmann::json      JSON_Write( const void * obj ) = 0;
         virtual void                JSON_Read( const nlohmann::json & j, const void * obj ) = 0;
         virtual LargeString         ToString( const void * obj ) = 0;
-        virtual void                Binary_Write( const void * obj, BinaryBlob & f ) { f.Write( obj, size ); }
-        virtual void                Binary_Read( void * obj, BinaryBlob & f ) { f.Read( obj, size ); }
+        virtual void                Binary_Write( const void * obj, BinaryBlob & f ) { INVALID_CODE_PATH; }
+        virtual void                Binary_Read( void * obj, BinaryBlob & f ) { INVALID_CODE_PATH;}
         virtual void                Imgui_Draw( const void * obj, const char * memberName ) = 0;
     };
 
@@ -284,26 +284,6 @@ namespace atto {
             }
         #endif
         }
-
-        virtual void Binary_Read( void * obj, BinaryBlob & f ) override {
-            FixedList< _type_, cap > * list = ( FixedList< _type_, cap > * )obj;
-            list->Clear( true );
-            i32 count = 0;
-            f.Read( &count );
-            for( i32 i = 0; i < count; i++ ) {
-                _type_ * t = &list->AddEmpty();
-                itemType->Binary_Read( t, f );
-            }
-        }
-
-        virtual void Binary_Write( const void * obj, BinaryBlob & f ) override {
-            const FixedList< _type_, cap > * list = ( const FixedList< _type_, cap > * )obj;
-            const i32 count = list->GetCount();
-            f.Write( &count );
-            for( i32 i = 0; i < count; i++ ) {
-                itemType->Binary_Write( list->Get( i ), f );
-            }
-        }
     };
 
     template <typename T, i32 cap>
@@ -386,26 +366,6 @@ namespace atto {
             }
         #endif
         }
-
-        virtual void Binary_Read( void * obj, BinaryBlob & f ) override {
-            GrowableList< _type_ > * list = ( GrowableList< _type_ > * )obj;
-            list->Clear( true );
-            i32 count = 0;
-            f.Read( &count );
-            for( i32 i = 0; i < count; i++ ) {
-                _type_ * t = &list->AddEmpty();
-                itemType->Binary_Read( t, f );
-            }
-        }
-
-        virtual void Binary_Write( const void * obj, BinaryBlob & f ) override {
-            const GrowableList< _type_ > * list = ( const GrowableList< _type_ > * )obj;
-            const i32 count = list->GetCount();
-            f.Write( &count );
-            for( i32 i = 0; i < count; i++ ) {
-                itemType->Binary_Write( list->Get( i ), f );
-            }
-        }
     };
 
 
@@ -445,14 +405,6 @@ namespace atto {
         }
 
         virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
-            AssertMsg( false, "NOT IMPL" );
-        }
-
-        virtual void Binary_Read( void * obj, BinaryBlob & f ) override {
-            AssertMsg( false, "NOT IMPL" );
-        }
-
-        virtual void Binary_Write( const void * obj, BinaryBlob & f ) override {
             AssertMsg( false, "NOT IMPL" );
         }
     };

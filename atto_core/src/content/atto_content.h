@@ -6,6 +6,7 @@
 
 #include "atto_content_bmp.h"
 #include "atto_content_sprite_atlas.h"
+#include "atto_content_mesh.h"
 
 struct aiScene;
 struct aiNode;

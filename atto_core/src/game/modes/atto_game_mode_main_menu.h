@@ -1,11 +1,10 @@
 #pragma once
 
 #include "../atto_game.h"
-#include "../../shared/atto_ui.h"
-namespace atto {
-    
-    class GameMode_MainMenu : public GameMode {
+#include "../atto_ui.h"
 
+namespace atto {
+    class GameMode_MainMenu : public GameMode {
     public:
         GameModeType GetGameModeType() override;
         bool IsInitialized() override;
@@ -16,5 +15,4 @@ namespace atto {
         bool showOptions = false;
         bool showOptionsAudio = false;
     };
-    
 }

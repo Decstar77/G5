@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../shared/atto_containers.h"
+#include "../../shared/atto_containers.h"
 
 struct GLFWmonitor;
 struct GLFWwindow;
@@ -37,7 +37,6 @@ namespace atto {
         GLFWwindow *                window = nullptr;
         SmallString                 windowTitle = SmallString::FromLiteral( "Game" );
         bool                        windowFullscreen = false;
-
     };
 
 }

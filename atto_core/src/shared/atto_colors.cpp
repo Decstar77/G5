@@ -1,4 +1,5 @@
 #include "atto_colors.h"
+
 #include <cstdlib> // For std::strtoul
 
 namespace atto {

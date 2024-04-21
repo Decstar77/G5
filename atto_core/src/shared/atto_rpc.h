@@ -1,6 +1,5 @@
 #pragma once
 
-#include <array>
 #include "atto_containers.h"
 #include "atto_binary_file.h"
 

@@ -2852,59 +2852,60 @@ namespace atto {
 
     void SimMapReplay::Prepare() {
         turns.reserve( 1024 );
-        actionData.Reserve( Megabytes( 64 ) );
     }
 
     void SimMapReplay::NextTurn( i32 turn ) {
-        TurnAction turnAction = {};
-        turnAction.turnNumber = turn;
-        turnAction.actionCount = 0;
-        turns.push_back( turnAction );
+        //TurnAction turnAction = {};
+        //turnAction.turnNumber = turn;
+        //turnAction.actionCount = 0;
+        //turns.push_back( turnAction );
     }
 
     void SimMapReplay::AddActionData( MapActionBuffer * actionBuffer ) {
-        char * data = actionBuffer->data.GetBuffer();
-        size_t size = actionBuffer->data.GetSize();
-        if( size != 0 ) {
-            actionData.Write( data, size );
-            turns.back().actionCount++;
-        }
+        //char * data = actionBuffer->data.GetBuffer();
+        //size_t size = actionBuffer->data.GetSize();
+        //if( size != 0 ) {
+        //    actionData.Write( data, size );
+        //    turns.back().actionCount++;
+        //}
     }
 
     void SimMapReplay::PrintActions( Core * core ) {
-        core->LogOutput( LogLevel::INFO, "===========================================================" );
-        
-        size_t actionOffset = 0;
-        const size_t turnCount = turns.size();
-        for ( size_t turnIndex = 0; turnIndex < turnCount; turnIndex++ ) {
-            const TurnAction &turn = turns[turnIndex];
-
-            bool displayed = false;
-            for ( size_t actionCounter = 0; actionCounter < turn.actionCount; actionCounter++ ) {
-                MapActionType actionType = ( MapActionType )actionData.buffer.at( actionOffset );
-                if( actionType == MapActionType::NONE ) {
-                    core->LogOutput( LogLevel::ERR, "Can't apply a none turn" );
-                    break;
-                }
-
-                if( displayed == false ) {
-                    displayed = true;
-                    core->LogOutput( LogLevel::INFO, "=============%d=============", turn.turnNumber );
-                }
-                
-                actionOffset += sizeof( MapActionType );
-
-                byte * data = &actionData.buffer.at( actionOffset );
-                
-                RpcHolder * holder = GlobalRpcTable[ (i32)actionType ];
-                LargeString rpcString = holder->Log( (char *)data );
-                i32 lastCallSize = holder->GetLastCallSize();
-                actionOffset += lastCallSize;
-
-                const char * actionName = MapActionTypeStrings[ (i32)actionType ];
-                core->LogOutput( LogLevel::INFO, "%s :: ( %s )", actionName, rpcString.GetCStr() );
-            }
-        }
+        //core->LogOutput( LogLevel::INFO, "===========================================================" );
+        //
+        //size_t actionOffset = 0;
+        //const size_t turnCount = turns.size();
+        //for ( size_t turnIndex = 0; turnIndex < turnCount; turnIndex++ ) {
+        //    const TurnAction &turn = turns[turnIndex];
+        //
+        //    bool displayed = false;
+        //    for ( size_t actionCounter = 0; actionCounter < turn.actionCount; actionCounter++ ) {
+        //        MapActionType actionType = ( MapActionType )actionData.buffer.at( actionOffset );
+        //        if( actionType == MapActionType::NONE ) {
+        //            core->LogOutput( LogLevel::ERR, "Can't apply a none turn" );
+        //            break;
+        //        }
+        //
+        //        if( displayed == false ) {
+        //            displayed = true;
+        //            core->LogOutput( LogLevel::INFO, "=============%d=============", turn.turnNumber );
+        //        }
+        //        
+        //        actionOffset += sizeof( MapActionType );
+        //
+        //        // @TODO:
+        //
+        //        //byte * data = &actionData.buffer.at( actionOffset );
+        //        //
+        //        //RpcHolder * holder = GlobalRpcTable[ (i32)actionType ];
+        //        //LargeString rpcString = holder->Log( (char *)data );
+        //        //i32 lastCallSize = holder->GetLastCallSize();
+        //        //actionOffset += lastCallSize;
+        //        //
+        //        //const char * actionName = MapActionTypeStrings[ (i32)actionType ];
+        //        //core->LogOutput( LogLevel::INFO, "%s :: ( %s )", actionName, rpcString.GetCStr() );
+        //    }
+        //}
     }
 
     bool AIThinker::FindBuildingLocation( EntList & activeEntities, EntityType buildingType, fp2 basePos, fp2 & pos ) {

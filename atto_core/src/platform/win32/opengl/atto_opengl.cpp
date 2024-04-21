@@ -2,7 +2,7 @@
 
 #if ATTO_OPENGL
 
-#include "../atto_core_windows.h"
+#include "../atto_win32_core.h"
 #include "../../content/atto_content.h"
 
 #include <glad/glad.h>

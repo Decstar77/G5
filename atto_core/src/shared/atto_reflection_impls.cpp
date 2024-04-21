@@ -1,5 +1,4 @@
 #include "atto_core.h"
-#include "../game/modes/atto_game_mode_game.h"
 
 namespace atto {
     REFLECT_STRUCT_BEGIN( GameSettings )

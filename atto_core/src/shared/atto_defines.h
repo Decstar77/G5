@@ -33,6 +33,12 @@
 
 #endif
 
+#if _WIN32
+#define COMPILE_ASSERT(expr, msg) static_assert(expr, msg)
+#elif __linux__
+#define COMPILE_ASSERT(expr, msg)
+#endif
+
 #define INVALID_CODE_PATH AssertMsg(false, "Invalid code path")
 
 #define REAL_MAX FLT_MAX
@@ -69,6 +75,7 @@
 #define I16_MAX 32767
 #define I16_MIN -32768
 #define U16_MAX 65535
+
 
 namespace atto
 {
@@ -285,9 +292,9 @@ namespace atto
     inline _type_ Min( _type_ a, _type_ b ) {
         return a < b ? a : b;
     }
-
-    void PlatformAssertionFailed( const char * msg, const char * file, const char *func, int line );
-    void PlatformLogMessage( const char* message, u8 colour );
-    void PlatformErrorBox( const char* msg );
-    u64  PlatformGetFileLastWriteTime( const char* fileName );
 }
+
+#include <type_traits>
+
+#include "atto_platform.h"
+

@@ -1,7 +1,7 @@
 #include "atto_containers.h"
 
 #include <string>
-#include <stdarg.h> 
+#include <stdarg.h>
 
 namespace atto
 {

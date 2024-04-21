@@ -1,9 +1,9 @@
-#include "atto_platform_window.h"
+#include "atto_win32_window.h"
 
 #include <glad/glad.h>
 #include "GLFW/glfw3.h"
 
-#include "../shared/atto_core.h"
+#include "../../shared/atto_core.h"
 
 namespace atto {
     

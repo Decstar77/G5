@@ -1,10 +1,8 @@
 
 #include "atto_core.h"
 #include "atto_client.h"
-#include "atto_mesh_generation.h"
 
 namespace atto {
-
     GameSettings GameSettings::CreateSensibleDefaults() {
         GameSettings settings = {};
         settings.basePath = "assets/";
@@ -543,20 +541,15 @@ namespace atto {
     }
 
     void * Core::MemoryAllocatePermanent( u64 bytes ) {
-        thePermanentMemoryMutex.lock();
-
         AssertMsg( thePermanentMemoryCurrent + bytes < thePermanentMemorySize, "Permanent memory overflow" );
         if( thePermanentMemoryCurrent + bytes < thePermanentMemorySize ) {
             void * result = thePermanentMemory + thePermanentMemoryCurrent;
             thePermanentMemoryCurrent += bytes;
-            thePermanentMemoryMutex.unlock();
 
             memset( result, 0, bytes );
 
             return result;
         }
-
-        thePermanentMemoryMutex.unlock();
 
         return nullptr;
     }
@@ -620,20 +613,15 @@ namespace atto {
     }
 
     void * Core::MemoryAllocateTransient( u64 bytes ) {
-        theTransientMemoryMutex.lock();
-
         AssertMsg( theTransientMemoryCurrent + bytes < theTransientMemorySize, "Transient memory overflow" );
         if( theTransientMemoryCurrent + bytes < theTransientMemorySize ) {
             void * result = theTransientMemory + theTransientMemoryCurrent;
             theTransientMemoryCurrent += bytes;
-            theTransientMemoryMutex.unlock();
 
             memset( result, 0, bytes );
 
             return result;
         }
-
-        theTransientMemoryMutex.unlock();
 
         return nullptr;
     }
@@ -644,14 +632,11 @@ namespace atto {
     }
 
     void Core::MemoryClearPermanent() {
-        thePermanentMemoryMutex.lock();
-
     #if ATTO_DEBUG
         memset( thePermanentMemory, 0, thePermanentMemorySize );
     #endif
 
         thePermanentMemoryCurrent = 0;
-        thePermanentMemoryMutex.unlock();
     }
 
     void Core::MemoryMakeTransient( u64 bytes ) {
@@ -660,14 +645,11 @@ namespace atto {
     }
 
     void Core::MemoryClearTransient() {
-        theTransientMemoryMutex.lock();
-
     #if ATTO_DEBUG
         memset( theTransientMemory, 0, theTransientMemorySize );
     #endif
 
         theTransientMemoryCurrent = 0;
-        theTransientMemoryMutex.unlock();
     }
 
     //glm::vec2 Camera::ScreenPointToWorld( glm::vec2 screen ) {
@@ -795,6 +777,25 @@ namespace atto {
         return result;
     }
 
+    static i32 CompareVerticesClockwise( void * context, const void * a, const void * b ) {
+        const glm::vec2 * va = static_cast<const glm::vec2 *>( a );
+        const glm::vec2 * vb = static_cast<const glm::vec2 *>( b );
+        glm::vec2 center = *static_cast<glm::vec2 *>( context );
+        glm::vec2 aDir = *va - center;
+        glm::vec2 bDir = *vb - center;
+        return std::atan2( aDir.y, aDir.x ) < std::atan2( bDir.y, bDir.x ) ? -1 : 1;
+    }
+
+    void GeometryFuncs::SortPointsIntoClockWiseOrder( glm::vec2 * points, i32 numPoints ) {
+        glm::vec2 centroid = glm::vec2( 0 );
+        for( i32 pointIndex = 0; pointIndex < numPoints; pointIndex++ ) {
+            centroid += points[ pointIndex ];
+        }
+
+        centroid /= numPoints;
+
+        qsort_s( points, numPoints, sizeof( glm::vec2 ), CompareVerticesClockwise, &centroid );
+    }
 }
 
 

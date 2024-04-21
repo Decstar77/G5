@@ -1017,21 +1017,6 @@ namespace atto {
         #endif
         }
 
-        virtual void Binary_Write( const void * obj, BinaryBlob & f ) override {
-            TextureResource * resource = *(TextureResource **)obj;
-            Assert( resource != nullptr );
-            f.Write( &resource->name );
-        }
-
-        virtual void Binary_Read( void * obj, BinaryBlob & f ) override {
-            LargeString resPath = {};
-            f.Read( &resPath );
-            TextureResource ** resource = (TextureResource **)obj;
-            Core * core = Core::EditorOnly_GetCore();
-            *resource = core->ResourceGetAndLoadTexture( resPath.GetCStr() );
-        }
-
-
         virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
 //            TextureResource * textureResource = *(TextureResource **)obj;
 //            if( textureResource != nullptr ) {
@@ -1090,20 +1075,6 @@ namespace atto {
             Core * core = Core::EditorOnly_GetCore();
             *resource = core->ResourceGetAndLoadAudio( resPath.GetCStr() );
         #endif
-        }
-
-        virtual void Binary_Write( const void * obj, BinaryBlob & f ) override {
-            AudioResource * resource = *(AudioResource **)obj;
-            Assert( resource != nullptr );
-            f.Write( &resource->name );
-        }
-
-        virtual void Binary_Read( void * obj, BinaryBlob & f ) override {
-            LargeString resPath = {};
-            f.Read( &resPath );
-            AudioResource ** resource = (AudioResource **)obj;
-            Core * core = Core::EditorOnly_GetCore();
-            *resource = core->ResourceGetAndLoadAudio( resPath.GetCStr() );
         }
 
         virtual void Imgui_Draw( const void * obj, const char * memberName ) override {

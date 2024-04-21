@@ -1,9 +1,7 @@
 #include "atto_ui.h"
-#include "atto_core.h"
-#include "atto_colors.h"
+#include "../shared/atto_core.h"
+#include "../shared/atto_colors.h"
 
-//#include "glad/glad.h"
-#include <iostream>
 namespace atto {
 
     void UIContext::Begin( glm::vec2 dims ) {

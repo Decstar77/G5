@@ -1,5 +1,5 @@
 
-#include "platform/atto_core_windows.h"
+#include "platform/win32/atto_win32_core.h"
 
 using namespace atto;
 

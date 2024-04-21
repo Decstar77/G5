@@ -1,4 +1,4 @@
-#include "atto_mesh_generation.h"
+#include "atto_content_mesh.h"
 
 namespace atto {
     static StaticMeshVertex CreateVertex(
@@ -297,25 +297,4 @@ namespace atto {
     StaticMeshData StaticMeshGeneration::CreateCylinder( f32 bottomRadius, f32 topRadius, f32 height, u32 sliceCount, u32 stackCount ) {
         return {};
     }
-
-    static i32 CompareVerticesClockwise( void * context, const void * a, const void * b ) {
-        const glm::vec2 * va = static_cast<const glm::vec2 *>( a );
-        const glm::vec2 * vb = static_cast<const glm::vec2 *>( b );
-        glm::vec2 center = *static_cast<glm::vec2 *>( context );
-        glm::vec2 aDir = *va - center;
-        glm::vec2 bDir = *vb - center;
-        return std::atan2( aDir.y, aDir.x ) < std::atan2( bDir.y, bDir.x ) ? -1 : 1;
-    }
-
-    void GeometryFuncs::SortPointsIntoClockWiseOrder( glm::vec2 * points, i32 numPoints ) {
-        glm::vec2 centroid = glm::vec2( 0 );
-        for( i32 pointIndex = 0; pointIndex < numPoints; pointIndex++ ) {
-            centroid += points[ pointIndex ];
-        }
-
-        centroid /= numPoints;
-
-        qsort_s( points, numPoints, sizeof( glm::vec2 ), CompareVerticesClockwise, &centroid );
-    }
-
 }

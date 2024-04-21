@@ -1,7 +1,6 @@
 #pragma once
 
 #include "atto_defines.h"
-#include <vector> // Because we actually want to ship things :)
 
 namespace atto {
 
@@ -1532,77 +1531,6 @@ namespace atto {
 
         return false;
     }
-
-    template<i32 capacity>
-    class ByteBuffer {
-    public:
-
-        void CreateFromByte( u8 * bytes, u32 size ) {
-            AssertMsg( size < capacity, "Not enough space" );
-            memcpy( data, bytes, size );
-        }
-
-        template<typename _type_>
-        void Push( const _type_ & value ) {
-            AssertMsg( head + sizeof( _type_ ) <= capacity, "Not enough space in buffer to push a value" );
-            memcpy( &data[ head ], &value, sizeof( _type_ ) );
-            head += sizeof( _type_ );
-        }
-
-        void Push( const void * data, i32 size ) {
-            AssertMsg( head + size <= capacity, "Not enough space in buffer to push data" );
-            memcpy( &this->data[ head ], data, size );
-            head += size;
-        }
-
-        void Push( const char * str ) {
-            i32 len = strlen( str );
-            Push( str, len + 1 ); // +1 to include the null terminator
-        }
-
-        template<typename _type_, i32 cap>
-        void Push( const FixedList<_type_, cap> & list ) {
-            Push( list.GetCount() );
-            // @TODO: This is slow!!
-            for( i32 i = 0; i < list.GetCount(); i++ ) {
-                Push( list[ i ] );
-            }
-        }
-
-        i32 GetHeadLocation() {
-            return head;
-        }
-
-        void HeadToStart() {
-            head = 0;
-        }
-
-        template<typename _type_>
-        void Yoink( _type_ & value ) {
-            AssertMsg( head + sizeof( _type_ ) <= capacity, "Not enough space in buffer to yoink a value" );
-            std::memcpy( &value, &data[ head ], sizeof( _type_ ) );
-            head += sizeof( _type_ );
-        }
-
-        void Yoink( void * data, i32 size ) {
-            AssertMsg( head + size <= capacity, "Not enough space in buffer to yoink data" );
-            std::memcpy( data, &this->data[ head ], size );
-            head += size;
-        }
-
-        void Yoink( char * str ) {
-            i32 len = std::strlen( str );
-            Yoink( str, len + 1 ); // +1 to include the null terminator
-        }
-
-        u8 * GetData() {
-            return data;
-        }
-
-    private:
-        i32 head;
-        u8  data[ capacity ];
-    };
 
     template<typename _type_>
     struct ObjectHandle {
