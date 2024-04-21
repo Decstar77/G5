@@ -205,7 +205,7 @@ namespace atto {
 
             if( resourceWidget.spriteResource != nullptr ) {
                 TypeDescriptor * settingsType = TypeResolver<SpriteResource>::get();
-                settingsType->Imgui_Draw( resourceWidget.spriteResource, resourceWidget.spriteResource->spriteName.GetCStr() );
+                //settingsType->Imgui_Draw( resourceWidget.spriteResource, resourceWidget.spriteResource->spriteName.GetCStr() );
             }
             else if( resourceWidget.entity != nullptr ) {
                 //TypeDescriptor * settingsType = TypeResolver<Entity>::get();

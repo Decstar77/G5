@@ -185,10 +185,6 @@ namespace atto {
             *(i32 *)obj = j.get<i32>();
         }
 
-        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
-            ImGui::InputInt( memberName, (i32 *)obj );
-        }
-
         virtual LargeString ToString( const void * obj ) override {
             LargeString res = {};
             res.Add( std::to_string( *( (i32 *)obj ) ).c_str() );
@@ -214,10 +210,6 @@ namespace atto {
 
         virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             *(u32 *)obj = j.get<u32>();
-        }
-
-        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
-            ImGui::InputScalar( memberName, ImGuiDataType_U32, (u32 *)obj );
         }
 
         virtual LargeString ToString( const void * obj ) override {
@@ -247,10 +239,6 @@ namespace atto {
             *(i64 *)obj = j.get<i64>();
         }
 
-        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
-            ImGui::InputScalar( memberName, ImGuiDataType_S64, (i64 *)obj );
-        }
-
         virtual LargeString ToString( const void * obj ) override {
             LargeString res = {};
             res.Add( std::to_string( *( (i64 *)obj ) ).c_str() );
@@ -276,10 +264,6 @@ namespace atto {
 
         virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             *(u64 *)obj = j.get<u64>();
-        }
-
-        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
-            throw std::logic_error( "The method or operation is not implemented." );
         }
 
         virtual LargeString ToString( const void * obj ) override {
@@ -309,10 +293,6 @@ namespace atto {
             *(f32 *)obj = j.get<f32>();
         }
 
-        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
-            ImGui::InputFloat( memberName, (float *)obj );
-        }
-
         virtual LargeString ToString( const void * obj ) override {
             LargeString res = {};
             res.Add( std::to_string( *( (f32 *)obj ) ).c_str() );
@@ -340,10 +320,6 @@ namespace atto {
             *(f64 *)obj = j.get<f64>();
         }
 
-        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
-            ImGui::InputDouble( memberName, (double *)obj );
-        }
-
         virtual LargeString ToString( const void * obj ) override {
             LargeString res = {};
             res.Add( std::to_string( *( (f64 *)obj ) ).c_str() );
@@ -369,10 +345,6 @@ namespace atto {
 
         virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             *(bool *)obj = j.get<bool>();
-        }
-
-        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
-            ImGui::Checkbox( memberName, (bool *)obj );
         }
 
         virtual LargeString ToString( const void * obj ) override {
@@ -403,10 +375,6 @@ namespace atto {
             INVALID_CODE_PATH;
         }
 
-        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
-            INVALID_CODE_PATH;
-        }
-
         virtual LargeString ToString( const void * obj ) override {
             LargeString res = {};
             fp f = *(fp *)obj;
@@ -434,10 +402,6 @@ namespace atto {
         }
 
         virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
-            INVALID_CODE_PATH;
-        }
-
-        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
             INVALID_CODE_PATH;
         }
 
@@ -473,10 +437,6 @@ namespace atto {
             atto::JSON_Read( j, *(glm::vec2 *)obj );
         }
 
-        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
-            ImGui::InputFloat2( memberName, (float *)obj );
-        }
-
         virtual LargeString ToString( const void * obj ) override {
             LargeString res = {};
             glm::vec2 v = *(glm::vec2 *)obj;
@@ -507,10 +467,6 @@ namespace atto {
 
         virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             atto::JSON_Read( j, *(glm::vec3 *)obj );
-        }
-
-        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
-            ImGui::InputFloat3( memberName, (float *)obj );
         }
 
         virtual LargeString ToString( const void * obj ) override {
@@ -545,10 +501,6 @@ namespace atto {
 
         virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             atto::JSON_Read( j, *(glm::vec4 *)obj );
-        }
-
-        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
-            ImGui::InputFloat4( memberName, (float *)obj );
         }
 
         virtual LargeString ToString( const void * obj ) override {
@@ -587,10 +539,6 @@ namespace atto {
             atto::JSON_Read( j, *(glm::mat2 *)obj );
         }
 
-        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
-            throw std::logic_error( "The method or operation is not implemented." );
-        }
-
         virtual LargeString ToString( const void * obj ) override {
             INVALID_CODE_PATH;
             return {};
@@ -615,10 +563,6 @@ namespace atto {
 
         virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             atto::JSON_Read( j, *(glm::mat3 *)obj );
-        }
-
-        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
-            throw std::logic_error( "The method or operation is not implemented." );
         }
 
         virtual LargeString ToString( const void * obj ) override {
@@ -647,10 +591,6 @@ namespace atto {
             atto::JSON_Read( j, *(glm::mat4 *)obj );
         }
 
-        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
-            throw std::logic_error( "The method or operation is not implemented." );
-        }
-
         virtual LargeString ToString( const void * obj ) override {
             INVALID_CODE_PATH;
             return {};
@@ -675,13 +615,6 @@ namespace atto {
 
         virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             atto::JSON_Read( j, *(SmallString *)obj );
-        }
-
-        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
-            SmallString * s = (SmallString *)obj;
-            if( ImGui::InputText( memberName, s->GetCStr(), SmallString::CAPCITY ) ) {
-                s->CalculateLength();
-            }
         }
 
         virtual LargeString ToString( const void * obj ) override {
@@ -710,13 +643,6 @@ namespace atto {
 
         virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
             atto::JSON_Read( j, *(LargeString *)obj );
-        }
-
-        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
-            LargeString * s = (LargeString *)obj;
-            if( ImGui::InputText( memberName, s->GetCStr(), LargeString::CAPCITY ) ) {
-                s->CalculateLength();
-            }
         }
 
         virtual LargeString ToString( const void * obj ) override {
@@ -825,10 +751,6 @@ namespace atto {
             }
         }
 
-        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
-            throw std::logic_error( "The method or operation is not implemented." );
-        }
-
         virtual void Binary_Read( void * obj, BinaryBlob & f ) override {
             throw std::logic_error( "The method or operation is not implemented." );
         }
@@ -932,45 +854,6 @@ namespace atto {
             }
         }
 
-        void Imgui_Draw( const void * obj, const char * memberName ) override {
-            Collider2D * collider = (Collider2D *)obj;
-            if( ImGui::TreeNode( memberName ) ) {
-                switch( collider->type ) {
-                    case COLLIDER_TYPE_NONE:
-                    {
-
-                    } break;
-                    case COLLIDER_TYPE_CIRCLE:
-                    {
-                        ImGui::InputFloat2( "Position", &collider->circle.pos.x );
-                        ImGui::InputFloat( "Radius", &collider->circle.rad );
-                    } break;
-                    case COLLIDER_TYPE_SPHERE:
-                    {
-                        INVALID_CODE_PATH;
-                    } break;
-                    case COLLIDER_TYPE_AXIS_BOX:
-                    {
-                        ImGui::InputFloat2( "Min", &collider->box.min.x );
-                        ImGui::InputFloat2( "Max", &collider->box.max.x );
-                    } break;
-                    case COLLIDER_TYPE_PLANE:
-                    {
-                        INVALID_CODE_PATH;
-                    } break;
-                    case COLLIDER_TYPE_TRIANGLE:
-                    {
-                        INVALID_CODE_PATH;
-                    } break;
-                    default:
-                    {
-                        INVALID_CODE_PATH;
-                    } break;
-                }
-                ImGui::TreePop();
-            }
-        }
-
         virtual LargeString ToString( const void * obj ) override {
             throw std::logic_error( "The method or operation is not implemented." );
         }
@@ -1017,31 +900,6 @@ namespace atto {
         #endif
         }
 
-        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
-//            TextureResource * textureResource = *(TextureResource **)obj;
-//            if( textureResource != nullptr ) {
-//                ImGui::SeparatorText( "Image" );
-//                if( ImGui::ImageButton( (void *)(intptr_t)textureResource->handle, ImVec2( (f32)textureResource->width, (f32)textureResource->height ) ) ) {
-//                    Core * core = Core::EditorOnly_GetCore();
-//                    LargeString resPath = {};
-//                    if( core->WindowOpenNativeFileDialog( nullptr, "png", resPath ) == true ) {
-//                        TextureResource ** tptr = (TextureResource **)obj;
-//                        *tptr = core->ResourceGetAndCreateTexture( resPath.GetCStr(), false, false );
-//                    }
-//                }
-//            }
-//            else {
-//                if( ImGui::Button( "No Image" ) ) {
-//                    Core * core = Core::EditorOnly_GetCore();
-//                    LargeString resPath = {};
-//                    if( core->WindowOpenNativeFileDialog( nullptr, "png", resPath ) == true ) {
-//                        TextureResource ** tptr = (TextureResource **)obj;
-//                        *tptr = core->ResourceGetAndCreateTexture( resPath.GetCStr(), false, false );
-//                    }
-//                }
-//            }
-        }
-
         virtual LargeString ToString( const void * obj ) override {
             throw std::logic_error( "The method or operation is not implemented." );
         }
@@ -1074,30 +932,6 @@ namespace atto {
             AudioResource ** resource = (AudioResource **)obj;
             Core * core = Core::EditorOnly_GetCore();
             *resource = core->ResourceGetAndLoadAudio( resPath.GetCStr() );
-        #endif
-        }
-
-        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
-        #if ATTO_EDITOR
-            Core * core = Core::EditorOnly_GetCore();
-            AudioResource * audioResource = *(AudioResource **)obj;
-
-            LargeString shortName = audioResource != nullptr ? audioResource->GetShortName() : LargeString::FromLiteral( "Pick" );
-            if( ImGui::Button( shortName.GetCStr() ) ) {
-                LargeString resPath = {};
-                if( core->WindowOpenNativeFileDialog( nullptr, "wav,ogg", resPath ) == true ) {
-
-                }
-            }
-
-            if( audioResource != nullptr ) {
-                ImGui::SameLine();
-                ImGui::PushID( audioResource->id );
-                if( ImGui::Button( "Play" ) ) {
-                    core->AudioPlay( audioResource );
-                }
-                ImGui::PopID();
-            }
         #endif
         }
 
@@ -1142,30 +976,6 @@ namespace atto {
 
         virtual void Binary_Write( const void * obj, BinaryBlob & f ) override {
           
-        }
-
-        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
-//            SpriteResource * spriteResource = *(SpriteResource **)obj;
-//            if( spriteResource != nullptr || spriteResource->textureResource != nullptr ) {
-//                ImGui::SeparatorText( "Image" );
-//                if( ImGui::ImageButton( (void *)(intptr_t)spriteResource->textureResource->handle, ImVec2( (f32)spriteResource->textureResource->width, (f32)spriteResource->textureResource->height ) ) ) {
-//                    Core * core = Core::EditorOnly_GetCore();
-//                    LargeString resPath = {};
-//                    if( core->WindowOpenNativeFileDialog( nullptr, "png", resPath ) == true ) {
-//                        spriteResource->textureResource = core->ResourceGetAndCreateTexture( resPath.GetCStr(), false, false );
-//                    }
-//                }
-//            }
-//            else {
-//                if( ImGui::Button( "No Image" ) ) {
-//                    Core * core = Core::EditorOnly_GetCore();
-//                    LargeString resPath = {};
-//                    if( core->WindowOpenNativeFileDialog( nullptr, "png", resPath ) == true ) {
-//                        TextureResource ** tptr = (TextureResource **)obj;
-//                        *tptr = core->ResourceGetAndCreateTexture( resPath.GetCStr(), false, false );
-//                    }
-//                }
-//            }
         }
 
         virtual LargeString ToString( const void * obj ) override {

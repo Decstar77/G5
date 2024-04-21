@@ -1,6 +1,8 @@
 #include "atto_logging.h"
 #include "atto_core.h"
 
+#include <stdarg.h>
+
 namespace atto {
     static LoggingState logger = {};
 

@@ -47,13 +47,13 @@ namespace atto {
 
         template<typename _type_>
         inline i32 Read( const Span<_type_> * span ) {
-            COMPILE_ASSERT( false, "NoIMpl" );
+            AssertMsg( false, "NoImpl" );
             return 0;
         }
 
         template<typename _type_>
         inline i32 Read( const Span<const _type_> * span ) {
-            COMPILE_ASSERT( false, "NoIMpl" );
+            AssertMsg( false, "NoImpl" );
             return 0;
         }
         
@@ -65,7 +65,7 @@ namespace atto {
 
         template<typename _type_, i32 cap>
         inline void Read( FixedList<_type_, cap> * list ) {
-            COMPILE_ASSERT( false, "NoIMpl" );
+            AssertMsg( false, "NoImpl" );
         }
 
         template<typename _type_>
@@ -76,7 +76,7 @@ namespace atto {
 
         template<typename _type_>
         inline void Read( GrowableList<_type_> * list ) {
-            COMPILE_ASSERT( false, "NoIMpl" );
+            AssertMsg( false, "NoImpl" );
         }
 
         inline void Reset() {

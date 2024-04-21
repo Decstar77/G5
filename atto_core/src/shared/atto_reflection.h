@@ -6,8 +6,7 @@
 
 #ifndef ATTO_SERVER
 
-#include "json/json.hpp"
-#include "imgui.h"
+#include <json/json.hpp>
 
 namespace atto {
 
@@ -58,7 +57,6 @@ namespace atto {
         virtual LargeString         ToString( const void * obj ) = 0;
         virtual void                Binary_Write( const void * obj, BinaryBlob & f ) { INVALID_CODE_PATH; }
         virtual void                Binary_Read( void * obj, BinaryBlob & f ) { INVALID_CODE_PATH;}
-        virtual void                Imgui_Draw( const void * obj, const char * memberName ) = 0;
     };
 
     template <typename T>
@@ -138,17 +136,6 @@ namespace atto {
             return {};
         }
 
-        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
-            nlohmann::json j;
-            if( ImGui::TreeNodeEx( memberName, ImGuiTreeNodeFlags_DefaultOpen ) ) {
-                for( const Member & member : members ) {
-                    member.type->Imgui_Draw( (char *)obj + member.offset, member.name.GetCStr() );
-                }
-
-                ImGui::TreePop();
-            }
-        }
-
         virtual void Binary_Read( void * obj, BinaryBlob & f ) override {
             for( const Member & member : members ) {
                 member.type->Binary_Read( (char *)obj + member.offset, f );
@@ -190,10 +177,6 @@ namespace atto {
         }
 
         virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
-            INVALID_CODE_PATH;
-        }
-
-        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
             INVALID_CODE_PATH;
         }
 
@@ -252,38 +235,6 @@ namespace atto {
             result.Add( "}" );
             return result;
         }
-
-        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
-            FixedList< _type_, cap > * list = ( FixedList< _type_, cap > * )obj;
-        #if 1
-            if( ImGui::TreeNodeEx( memberName, ImGuiTreeNodeFlags_DefaultOpen ) ) {
-                for( i32 i = 0; i < list->GetCount(); i++ ) {
-                    ImGui::PushID( i );
-                    if( ImGui::Button( "-" ) == true ) {
-                        list->RemoveIndex( i );
-                        ImGui::PopID();
-                        break;
-                    }
-                    ImGui::PopID();
-                    ImGui::SameLine();
-                    SmallString n = StringFormat::Small( "Index:%d", i );
-                    itemType->Imgui_Draw( list->Get( i ), n.GetCStr() );
-                }
-                if( list->IsFull() == false && ImGui::Button( "+" ) ) {
-                    list->AddEmpty();
-                }
-                ImGui::TreePop();
-            }
-        #else 
-            if( ImGui::BeginListBox( memberName ) ) {
-                for( i32 i = 0; i < list->GetCount(); i++ ) {
-                    SmallString n = StringFormat::Small( "Index:%d", i );
-                    itemType->Imgui_Draw( list->Get( i ), n.GetCStr() );
-                }
-                ImGui::EndListBox();
-            }
-        #endif
-        }
     };
 
     template <typename T, i32 cap>
@@ -334,38 +285,6 @@ namespace atto {
             result.Add( "}" );
             return result;
         }
-
-        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
-            GrowableList< _type_ > * list = ( GrowableList< _type_ > * )obj;
-        #if 1
-            if( ImGui::TreeNodeEx( memberName, ImGuiTreeNodeFlags_DefaultOpen ) ) {
-                for( i32 i = 0; i < list->GetCount(); i++ ) {
-                    ImGui::PushID( i );
-                    if( ImGui::Button( "-" ) == true ) {
-                        list->RemoveIndex( i );
-                        ImGui::PopID();
-                        break;
-                    }
-                    ImGui::PopID();
-                    ImGui::SameLine();
-                    SmallString n = StringFormat::Small( "Index:%d", i );
-                    itemType->Imgui_Draw( list->Get( i ), n.GetCStr() );
-                }
-                if( list->IsFull() == false && ImGui::Button( "+" ) ) {
-                    list->AddEmpty();
-                }
-                ImGui::TreePop();
-            }
-        #else 
-            if( ImGui::BeginListBox( memberName ) ) {
-                for( i32 i = 0; i < list->GetCount(); i++ ) {
-                    SmallString n = StringFormat::Small( "Index:%d", i );
-                    itemType->Imgui_Draw( list->Get( i ), n.GetCStr() );
-                }
-                ImGui::EndListBox();
-            }
-        #endif
-        }
     };
 
 
@@ -403,10 +322,6 @@ namespace atto {
             AssertMsg( false, "NOT IMPL" );
             return {};
         }
-
-        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
-            AssertMsg( false, "NOT IMPL" );
-        }
     };
 
     template <typename T>
@@ -426,10 +341,6 @@ namespace atto {
         }
 
         virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
-            INVALID_CODE_PATH;
-        }
-
-        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
             INVALID_CODE_PATH;
         }
 
@@ -491,17 +402,11 @@ namespace atto {
 
         virtual void Binary_Write( const void * obj, BinaryBlob & f ) {
             INVALID_CODE_PATH;
-            f.Write( obj, size );
         }
 
         virtual void Binary_Read( void * obj, BinaryBlob & f ) {
             INVALID_CODE_PATH;
-            f.Read( obj, size );
         }
-
-        virtual void Imgui_Draw( const void * obj, const char * memberName ) {
-
-        };
     };
 
     template< typename T, i32 cap >
@@ -512,20 +417,6 @@ namespace atto {
             return &typeDesc;
         }
     };
-
-    template<typename _type_>
-    inline static _type_ ReflEnumFromString( const char * str ) {
-        _type_ type = _type_::Make( (_type_::_enumerated)( 0 ) );
-        auto values = _type_::Values();
-        auto names = _type_::Names();
-        auto count = _type_::_count;
-        for( size_t i = 0; i < count; i++ ) {
-            if( strcmp( str, names[ i ] ) == 0 ) {
-                type = (_type_::_enumerated)values[ i ];
-            }
-        }
-        return type;
-    }
 
 #define MAP(macro, ...) \
     IDENTITY( \
@@ -692,10 +583,6 @@ struct EnumName {                                                               
                 }                                                                                           \
             }                                                                                               \
         }                                                                                                   \
-                                                                                                            \
-      virtual void Imgui_Draw( const void * obj, const char * memberName ) {                                \
-            ImGui::Text( "%s: %s", memberName, ((EnumName *)obj)->ToString() );                             \
-      };                                                                                                    \
                                                                                                             \
       virtual LargeString ToString( const void * obj ) override {                                           \
             return LargeString::FromLiteral( ( (EnumName *)obj )->ToString() );                             \

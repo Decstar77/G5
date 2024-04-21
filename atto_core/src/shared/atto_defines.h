@@ -33,11 +33,7 @@
 
 #endif
 
-#if _WIN32
 #define COMPILE_ASSERT(expr, msg) static_assert(expr, msg)
-#elif __linux__
-#define COMPILE_ASSERT(expr, msg)
-#endif
 
 #define INVALID_CODE_PATH AssertMsg(false, "Invalid code path")
 

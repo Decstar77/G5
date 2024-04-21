@@ -2,7 +2,6 @@
 
 #include "atto_containers.h"
 #include "atto_binary_file.h"
-
 #include "atto_reflection.h"
 
 namespace atto {
@@ -84,7 +83,7 @@ namespace atto {
 
         template<typename _type_>
         inline _type_ Convert( size_t argIndex, const std::array< size_t, sizeof...( _args_ ) > & sizes, char * data ) {
-            static_assert( std::is_pointer_v<_type_> == false, "RpcBase :: Argument can't be a pointer" );
+            COMPILE_ASSERT( std::is_pointer_v<_type_> == false, "RpcBase :: Argument can't be a pointer" );
 
             size_t dataOffset = 0;
             for( size_t i = 0; i < argIndex; i++ ) {
@@ -157,9 +156,9 @@ namespace atto {
 
         template<typename _type_>
         inline LargeString ConvertString( size_t argIndex, const std::array< size_t, sizeof...( _args_ ) > & sizes, char * data ) {
-            static_assert( std::is_pointer_v<_type_> == false, "RpcBase :: Argument can't be a pointer" );
-            static_assert( is_fixed_list<_type_>::value == false, "RpcBase cannot take Raw Lists, please use a Span" );
-            static_assert( is_grow_list<_type_>::value == false, "RpcBase cannot take Raw Lists, please use a Span" );
+            COMPILE_ASSERT( std::is_pointer_v<_type_> == false, "RpcBase :: Argument can't be a pointer" );
+            COMPILE_ASSERT( is_fixed_list<_type_>::value == false, "RpcBase cannot take Raw Lists, please use a Span" );
+            COMPILE_ASSERT( is_grow_list<_type_>::value == false, "RpcBase cannot take Raw Lists, please use a Span" );
 
             size_t dataOffset = 0;
             for( size_t i = 0; i < argIndex; i++ ) {
@@ -270,17 +269,17 @@ namespace atto {
     private:
         template< typename _type_ >
         inline void DoSerialize( _type_ type ) {
-            static_assert( std::is_pointer<_type_>::value == false, "AddAction :: Cannot take pointers" );
-            static_assert( is_fixed_list<_type_>::value == false, "RpcBuffer cannot take Raw Lists, please cast/pass in a Span : list.GetSpan()" );
-            static_assert( is_grow_list<_type_>::value == false, "RpcBuffer cannot take Raw Lists, please cast/pass in a Span : list.GetSpan()" );
+            COMPILE_ASSERT( std::is_pointer<_type_>::value == false, "AddAction :: Cannot take pointers" );
+            COMPILE_ASSERT( is_fixed_list<_type_>::value == false, "RpcBuffer cannot take Raw Lists, please cast/pass in a Span : list.GetSpan()" );
+            COMPILE_ASSERT( is_grow_list<_type_>::value == false, "RpcBuffer cannot take Raw Lists, please cast/pass in a Span : list.GetSpan()" );
             data.Write( &type );
         }
         
         template< typename _type_, typename... _types_ >
         inline void DoSerialize( _type_ type, _types_... args ) {
-            static_assert( std::is_pointer<_type_>::value == false, "AddAction :: Cannot take pointers" );
-            static_assert( is_fixed_list<_type_>::value == false, "RpcBuffer cannot take Raw Lists, please cast/pass in a Span : list.GetSpan()" );
-            static_assert( is_grow_list<_type_>::value == false, "RpcBuffer cannot take Raw Lists, please cast/pass in a Span : list.GetSpan()" );
+            COMPILE_ASSERT( std::is_pointer<_type_>::value == false, "AddAction :: Cannot take pointers" );
+            COMPILE_ASSERT( is_fixed_list<_type_>::value == false, "RpcBuffer cannot take Raw Lists, please cast/pass in a Span : list.GetSpan()" );
+            COMPILE_ASSERT( is_grow_list<_type_>::value == false, "RpcBuffer cannot take Raw Lists, please cast/pass in a Span : list.GetSpan()" );
             data.Write( &type );
             DoSerialize( args... );
         }

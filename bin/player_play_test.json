@@ -1,6 +1,6 @@
 {
     "basePath": "assets/",
-    "fullscreen": true,
+    "fullscreen": false,
     "showDebug": true,
     "vsync": true,
     "windowWidth": 800,

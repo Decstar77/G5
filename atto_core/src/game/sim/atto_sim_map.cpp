@@ -257,10 +257,6 @@ namespace atto {
             INVALID_CODE_PATH;
         }
 
-        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
-            INVALID_CODE_PATH;
-        }
-
         virtual LargeString ToString( const void * obj ) override {
             i32 index = (i32)(*(EntitySelectionChange *)obj);
             return LargeString::FromLiteral( EntitySelectionChangeStrings[ index ] );
@@ -285,10 +281,6 @@ namespace atto {
         }
 
         virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
-            INVALID_CODE_PATH;
-        }
-
-        virtual void Imgui_Draw( const void * obj, const char * memberName ) override {
             INVALID_CODE_PATH;
         }
 
