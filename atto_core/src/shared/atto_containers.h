@@ -14,12 +14,12 @@ namespace atto {
     template<typename _type_>
     inline void ZeroStruct( _type_ & t ) {
         static_assert( std::is_pointer<_type_>::value == false, "Highly likely bug to use ZeroStruct on pointer type! Use ZeroStructPtr instead" );
-        memset( &t, 0, sizeof( _type_ ) );
+        MemSet( &t, 0, sizeof( _type_ ) );
     }
 
     template<typename _type_>
     inline void ZeroStructPtr( _type_ * t ) {
-        memset( t, 0, sizeof( _type_ ) );
+        MemSet( t, 0, sizeof( _type_ ) );
     }
 
     template<typename _type_>
@@ -29,6 +29,8 @@ namespace atto {
 
         _type_ *            Get( i32 index ) { Assert( index >= 0 && index < count );  return data + index; }
         const _type_ *      Get( i32 index ) const { Assert( index >= 0 && index < count );  return data + index; }
+
+        inline i32 GetCount() const { return count; }
 
         i32         count;
         _type_ *    data;
@@ -118,7 +120,7 @@ namespace atto {
     T * FixedList<T, capcity>::Set_MemCpyPtr( i32 index, const T * value ) {
         AssertMsg( index >= 0 && index < capcity, "Set_MemCpyPtr" );
 
-        memcpy( &data[ index ], (const void *)value, sizeof( T ) );
+        MemCpy( &data[ index ], (const void *)value, sizeof( T ) );
 
         return &data[ index ];
     }
@@ -178,7 +180,7 @@ namespace atto {
         i32 index = count; count++;
         AssertMsg( index >= 0 && index < capcity, "Array, add to many items" );
 
-        memcpy( &data[ index ], (const void *)value, sizeof( T ) );
+        MemCpy( &data[ index ], (const void *)value, sizeof( T ) );
 
         return &data[ index ];
     }
@@ -334,6 +336,9 @@ namespace atto {
         T &             AddEmpty();
         T *             AddUnique( const T & value );
         b8              AddIfPossible( const T & t );
+        T *             Insert( i32 index, const T & value );
+
+        void            SetCount( i32 count );
 
         bool            Contains( const T & value ) const;
 
@@ -459,7 +464,7 @@ namespace atto {
     template<typename T>
     void GrowableList<T>::Clear( bool zeroMemory /*= false */ ) {
         if( zeroMemory ) {
-            memset( data, 0, count );
+            MemSet( data, 0, count );
         }
         count = 0;
     }
@@ -514,6 +519,29 @@ namespace atto {
         }
 
         return false;
+    }
+
+    template<typename T>
+    T * GrowableList<T>::Insert( i32 index, const T & value ) {
+        AssertMsg( index >= 0 && index < count, "Array invalid insert index " );
+        if( count + 1 >= capcity ) {
+            Grow( capcity * 2 );
+        }
+
+        for( i32 i = count; i > index; i-- ) {
+            data[ i ] = data[ i - 1 ];
+        }
+
+        data[ index ] = value;
+        count++;
+
+        return &data[ index ];
+    }
+
+    template<typename T>
+    void GrowableList<T>::SetCount( i32 count ) {
+        AssertMsg( count >= 0 && count <= capcity, "Array invalid set count" );
+        this->count = count;
     }
 
     template<typename T>
@@ -1368,7 +1396,7 @@ namespace atto {
         head = 0;
         tail = 0;
         if( zeroOut ) {
-            memset( data, 0, sizeof( T ) * capcity );
+            MemSet( data, 0, sizeof( T ) * capcity );
         }
     }
 
@@ -1483,7 +1511,7 @@ namespace atto {
     void FixedStack<T, capcity>::Clear( bool zeroOut ) {
         count = 0;
         if( zeroOut ) {
-            memset( data, 0, sizeof( T ) * capcity );
+            MemSet( data, 0, sizeof( T ) * capcity );
         }
     }
     

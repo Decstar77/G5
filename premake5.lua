@@ -9,11 +9,11 @@ local JSON_DIR = "vendor/json"
 local ENET_DIR  = "vendor/enet"
 local FONTSTASH_DIR = "vendor/fontstash"
 local ABSOLUTE_SOL_PATH = path.getabsolute(".")
-local IMGUI_DIR = path.join(ABSOLUTE_SOL_PATH, "atto_core/src/editor/imgui")
 local FMOD_DIR = "vendor/fmod"
 local FPM = "vendor/fpm"
 local BACKWARD = "vendor/backward"
 local VULKAN_DIR = "C:/VulkanSDK/1.3.239.0"
+local NUKLEAR = "vendor/nuklear"
 
 solution "Atto"
     location("")
@@ -77,7 +77,7 @@ project "atto_core"
         GLM_DIR,
         AUDIO_FILE_DIR,
         "atto/src/",
-        IMGUI_DIR
+        NUKLEAR
     }
     
     libdirs
@@ -117,8 +117,11 @@ project "atto_server"
     flags { "FatalWarnings", "MultiProcessorCompile" }
     debugdir "bin"
     
+    defines { "ATTO_SERVER" }
+
     includedirs
     {
+        path.join(GLFW_DIR, "include"),
         JSON_DIR,
         GLM_DIR,
         FPM,
@@ -133,8 +136,10 @@ project "atto_server"
         "%{prj.name}/src/**.c",
         "%{prj.name}/src/**.cpp",
         "%{prj.name}/src/**.hpp",
-        ---"atto_core/src/shared/**.h",
-        ---"atto_core/src/shared/**.cpp",
+        "atto_core/src/shared/**.h",
+        "atto_core/src/shared/**.cpp",
+        "atto_core/src/sim/**.h",
+        "atto_core/src/sim/**.cpp",
     }
 
     disablewarnings { 
@@ -149,6 +154,11 @@ project "atto_server"
         "4221", -- Pointers to locals in initializers. Valid C99.
         "4702", -- Unreachable code. We sometimes want return after exit() because otherwise we get an error about no return value.
     }
+
+    links { "glfw" }
+
+    filter "system:windows"
+        links { "kernel32", "user32" }
 
     dependson { "AttoTypeGen", "atto_core" }
 

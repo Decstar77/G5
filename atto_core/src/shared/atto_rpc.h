@@ -255,6 +255,10 @@ namespace atto {
         FixedBinaryBlob<200>    data;
 
     public:
+        void Combine( RpcBuffer & other ) {
+            data.Write( other.data.GetBuffer(), other.data.GetSize() );
+        }
+
         template<typename... _types_>
         inline void AddAction( i32 funcId, _types_... args ) {
             #if ATTO_GAME_CHECK_RPC_FUNCTION_TYPES

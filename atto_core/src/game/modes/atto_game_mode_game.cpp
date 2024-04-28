@@ -2,6 +2,9 @@
 #include "../../shared/atto_colors.h"
 
 namespace atto {
+    void SimCommunicator_SinglePlayer::SendToAllClients( MapActionBuffer * actionBuffer ) {
+        visMap->ApplyActions( actionBuffer );
+    }
 
     GameModeType GameMode_SinglePlayerGame::GetGameModeType() {
         return GameModeType::IN_GAME;
@@ -12,13 +15,17 @@ namespace atto {
     }
 
     void GameMode_SinglePlayerGame::Initialize( Core * core ) {
-        simMap.localPlayerNumber.value = 1;
-        simMap.localPlayerTeamNumber.value = 1;
-        simMap.Initialize( core );
+        communicator.visMap = &visMap;
+        visMap.playerNumber.value = 1;
+        visMap.SimInitialize();
+        visMap.VisInitialize( core );
     }
 
     void GameMode_SinglePlayerGame::UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags updateAndRenderFlags ) {
-        simMap.Update( core, dt );
+        visMap.ApplyActions( &visMap.visActionBuffer );
+        visMap.ApplyActions( &visMap.simActionBuffer );
+        visMap.SimUpdate( dt );
+        visMap.VisUpdate( dt );
     }
 
     void GameMode_SinglePlayerGame::Shutdown( Core * core ) {
@@ -33,27 +40,39 @@ namespace atto {
     }
 
     void GameMode_MultiplayerGame::Initialize( Core * core ) {
-        if( startParms.localPlayerNumber == 1 ) {
-            core->LogOutput( LogLevel::INFO, "I am the host" );
-            isHost = true;
-            simMap.localPlayerTeamNumber.value = 1;
-        }
-        else {
-            core->LogOutput( LogLevel::INFO, "I am a peer" );
-            isHost = false;
-            simMap.localPlayerTeamNumber.value = 2;
-        }
-
-        simMap.localPlayerNumber.value = startParms.localPlayerNumber;
-
-        simMap.Initialize( core );
+        visMap.playerNumber.value = startParms.localPlayerNumber;
+        visMap.teamNumber.value = startParms.localPlayerNumber;
+        visMap.SimInitialize();
+        visMap.VisInitialize( core );
     }
 
     void GameMode_MultiplayerGame::UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags ) {
-        simMap.Update( core, dt );
+        if ( core->NetworkIsConnected() == true ) {
+            NetworkMessage & msg = *MemoryAllocateTransient < NetworkMessage > ();
+            while ( core->NetworkRecieve( msg ) ) {
+                switch ( msg.type ) {
+                    case NetworkMessageType::ACTION_BUFFER:
+                    {
+                        i32 offset = 0;
+                        MapActionBuffer actionBuffer = NetworkMessagePop<MapActionBuffer>( msg, offset );
+                        visMap.ApplyActions( &actionBuffer );
+                    } break;
+                }
+            }
+        }
+
+        visMap.VisUpdate( dt );
+
+        if ( core->NetworkIsConnected() == true && visMap.visActionBuffer.data.GetSize() != 0 ) {
+            NetworkMessage & msg = *MemoryAllocateTransient < NetworkMessage > ();
+            ZeroStruct( msg );
+            msg.type = NetworkMessageType::ACTION_BUFFER;
+            NetworkMessagePush( msg, visMap.visActionBuffer );
+            core->NetworkSend( msg );
+        }
     }
 
     void GameMode_MultiplayerGame::Shutdown( Core * core ) {
-
+        
     }
 }

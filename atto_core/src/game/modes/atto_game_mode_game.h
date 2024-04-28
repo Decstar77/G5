@@ -1,7 +1,9 @@
 #pragma once
 
 #include "../atto_game.h"
-#include "../sim/atto_sim_map.h"
+#include "../../sim/atto_sim_map.h"
+#include "../../sim/atto_sim_communicator.h"
+#include "../atto_vis_map.h"
 
 namespace atto {
     
@@ -10,6 +12,14 @@ namespace atto {
         bool        isMutliplayer;
         i32         localPlayerNumber;
         i32         otherPlayerNumber;
+    };
+
+    class SimCommunicator_SinglePlayer : public SimCommunicator {
+    public:
+        virtual void SendToAllClients( MapActionBuffer * actionBuffer ) override;
+
+    public:
+        VisMap * visMap = nullptr;
     };
 
     class GameMode_SinglePlayerGame : public GameMode {
@@ -23,7 +33,8 @@ namespace atto {
 
     public:
         GameStartParams                         startParms;
-        SimMap                                  simMap;
+        SimCommunicator_SinglePlayer            communicator;
+        VisMap                                  visMap;
     };
 
     class GameMode_MultiplayerGame : public GameMode {
@@ -37,7 +48,6 @@ namespace atto {
 
     public:
         GameStartParams                         startParms;
-        bool                                    isHost;
-        SimMap                                  simMap;
+        VisMap                                  visMap;
     };
 }

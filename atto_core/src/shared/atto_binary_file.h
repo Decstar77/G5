@@ -4,20 +4,18 @@
 #include "atto_containers.h"
 
 namespace atto {
-    class Core;
-
     template<i32 _size_>
     class FixedBinaryBlob {
     public:
         inline void Read( void * dst, i32 size ) {
             Assert( current + size < _size_ );
-            memcpy( dst, buffer + current, size );
+            MemCpy( dst, buffer + current, size );
             current += size;
         }
         
         inline i32 Write( const void * data, i32 size ) {
             Assert( current + size < _size_ );
-            memcpy( buffer + current, data, size );
+            MemCpy( buffer + current, data, size );
             current += size;
             return size;
         }

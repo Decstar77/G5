@@ -166,83 +166,6 @@ namespace atto {
         
     }
 
-    void WindowsCore::WinBoyoWriteTextFile( const char * path, const char * text ) {
-        std::ofstream file( path );
-        if( file.is_open() ) {
-            file << text;
-            file.close();
-        }
-    }
-
-    void WindowsCore::WinBoyoReadTextFile( const char * path, char * text, i32 maxLen ) {
-        std::ifstream file( path );
-
-        if( file.is_open() ) {
-            file.seekg( 0, std::ios::end );
-            std::streampos fileSize = file.tellg();
-            file.seekg( 0, std::ios::beg );
-
-            if( static_cast<i32>( fileSize ) > maxLen ) {
-                std::cout << "DEBUG_ReadTextFile :: File size is too big. Truncating to " << maxLen << " bytes." << std::endl;
-            }
-
-            maxLen = Min( maxLen, static_cast<i32>( fileSize ) );
-
-            file.read( text, maxLen );
-
-            text[ maxLen ] = '\0';
-
-            file.close();
-        }
-    }
-
-void WindowsCore::WinBoyoWriteBinaryFile( const char * path, const char * data, i64 size ) {
-        std::ofstream file( path, std::ios::out | std::ios::binary );
-        if( file.is_open() ) {
-            file.write( data, size );
-            file.close();
-        }
-    }
-
-    void WindowsCore::WinBoyoReadBinaryFile( const char * path, char * data, i64 size ) {
-        std::ifstream file( path, std::ios::in | std::ios::binary );
-        if( file.is_open() ) {
-            file.read( data, size );
-            file.close();
-        }
-    }
-
-    i64 WindowsCore::ResourceGetFileSize( const char * path ) {
-        std::ifstream file( path );
-
-        if( file.is_open() ) {
-            file.seekg( 0, std::ios::end );
-            std::streampos fileSize = file.tellg();
-            file.close();
-            return static_cast<i64>( fileSize );
-        }
-        else {
-        }
-
-        return -1;
-    }
-
-    void WindowsCore::ResourceReadEntireTextFile( const char * path, char * data, i32 maxLen ) {
-        WinBoyoReadTextFile( path, data, maxLen );
-    }
-
-    void WindowsCore::ResourceWriteEntireTextFile( const char * path, const char * data ) {
-        WinBoyoWriteTextFile( path, data );
-    }
-
-    void WindowsCore::ResourceReadEntireBinaryFile( const char * path, char * data, i32 maxLen ) {
-        WinBoyoReadBinaryFile( path, reinterpret_cast<char *>( data ), maxLen );
-    }
-
-    void WindowsCore::ResourceWriteEntireBinaryFile( const char * path, const char * data, i32 size ) {
-        WinBoyoWriteBinaryFile( path, reinterpret_cast<const char *>( data ), size );
-    }
-
     bool WindowsCore::WindowOpenNativeFileDialog( const char * basePath, const char * filter, LargeString & res ) {
         nfdchar_t * outPath = NULL;
         nfdresult_t result = NFD_OpenDialog( filter, basePath, &outPath );
@@ -255,7 +178,7 @@ void WindowsCore::WinBoyoWriteBinaryFile( const char * path, const char * data, 
             return true;
         }
         else {
-            LogOutput( LogLevel::ERR, "Error: %s\n", NFD_GetError() );
+            ATTOERROR( "Error: %s\n", NFD_GetError() );
         }
 
         return false;
@@ -273,7 +196,7 @@ void WindowsCore::WinBoyoWriteBinaryFile( const char * path, const char * data, 
             return true;
         }
         else {
-            LogOutput( LogLevel::ERR, "Error: %s\n", NFD_GetError() );
+            ATTOERROR( "Error: %s\n", NFD_GetError() );
         }
 
         return false;

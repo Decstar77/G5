@@ -72,6 +72,12 @@
 #define I16_MIN -32768
 #define U16_MAX 65535
 
+#ifdef _WIN32
+#define AttoOffsetOf( ss, mm ) ( (unsigned long long)&reinterpret_cast<char const volatile&>((((ss*)0)->mm)) )
+#endif
+#ifdef __linux__
+#define AttoOffsetOf( ss, mm ) __builtin_offsetof(ss,mm)
+#endif
 
 namespace atto
 {
@@ -291,6 +297,6 @@ namespace atto
 }
 
 #include <type_traits>
-
+#include "atto_memory.h"
 #include "atto_platform.h"
 

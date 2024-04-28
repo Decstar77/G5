@@ -1,5 +1,5 @@
 #pragma once
-#include "../shared/atto_core.h"
+#include "atto_core.h"
 
 namespace atto {
     enum class GameModeType {

@@ -2,7 +2,7 @@
 
 #include "../shared/atto_defines.h"
 #include "../shared/atto_containers.h"
-#include "../shared/atto_core.h"
+#include "../game/atto_core.h"
 
 namespace atto {
     class StaticMeshGeneration {

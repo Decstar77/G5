@@ -2,7 +2,5 @@
 
 namespace atto {
 
-    void Foo() {
-    }
 
 }

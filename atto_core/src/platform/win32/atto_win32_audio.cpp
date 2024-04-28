@@ -4,6 +4,11 @@
 #define ERRCHECK(_result) if (result != FMOD_OK) { INVALID_CODE_PATH; }
 
 namespace atto {
+    static FMOD::ChannelGroup *                fmodMasterGroup;
+    static FMOD::System *                      fmodSystem;
+    static FixedObjectPool<AudioSpeaker, 1024> fmodSpeakers;
+    static FixedList<AudioSpeaker *, 1024>     fmodActives;
+
     bool AudioSpeaker::IsPlaying() {
         FMOD::Channel *channel = ( FMOD::Channel * ) fmodChannel;
         bool playing = false;
@@ -52,66 +57,26 @@ namespace atto {
     void WindowsCore::AudioShudown() {
 
     }
+    
+    void PlatformRendererCreateAudio( class AudioResource * audioResource ) {
+        audioResource->volumeMultiplier = 1.0f;
+        audioResource->maxInstances = 1;
+        audioResource->stealMode = AudioStealMode::NONE;
+        audioResource->minTimeToPassForAnotherSubmission = 0.0f;
 
-    AudioResource * WindowsCore::ResourceGetAndCreateAudio( const char * name, bool is2D, bool is3D, f32 minDist, f32 maxDist ) {
-        //ScopedClock ProfileClock( "ResourceGetAndCreateAudio", this );
-
-        const i32 audioResourceCount = resources.audios.GetCount();
-        for( i32 audioIndex = 0; audioIndex < audioResourceCount; audioIndex++ ) {
-            AudioResource & audioResource = resources.audios[ audioIndex ];
-            if( audioResource.name == name ) {
-                return &audioResource;
-            }
-        }
-
-        FMODAudioResource audioResource = {};
-        audioResource.id = StringHash::Hash( name );
-        audioResource.name = name;
-        audioResource.is2D = is2D;
-        audioResource.is3D = is3D;
-        audioResource.minDist = minDist;
-        audioResource.maxDist = maxDist;
-        audioResource.volumeMultiplier = 1.0f;
-        audioResource.maxInstances = 1;
-        audioResource.stealMode = AudioStealMode::NONE;
-        audioResource.minTimeToPassForAnotherSubmission = 0.0f;
-
-        if( theGameSettings.noAudio == false ) {
-            if( audioResource.is2D == true ) {
-                FMOD_RESULT result = fmodSystem->createSound( name, FMOD_DEFAULT | FMOD_NONBLOCKING, 0, &audioResource.sound2D );
+        if( Core::theCore->theGameSettings.noAudio == false ) {
+            if( audioResource->createInfo.is2D == true ) {
+                //FMOD_RESULT result = fmodSystem->createSound( name, FMOD_DEFAULT | FMOD_NONBLOCKING, 0, &audioResource.sound2D );
+                FMOD_RESULT result = fmodSystem->createSound( audioResource->name.GetCStr(), FMOD_DEFAULT, 0, &audioResource->sound2D );
                 ERRCHECK( result );
             }
 
-            if( audioResource.is3D == true ) {
-                FMOD_RESULT result = fmodSystem->createSound( name, FMOD_3D | FMOD_NONBLOCKING, 0, &audioResource.sound3D );
-                audioResource.sound3D->set3DMinMaxDistance( minDist, maxDist );
+            if( audioResource->createInfo.is3D == true ) {
+                FMOD_RESULT result = fmodSystem->createSound( audioResource->name.GetCStr(), FMOD_3D | FMOD_NONBLOCKING, 0, &audioResource->sound3D );
+                audioResource->sound3D->set3DMinMaxDistance( audioResource->createInfo.minDist, audioResource->createInfo.maxDist );
                 ERRCHECK( result );
             }
         }
-
-        return resources.audios.Add_MemCpyPtr( &audioResource );
-    }
-
-    AudioResource * WindowsCore::ResourceGetAndLoadAudio( const char * name ) {
-        const i32 audioResourceCount = resources.audios.GetCount();
-        for( i32 audioIndex = 0; audioIndex < audioResourceCount; audioIndex++ ) {
-            AudioResource & audioResource = resources.audios[ audioIndex ];
-            if( audioResource.name == name ) {
-                return &audioResource;
-            }
-        }
-
-        LargeString resPath = {};
-        resPath.Add( name );
-        resPath.StripFileExtension();
-        resPath.Add( ".json" );
-
-        AudioResource * resource = MemoryAllocateTransient<AudioResource>();
-        if( ResourceReadTextRefl<AudioResource>( resource, resPath.GetCStr() ) == true ) {
-            return ResourceGetAndCreateAudio( name, resource->is2D, resource->id, resource->minDist, resource->maxDist );
-        }
-
-        return nullptr;
     }
 
     FMOD_RESULT F_CALLBACK ChannelCallback( FMOD_CHANNELCONTROL * channelControl, FMOD_CHANNELCONTROL_TYPE controlType, FMOD_CHANNELCONTROL_CALLBACK_TYPE callbackType, void * commandData1, void * commandData2 ) {
@@ -123,8 +88,7 @@ namespace atto {
             if ( speakerData != nullptr ) {
                 AudioSpeaker * speaker = ( AudioSpeaker * ) speakerData;
                 speaker->fmodChannel = nullptr;
-                WindowsCore * core = ( WindowsCore * ) speaker->core;
-                core->fmodSpeakers.Remove( speaker->handle );
+                fmodSpeakers.Remove( speaker->handle );
             }
         }
 
@@ -136,10 +100,8 @@ namespace atto {
             return;
         }
 
-        FMODAudioResource * win32Audio = (FMODAudioResource *)audio;
-
         if( pos == nullptr ) {
-            if( win32Audio->sound2D != nullptr ) {
+            if( audio->sound2D != nullptr ) {
                 const f64 currentTime = GetTheCurrentTime();
 
                 i32 playingCount = 0;
@@ -178,7 +140,7 @@ namespace atto {
                 }
 
                 FMOD::Channel * channel = nullptr;
-                FMOD_RESULT result = fmodSystem->playSound( win32Audio->sound2D, fmodMasterGroup, true, &channel );
+                FMOD_RESULT result = fmodSystem->playSound( audio->sound2D, fmodMasterGroup, true, &channel );
                 ERRCHECK( result );
 
                 //channel->setVolume( 0.15f );
@@ -199,7 +161,6 @@ namespace atto {
                     speaker->handle = handle;
                     speaker->source = audio;
                     speaker->fmodChannel = channel;
-                    speaker->core = this;
                     speaker->spawnTime = currentTime;
                 }
 
@@ -209,13 +170,13 @@ namespace atto {
                 channel->setPaused( false );
             }
             else {
-                LogOutput( LogLevel::ERR, "WindowsCore::AudioPlay :: Tried to play sound but was null %s", audio->name.GetCStr() );
+                ATTOERROR("WindowsCore::AudioPlay :: Tried to play sound but was null %s", audio->name.GetCStr() );
             }
         }
         else {
-            if( win32Audio->sound3D != nullptr ) {
+            if( audio->sound3D != nullptr ) {
                 FMOD::Channel * channel = nullptr;
-                FMOD_RESULT result = fmodSystem->playSound( win32Audio->sound3D, fmodMasterGroup, true, &channel );
+                FMOD_RESULT result = fmodSystem->playSound( audio->sound3D, fmodMasterGroup, true, &channel );
                 ERRCHECK( result );
                 FMOD_VECTOR v = {};
                 v.x = pos->x;
@@ -229,7 +190,7 @@ namespace atto {
                 //LogOutput( LogLevel::INFO, "Dist = %f", dist );
             }
             else {
-                LogOutput( LogLevel::ERR, "WindowsCore::AudioPlay :: Tried to play sound but was null %s", audio->name.GetCStr() );
+                ATTOERROR( "WindowsCore::AudioPlay :: Tried to play sound but was null %s", audio->name.GetCStr() );
             }
         }
     }

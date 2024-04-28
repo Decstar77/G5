@@ -3,7 +3,7 @@
 #if ATTO_OPENGL
 
 #include "../atto_win32_core.h"
-#include "../../shared/atto_colors.h"
+#include "../../../shared/atto_colors.h"
 
 // @NOTE: I can't believe it need this...
 #define WIN32_LEAN_AND_MEAN
@@ -101,8 +101,8 @@ namespace atto {
         params.userPtr = this;
 
         core->resources.fontContext = fonsCreateInternal( &params );
-        arialFontHandle = fonsAddFont( core->resources.fontContext, "default", "res/fonts/arial.ttf" );
-        kenFontHandle = fonsAddFont( core->resources.fontContext, "ken", "res/fonts/kenvector_future.ttf" );
+        arialFontHandle = fonsAddFont( core->resources.fontContext, "default", "res/game/fonts/arial.ttf" );
+        kenFontHandle = fonsAddFont( core->resources.fontContext, "ken", "res/game/fonts/kenvector_future.ttf" );
 
         const char * vertexShaderSource = R"(
             #version 330 core
@@ -201,7 +201,7 @@ namespace atto {
 
     void OpenglState::GLFontsRenderDraw( const f32 * verts, const f32 * tcoords, const u32 * colors, i32 nverts ) {
         const i32 size = sizeof( GLVertexLayoutFont::FontVertex ) * nverts;
-        GLVertexLayoutFont::FontVertex * vertices = (GLVertexLayoutFont::FontVertex *)core->MemoryAllocateTransient( size );
+        GLVertexLayoutFont::FontVertex * vertices = (GLVertexLayoutFont::FontVertex *)MemoryAllocateTransient( size );
         for( i32 i = 0; i < nverts; i++ ) {
             vertices[ i ].position.x = verts[ 2 * i ];
             vertices[ i ].position.y = verts[ 2 * i + 1 ];

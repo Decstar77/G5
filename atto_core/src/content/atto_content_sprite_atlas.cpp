@@ -1,5 +1,4 @@
 #include "atto_content_sprite_atlas.h"
-#include "../shared/atto_core.h"
 
 #include <fstream>
 #include "atto_content_bmp.h"
@@ -577,8 +576,8 @@ namespace atto {
         bmp.WriteToFile( "test.bmp" );
     }
 
-    void ContentSpriteAtlasProcessor::Processs( Core * core, Span<SpriteResource> sprites ) {
-        core->LogOutput( LogLevel::INFO, "PACKING:SPRITE_ATLAS, Starting" );
+    void ContentSpriteAtlasProcessor::Processs( Span<SpriteResource> sprites ) {
+        ATTOINFO( "PACKING:SPRITE_ATLAS, Starting" );
 
         TEXTURE_PACKER::MyTexturePacker t;
         t.setTextureCount( sprites.count );
@@ -587,14 +586,14 @@ namespace atto {
             t.addTexture( sprites[ spriteIndex ].textureResource->width, sprites[ spriteIndex ].textureResource->height );
         }
 
-        core->LogOutput( LogLevel::INFO, "PACKING:SPRITE_ATLAS, Packing" );
+        ATTOINFO( "PACKING:SPRITE_ATLAS, Packing" );
         i32 ww;
         i32 hh;
         t.packTextures( ww, hh, true, true );
 
         BMP bmp( ww, hh );
         for( i32 spriteIndex = 0; spriteIndex < sprites.count; spriteIndex++ ) {
-            core->LogOutput( LogLevel::INFO, "PACKING:SPRITE_ATLAS, Blitting %d", spriteIndex );
+            ATTOINFO( "PACKING:SPRITE_ATLAS, Blitting %d", spriteIndex );
 
             SpriteResource * sprite = &sprites[ spriteIndex ];
             i32 w;
@@ -604,7 +603,7 @@ namespace atto {
             t.getTextureLocation( spriteIndex, x, y, w, h );
 
             ContentTextureProcessor p;
-            p.LoadFromFile( sprite->spriteName.GetCStr() );
+            p.LoadFromFile( sprite->name.GetCStr() );
             p.FixAplhaEdges();
 
             Assert( w == p.width || w == p.height );
@@ -637,10 +636,10 @@ namespace atto {
             }
         }
 
-        core->LogOutput( LogLevel::INFO, "PACKING:SPRITE_ATLAS, Writing bmp" );
+        ATTOINFO( "PACKING:SPRITE_ATLAS, Writing bmp" );
         bmp.FlipVertically();
         bmp.WriteToFile( "test.bmp" );
-        core->LogOutput( LogLevel::INFO, "PACKING:SPRITE_ATLAS, Complete" );
+        ATTOINFO( "PACKING:SPRITE_ATLAS, Complete" );
     }
 
 }

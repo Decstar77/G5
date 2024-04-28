@@ -161,6 +161,18 @@ namespace atto {
         }
     }
 
+    void ContentTextureProcessor::PremultiplyAlpha() {
+        for( int i = 0; i < height; i++ ) {
+            for( int j = 0; j < width; j++ ) {
+                byte * ptr = &pixelData[ ( i * width + j ) * 4 ];
+                f32 alpha = (f32)ptr[ 3 ] / 255.0f;
+                ptr[ 0 ] = (byte)( (f32)ptr[ 0 ] * alpha );
+                ptr[ 1 ] = (byte)( (f32)ptr[ 1 ] * alpha );
+                ptr[ 2 ] = (byte)( (f32)ptr[ 2 ] * alpha );
+            }
+        }
+    }
+
     bool PixelArtMeshCreator::LoadFromFile( const char * file ) {
         i32 width = 0;
         i32 height = 0;

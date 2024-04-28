@@ -1,7 +1,5 @@
 
-#include "../../atto_core/src/shared/atto_network.h"
-
-#include "atto_server_logger.h"
+#include "atto_server_session.h"
 
 #define ENET_IMPLEMENTATION
 #include "../../vendor/enet/include/enet.h"
@@ -9,15 +7,18 @@
 #include <iostream>
 #include <unordered_map>
 
+#include <GLFW/glfw3.h>
+
 namespace atto {
-    void PlatformAssertionFailed( const char * msg, const char * file, const char * func, int line ) {
-        
+    f64 PlatformGetCurrentTime() {
+        return glfwGetTime();
     }
 }
 
 using namespace atto;
 
 static std::unordered_map<u64, ENetPeer *> peers;
+static std::unordered_map<u64, Session>    sessions;
 
 static u64 peerIdCounter = 2;
 static u64 sessionIdCounter = 1;
@@ -27,12 +28,7 @@ struct PeerData {
     u64 sessionId = 0;
 };
 
-struct Session {
-    u64 peer1;
-    u64 peer2;
-};
-
-static void StartGameForPeers( const Session & session ) {
+static void StartGameForPeers( Session & session ) {
     {
         NetworkMessage msg = {};
         msg.type = NetworkMessageType::GAME_START;
@@ -41,6 +37,7 @@ static void StartGameForPeers( const Session & session ) {
         ENetPacket * packet = enet_packet_create( &msg, NetworkMessageGetTotalSize( msg ), ENET_PACKET_FLAG_RELIABLE );
         enet_peer_send( peers[ session.peer1 ], 0, packet );
     }
+
     {
         NetworkMessage msg = {};
         msg.type = NetworkMessageType::GAME_START;
@@ -49,15 +46,25 @@ static void StartGameForPeers( const Session & session ) {
         ENetPacket * packet = enet_packet_create( &msg, NetworkMessageGetTotalSize( msg ), ENET_PACKET_FLAG_RELIABLE );
         enet_peer_send( peers[ session.peer2 ], 0, packet );
     }
+
+    session.Initialize();
 }
 
-static std::unordered_map<u64, Session>    sessions;
+static void SendToAllClientsInSession( Session & session, NetworkMessage * msg ) {
+    ENetPacket * packet1 = enet_packet_create( msg, NetworkMessageGetTotalSize( *msg ), ENET_PACKET_FLAG_RELIABLE );
+    enet_peer_send( peers[ session.peer1 ], 0, packet1 );
+    ENetPacket * packet2 = enet_packet_create( msg, NetworkMessageGetTotalSize( *msg ), ENET_PACKET_FLAG_RELIABLE );
+    enet_peer_send( peers[ session.peer2 ], 0, packet2 );
+}
 
 int main( int argc, char * argv[] ) {
-    Logger logger;
-
     if( enet_initialize() != 0 ) {
-        logger.Error( "An error occurred while initializing ENet.\n" );
+        ATTOERROR( "An error occurred while initializing ENet.\n" );
+        return 0;
+    }
+
+    if( glfwInit() == GLFW_FALSE ) {
+        ATTOERROR( "An error occurred while initializing glfw.\n" );
         return 0;
     }
 
@@ -67,24 +74,41 @@ int main( int argc, char * argv[] ) {
 
     ENetHost *  server = enet_host_create( &address, 32, 2, 0, 0 );
     if( server == nullptr ) {
-        logger.Error( "Failed to create ENet server host." );
+        ATTOERROR( "Failed to create ENet server host." );
         return 0;
     }
 
-    logger.Info( "Server started..." );
+    ATTOINFO( "Server started..." );
 
     // Get ip
     char hostname[ 1024 ];
     hostname[ 1023 ] = '\0';
     gethostname( hostname, 1023 );
-    logger.Info( "Hostname: %s", hostname );
-
+    ATTOINFO( "Hostname: %s", hostname );
+    
+    f64 currentTime = glfwGetTime();
+    f64 dt = 0;
+    
     ENetEvent event = {};
-    while( enet_host_service( server, &event, 30 ) >= 0 ) {
+    while( enet_host_service( server, &event, 10 ) >= 0 ) {
+        f64 newTime = glfwGetTime();
+        dt = newTime - currentTime;
+        currentTime = newTime;
+
+        // Loop through sessions
+        for( auto & session : sessions ) {
+            // Loop through entities
+            session.second.Update( dt );
+            NetworkMessage msg = {};
+            msg.type = NetworkMessageType::ACTION_BUFFER;
+            NetworkMessagePush<MapActionBuffer>( msg, session.second.outAction );
+            SendToAllClientsInSession( session.second, &msg );
+        }
+
         switch( event.type ) {
             case ENET_EVENT_TYPE_CONNECT:
             {
-                logger.Info( "A new client connected from %x:%u.\n", event.peer->address.host, event.peer->address.port );
+                ATTOINFO( "A new client connected from %x:%u.\n", event.peer->address.host, event.peer->address.port );
 
                 PeerData * peerData = new PeerData();
                 event.peer->data = peerData;
@@ -94,12 +118,12 @@ int main( int argc, char * argv[] ) {
 
                 peerIdCounter++;
 
-                logger.Info( "Peer counter %d", ( u32 )peerIdCounter );
+                ATTOINFO( "Peer counter %d", ( u32 )peerIdCounter );
 
                 if( peerIdCounter % 2 == 0 ) {
-                    logger.Info( "Started game!!" );
+                    ATTOINFO( "Started game!!" );
 
-                    Session session = {};
+                    Session & session = sessions[ sessionIdCounter ];
                     session.peer1 = peerIdCounter - 2;
                     session.peer2 = peerIdCounter - 1;
 
@@ -108,7 +132,6 @@ int main( int argc, char * argv[] ) {
 
                     StartGameForPeers( session );
 
-                    sessions[ sessionIdCounter ] = session;
                     sessionIdCounter++;
                 }
 
@@ -117,21 +140,30 @@ int main( int argc, char * argv[] ) {
             {
                 u64 sid =( (PeerData *)( event.peer->data ) )->sessionId;
                 Session & session = sessions[ sid ];
-                if( session.peer1 == ( (PeerData *)( event.peer->data ) )->peerId ) {
-                    enet_peer_send( peers[ session.peer2 ], 0, event.packet );
+                
+                NetworkMessage * msg = (NetworkMessage *)event.packet->data;
+                if( msg->type == NetworkMessageType::ACTION_BUFFER ) {
+                    i32 offset = 0;
+                    MapActionBuffer actionBuffer = NetworkMessagePop<MapActionBuffer>( *msg, offset );
+                    session.inAction.Combine( actionBuffer );
                 }
-                else {
-                    enet_peer_send( peers[ session.peer1 ], 0, event.packet );
-                }
-                //enet_packet_destroy( event.packet );
+
+                //if( session.peer1 == ( (PeerData *)( event.peer->data ) )->peerId ) {
+                //    enet_peer_send( peers[ session.peer2 ], 0, event.packet );
+                //}
+                //else {
+                //    enet_peer_send( peers[ session.peer1 ], 0, event.packet );
+                //}
+                
+                enet_packet_destroy( event.packet );
             } break;
             case ENET_EVENT_TYPE_DISCONNECT:
             {
-                logger.Info( "Disconnected.\n" );
+                ATTOINFO( "Disconnected.\n" );
             } break;
             case ENET_EVENT_TYPE_DISCONNECT_TIMEOUT:
             {
-                logger.Info( "Disconnected due to timeout.\n" );
+                ATTOINFO( "Disconnected due to timeout.\n" );
             } break;
             case ENET_EVENT_TYPE_NONE:
             {

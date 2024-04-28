@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../shared/atto_core.h"
+#include "../../../game/atto_core.h"
 
 #if ATTO_OPENGL
 
@@ -76,10 +76,6 @@ namespace atto {
         i32 StrideBytes() override;
     };
 
-    struct GLTextureResource : public TextureResource {
-        u32     handle;
-    };
-
     struct GLStaticMeshResource : public StaticMeshResource {
         u32 vao;
         u32 vbo;
@@ -90,7 +86,6 @@ namespace atto {
     public:
         void                Initialize( WindowsCore * core );
         void                RenderSubmit( DrawContext * dcxt, bool clearBackBuffers );
-        TextureResource *   ResourceGetAndCreateTexture( const char * name, bool genMips, bool genAnti );
 
         void                GLCheckCapablities();
         void                GLResetSurface( f32 w, f32 h, f32 cameraWidth, f32 cameraHeight );
@@ -132,7 +127,7 @@ namespace atto {
         void                GLFontsRenderDraw( const f32 * verts, const f32 * tcoords, const u32 * colors, i32 nverts );
         void                GLFontsRenderDelete();
 
-        FixedList<GLTextureResource, 1024>  textures = {};
+        FixedList<TextureResource, 1024>    textures = {};
         WindowsCore *                       core = nullptr;
 
         GLShaderProgram *                   boundProgram = nullptr;
@@ -140,6 +135,7 @@ namespace atto {
         GLVertexBuffer                      shapeVertexBuffer = {};
         GLShaderProgram                     spriteProgram = {};
         GLVertexBuffer                      spriteVertexBuffer = {};
+        GLVertexBuffer                      spritePackedVertexBuffer = {};
 
         GLShaderProgram                     staticMeshUnlitProgram = {};
         GLStaticMeshResource *              staticMeshTriangle= nullptr;

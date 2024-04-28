@@ -251,11 +251,4 @@ namespace atto {
     }
 
     static_assert( TesterMester(), "Random number array is not valid" );
-
-
-    void RNGCreate( RNG * rng, i32 seed ) {
-
-    }
-
-
 }

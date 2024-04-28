@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../atto_game.h"
-#include "../atto_ui.h"
+#include "../atto_game_ui.h"
 
 namespace atto {
     class GameMode_MainMenu : public GameMode {
@@ -11,7 +11,6 @@ namespace atto {
         void Initialize( Core * core ) override;
         void UpdateAndRender( Core * core, f32 dt, UpdateAndRenderFlags flags = UPDATE_AND_RENDER_FLAG_NONE ) override;
         void Shutdown( Core * core ) override;
-        UIContext ui;
         bool showOptions = false;
         bool showOptionsAudio = false;
     };

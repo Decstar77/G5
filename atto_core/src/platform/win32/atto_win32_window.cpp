@@ -1,9 +1,9 @@
 #include "atto_win32_window.h"
 
 #include <glad/glad.h>
-#include "GLFW/glfw3.h"
+#include <GLFW/glfw3.h>
 
-#include "../../shared/atto_core.h"
+#include "../../game/atto_core.h"
 
 namespace atto {
     
@@ -39,20 +39,28 @@ namespace atto {
         Core * core = (Core *)glfwGetWindowUserPointer( window );
         FrameInput & fi = core->InputGetFrameInput();
         fi.mouseButtons[ button ] = action != GLFW_RELEASE;
+
+        core->NuklearUIMouseButton( button, action, mods );
     }
 
     static void ScrollCallback( GLFWwindow * window, double xoffset, double yoffset ) {
         Core * core = (Core *)glfwGetWindowUserPointer( window );
         FrameInput & fi = core->InputGetFrameInput();
         fi.mouseWheelDelta = glm::vec2( (f32)xoffset, (f32)yoffset );
+        core->NuklearUIScroll( xoffset, yoffset );
     }
 
     static void FramebufferCallback( GLFWwindow * window, i32 w, i32 h ) {
     }
 
+    static void CharCallback( GLFWwindow * window, u32 codepoint ) {
+        Core * core = (Core *)glfwGetWindowUserPointer( window );
+        core->NuklearUIChar( codepoint );
+    }
+
     void PlatformWindow::Initialize( Core * core ) {
         if( !glfwInit() ) {
-            core->LogOutput( LogLevel::FATAL, "Could not init glfw, your windows is :( " );
+            ATTOFATAL( "Could not init glfw, your windows is :( " );
             return;
         }
 
@@ -73,7 +81,7 @@ namespace atto {
 
         glfwWindowHint( GLFW_RESIZABLE, GL_TRUE );
         glfwWindowHint( GLFW_SCALE_TO_MONITOR, GLFW_FALSE );
-        glfwWindowHint( GLFW_SAMPLES, 4 );
+        //glfwWindowHint( GLFW_SAMPLES, 4 );
 
         monitor = glfwGetPrimaryMonitor();
         if( monitor != nullptr ) {
@@ -83,8 +91,7 @@ namespace atto {
             //ATTOINFO("Using monitor name %s", os.monitorName.GetCStr());
         }
         else {
-            core->LogOutput( LogLevel::ERR, "Could not find a monitor to render on." );
-            INVALID_CODE_PATH
+            ATTOFATAL( "Could not find a monitor to render on." );
             return;
         }
 
@@ -95,7 +102,7 @@ namespace atto {
         window = glfwCreateWindow( windowWidth, windowHeight, windowTitle.GetCStr(), nullptr, 0 );
 
         if( window == nullptr ) {
-            core->LogOutput( LogLevel::FATAL, "Could not create window, your windows is :( " );
+            ATTOFATAL( "Could not create window, your windows is :( " );
             return;
         }
 
@@ -108,7 +115,7 @@ namespace atto {
             glfwSetInputMode( window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE );
         }
         else {
-            core->LogOutput( LogLevel::WARN, "Could not enable raw input" );
+            ATTOWARN( "Could not enable raw input" );
         }
 
         glfwSetCursorPosCallback( window, MousePositionCallback );
@@ -116,6 +123,7 @@ namespace atto {
         glfwSetMouseButtonCallback( window, MouseButtonCallback );
         glfwSetScrollCallback( window, ScrollCallback );
         glfwSetFramebufferSizeCallback( window, FramebufferCallback );
+        glfwSetCharCallback( window, CharCallback );
 
         if ( gameSettings.fullscreen == false ) {
             if ( gameSettings.windowStartPosX != -1 ) {
@@ -194,5 +202,8 @@ namespace atto {
         glfwSetWindowMonitor( window, nullptr, windowPosX, windowPosY, gameSettings.windowWidth, gameSettings.windowHeight, 0 );
         windowFullscreen = false;
     }
-
+    
+    f64 PlatformGetCurrentTime() {
+        return glfwGetTime();
+    }
 }

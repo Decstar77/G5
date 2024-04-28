@@ -55,7 +55,7 @@ namespace atto {
 #define ATTODEBUG(message, ...)
 #endif
 
-#if LOG_TRACE_ENABLED == 0
+#if LOG_TRACE_ENABLED == 1
 // Logs a trace-level message.
     #define ATTOTRACE(message, ...) atto::LoggerLogOutput(atto::LogLevel::TRACE, message, ##__VA_ARGS__);
 #else

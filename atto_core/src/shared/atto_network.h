@@ -2,15 +2,12 @@
 
 #include "atto_defines.h"
 
-#include <cstddef>
-#include <cstring>
-
 namespace atto {
     enum class NetworkMessageType {
         NONE,
         GAME_START,
 
-        MAP_TURN,
+        ACTION_BUFFER,
     };
 
 #define NETWORK_MESSAGE_MAX_BYTES 512
@@ -22,14 +19,14 @@ namespace atto {
     };
 
     inline i32 NetworkMessageGetTotalSize( const NetworkMessage & msg ) {
-        i32 of = offsetof( NetworkMessage, data );
+        i32 of = AttoOffsetOf( NetworkMessage, data );
         int size = of + msg.dataLen;
         return size;
     }
 
     inline void NetworkMessagePush( NetworkMessage & msg, void *data, i32 len ) {
         AssertMsg( msg.dataLen + len < NETWORK_MESSAGE_MAX_BYTES, "NetworkMessagePush :: Network stuffies to big" );
-        memcpy( msg.data + msg.dataLen, data, len );
+        MemCpy( msg.data + msg.dataLen, data, len );
         msg.dataLen += len;
     }
 

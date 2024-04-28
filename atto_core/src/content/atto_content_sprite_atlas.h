@@ -12,7 +12,7 @@ namespace atto {
     class ContentSpriteAtlasProcessor {
     public:
         void Test();
-        void Processs( Core * core, Span<SpriteResource> sprites );
+        void Processs( Span<SpriteResource> sprites );
         LargeString name;
     };
 }

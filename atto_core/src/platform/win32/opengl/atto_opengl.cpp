@@ -3,7 +3,7 @@
 #if ATTO_OPENGL
 
 #include "../atto_win32_core.h"
-#include "../../content/atto_content.h"
+#include "../../../content/atto_content.h"
 
 #include <glad/glad.h>
 #include "GLFW/glfw3.h"
@@ -27,7 +27,6 @@ namespace atto {
         i32 stride = StrideBytes();
         glEnableVertexAttribArray( 0 );
         glEnableVertexAttribArray( 1 );
-        glEnableVertexAttribArray( 2 );
         glVertexAttribPointer( 0, 2, GL_FLOAT, false, stride, 0 );
         glVertexAttribPointer( 1, 2, GL_FLOAT, false, stride, (void *)( 2 * sizeof( f32 ) ) );
     }
@@ -70,7 +69,7 @@ namespace atto {
 
     i32 OpenglState::GLShaderProgramGetUniformLocation( GLShaderProgram & program, const char * name ) {
         if( program.programHandle == 0 ) {
-            core->LogOutput( LogLevel::ERR, "Shader program in not valid" );
+            ATTOERROR( "Shader program in not valid" );
             return -1;
         }
 
@@ -91,7 +90,7 @@ namespace atto {
             program.uniforms.Add( newUniform );
         }
         else {
-            core->LogOutput( LogLevel::ERR, "Could not find uniform value %s", name );
+            ATTOERROR( "Could not find uniform value %s", name );
         }
 
         return location;
@@ -189,9 +188,9 @@ namespace atto {
         glGetShaderiv( shader, GL_COMPILE_STATUS, &success );
         if( !success ) {
             glGetShaderInfoLog( shader, 1024, NULL, infoLog );
-            core->LogOutput( LogLevel::ERR, "ERROR::SHADER_COMPILATION_ERROR of type: " );
-            core->LogOutput( LogLevel::ERR, infoLog );
-            core->LogOutput( LogLevel::ERR, "-- --------------------------------------------------- -- " );
+            ATTOERROR( "ERROR::SHADER_COMPILATION_ERROR of type: " );
+            ATTOERROR( infoLog );
+            ATTOERROR( "-- --------------------------------------------------- -- " );
         }
 
         return success;
@@ -203,9 +202,9 @@ namespace atto {
         glGetProgramiv( program, GL_LINK_STATUS, &success );
         if( !success ) {
             glGetProgramInfoLog( program, 1024, NULL, infoLog );
-            core->LogOutput( LogLevel::ERR, "ERROR::SHADER_LINKER_ERROR of type: " );
-            core->LogOutput( LogLevel::ERR, infoLog );
-            core->LogOutput( LogLevel::ERR, "-- --------------------------------------------------- -- " );
+            ATTOERROR( "ERROR::SHADER_LINKER_ERROR of type: " );
+            ATTOERROR( infoLog );
+            ATTOERROR( "-- --------------------------------------------------- -- " );
         }
 
         return success;
@@ -380,11 +379,9 @@ namespace atto {
 
             out vec2 vertexTexCoord;
 
-            uniform mat4 p;
-
             void main() {
                 vertexTexCoord = texCoord;
-                gl_Position = p * vec4(position.x, position.y, 0.0, 1.0);
+                gl_Position = vec4(position.x, position.y, 0.0, 1.0);
             }
         )";
 
@@ -491,6 +488,7 @@ namespace atto {
 
         GLVertexLayoutSprite sprite = {};
         spriteVertexBuffer = GLCreateVertexBuffer( &sprite, 6, nullptr, true );
+        spritePackedVertexBuffer = GLCreateVertexBuffer( &sprite, 6 * 256 * 256, nullptr, true );
     }
 
     void OpenglState::GLInitializeUnlitModelRendering() {
@@ -541,63 +539,47 @@ namespace atto {
         //staticMeshSphere = (Win32StaticMeshResource *)ResourceMeshCreate( "Sphere", StaticMeshGeneration::CreateSphere( 1, 8, 8 ) );
     }
 
-    TextureResource * OpenglState::ResourceGetAndCreateTexture( const char * name, bool genMips, bool genAnti ) {
-        //LargeString ProfileName = StringFormat::Large( "ResourceGetAndCreateTexture %s", name );
-        //ScopedClock ProfileClock( ProfileName.GetCStr(), core );
-
-        const i32 textureResourceCount = textures.GetCount();
-        for( i32 i = 0; i < textureResourceCount; i++ ) {
-            TextureResource & textureResource = textures[ i ];
-            if( textureResource.name == name ) {
-                return &textureResource;
-            }
-        }
-
+    void PlatformRendererCreateTexture( TextureResource * textureResource ) {
         ContentTextureProcessor textureProcessor = {};
-        bool loaded = textureProcessor.LoadFromFile( name );
+        bool loaded = textureProcessor.LoadFromFile( textureResource->name.GetCStr() );
         if( loaded == false ) {
-            core->LogOutput( LogLevel::ERR, "Failed to load texture asset \t %s", name );
-            return nullptr;
+            ATTOERROR( "Failed to load texture asset \t %s", textureResource->name.GetCStr() );
+            return;
         }
 
         //textureProcessor.MakeAlphaEdge();
         textureProcessor.FixAplhaEdges();
+        //textureProcessor.PremultiplyAlpha();
 
-        GLTextureResource textureResource = {};
-        textureResource.id = StringHash::Hash( name );
-        textureResource.name = name;
-        textureResource.channels = textureProcessor.channels;
-        textureResource.width = textureProcessor.width;
-        textureResource.height = textureProcessor.height;
-        textureResource.hasMips = genMips;
-        textureResource.hasAnti = genAnti;
+        textureResource->channels = textureProcessor.channels;
+        textureResource->width = textureProcessor.width;
+        textureResource->height = textureProcessor.height;
 
         glPixelStorei( GL_UNPACK_ALIGNMENT, 1 ); // @TODO: Remove this pack the textures
 
-        glGenTextures( 1, &textureResource.handle );
-        glBindTexture( GL_TEXTURE_2D, textureResource.handle );
-        glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, textureResource.width, textureResource.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureProcessor.pixelData );
+        u32 textureHandle = 0;
+        glGenTextures( 1, &textureHandle);
+        textureResource->handle = textureHandle;
+        glBindTexture( GL_TEXTURE_2D, (u32)textureResource->handle );
+        glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, textureResource->width, textureResource->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureProcessor.pixelData );
 
         glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
         glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, textureResource.hasMips ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR );
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, textureResource->createInfo.hasMips ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR );
         glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 
-        if( textureResource.hasMips ) {
+        if( textureResource->createInfo.hasMips ) {
             glGenerateMipmap( GL_TEXTURE_2D );
         }
 
-        if( textureResource.hasAnti ) {
+        if( textureResource->createInfo.hasAnti ) {
             f32 maxAnti = 0.0f;
             glGetFloatv( GL_MAX_TEXTURE_MAX_ANISOTROPY, &maxAnti );
             glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, maxAnti );
         }
 
         glBindTexture( GL_TEXTURE_2D, 0 );
-
-        return textures.Add( textureResource );
     }
-
 
     void OpenglState::GLSetCamera( f32 width, f32 height ) {
         i32 w = 0;
@@ -611,15 +593,75 @@ namespace atto {
             //glClearColor( 0.5f, 0.2f, 0.2f, 1.0f );
             //glClearColor( 0.2f, 0.5f, 0.2f, 1.0f );
             //glClearColor( 0.1f, 0.1f, 0.2f, 1.0f );
-            glClearColor( 0.0f, 0.0f, 0.0f, 1.0f );
+            //glClearColor( 0.0f, 0.0f, 0.0f, 1.0f );
+            //glClearColor( 1.0f, 1.0f, 1.0f, 1.0f );
             // Magenta
-            //glClearColor( 1.0f, 0.0f, 1.0f, 1.0f );
+            glClearColor( 1.0f, 0.0f, 1.0f, 1.0f );
             glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
         }
 
         f32 cameraWidth = dcxt->GetCameraWidth();
         f32 cameraHeight = dcxt->GetCameraHeight();
         GLSetCamera( cameraWidth, cameraHeight );
+
+        if ( dcxt->spriteOnly == true ) {
+            TextureResource * useTexture = nullptr;
+
+            static GrowableList<f32> quadData(10000);
+            quadData.Clear();
+
+            const i32 drawCount = dcxt->drawList.GetCount();
+            for ( i32 i = 0; i < drawCount; i++ ) {
+                DrawCommand & cmd = dcxt->drawList[ i ];
+                Assert( cmd.type == DrawCommandType::SPRITE );
+
+                SpriteResource * spriteRes = cmd.sprite.spriteRes;
+                AssertMsg( spriteRes != nullptr, "Texture resource is null" );
+                TextureResource * texture = (TextureResource *)cmd.sprite.spriteRes->textureResource;
+                AssertMsg( texture != nullptr, "Texture resource is null" );
+
+                useTexture = texture;
+
+                cmd.rect.bl -= dcxt->cameraPos;
+                cmd.rect.br -= dcxt->cameraPos;
+                cmd.rect.tr -= dcxt->cameraPos;
+                cmd.rect.tl -= dcxt->cameraPos;
+
+                glm::vec4 vertices[ 6 ] = {
+                    glm::vec4( cmd.sprite.tl.x, cmd.sprite.tl.y, cmd.sprite.tlUV.x ,cmd.sprite.tlUV.y ),
+                    glm::vec4( cmd.sprite.bl.x, cmd.sprite.bl.y, cmd.sprite.blUV.x, cmd.sprite.blUV.y ),
+                    glm::vec4( cmd.sprite.br.x, cmd.sprite.br.y, cmd.sprite.brUV.x, cmd.sprite.brUV.y ),
+                    glm::vec4( cmd.sprite.tl.x, cmd.sprite.tl.y, cmd.sprite.tlUV.x, cmd.sprite.tlUV.y ),
+                    glm::vec4( cmd.sprite.br.x, cmd.sprite.br.y, cmd.sprite.brUV.x, cmd.sprite.brUV.y ),
+                    glm::vec4( cmd.sprite.tr.x, cmd.sprite.tr.y, cmd.sprite.trUV.x, cmd.sprite.trUV.y )
+                };
+
+                for ( i32 i = 0; i < 6; i++ ) {
+                    glm::vec4 p = cmd.proj * glm::vec4( vertices[ i ].x, vertices[ i ].y, 0, 1 );
+                    vertices[ i ].x = p.x;
+                    vertices[ i ].y = p.y;
+
+                    quadData.Add( vertices[ i ].x );
+                    quadData.Add( vertices[ i ].y );
+                    quadData.Add( vertices[ i ].z );
+                    quadData.Add( vertices[ i ].w );
+                }
+            }
+
+            GLEnableAlphaBlending();
+            glDisable( GL_BLEND );
+            GLShaderProgramBind( spriteProgram );
+            GLShaderProgramSetSampler( "texture0", 0 );
+            GLShaderProgramSetVec4( "color", glm::vec4( 1 ) );
+            GLShaderProgramSetTexture( 0, (u32)useTexture->handle );
+
+            glBindVertexArray( spritePackedVertexBuffer.vao );
+            GLVertexBufferUpdate( spritePackedVertexBuffer, 0, quadData.GetCount() * ( i32 )sizeof( f32 ), quadData.GetData() );
+            glDrawArrays( GL_TRIANGLES, 0, (i32)(quadData.GetCount() / 4) );
+            glBindVertexArray( 0 );
+
+            return;
+        }
 
         const i32 drawCount = dcxt->drawList.GetCount();
         for( i32 i = 0; i < drawCount; i++ ) {
@@ -737,29 +779,34 @@ namespace atto {
                     cmd.rect.tr -= dcxt->cameraPos;
                     cmd.rect.tl -= dcxt->cameraPos;
 
-                    GLTextureResource * texture = (GLTextureResource *)cmd.texture.textureRes;
+                    TextureResource * texture = (TextureResource *)cmd.texture.textureRes;
                     AssertMsg( texture != nullptr, "Texture resource is null" );
                     /*
                         tl(0,1)  tr(1, 1)
                         bl(0,0)  br(1, 0)
                     */
 
-                    f32 vertices[ 6 ][ 4 ] = {
-                        { cmd.texture.tl.x, cmd.texture.tl.y, 0.0f ,0.0f },
-                        { cmd.texture.bl.x, cmd.texture.bl.y, 0.0f, 1.0f },
-                        { cmd.texture.br.x, cmd.texture.br.y, 1.0f, 1.0f },
-                        { cmd.texture.tl.x, cmd.texture.tl.y, 0.0f, 0.0f },
-                        { cmd.texture.br.x, cmd.texture.br.y, 1.0f, 1.0f },
-                        { cmd.texture.tr.x, cmd.texture.tr.y, 1.0f, 0.0f }
+                    glm::vec4 vertices[ 6 ] = {
+                        glm::vec4( cmd.texture.tl.x, cmd.texture.tl.y, 0.0f ,0.0f ),
+                        glm::vec4( cmd.texture.bl.x, cmd.texture.bl.y, 0.0f, 1.0f ),
+                        glm::vec4( cmd.texture.br.x, cmd.texture.br.y, 1.0f, 1.0f ),
+                        glm::vec4( cmd.texture.tl.x, cmd.texture.tl.y, 0.0f, 0.0f ),
+                        glm::vec4( cmd.texture.br.x, cmd.texture.br.y, 1.0f, 1.0f ),
+                        glm::vec4( cmd.texture.tr.x, cmd.texture.tr.y, 1.0f, 0.0f )
                     };
+
+                    for ( i32 i = 0; i < 6; i++ ) {
+                        glm::vec4 p = cmd.proj * glm::vec4( vertices[ i ].x, vertices[ i ].y, 0, 1 );
+                        vertices[ i ].x = p.x;
+                        vertices[ i ].y = p.y;
+                    }
 
                     //GLEnablePreMultipliedAlphaBlending();
                     GLEnableAlphaBlending();
                     GLShaderProgramBind( spriteProgram );
                     GLShaderProgramSetSampler( "texture0", 0 );
                     GLShaderProgramSetVec4( "color", cmd.color );
-                    GLShaderProgramSetTexture( 0, texture->handle );
-                    GLShaderProgramSetMat4( "p", cmd.proj );
+                    GLShaderProgramSetTexture( 0, (u32)texture->handle );
 
                     glDisable( GL_CULL_FACE );
                     glBindVertexArray( spriteVertexBuffer.vao );
@@ -777,25 +824,30 @@ namespace atto {
 
                     SpriteResource * spriteRes = cmd.sprite.spriteRes;
                     AssertMsg( spriteRes != nullptr, "Texture resource is null" );
-                    GLTextureResource * texture = (GLTextureResource *)cmd.sprite.spriteRes->textureResource;
+                    TextureResource * texture = (TextureResource *)cmd.sprite.spriteRes->textureResource;
                     AssertMsg( texture != nullptr, "Texture resource is null" );
-
-                    f32 vertices[ 6 ][ 4 ] = {
-                       { cmd.sprite.tl.x, cmd.sprite.tl.y, cmd.sprite.tlUV.x ,cmd.sprite.tlUV.y },
-                       { cmd.sprite.bl.x, cmd.sprite.bl.y, cmd.sprite.blUV.x, cmd.sprite.blUV.y },
-                       { cmd.sprite.br.x, cmd.sprite.br.y, cmd.sprite.brUV.x, cmd.sprite.brUV.y },
-                       { cmd.sprite.tl.x, cmd.sprite.tl.y, cmd.sprite.tlUV.x, cmd.sprite.tlUV.y },
-                       { cmd.sprite.br.x, cmd.sprite.br.y, cmd.sprite.brUV.x, cmd.sprite.brUV.y },
-                       { cmd.sprite.tr.x, cmd.sprite.tr.y, cmd.sprite.trUV.x, cmd.sprite.trUV.y }
+                        
+                    glm::vec4 vertices[ 6 ] = {
+                       glm::vec4( cmd.sprite.tl.x, cmd.sprite.tl.y, cmd.sprite.tlUV.x ,cmd.sprite.tlUV.y ),
+                       glm::vec4( cmd.sprite.bl.x, cmd.sprite.bl.y, cmd.sprite.blUV.x, cmd.sprite.blUV.y ),
+                       glm::vec4( cmd.sprite.br.x, cmd.sprite.br.y, cmd.sprite.brUV.x, cmd.sprite.brUV.y ),
+                       glm::vec4( cmd.sprite.tl.x, cmd.sprite.tl.y, cmd.sprite.tlUV.x, cmd.sprite.tlUV.y ),
+                       glm::vec4( cmd.sprite.br.x, cmd.sprite.br.y, cmd.sprite.brUV.x, cmd.sprite.brUV.y ),
+                       glm::vec4( cmd.sprite.tr.x, cmd.sprite.tr.y, cmd.sprite.trUV.x, cmd.sprite.trUV.y )
                     };
+
+                    for ( i32 i = 0; i < 6; i++ ) {
+                        glm::vec4 p = cmd.proj * glm::vec4( vertices[ i ].x, vertices[ i ].y, 0, 1 );
+                        vertices[ i ].x = p.x;
+                        vertices[ i ].y = p.y;
+                    }
 
                     //GLEnablePreMultipliedAlphaBlending();
                     GLEnableAlphaBlending();
                     GLShaderProgramBind( spriteProgram );
                     GLShaderProgramSetSampler( "texture0", 0 );
                     GLShaderProgramSetVec4( "color", cmd.color );
-                    GLShaderProgramSetTexture( 0, texture->handle );
-                    GLShaderProgramSetMat4( "p", cmd.proj );
+                    GLShaderProgramSetTexture( 0, (u32)texture->handle );
 
                     glDisable( GL_CULL_FACE );
                     glBindVertexArray( spriteVertexBuffer.vao );
@@ -920,9 +972,9 @@ namespace atto {
 
                     if( cmd.triangle3D.texture != nullptr ) {
                         GLShaderProgramSetInt( "hasTexture", 1 );
-                        GLTextureResource * texture = (GLTextureResource *)cmd.triangle3D.texture;
+                        TextureResource * texture = (TextureResource *)cmd.triangle3D.texture;
                         GLShaderProgramSetSampler( "texture0", 0 );
-                        GLShaderProgramSetTexture( 0, texture->handle );
+                        GLShaderProgramSetTexture( 0, (u32)texture->handle );
                     }
                     else {
                         GLShaderProgramSetInt( "hasTexture", 0 );
@@ -954,9 +1006,9 @@ namespace atto {
 
                     if( cmd.mesh.albedo != nullptr ) {
                         GLShaderProgramSetInt( "hasTexture", 1 );
-                        GLTextureResource * texture = (GLTextureResource *)cmd.mesh.albedo;
+                        TextureResource * texture = (TextureResource *)cmd.mesh.albedo;
                         GLShaderProgramSetSampler( "texture0", 0 );
-                        GLShaderProgramSetTexture( 0, texture->handle );
+                        GLShaderProgramSetTexture( 0, (u32)texture->handle );
                     }
                     else {
                         GLShaderProgramSetInt( "hasTexture", 0 );
@@ -983,7 +1035,7 @@ namespace atto {
         this->core = core;
 
         gladLoadGLLoader( (GLADloadproc)glfwGetProcAddress );
-        core->LogOutput( LogLevel::INFO, "OpenGL %s, GLSL %s", glGetString( GL_VERSION ), glGetString( GL_SHADING_LANGUAGE_VERSION ) );
+        ATTOINFO( "OpenGL %s, GLSL %s", glGetString( GL_VERSION ), glGetString( GL_SHADING_LANGUAGE_VERSION ) );
 
         GLSetCamera( 640, 360 );
         GLCheckCapablities();

@@ -770,11 +770,10 @@ namespace atto {
         return &typeDesc;
     }
 
-
     struct TypeDescriptor_Collider2D : TypeDescriptor {
         TypeDescriptor_Collider2D() {
             name = "Collider2D";
-            size = sizeof( Collider );
+            size = sizeof( Collider2D );
         }
 
         nlohmann::json JSON_Write( const void * obj ) override {
@@ -782,36 +781,21 @@ namespace atto {
             nlohmann::json j;
             j[ "type" ] = (i32)collider->type;
             switch( collider->type ) {
-                case COLLIDER_TYPE_NONE:
-                {
-
-                } break;
+                case COLLIDER_TYPE_NONE: { } break;
                 case COLLIDER_TYPE_CIRCLE:
                 {
                     j[ "c" ] = atto::JSON_Write( collider->circle.pos );
                     j[ "r" ] = collider->circle.rad;
                 } break;
-                case COLLIDER_TYPE_SPHERE:
-                {
-                    INVALID_CODE_PATH;
-                } break;
+                case COLLIDER_TYPE_SPHERE: { INVALID_CODE_PATH; } break;
                 case COLLIDER_TYPE_AXIS_BOX:
                 {
                     j[ "min" ] = atto::JSON_Write( collider->box.min );
                     j[ "max" ] = atto::JSON_Write( collider->box.max );
                 } break;
-                case COLLIDER_TYPE_PLANE:
-                {
-                    INVALID_CODE_PATH;
-                } break;
-                case COLLIDER_TYPE_TRIANGLE:
-                {
-                    INVALID_CODE_PATH;
-                } break;
-                default:
-                {
-                    INVALID_CODE_PATH;
-                } break;
+                case COLLIDER_TYPE_PLANE: { INVALID_CODE_PATH; } break;
+                case COLLIDER_TYPE_TRIANGLE: { INVALID_CODE_PATH; } break;
+                default: { INVALID_CODE_PATH; } break;
             }
 
             return j;
@@ -868,11 +852,10 @@ namespace atto {
 
 /*
 =====================================================================
-===========================GAME OBJECTS==============================
+=========================RESOURCE OBJECTS============================
 =====================================================================
 */
 
-#include "atto_core.h"
 #include "../game/modes/atto_game_mode_game.h"
 
 namespace atto {
@@ -891,13 +874,10 @@ namespace atto {
         }
 
         virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
-        #if ATTO_EDITOR
             LargeString resPath = {};
             atto::JSON_Read( j, resPath );
-            TextureResource ** resource = (TextureResource **)obj;
-            Core * core = Core::EditorOnly_GetCore();
-            *resource = core->ResourceGetAndLoadTexture( resPath.GetCStr() );
-        #endif
+            TextureResource ** textureResource = ( TextureResource * * )obj;
+            *textureResource = ResourceGetAndCreateTexture( resPath.GetCStr() );
         }
 
         virtual LargeString ToString( const void * obj ) override {
@@ -926,13 +906,6 @@ namespace atto {
         }
 
         virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
-        #if ATTO_EDITOR
-            LargeString resPath = {};
-            atto::JSON_Read( j, resPath );
-            AudioResource ** resource = (AudioResource **)obj;
-            Core * core = Core::EditorOnly_GetCore();
-            *resource = core->ResourceGetAndLoadAudio( resPath.GetCStr() );
-        #endif
         }
 
         virtual LargeString ToString( const void * obj ) override {
@@ -957,25 +930,19 @@ namespace atto {
 
         virtual nlohmann::json JSON_Write( const void * obj ) override {
             SpriteResource * spriteResource = *(SpriteResource **)obj;
-            return atto::JSON_Write( spriteResource->spriteName );
+            return atto::JSON_Write( spriteResource->name );
         }
 
         virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
-        #if ATTO_EDITOR
-            LargeString resPath = {};
-            atto::JSON_Read( j, resPath );
-            SpriteResource ** spriteResource = (SpriteResource **)obj;
-            Core * core = Core::EditorOnly_GetCore();
-            *spriteResource = core->ResourceGetAndLoadSprite( resPath.GetCStr() );
-        #endif
+            INVALID_CODE_PATH
         }
 
         virtual void Binary_Read( void * obj, BinaryBlob & f ) override {
-
+            INVALID_CODE_PATH
         }
 
         virtual void Binary_Write( const void * obj, BinaryBlob & f ) override {
-          
+            INVALID_CODE_PATH
         }
 
         virtual LargeString ToString( const void * obj ) override {

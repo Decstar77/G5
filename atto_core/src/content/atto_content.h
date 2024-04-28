@@ -1,8 +1,6 @@
 #pragma once
 
-#include "../shared/atto_defines.h"
-#include "../shared/atto_containers.h"
-#include "../shared/atto_core.h"
+#include "../game/atto_core.h"
 
 #include "atto_content_bmp.h"
 #include "atto_content_sprite_atlas.h"
@@ -23,6 +21,7 @@ namespace atto {
         bool LoadFromFile( const char * file );
         void MakeAlphaEdge(); // Assumes to be RGBA8
         void FixAplhaEdges(); // Assumes to be RGBA8
+        void PremultiplyAlpha(); // Assumes to be RGBA8
 
         LargeString     filePath = {};
         byte *          pixelData = nullptr;
