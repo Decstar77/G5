@@ -39,6 +39,13 @@ namespace atto {
 
                         core->MoveToGameMode( new GameMode_MultiplayerGame( parms ) );
                     } break;
+                    case NetworkMessageType::ACTION_BUFFER: {
+                        // INVESTIGATE WHY WE GET SOMTHING BEFORE GAME STARTS!
+                    } break;
+                    case NetworkMessageType::STREAM_DATA:
+                    {
+                        // INVESTIGATE WHY WE GET SOMTHING BEFORE GAME STARTS!
+                    } break;
                     default:
                         INVALID_CODE_PATH;
                         break;

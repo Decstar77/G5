@@ -25,8 +25,6 @@ namespace atto {
 
         SimMap simMap;
 
-        f64 timeAccumulator = 0.0;
-
         void Initialize();
         void Update( f32 dt );
     };

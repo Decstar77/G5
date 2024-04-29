@@ -7,7 +7,6 @@ namespace atto {
         if ( GlobalRpcTable[ 1 ] == nullptr ) {
             GlobalRpcTable[ (i32)MapAction::REQUEST_SELECTION_ENTITIES ] = new RpcMemberFunction( this, &SimMap::Action_RequestSelectEntities );
             GlobalRpcTable[ (i32)MapAction::REQUEST_MOVE ] = new RpcMemberFunction( this, &SimMap::Action_RequestMove );
-            GlobalRpcTable[ (i32)MapAction::COMMAND_MOVE ] = new RpcMemberFunction( this, &SimMap::Action_CommandMove );
             
         }
 
@@ -25,16 +24,46 @@ namespace atto {
 
     void SimMap::SimUpdate( f32 dt ) {
         ZeroStruct( simActionBuffer );
+        streamData.Clear();
+        
+
         simTime += dt;
+        simTimeAccum += dt;
+        if ( simTimeAccum >= tickTime ) {
+            simTimeAccum -= tickTime;
+            streamDataCounter++;
 
-        // Actions
+            actionActiveEntities.Clear();
+            entityPool.GatherActiveObjs( actionActiveEntities );
 
-        // SendToAllClients()
+            const i32 entityCount = actionActiveEntities.GetCount();
+            for ( i32 entityIndex = 0; entityIndex < entityCount; entityIndex++ ) {
+                SimEntity * ent = actionActiveEntities[ entityIndex ];
+                if (ent->hasDest == true ) {
+                    glm::vec2 dir = glm::normalize( ent->dest - ent->pos ) * 100.0f;
+                    
+                    //ent->lastPos = ent->pos;
+                    //ent->lastPosTimer = 0.0f;
+                    ent->pos += dir * tickTime;
+                    ent->posTimeline.AddFrame( ent->pos );
+               
+                    if ( glm::distance( ent->pos, ent->dest ) < 10.0f ){
+                        ent->hasDest = false;
+                    }
+
+                    SimStreamData data = {};
+                    data.handle = ent->handle;
+                    data.pos = ent->pos;
+                    streamData.Add( data );
+                }
+            }
+        }
     }
 
     void SimMap::ApplyActions( MapActionBuffer * actionBuffer ) {
         ZeroStruct( simActionBuffer );
 
+        // @NOTE: For results from these rpc actions
         actionActiveEntities.Clear();
         entityPool.GatherActiveObjs( actionActiveEntities );
 
@@ -60,19 +89,14 @@ namespace atto {
     }
 
     void SimMap::Action_RequestMove( PlayerNumber playerNumber, glm::vec2 p ) {
+        ATTOTRACE( "PlayerNumber %d requesting move %f, %f", playerNumber.value, p.x, p.y );
+
         const i32 entityCount = actionActiveEntities.GetCount();
         for ( i32 entityIndex = 0; entityIndex < entityCount; entityIndex++ ) {
             SimEntity * ent = actionActiveEntities[ entityIndex ];
             if ( ent->playerNumber == playerNumber && IsUnitType(ent->type) && ent->selectedBy.Contains( playerNumber ) ) {
-                f32 activeTime = simTime;
-                const glm::vec2 starting = ent->posTimeline.ValueForTime( activeTime );
-                const f32 speed = 100.0f;
-                const f32 dist = glm::distance( starting, p );
-                const f32 travelTime = dist / speed;
-                ent->posTimeline.RemoveKeyFramesPast( activeTime );
-                ent->posTimeline.AddKeyFrame( starting, activeTime );
-                ent->posTimeline.AddKeyFrame( p, activeTime + travelTime );
-                simActionBuffer.Command_MoveUnit( ent->handle, starting, p, activeTime, activeTime + travelTime );
+                ent->hasDest = true;
+                ent->dest = p;
             }
         }
     }
@@ -107,7 +131,8 @@ namespace atto {
             entity->type = createInfo.type;
             entity->playerNumber = createInfo.playerNumber;
             entity->teamNumber = createInfo.teamNumber;
-            entity->posTimeline.AddKeyFrame( createInfo.pos, simTime );
+            entity->pos = createInfo.pos;
+            entity->posTimeline.AddFrame( entity->pos );
             entity->vis = VisMap_OnSpawnEntity( createInfo );
             entity->collider.type = ColliderType::COLLIDER_TYPE_AXIS_BOX;
             entity->collider.box.min = glm::vec2( -6, -6 );
@@ -126,12 +151,58 @@ namespace atto {
         return Action_CommandSpawnEntity( createInfo );
     }
 
-    void SimMap::Action_CommandMove( EntityHandle entityHandle, glm::vec2 p1, glm::vec2 p2, f32 t1, f32 t2 ) {
-        SimEntity * ent = entityPool.Get( entityHandle );
-        if ( ent != nullptr ) {
-            ent->posTimeline.RemoveKeyFramesPast( t1 );
-            ent->posTimeline.AddKeyFrame( p1, t1 );
-            ent->posTimeline.AddKeyFrame( p2, t2 );
+    glm::vec2 PosTimeline::UpdateAndGet( f32 dt ) {
+        i32 count = frames.GetCount();
+        if( count == 1 ) {
+            return frames[ 0 ];
+        }
+        else if( count == 2 ) {
+            time += dt;
+            f32 nt = glm::max( time / tickTime, 0.0f );
+            glm::vec2 pos = glm::mix( frames[ 0 ], frames[ 1 ], glm::min( nt, 1.0f ) );
+            if( nt > 1 ) {
+                frames.RemoveIndex( 0 );
+            }
+            return pos;
+        }
+        else if( count == 3 ) {
+            time += dt;
+            f32 nt = glm::max( time / tickTime, 0.0f );
+            glm::vec2 pos = glm::vec2( 0.0f );
+            if( nt > 1 ) {
+                nt -= 1.0f;
+                time -= tickTime;
+                pos = glm::mix( frames[ 1 ], frames[ 2 ], glm::min( nt, 1.0f ) );
+                frames.RemoveIndex( 0 );
+            }
+            else {
+                pos = glm::mix( frames[ 0 ], frames[ 1 ], glm::min( nt, 1.0f ) );
+            }
+
+            return pos;
+        }
+
+        INVALID_CODE_PATH;
+        return glm::vec2( 0, 0 );
+    }
+
+
+    void PosTimeline::AddFrame( glm::vec2 frame ) {
+        i32 count = frames.GetCount();
+        if( count == 0 ) {
+            frames.Add( frame );
+        }
+        else if( count == 1 ) {
+            time = -tickTime;
+            frames.Add( frame );
+        }
+        else if( count == 2 ) {
+            frames.Add( frame );
+        }
+        else if( count == 3 ) {
+            frames.RemoveIndex( 0 );
+            frames.Add( frame );
+            time = 0;
         }
     }
 

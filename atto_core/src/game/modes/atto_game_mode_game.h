@@ -48,6 +48,7 @@ namespace atto {
 
     public:
         GameStartParams                         startParms;
+        i32                                     visStreamDataCounter = 0;
         VisMap                                  visMap;
     };
 }

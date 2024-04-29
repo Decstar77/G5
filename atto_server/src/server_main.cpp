@@ -103,6 +103,17 @@ int main( int argc, char * argv[] ) {
             msg.type = NetworkMessageType::ACTION_BUFFER;
             NetworkMessagePush<MapActionBuffer>( msg, session.second.outAction );
             SendToAllClientsInSession( session.second, &msg );
+
+            ZeroStruct( msg );
+            msg.type = NetworkMessageType::STREAM_DATA;
+            msg.isUDP = true;
+            const i32 count = session.second.simMap.streamData.GetCount();
+            NetworkMessagePush<i32>( msg, count );
+            NetworkMessagePush<i32>( msg, session.second.simMap.streamDataCounter );
+            for( i32 i = 0; i < count; i++ ) {
+                NetworkMessagePush( msg, session.second.simMap.streamData[ i ] );
+            }
+            SendToAllClientsInSession( session.second, &msg );
         }
 
         switch( event.type ) {

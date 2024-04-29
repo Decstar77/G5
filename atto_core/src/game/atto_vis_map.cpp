@@ -129,8 +129,7 @@ namespace atto {
         for ( i32 i = 0; i < TILE_MAX_X_COUNT * TILE_MAX_Y_COUNT; i++ ) {
             Tile * tile = & tileMap.tiles[i];
             if ( tile->spriteResource != nullptr ) {
-                tileDrawContext->DrawSpriteTile( tile->spriteResource, tile->spriteXIndex, tile->spriteYIndex, tile->wsCenter );
-                //break;
+                //tileDrawContext->DrawSpriteTile( tile->spriteResource, tile->spriteXIndex, tile->spriteYIndex, tile->wsCenter );
             }
         }
 
@@ -139,7 +138,12 @@ namespace atto {
             SimEntity * simEnt = entities[ entityIndex ];
             VisEntity * visEnt = simEnt->vis;
 
-            glm::vec2 pos = simEnt->posTimeline.ValueForTime( visTime );
+            //simEnt->lastPosTimer += dt;
+            //f32 nt = glm::clamp( simEnt->lastPosTimer / tickTime, 0.0f, 1.0f );
+            //glm::vec2 pos = glm::mix( simEnt->lastPos, simEnt->pos, nt );
+
+            glm::vec2 pos = simEnt->posTimeline.UpdateAndGet( dt );
+
             Collider2D wsCollider = simEnt->ColliderWorldSpace( pos );
 
             if ( inputMode == InputMode::DRAGGING ) {
@@ -149,12 +153,9 @@ namespace atto {
             }
 
             if ( simEnt->type == EntityType::UNIT_SCOUT ) {
-                bool isMoving = simEnt->posTimeline.HasKeyFramePast( visTime );
+                bool isMoving = false;
                 if ( isMoving == true ) {
-                    VariableKeyFrame * left = nullptr;
-                    VariableKeyFrame * right = nullptr;
-                    simEnt->posTimeline.KeysFromTime( &left, &right, visTime );
-                    glm::vec2 dir = glm::normalize( right->value - left->value ); // @SPEED: Is there a way to rid the normalize ?
+                    glm::vec2 dir = glm::normalize( glm::vec2 ( 1 , 0 ) ); // @SPEED: Is there a way to rid the normalize ?
                     const glm::vec2 upDir = glm::vec2( 0, 1 );
                     const glm::vec2 downDir = glm::vec2( 0, -1 );
                     constexpr f32 reqAngle = glm::radians( 45.0f );
@@ -181,10 +182,12 @@ namespace atto {
 
             }
 
+
             visEnt->spriteAnimator.Update( core, dt );
             f32 flipFacing = visEnt->facingDir == FacingDirection::LEFT ? -1.0f : 1.0f;
+            //spriteDrawContext->DrawSprite( visEnt->spriteAnimator.sprite, visEnt->spriteAnimator.frameIndex, simEnt->pos + glm::vec2( 5, 0 ), 0, glm::vec2( flipFacing, 1 ), visEnt->spriteAnimator.color );
             spriteDrawContext->DrawSprite( visEnt->spriteAnimator.sprite, visEnt->spriteAnimator.frameIndex, pos, 0, glm::vec2( flipFacing, 1 ), visEnt->spriteAnimator.color );
-
+      
             if ( false ) {
                 spriteDrawContext->DrawRect( wsCollider.box.min, wsCollider.box.max, glm::vec4( 0.6f ) );
             }
@@ -199,9 +202,11 @@ namespace atto {
         FontHandle fontHandle = core->ResourceGetFont( "default" );
         SmallString fpsText = StringFormat::Small( "fps=%f", 1.0f / dt );
         debugDrawContext->DrawTextScreen( fontHandle, glm::vec2( 0, 320 ), 20, fpsText.GetCStr() );
+        SmallString pingText = StringFormat::Small( "ping=%d", core->NetworkGetPing() );
+        debugDrawContext->DrawTextScreen( fontHandle, glm::vec2( 0, 340 ), 20, pingText.GetCStr() );
 
-        core->RenderSubmit( tileDrawContext, true );
-        core->RenderSubmit( spriteDrawContext, false );
+        //core->RenderSubmit( tileDrawContext, true );
+        core->RenderSubmit( spriteDrawContext, true );
         core->RenderSubmit( debugDrawContext, false );
     }
 

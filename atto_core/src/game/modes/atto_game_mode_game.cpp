@@ -57,6 +57,25 @@ namespace atto {
                         MapActionBuffer actionBuffer = NetworkMessagePop<MapActionBuffer>( msg, offset );
                         visMap.ApplyActions( &actionBuffer );
                     } break;
+                    case NetworkMessageType::STREAM_DATA: {
+                        i32 offset = 0;
+                        i32 count = NetworkMessagePop<i32>( msg, offset );
+                        i32 streamCounter = NetworkMessagePop<i32>( msg, offset );
+                        if ( streamCounter > visStreamDataCounter ) {
+                            visStreamDataCounter = streamCounter;
+                            for ( i32 i = 0; i < count; i++ ) {
+                                SimStreamData data = NetworkMessagePop<SimStreamData>( msg, offset );
+                                SimEntity * ent = visMap.entityPool.Get( data.handle );
+                                if ( ent != nullptr ) {
+                                    //ent->lastPos = ent->pos;
+                                    //ent->lastPosTimer = 0.0f;
+                                    //ent->pos = data.pos;
+                                    ent->posTimeline.AddFrame( data.pos );
+                                }
+                            }
+                        }
+
+                    } break;
                 }
             }
         }

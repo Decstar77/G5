@@ -8,6 +8,8 @@ namespace atto {
     struct VisEntity;
 
     constexpr i32 MAX_ENTITY_COUNT = 2048;
+    constexpr i32 tickRate = 10;
+    constexpr f32 tickTime = 1.0f / tickRate;
 
     enum class EntityType {
         INVALID = 0,
@@ -16,6 +18,15 @@ namespace atto {
         STRUCTURE_CITY_CENTER,
     };
 
+    class PosTimeline {
+    public:
+        f32 time;
+        FixedList<glm::vec2, 3> frames;
+        glm::vec2 UpdateAndGet( f32 dt );
+        void AddFrame( glm::vec2 frame );
+    };
+
+
     inline bool IsUnitType( EntityType t ) { return t == EntityType::UNIT_SCOUT; }
 
     struct SimEntity {
@@ -23,10 +34,15 @@ namespace atto {
         EntityType                  type;
         PlayerNumber                playerNumber;
         TeamNumber                  teamNumber;
-        VariableTimeline            posTimeline;
+        glm::vec2                   pos;
+        PosTimeline                 posTimeline;
+        //glm::vec2                   lastPos;
+        //f32                         lastPosTimer;
         VisEntity *                 vis;
         Collider2D                  collider;
         FixedList<PlayerNumber, 4>  selectedBy;
+        bool                        hasDest;
+        glm::vec2                   dest;
 
         inline Collider2D   ColliderWorldSpace( glm::vec2 p ) const { Collider2D c = collider; c.Translate( p ); return c; }
     };
@@ -38,6 +54,11 @@ namespace atto {
         TeamNumber teamNumber;
     };
 
+    struct SimStreamData {
+        EntityHandle handle;
+        glm::vec2 pos;
+    };
+
     class SimMap {
     public:
         void        SimInitialize();
@@ -47,6 +68,8 @@ namespace atto {
     public:
         FixedObjectPool<SimEntity, MAX_ENTITY_COUNT> entityPool = {};
         MapActionBuffer                              simActionBuffer;
+        i32                                          streamDataCounter = 0;
+        FixedList<SimStreamData, MAX_ENTITY_COUNT>   streamData = {};
 
     protected:
         virtual VisEntity *     VisMap_OnSpawnEntity( EntitySpawnCreateInfo createInfo ) { return nullptr; }
@@ -61,6 +84,7 @@ namespace atto {
         void        Action_CommandMove( EntityHandle entityHandle, glm::vec2 p1, glm::vec2 p2, f32 t1, f32 t2 );
 
         f32                                         simTime = 0;
+        f32                                         simTimeAccum = 0;
         FixedList<SimEntity *, MAX_ENTITY_COUNT>    actionActiveEntities = {};
     };
 }

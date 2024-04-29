@@ -8,30 +8,20 @@ namespace atto {
     }
 
     void Session::Update( f32 dt ) {
-        const i32 tickRate = 30;
-        const f32 tickTime = 1.0f / tickRate;
+        ZeroStruct( outAction );
 
-        timeAccumulator += dt;
-        if( timeAccumulator >= tickTime ) {
-            timeAccumulator -= tickTime;
+        // Apply player actions
+        simMap.ApplyActions( &inAction );
+        outAction.Combine( simMap.simActionBuffer );
+        ZeroStruct( inAction );
 
-            ZeroStruct( outAction );
+        // Step simulation
+        simMap.SimUpdate( dt );
+        outAction.Combine( simMap.simActionBuffer );
 
-            // Apply player actions
-            simMap.ApplyActions( &inAction );
-            outAction.Combine( simMap.simActionBuffer );
-            ZeroStruct( inAction );
-            
-            // Step simulation
-            simMap.SimUpdate( tickTime );
-            outAction.Combine( simMap.simActionBuffer );
-
-
-            if( outAction.data.GetSize() > 0 ) {
-                ATTOINFO( "Sending actions" );
-            }
+        if( outAction.data.GetSize() > 0 ) {
+            ATTOINFO( "Sending actions" );
         }
-    
     }
 }
 
