@@ -26,12 +26,19 @@ namespace atto {
 
     inline bool IsUnitType( EntityType t ) { return t == EntityType::UNIT_SCOUT; }
 
+    struct SimStreamData {
+        EntityHandle handle;
+        glm::vec2 pos;
+        bool isAttacking;
+    };
+
     struct SimEntity {
         EntityHandle                handle;
         EntityType                  type;
         PlayerNumber                playerNumber;
         TeamNumber                  teamNumber;
         FixedList<PlayerNumber, 4>  selectedBy;
+        glm::vec2                   lastPos;
         glm::vec2                   pos;
         PosTimeline                 posTimeline;
         Collider2D                  collider;
@@ -49,13 +56,7 @@ namespace atto {
         PlayerNumber playerNumber;
         TeamNumber teamNumber;
     };
-
-    struct SimStreamData {
-        EntityHandle handle;
-        glm::vec2 pos;
-        bool isAttacking;
-    };
-
+   
     class SimMap {
     public:
         void        SimInitialize();

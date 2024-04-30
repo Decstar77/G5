@@ -38,41 +38,59 @@ namespace atto {
             const i32 entityCount = actionActiveEntities.GetCount();
             for ( i32 entityIndex = 0; entityIndex < entityCount; entityIndex++ ) {
                 SimEntity * ent = actionActiveEntities[ entityIndex ];
+                ent->lastPos = ent->pos;
 
-                bool sendStreamData = false;
-                SimStreamData data = {};
-                data.handle = ent->handle;
+                Collider2D entCollider = ent->ColliderWorldSpace( ent->pos );
 
                 if ( ent->unit.state == UnitState::MOVING ) {
                     glm::vec2 dir = glm::normalize( ent->dest - ent->pos ) * 100.0f;
                     ent->pos += dir * tickTime;
                     ent->posTimeline.AddFrame( ent->pos );
-                    data.pos = ent->pos;
-                    sendStreamData = true;
 
                     if ( glm::distance( ent->pos, ent->dest ) < 5.0f ){
                         ent->unit.state = UnitState::IDLE;
                     }
 
-                } if ( ent->unit.state == UnitState::ATTACKING ) {
+                } else if ( ent->unit.state == UnitState::ATTACKING ) {
                     SimEntity * targetEnt = entityPool.Get( ent->target );
                     if ( targetEnt != nullptr ) {
                         if ( glm::distance( ent->pos, targetEnt->pos ) > 25.0f ){
                             glm::vec2 dir = glm::normalize( targetEnt->pos - ent->pos ) * 100.0f;
                             ent->pos += dir * tickTime;
-                            ent->posTimeline.AddFrame( ent->pos );
-                            data.pos = ent->pos;
-                            sendStreamData = true;
                         } else {
 
                         }
                     }
                 }
+            }
 
-                data.handle = ent->handle;
-                data.pos = ent->pos;
-            
-                streamData.Add( data );
+            for ( i32 entityIndexA = 0; entityIndexA < entityCount; entityIndexA++ ) {
+                SimEntity * entA = actionActiveEntities[ entityIndexA ];
+                Collider2D entACollider = entA->ColliderWorldSpace( entA->pos );
+                for ( i32 entityIndexB = 0; entityIndexB < entityCount; entityIndexB++ ) {
+                    if ( entityIndexA == entityIndexB ) {
+                        continue;
+                    }
+
+                    SimEntity * otherEnt = actionActiveEntities[ entityIndexB ];
+                    Collider2D entBCollider = otherEnt->ColliderWorldSpace( otherEnt->pos );
+
+                    Manifold2D man = {};
+                    if ( entACollider.Collision( entBCollider, man ) == true ) {
+                        entA->pos -= man.normal * man.penetration;
+                    }
+                }
+            }
+
+            for ( i32 entityIndex = 0; entityIndex < entityCount; entityIndex++ ) {
+                SimEntity * ent = actionActiveEntities[ entityIndex ];
+                if ( ent->lastPos != ent->pos ) {
+                    SimStreamData data = {};
+                    data.handle = ent->handle;
+                    data.pos = ent->pos;
+                    ent->posTimeline.AddFrame( ent->pos );
+                    streamData.Add ( data );
+                }
             }
         }
     }

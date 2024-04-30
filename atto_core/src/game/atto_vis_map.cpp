@@ -196,7 +196,7 @@ namespace atto {
 
             visEnt->spriteAnimator.Update( core, dt );
             f32 flipFacing = visEnt->facingDir == FacingDirection::LEFT ? -1.0f : 1.0f;
-            //spriteDrawContext->DrawSprite( visEnt->spriteAnimator.sprite, visEnt->spriteAnimator.frameIndex, simEnt->pos + glm::vec2( 5, 0 ), 0, glm::vec2( flipFacing, 1 ), visEnt->spriteAnimator.color );
+            //spriteDrawContext->DrawSprite( visEnt->spriteAnimator.sprite, visEnt->spriteAnimator.frameIndex, simEnt->pos, 0, glm::vec2( flipFacing, 1 ), visEnt->spriteAnimator.color );
             spriteDrawContext->DrawSprite( visEnt->spriteAnimator.sprite, visEnt->spriteAnimator.frameIndex, pos, 0, glm::vec2( flipFacing, 1 ), visEnt->spriteAnimator.color );
 
             if ( simEnt->selectedBy.Contains( playerNumber ) == true ) {

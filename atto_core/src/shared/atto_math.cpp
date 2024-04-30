@@ -450,35 +450,57 @@ namespace atto {
     }
 
     bool BoxBounds2D::Collision( const BoxBounds2D & other, Manifold2D & manifold ) const {
-        if( Intersects( other ) ) {
-            f32 xOverlap = glm::min( max.x, other.max.x ) - glm::max( min.x, other.min.x );
-            f32 yOverlap = glm::min( max.y, other.max.y ) - glm::max( min.y, other.min.y );
+   // Check for overlap along each axis
+        bool overlapX = ( max.x >= other.min.x ) && ( min.x <= other.max.x );
+        bool overlapY = ( max.y >= other.min.y ) && ( min.y <= other.max.y );
 
-            if( xOverlap < yOverlap ) {
-                if( max.x > other.max.x ) {
-                    manifold.normal = glm::vec2( -1.0f, 0.0f );
-                }
-                else {
-                    manifold.normal = glm::vec2( 1.0f, 0.0f );
-                }
+        // If there's overlap along both axes, then the boxes are colliding
+        if( overlapX && overlapY ) {
+            // Calculate overlap depths along each axis
+            float overlapX1 = other.max.x - min.x;
+            float overlapX2 = max.x - other.min.x;
+            float overlapY1 = other.max.y - min.y;
+            float overlapY2 = max.y - other.min.y;
 
-                manifold.penetration = xOverlap;
+            // Find the minimum overlap along each axis
+            float overlapXMin = std::min( overlapX1, overlapX2 );
+            float overlapYMin = std::min( overlapY1, overlapY2 );
+
+            // Determine which axis has the minimum overlap
+            if( overlapXMin < overlapYMin ) {
+                // Collision along the X-axis
+                manifold.penetration = overlapXMin;
+                manifold.normal = ( overlapX1 < overlapX2 ) ? glm::vec2( -1.0f, 0.0f ) : glm::vec2( 1.0f, 0.0f );
             }
             else {
-                if( max.y > other.max.y ) {
-                    manifold.normal = glm::vec2( 0.0f, -1.0f );
-                }
-                else {
-                    manifold.normal = glm::vec2( 0.0f, 1.0f );
-                }
-
-                manifold.penetration = yOverlap;
+             // Collision along the Y-axis
+                manifold.penetration = overlapYMin;
+                manifold.normal = ( overlapY1 < overlapY2 ) ? glm::vec2( 0.0f, -1.0f ) : glm::vec2( 0.0f, 1.0f );
             }
 
-            return true;
+            // Calculate collision points
+            if( manifold.normal.x < 0.0f ) {
+                manifold.pointA.x = other.max.x;
+                manifold.pointB.x = min.x;
+            }
+            else {
+                manifold.pointA.x = max.x;
+                manifold.pointB.x = other.min.x;
+            }
+
+            if( manifold.normal.y < 0.0f ) {
+                manifold.pointA.y = other.max.y;
+                manifold.pointB.y = min.y;
+            }
+            else {
+                manifold.pointA.y = max.y;
+                manifold.pointB.y = other.min.y;
+            }
+
+            return true; // Collision detected
         }
 
-        return false;
+        return false; // No collision
     }
 
     bool BoxBounds2D::Collision( const Circle & circle, Manifold2D & manifold ) const {
