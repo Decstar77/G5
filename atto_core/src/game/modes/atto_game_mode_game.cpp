@@ -67,9 +67,6 @@ namespace atto {
                                 SimStreamData data = NetworkMessagePop<SimStreamData>( msg, offset );
                                 SimEntity * ent = visMap.entityPool.Get( data.handle );
                                 if ( ent != nullptr ) {
-                                    //ent->lastPos = ent->pos;
-                                    //ent->lastPosTimer = 0.0f;
-                                    //ent->pos = data.pos;
                                     ent->posTimeline.AddFrame( data.pos );
                                 }
                             }

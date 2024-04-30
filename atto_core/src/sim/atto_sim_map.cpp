@@ -7,7 +7,7 @@ namespace atto {
         if ( GlobalRpcTable[ 1 ] == nullptr ) {
             GlobalRpcTable[ (i32)MapAction::REQUEST_SELECTION_ENTITIES ] = new RpcMemberFunction( this, &SimMap::Action_RequestSelectEntities );
             GlobalRpcTable[ (i32)MapAction::REQUEST_MOVE ] = new RpcMemberFunction( this, &SimMap::Action_RequestMove );
-            
+            GlobalRpcTable[ (i32)MapAction::REQUEST_ATTACK ] = new RpcMemberFunction( this, &SimMap::Action_RequestAttack );
         }
 
         PlayerNumber p1 = PlayerNumber::Create( 1 );
@@ -25,7 +25,6 @@ namespace atto {
     void SimMap::SimUpdate( f32 dt ) {
         ZeroStruct( simActionBuffer );
         streamData.Clear();
-        
 
         simTime += dt;
         simTimeAccum += dt;
@@ -39,23 +38,41 @@ namespace atto {
             const i32 entityCount = actionActiveEntities.GetCount();
             for ( i32 entityIndex = 0; entityIndex < entityCount; entityIndex++ ) {
                 SimEntity * ent = actionActiveEntities[ entityIndex ];
-                if (ent->hasDest == true ) {
+
+                bool sendStreamData = false;
+                SimStreamData data = {};
+                data.handle = ent->handle;
+
+                if ( ent->unit.state == UnitState::MOVING ) {
                     glm::vec2 dir = glm::normalize( ent->dest - ent->pos ) * 100.0f;
-                    
-                    //ent->lastPos = ent->pos;
-                    //ent->lastPosTimer = 0.0f;
                     ent->pos += dir * tickTime;
                     ent->posTimeline.AddFrame( ent->pos );
-               
-                    if ( glm::distance( ent->pos, ent->dest ) < 10.0f ){
-                        ent->hasDest = false;
+                    data.pos = ent->pos;
+                    sendStreamData = true;
+
+                    if ( glm::distance( ent->pos, ent->dest ) < 5.0f ){
+                        ent->unit.state = UnitState::IDLE;
                     }
 
-                    SimStreamData data = {};
-                    data.handle = ent->handle;
-                    data.pos = ent->pos;
-                    streamData.Add( data );
+                } if ( ent->unit.state == UnitState::ATTACKING ) {
+                    SimEntity * targetEnt = entityPool.Get( ent->target );
+                    if ( targetEnt != nullptr ) {
+                        if ( glm::distance( ent->pos, targetEnt->pos ) > 25.0f ){
+                            glm::vec2 dir = glm::normalize( targetEnt->pos - ent->pos ) * 100.0f;
+                            ent->pos += dir * tickTime;
+                            ent->posTimeline.AddFrame( ent->pos );
+                            data.pos = ent->pos;
+                            sendStreamData = true;
+                        } else {
+
+                        }
+                    }
                 }
+
+                data.handle = ent->handle;
+                data.pos = ent->pos;
+            
+                streamData.Add( data );
             }
         }
     }
@@ -94,9 +111,26 @@ namespace atto {
         const i32 entityCount = actionActiveEntities.GetCount();
         for ( i32 entityIndex = 0; entityIndex < entityCount; entityIndex++ ) {
             SimEntity * ent = actionActiveEntities[ entityIndex ];
-            if ( ent->playerNumber == playerNumber && IsUnitType(ent->type) && ent->selectedBy.Contains( playerNumber ) ) {
-                ent->hasDest = true;
+            if ( ent->playerNumber == playerNumber && IsUnitType( ent->type ) && ent->selectedBy.Contains( playerNumber ) ) {
                 ent->dest = p;
+                ent->target = EntityHandle::INVALID;
+                ent->unit.state = UnitState::MOVING;
+            }
+        }
+    }
+
+    void SimMap::Action_RequestAttack( PlayerNumber playerNumber, EntityHandle handle ) {
+        ATTOTRACE( "PlayerNumber %d requesting attack", playerNumber.value );
+
+        SimEntity * targetEnt = entityPool.Get( handle );
+        const i32 entityCount = actionActiveEntities.GetCount();
+        for ( i32 entityIndex = 0; entityIndex < entityCount; entityIndex++ ) {
+            SimEntity * ent = actionActiveEntities[ entityIndex ];
+            if ( ent->playerNumber == playerNumber && IsUnitType( ent->type ) && ent->selectedBy.Contains( playerNumber ) ) {
+                glm::vec2 dir = glm::normalize( ent->pos - targetEnt->pos ); // @TODO: Check for Nan/zero vec
+                ent->dest = targetEnt->pos + dir * 25.0f;
+                ent->target = targetEnt->handle;
+                ent->unit.state = UnitState::ATTACKING;
             }
         }
     }
@@ -149,61 +183,6 @@ namespace atto {
         createInfo.teamNumber = teamNumber;
         createInfo.type = type;
         return Action_CommandSpawnEntity( createInfo );
-    }
-
-    glm::vec2 PosTimeline::UpdateAndGet( f32 dt ) {
-        i32 count = frames.GetCount();
-        if( count == 1 ) {
-            return frames[ 0 ];
-        }
-        else if( count == 2 ) {
-            time += dt;
-            f32 nt = glm::max( time / tickTime, 0.0f );
-            glm::vec2 pos = glm::mix( frames[ 0 ], frames[ 1 ], glm::min( nt, 1.0f ) );
-            if( nt > 1 ) {
-                frames.RemoveIndex( 0 );
-            }
-            return pos;
-        }
-        else if( count == 3 ) {
-            time += dt;
-            f32 nt = glm::max( time / tickTime, 0.0f );
-            glm::vec2 pos = glm::vec2( 0.0f );
-            if( nt > 1 ) {
-                nt -= 1.0f;
-                time -= tickTime;
-                pos = glm::mix( frames[ 1 ], frames[ 2 ], glm::min( nt, 1.0f ) );
-                frames.RemoveIndex( 0 );
-            }
-            else {
-                pos = glm::mix( frames[ 0 ], frames[ 1 ], glm::min( nt, 1.0f ) );
-            }
-
-            return pos;
-        }
-
-        INVALID_CODE_PATH;
-        return glm::vec2( 0, 0 );
-    }
-
-
-    void PosTimeline::AddFrame( glm::vec2 frame ) {
-        i32 count = frames.GetCount();
-        if( count == 0 ) {
-            frames.Add( frame );
-        }
-        else if( count == 1 ) {
-            time = -tickTime;
-            frames.Add( frame );
-        }
-        else if( count == 2 ) {
-            frames.Add( frame );
-        }
-        else if( count == 3 ) {
-            frames.RemoveIndex( 0 );
-            frames.Add( frame );
-            time = 0;
-        }
     }
 
 }

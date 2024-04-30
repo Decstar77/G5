@@ -60,6 +60,9 @@ namespace atto {
     }
 
     void VisMap::VisUpdate( f32 dt ) {
+        static SpriteResource * sprHoverUnit = ResourceGetAndLoadSprite( "res/game/ents/ui_pick_unit_0_16x16.json" );
+        static SpriteResource * sprSelectUnit = ResourceGetAndLoadSprite( "res/game/ents/ui_select_unit_0_16x16.json" );
+
         visTime += dt;
 
         ZeroStruct( visActionBuffer );
@@ -118,10 +121,6 @@ namespace atto {
             }
         }
 
-        if( core->InputMouseButtonJustPressed( MouseButton::MOUSE_BUTTON_2 ) == true ) {
-            visActionBuffer.Request_MoveUnit( playerNumber, mousePosWorld );
-        }
-
         BoxBounds2D inputDragSelectionBounds = {};
         inputDragSelectionBounds.min = glm::min( inputDragStart, inputDragEnd );
         inputDragSelectionBounds.max = glm::max( inputDragStart, inputDragEnd );
@@ -133,29 +132,34 @@ namespace atto {
             }
         }
 
+        SimEntity * hoveredEntity = nullptr;
+
         const i32 entityCount = entities.GetCount();
         for( i32 entityIndex = 0; entityIndex < entityCount; entityIndex++ ) {
             SimEntity * simEnt = entities[ entityIndex ];
             VisEntity * visEnt = simEnt->vis;
 
-            //simEnt->lastPosTimer += dt;
-            //f32 nt = glm::clamp( simEnt->lastPosTimer / tickTime, 0.0f, 1.0f );
-            //glm::vec2 pos = glm::mix( simEnt->lastPos, simEnt->pos, nt );
-
             glm::vec2 pos = simEnt->posTimeline.UpdateAndGet( dt );
-
             Collider2D wsCollider = simEnt->ColliderWorldSpace( pos );
 
-            if ( inputMode == InputMode::DRAGGING ) {
+            bool hoveredDrag = false;
+           
+            if ( inputMode == InputMode::NONE ) {
+                if ( wsCollider.Contains( mousePosWorld ) == true ) {
+                    hoveredEntity = simEnt;
+                }
+            } else if ( inputMode == InputMode::DRAGGING ) {
                 if ( wsCollider.Intersects( inputDragSelectionBounds ) == true ) {
                     inputDragSelection.AddUnique( simEnt->handle );
+                    hoveredDrag = true;
                 }
             }
 
             if ( simEnt->type == EntityType::UNIT_SCOUT ) {
-                bool isMoving = false;
+                glm::vec2 dir = glm::vec2( 0, 0 );
+                bool isMoving = simEnt->posTimeline.GetMovingDirection( dir );
                 if ( isMoving == true ) {
-                    glm::vec2 dir = glm::normalize( glm::vec2 ( 1 , 0 ) ); // @SPEED: Is there a way to rid the normalize ?
+                    dir = glm::normalize( dir ); // @SPEED: Is there a way to rid the normalize ?
                     const glm::vec2 upDir = glm::vec2( 0, 1 );
                     const glm::vec2 downDir = glm::vec2( 0, -1 );
                     constexpr f32 reqAngle = glm::radians( 45.0f );
@@ -168,6 +172,14 @@ namespace atto {
                     } else {
                         visEnt->facingDir = glm::sign( dir.x ) >= 0 ? FacingDirection::RIGHT : FacingDirection::LEFT;
                         visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankWalkSide, true );
+                    }
+                } else if ( simEnt->unit.state == UnitState::ATTACKING ) {
+                    if ( visEnt->facingDir == FacingDirection::LEFT || visEnt->facingDir == FacingDirection::RIGHT ) {
+                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankAttackSide, true );
+                    } else if ( visEnt->facingDir == FacingDirection::UP ) {
+                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankAttackUp, true );
+                    } else {
+                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankAttackDown, true );
                     }
                 } else {
                     if ( visEnt->facingDir == FacingDirection::LEFT || visEnt->facingDir == FacingDirection::RIGHT ) {
@@ -182,12 +194,17 @@ namespace atto {
 
             }
 
-
             visEnt->spriteAnimator.Update( core, dt );
             f32 flipFacing = visEnt->facingDir == FacingDirection::LEFT ? -1.0f : 1.0f;
             //spriteDrawContext->DrawSprite( visEnt->spriteAnimator.sprite, visEnt->spriteAnimator.frameIndex, simEnt->pos + glm::vec2( 5, 0 ), 0, glm::vec2( flipFacing, 1 ), visEnt->spriteAnimator.color );
             spriteDrawContext->DrawSprite( visEnt->spriteAnimator.sprite, visEnt->spriteAnimator.frameIndex, pos, 0, glm::vec2( flipFacing, 1 ), visEnt->spriteAnimator.color );
-      
+
+            if ( simEnt->selectedBy.Contains( playerNumber ) == true ) {
+                spriteDrawContext->DrawSprite( sprSelectUnit, 0, pos - glm::vec2( 0, 1 ) );
+            } else if ( hoveredDrag == true ) {
+                spriteDrawContext->DrawSprite( sprHoverUnit, 0, pos );
+            }
+
             if ( false ) {
                 spriteDrawContext->DrawRect( wsCollider.box.min, wsCollider.box.max, glm::vec4( 0.6f ) );
             }
@@ -197,6 +214,14 @@ namespace atto {
 
         if ( inputMode == InputMode::DRAGGING ) {
             spriteDrawContext->DrawRect( inputDragSelectionBounds.min, inputDragSelectionBounds.max, Colors::BOX_SELECTION_COLOR );
+        }
+
+        if( core->InputMouseButtonJustPressed( MouseButton::MOUSE_BUTTON_2 ) == true ) {
+            if ( hoveredEntity == nullptr ) {
+                visActionBuffer.Request_MoveUnit( playerNumber, mousePosWorld );
+            } else if ( hoveredEntity->teamNumber != teamNumber ) {
+                visActionBuffer.Request_AttackUnit( playerNumber, hoveredEntity->handle );
+            }
         }
 
         FontHandle fontHandle = core->ResourceGetFont( "default" );
@@ -220,12 +245,24 @@ namespace atto {
             visEntity->facingDir = FacingDirection::LEFT;
 
             if ( createInfo.type == EntityType::UNIT_SCOUT ) {
-                visEntity->spriteBankIdleSide = ResourceGetAndLoadSprite( "res/game/ents/units/scout/sprites/scout_idle_side.spr.json" );
-                visEntity->spriteBankIdleDown = ResourceGetAndLoadSprite( "res/game/ents/units/scout/sprites/scout_idle_down.spr.json" );
-                visEntity->spriteBankIdleUp = ResourceGetAndLoadSprite( "res/game/ents/units/scout/sprites/scout_idle_up.spr.json" );
-                visEntity->spriteBankWalkSide = ResourceGetAndLoadSprite( "res/game/ents/units/scout/sprites/scout_walk_side.spr.json" );
-                visEntity->spriteBankWalkDown = ResourceGetAndLoadSprite( "res/game/ents/units/scout/sprites/scout_walk_down.spr.json" );
-                visEntity->spriteBankWalkUp = ResourceGetAndLoadSprite( "res/game/ents/units/scout/sprites/scout_walk_up.spr.json" );
+                if ( createInfo.playerNumber.value == 1 ) {
+                    visEntity->spriteBankIdleSide = ResourceGetAndLoadSprite( "res/game/ents/units/scout/blue/scout_idle_side.spr.json" );
+                    visEntity->spriteBankIdleDown = ResourceGetAndLoadSprite( "res/game/ents/units/scout/blue/scout_idle_down.spr.json" );
+                    visEntity->spriteBankIdleUp = ResourceGetAndLoadSprite( "res/game/ents/units/scout/blue/scout_idle_up.spr.json" );
+                    visEntity->spriteBankWalkSide = ResourceGetAndLoadSprite( "res/game/ents/units/scout/blue/scout_walk_side.spr.json" );
+                    visEntity->spriteBankWalkDown = ResourceGetAndLoadSprite( "res/game/ents/units/scout/blue/scout_walk_down.spr.json" );
+                    visEntity->spriteBankWalkUp = ResourceGetAndLoadSprite( "res/game/ents/units/scout/blue/scout_walk_up.spr.json" );
+                    visEntity->spriteBankAttackSide = ResourceGetAndLoadSprite( "res/game/ents/units/scout/blue/scout_attack_side.spr.json" );
+                    visEntity->spriteBankAttackDown = ResourceGetAndLoadSprite( "res/game/ents/units/scout/blue/scout_attack_down.spr.json" );
+                    visEntity->spriteBankAttackUp = ResourceGetAndLoadSprite( "res/game/ents/units/scout/blue/scout_attack_up.spr.json" );
+                } else if ( createInfo.playerNumber.value == 2 ) {
+                    visEntity->spriteBankIdleSide = ResourceGetAndLoadSprite( "res/game/ents/units/scout/red/scout_idle_side.spr.json" );
+                    visEntity->spriteBankIdleDown = ResourceGetAndLoadSprite( "res/game/ents/units/scout/red/scout_idle_down.spr.json" );
+                    visEntity->spriteBankIdleUp = ResourceGetAndLoadSprite( "res/game/ents/units/scout/red/scout_idle_up.spr.json" );
+                    visEntity->spriteBankWalkSide = ResourceGetAndLoadSprite( "res/game/ents/units/scout/red/scout_walk_side.spr.json" );
+                    visEntity->spriteBankWalkDown = ResourceGetAndLoadSprite( "res/game/ents/units/scout/red/scout_walk_down.spr.json" );
+                    visEntity->spriteBankWalkUp = ResourceGetAndLoadSprite( "res/game/ents/units/scout/red/scout_walk_up.spr.json" );
+                }
                 visEntity->spriteAnimator.SetSpriteIfDifferent( visEntity->spriteBankIdleSide, true );
             } else if ( createInfo.type == EntityType::STRUCTURE_CITY_CENTER ) {
                 SpriteResourceCreateInfo createInfo = {};

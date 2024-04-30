@@ -8,5 +8,9 @@ namespace atto {
     void MapActionBuffer::Request_MoveUnit( PlayerNumber playerNumber, glm::vec2 pos ) {
         AddAction( ( i32 ) MapAction::REQUEST_MOVE, playerNumber, pos );
     }
+
+    void MapActionBuffer::Request_AttackUnit( PlayerNumber playerNumber, EntityHandle handle ) {
+        AddAction( ( i32 ) MapAction::REQUEST_ATTACK, playerNumber, handle );
+    }
 }
 

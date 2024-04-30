@@ -4,6 +4,10 @@
 #include "../shared/atto_math.h"
 
 namespace atto {
+    constexpr i32 MAX_ENTITY_COUNT = 2048;
+    constexpr i32 tickRate = 10;
+    constexpr f32 tickTime = 1.0f / tickRate;
+
     struct VariableKeyFrame {
         glm::vec2 value;
         f32 t;
@@ -20,6 +24,14 @@ namespace atto {
         void                KeysFromTime( VariableKeyFrame ** left, VariableKeyFrame ** right, f32 t );
     };
 
+    class PosTimeline {
+    public:
+        f32 time;
+        FixedList<glm::vec2, 3> frames;
+        glm::vec2           UpdateAndGet( f32 dt );
+        bool                GetMovingDirection( glm::vec2 & dir );
+        void                AddFrame( glm::vec2 frame );
+    };
 }
 
 

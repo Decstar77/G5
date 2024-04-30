@@ -99,5 +99,81 @@ namespace atto {
         }
     }
 
+    glm::vec2 PosTimeline::UpdateAndGet( f32 dt ) {
+        const i32 count = frames.GetCount();
+        if( count == 1 ) {
+            return frames[ 0 ];
+        }
+        else if( count == 2 ) {
+            time += dt;
+            f32 nt = glm::max( time / tickTime, 0.0f );
+            glm::vec2 pos = glm::mix( frames[ 0 ], frames[ 1 ], glm::min( nt, 1.0f ) );
+            if( nt > 1 ) {
+                frames.RemoveIndex( 0 );
+            }
+            return pos;
+        }
+        else if( count == 3 ) {
+            time += dt;
+            f32 nt = glm::max( time / tickTime, 0.0f );
+            glm::vec2 pos = glm::vec2( 0.0f );
+            if( nt > 1 ) {
+                nt -= 1.0f;
+                time -= tickTime;
+                pos = glm::mix( frames[ 1 ], frames[ 2 ], glm::min( nt, 1.0f ) );
+                frames.RemoveIndex( 0 );
+            }
+            else {
+                pos = glm::mix( frames[ 0 ], frames[ 1 ], glm::min( nt, 1.0f ) );
+            }
+
+            return pos;
+        }
+
+        INVALID_CODE_PATH;
+        return glm::vec2( 0, 0 );
+    }
+
+    bool PosTimeline::GetMovingDirection( glm::vec2 & dir ) {
+        const i32 count = frames.GetCount();
+        if ( count == 1 ) {
+            dir = glm::vec2( 0 );
+            return false;
+        } else if ( count == 2 ) {
+            dir = frames[ 1 ] - frames[ 0 ];
+            return true;
+        } else if ( count == 3 ) {
+            f32 nt = glm::max( time / tickTime, 0.0f );
+            if( nt > 1 ) {
+                dir = frames[ 2 ] - frames[ 1 ];
+            }
+            else {
+                dir = frames[ 1 ] - frames[ 0 ];
+            }
+            return true;
+        }
+
+        INVALID_CODE_PATH;
+        return false;
+    }
+
+    void PosTimeline::AddFrame( glm::vec2 frame ) {
+        const i32 count = frames.GetCount();
+        if( count == 0 ) {
+            frames.Add( frame );
+        }
+        else if( count == 1 ) {
+            time = -tickTime;
+            frames.Add( frame );
+        }
+        else if( count == 2 ) {
+            frames.Add( frame );
+        }
+        else if( count == 3 ) {
+            frames.RemoveIndex( 0 );
+            frames.Add( frame );
+            time = 0;
+        }
+    }
 }
 

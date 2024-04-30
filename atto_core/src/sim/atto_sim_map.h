@@ -7,10 +7,6 @@ namespace atto {
     struct SimEntity;
     struct VisEntity;
 
-    constexpr i32 MAX_ENTITY_COUNT = 2048;
-    constexpr i32 tickRate = 10;
-    constexpr f32 tickTime = 1.0f / tickRate;
-
     enum class EntityType {
         INVALID = 0,
         UNIT_SCOUT,
@@ -18,14 +14,15 @@ namespace atto {
         STRUCTURE_CITY_CENTER,
     };
 
-    class PosTimeline {
-    public:
-        f32 time;
-        FixedList<glm::vec2, 3> frames;
-        glm::vec2 UpdateAndGet( f32 dt );
-        void AddFrame( glm::vec2 frame );
+    enum class UnitState {
+        IDLE = 0,
+        MOVING = 1,
+        ATTACKING = 2
     };
 
+    struct Unit {
+        UnitState state;
+    };
 
     inline bool IsUnitType( EntityType t ) { return t == EntityType::UNIT_SCOUT; }
 
@@ -34,15 +31,14 @@ namespace atto {
         EntityType                  type;
         PlayerNumber                playerNumber;
         TeamNumber                  teamNumber;
+        FixedList<PlayerNumber, 4>  selectedBy;
         glm::vec2                   pos;
         PosTimeline                 posTimeline;
-        //glm::vec2                   lastPos;
-        //f32                         lastPosTimer;
-        VisEntity *                 vis;
         Collider2D                  collider;
-        FixedList<PlayerNumber, 4>  selectedBy;
-        bool                        hasDest;
+        Unit                        unit;
         glm::vec2                   dest;
+        EntityHandle                target;
+        VisEntity *                 vis;
 
         inline Collider2D   ColliderWorldSpace( glm::vec2 p ) const { Collider2D c = collider; c.Translate( p ); return c; }
     };
@@ -57,6 +53,7 @@ namespace atto {
     struct SimStreamData {
         EntityHandle handle;
         glm::vec2 pos;
+        bool isAttacking;
     };
 
     class SimMap {
@@ -75,8 +72,8 @@ namespace atto {
         virtual VisEntity *     VisMap_OnSpawnEntity( EntitySpawnCreateInfo createInfo ) { return nullptr; }
 
     private:
-
         void        Action_RequestMove( PlayerNumber playerNumber, glm::vec2 p );
+        void        Action_RequestAttack( PlayerNumber playerNumber, EntityHandle handle );
         void        Action_RequestSelectEntities( PlayerNumber playerNumber, Span<EntityHandle> entities );
 
         SimEntity * Action_CommandSpawnEntity( EntitySpawnCreateInfo createInfo );

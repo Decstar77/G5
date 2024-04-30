@@ -16,11 +16,13 @@ namespace atto {
         NONE = 0,
         REQUEST_SELECTION_ENTITIES,
         REQUEST_MOVE,
+        REQUEST_ATTACK,
     };
 
     class MapActionBuffer : public RpcBuffer {
     public:
         void Request_SelectEntities( PlayerNumber playerNumber, Span<EntityHandle> handle );
         void Request_MoveUnit( PlayerNumber playerNumber, glm::vec2 pos );
+        void Request_AttackUnit( PlayerNumber playerNumber, EntityHandle handle );
     };
 }
