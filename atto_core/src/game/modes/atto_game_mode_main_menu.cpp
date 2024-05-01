@@ -21,7 +21,7 @@ namespace atto {
         static TextureResource * background = core->ResourceGetAndCreateTexture( "res/sprites/ui/main_menu_screen_01.png", false, false );
         DrawContext * draw = core->RenderGetDrawContext( 0, true );
     #if ATTO_OPENGL
-        draw->DrawTextureBL( background, glm::vec2( 0, 0 ) );
+       // draw->DrawTextureBL( background, glm::vec2( 0, 0 ) );
 
         if( core->NetworkIsConnected() ) {
             NetworkMessage msg = {};

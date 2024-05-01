@@ -11,7 +11,7 @@ namespace atto {
     constexpr static i32 MAX_ENTITIES = 1024;
     constexpr static i32 MAX_PLAYERS = 4;
 
-    constexpr i32 TURNS_PER_SECOND = 60;
+    constexpr i32 TURNS_PER_SECOND = 10;
     constexpr float SIM_DT_FLOAT = 1.0f / TURNS_PER_SECOND;
     constexpr fp TURNS_PER_SECOND_FP= Fp( TURNS_PER_SECOND );
     constexpr fp SIM_DT = Fp( 1.0f / TURNS_PER_SECOND );
@@ -155,6 +155,7 @@ namespace atto {
 
         bool madeMove;
         fp2 moveLoc;
+        f32 moveTime;
 
         MapActionBuffer         playerActions;
     };

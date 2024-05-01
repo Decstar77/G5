@@ -14,6 +14,7 @@ local FMOD_DIR = "vendor/fmod"
 local FPM = "vendor/fpm"
 local BACKWARD = "vendor/backward"
 local VULKAN_DIR = "C:/VulkanSDK/1.3.239.0"
+local ZT = "vendor/zt"
 
 solution "Atto"
     location("")
@@ -69,6 +70,7 @@ project "atto_core"
         path.join(FMOD_DIR, "include"),
         path.join(ENET_DIR, "include"),
 		path.join(VULKAN_DIR, "include"),
+        path.join(ZT, "include"),
         JSON_DIR,
         STB_DIR,
         FPM,
@@ -83,7 +85,8 @@ project "atto_core"
     libdirs
     {
         path.join(FMOD_DIR, "lib"),
-		path.join(VULKAN_DIR, "lib")
+		path.join(VULKAN_DIR, "lib"),
+        path.join(ZT, "lib")
     }
     
     files {
@@ -94,7 +97,7 @@ project "atto_core"
         path.join(STB_DIR, "stb_vorbis/stb_vorbis.c")
     }
 
-    links { "opengl32", "glfw", "glad", "fmod_vc" }
+    links { "opengl32", "glfw", "glad", "fmod_vc", "libzt" }
 
     filter "system:windows"
         links { "kernel32", "user32", "Dbghelp", "vulkan-1" }

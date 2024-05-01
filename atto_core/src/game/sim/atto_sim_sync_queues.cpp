@@ -2,7 +2,9 @@
 
 namespace atto {
 
-    void SyncQueues::Start() {
+    void SyncQueues::Start( i32 ping, f32 tickTime ) {
+        slidingWindowWidth = ( i32 )( ( f32 )ping / ( 1000.0f * tickTime )  );
+
         player1Turns.Clear();
         player2Turns.Clear();
 
@@ -31,8 +33,7 @@ namespace atto {
     void SyncQueues::AddTurn( PlayerNumber playerNumber, const MapTurn & turn ) {
         if( playerNumber.value == 1 ) {
             player1Turns.Enqueue( turn );
-        }
-        else {
+        } else {
             player2Turns.Enqueue( turn );
         }
     }
@@ -40,8 +41,7 @@ namespace atto {
     MapTurn * SyncQueues::GetNextTurn( PlayerNumber playerNumber ) {
         if( playerNumber.value == 1 ) {
             return player1Turns.Peek();
-        }
-        else {
+        } else {
             return player2Turns.Peek();
         }
     }
@@ -50,7 +50,5 @@ namespace atto {
         player1Turns.Dequeue();
         player2Turns.Dequeue();
     }
-
-
 }
 

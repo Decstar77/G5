@@ -1,4 +1,4 @@
-
+#if 1
 #include "platform/atto_core_windows.h"
 
 using namespace atto;
@@ -38,5 +38,19 @@ int main( int argc, char ** argv ) {
     core->Run( argc, argv );
     return 0;
 }
+#else 
 
+#include "ZeroTierSockets.h"
+#include <stdio.h>
+
+int main( void ) {
+    printf( "---Start\n" ); // This is never printed
+    long long net_id = 0x0cccb752f7bdf645;
+    zts_node_start();
+
+    zts_tcp_server();
+
+}
+
+#endif
 

@@ -101,8 +101,8 @@ namespace atto {
         params.userPtr = this;
 
         core->resources.fontContext = fonsCreateInternal( &params );
-        arialFontHandle = fonsAddFont( core->resources.fontContext, "default", "res/fonts/arial.ttf" );
-        kenFontHandle = fonsAddFont( core->resources.fontContext, "ken", "res/fonts/kenvector_future.ttf" );
+        arialFontHandle = fonsAddFont( core->resources.fontContext, "default", "res/game/fonts/arial.ttf" );
+        kenFontHandle = fonsAddFont( core->resources.fontContext, "ken", "res/game/fonts/kenvector_future.ttf" );
 
         const char * vertexShaderSource = R"(
             #version 330 core

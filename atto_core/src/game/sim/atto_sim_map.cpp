@@ -415,9 +415,10 @@ namespace atto {
     }
 
     struct RollBackEnt {
+        f32 pt;
+        fp2 lp;
         fp2 p;
         fp2 dest;
-        glm::vec2 vp;
     };
 
     struct GameState {
@@ -428,13 +429,13 @@ namespace atto {
 
     void SimMap::Update( Core * core, f32 dt ) {
         //ScopedClock timer( "Update", core );
-        static FixedList<GameState, 10000> gameStates = {};
-
+        static GameState gs = {};
+        static SyncQueues sync = {};
         static bool inited = false;
         if ( inited == false ) {
+            sync.Start( 200, SIM_DT_FLOAT );
             inited = true;
-            GameState & gs = gameStates.AddEmpty();
-            gs.turnNumber = gameStates.GetCount() - 1;
+            gs.turnNumber = 1;
             gs.e1.p = Fp2( 200, 200 );
             gs.e1.dest = gs.e1.p;
             gs.e2.p = Fp2( 400, 200 );
@@ -462,68 +463,10 @@ namespace atto {
                     switch( msg.type ) {
                         case NetworkMessageType::MAP_TURN:
                         {
-                            i32 offset = 0;
-                            MapTurn turn = NetworkMessagePop<MapTurn>( msg, offset );
-
-                            if ( turn.madeMove == true ) {
-                                i32 index = turn.turnNumber; 
-
-                                GameState lastGs = gameStates.Last();
-
-                                for ( i32 i = index; i < gameStates.GetCount(); i++ ) {
-                                    gameStates[ i ] = gameStates[ i - 1 ];
-                                    GameState & recomputedGs = gameStates[ i ];
-                                    if ( i == index ) {
-                                        if ( localPlayerNumber.value == 1 ) {
-                                            recomputedGs.e2.dest = turn.moveLoc;
-                                        } else {
-                                            recomputedGs.e1.dest = turn.moveLoc;
-                                        }
-                                    }
-                                    if ( FpDistance( recomputedGs.e1.p, recomputedGs.e1.dest ) > Fp( 5 ) ) {
-                                        recomputedGs.e1.p = recomputedGs.e1.p + FpNormalize( recomputedGs.e1.dest - recomputedGs.e1.p ) * Fp( 100 ) * SIM_DT;
-                                    }
-                                    if ( FpDistance( recomputedGs.e2.p, recomputedGs.e2.dest ) > Fp( 5 ) ) {
-                                        recomputedGs.e2.p = recomputedGs.e2.p + FpNormalize( recomputedGs.e2.dest - recomputedGs.e2.p ) * Fp( 100 ) * SIM_DT;
-                                    }
-                                }
-
-                                GameState &newLast= gameStates.Last();
-                                newLast.e1.vp = lastGs.e1.vp;
-                                newLast.e2.vp = lastGs.e2.vp;
-                            }
-
+                           
                         } break;
                     }
                 }
-
-                GameState & gs = gameStates.Last();
-                gs.turnNumber = gameStates.GetCount();
-
-                if ( mousePressed ) {
-                    mousePressed = false;
-                    if ( localPlayerNumber.value == 1 ) {
-                        gs.e1.dest = Fp2( mousePosWorld );
-                        localMapTurn.madeMove = true;
-                        localMapTurn.moveLoc = gs.e1.dest;
-                    } else {
-                        gs.e2.dest = Fp2( mousePosWorld );
-                        localMapTurn.madeMove = true ;
-                        localMapTurn.moveLoc = gs.e2.dest;
-                    }
-                }
-
-                
-                if ( FpDistance( gs.e1.p, gs.e1.dest ) > Fp( 5 ) ) {
-                    gs.e1.p = gs.e1.p + FpNormalize( gs.e1.dest - gs.e1.p ) * Fp( 100 ) * SIM_DT;
-                }
-                if ( FpDistance( gs.e2.p, gs.e2.dest ) > Fp( 5 ) ) {
-                    gs.e2.p = gs.e2.p + FpNormalize( gs.e2.dest - gs.e2.p ) * Fp( 100 ) * SIM_DT;
-                }
-
-                gameStates.Add( gs );
-
-                localMapTurn.turnNumber = gs.turnNumber;
 
                 ZeroStruct( msg );
                 msg.type = NetworkMessageType::MAP_TURN;
@@ -537,44 +480,63 @@ namespace atto {
         }
         else {
             dtAccumulator += dt;
-            if ( dtAccumulator > SIM_DT_FLOAT ) {
-                GameState & gs = gameStates.Last();
-                gs.turnNumber = gameStates.GetCount();
+            if ( dtAccumulator >= SIM_DT_FLOAT ) {
+                dtAccumulator = 0;
 
-                dtAccumulator -= SIM_DT_FLOAT;
-                if ( mousePressed ) {
-                    mousePressed = false;
-                    if ( localPlayerNumber.value == 1 ) {
-                        gs.e1.dest = Fp2( mousePosWorld );
-                    } else {
-                        gs.e2.dest = Fp2( mousePosWorld );
-                    }
+                sync.AddTurn(localPlayerNumber, localMapTurn);
+                sync.AddTurn(PlayerNumber::Create(2), localMapTurn);
+                sync.CanTurn();
+                MapTurn *turn = sync.GetNextTurn( localPlayerNumber );
+                if ( turn->madeMove == true ) {
+                    gs.e1.dest = turn->moveLoc;
+                    ATTOINFO( "t = %f ", (core->GetTheCurrentTime() - turn->moveTime) * 1000.0f) ;
                 }
 
+                sync.FinishTurn();
+                ZeroStruct( localMapTurn );
+
                 if ( FpDistance( gs.e1.p, gs.e1.dest ) > Fp( 5 ) ) {
+                    gs.e1.pt = 0.0f;
+                    gs.e1.lp = gs.e1.p;
                     gs.e1.p = gs.e1.p + FpNormalize( gs.e1.dest - gs.e1.p ) * Fp( 100 ) * SIM_DT;
                 }
                 if ( FpDistance( gs.e2.p, gs.e2.dest ) > Fp( 5 ) ) {
+                    gs.e2.pt = 0.0f;
+                    gs.e2.lp = gs.e2.p;
                     gs.e2.p = gs.e2.p + FpNormalize( gs.e2.dest - gs.e2.p ) * Fp( 100 ) * SIM_DT;
                 }
-
-                gameStates.Add( gs );
             }
         }
 
-        GameState & gs = gameStates.Last();
+        if ( mousePressed ) {
+            mousePressed = false;
+            if ( localPlayerNumber.value == 1 ) {
+                localMapTurn.madeMove = true;
+                localMapTurn.moveLoc = Fp2( mousePosWorld );
+                localMapTurn.moveTime = (f32)core->GetTheCurrentTime();
+            } else {
+                localMapTurn.madeMove = true;
+                localMapTurn.moveLoc = Fp2( mousePosWorld );
+            }
+        }
+
         //spriteDrawContext->DrawCircle( ToVec2( gs.e1.p ), 4 );
         //spriteDrawContext->DrawCircle( ToVec2( gs.e2.p ), 4 );
 
         //f32 visMove = ( 1 - glm::exp( -dt * 16 ) );
         //gs.e1.vp += ( ToVec2( gs.e1.p ) - gs.e1.vp ) * visMove;
         //gs.e2.vp += ( ToVec2( gs.e2.p ) - gs.e2.vp ) * visMove;
+        gs.e1.pt += dt;
+        gs.e2.pt += dt;
 
-        gs.e1.vp = glm::mix( gs.e1.vp, ToVec2( gs.e1.p ), dt * 10 );
-        gs.e2.vp = glm::mix( gs.e2.vp, ToVec2( gs.e2.p ), dt * 10 );
+        f32 nt1 = glm::clamp( gs.e1.pt / SIM_DT_FLOAT, 0.0f, 1.0f );
+        glm::vec2 vp1 = glm::mix( ToVec2( gs.e1.lp ), ToVec2( gs.e1.p ), nt1 );
 
-        spriteDrawContext->DrawCircle( gs.e1.vp, 4 );
-        spriteDrawContext->DrawCircle( gs.e2.vp, 4 );
+        f32 nt2 = glm::clamp( gs.e2.pt / SIM_DT_FLOAT, 0.0f, 1.0f );
+        glm::vec2 vp2 = glm::mix( ToVec2( gs.e2.lp ), ToVec2( gs.e2.p ), nt2 );
+
+        spriteDrawContext->DrawCircle( vp1, 4 );
+        spriteDrawContext->DrawCircle( vp2, 4 );
 
         //DrawContext * backgroundDrawContext = core->RenderGetDrawContext( 1, true );
         DrawContext * uiDrawContext = core->RenderGetDrawContext( 2, true );
