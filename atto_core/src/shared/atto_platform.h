@@ -17,6 +17,8 @@ namespace atto {
     i64 PlatformGetFileSize( const char * path );
     void PlatformRendererCreateTexture( class TextureResource * textureResource );
     void PlatformRendererCreateAudio( class AudioResource * audioResource );
+    void PlatformCopyTextToClipBoard( const char * text );
+    LargeString PlatformCopyTextFromClipBoard();
     GrowableList<LargeString> PlatformGetAllFilesInFolderAndSubFolders( const char * folderPath, const char * filter );
 }
 

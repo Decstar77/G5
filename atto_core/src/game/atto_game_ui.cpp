@@ -116,6 +116,8 @@ namespace atto {
             SUB_MENU_MULTIPLAYER,
             SUB_MENU_MAP_EDITOR,
             SUB_MENU_OPTIONS,
+            SUB_SUB_MENU_MULTIPLAYER_HOST,
+            SUB_SUB_MENU_MULTIPLAYER_JOIN,
             SUB_SUB_MENU_OPTIONS_GRAPHICS,
             SUB_SUB_MENU_OPTIONS_AUDIO,
         };
@@ -140,9 +142,8 @@ namespace atto {
             if( nk_widget_is_hovered( ctx ) ) { currHoveredItem = hoverItemCounter; }
             if( nk_button_label( ctx, "MultiPlayer" ) ) {
                 core->AudioPlay( sndClick );
-                if ( core->NetworkIsConnected() == false ) {
-                    core->NetworkConnect();
-                }
+                subMenu = SUB_MENU_MULTIPLAYER;
+                NetworkCreateAndConnectNode();
             }
             ++hoverItemCounter;
             if( nk_widget_is_hovered( ctx ) ) { currHoveredItem = hoverItemCounter; }
@@ -169,7 +170,70 @@ namespace atto {
         }
         nk_end( ctx );
 
-        
+        if ( subMenu == SUB_MENU_MULTIPLAYER ) {
+            if ( nk_begin( ctx, "SubMulti", nk_rect( startX + 5 + winWidth, startY + 30 + 5, winWidth - 10, winHeight - 30 - 10 ), NK_WINDOW_BORDER | NK_WINDOW_NO_SCROLLBAR ) ) {
+                nk_layout_row_dynamic( ctx, ( winHeight - 30 ) / 7.58f, 1 );
+                NetworkStatus netStat = NetworkGetStatus();
+                if ( netStat == NetworkStatus::LISTENING_FOR_CONNECTION ) { nk_widget_disable_begin( ctx ); }
+                ++hoverItemCounter;
+                if( nk_widget_is_hovered( ctx ) ) { currHoveredItem = hoverItemCounter; }
+                if( nk_button_label( ctx, "Host" ) ) {
+                    core->AudioPlay( sndClick );
+                    NetworkStartHost();
+                    subSubMenu = SUB_SUB_MENU_MULTIPLAYER_HOST;
+                }
+                ++hoverItemCounter;
+                if( nk_widget_is_hovered( ctx ) ) { currHoveredItem = hoverItemCounter; }
+                if( nk_button_label( ctx, "Join" ) ) {
+                    core->AudioPlay( sndClick );
+                    subSubMenu = SUB_SUB_MENU_MULTIPLAYER_JOIN;
+                }
+                if ( netStat == NetworkStatus::LISTENING_FOR_CONNECTION ) { nk_widget_disable_end( ctx ); }
+
+                ++hoverItemCounter;
+                if( nk_widget_is_hovered( ctx ) ) { currHoveredItem = hoverItemCounter; }
+                nk_label( ctx, "--Status--", NK_TEXT_CENTERED );
+                const char * status = NetworkGetStatusText();
+                ++hoverItemCounter;
+                if( nk_widget_is_hovered( ctx ) ) { currHoveredItem = hoverItemCounter; }
+                nk_label( ctx, status, NK_TEXT_CENTERED );
+            }
+            nk_end( ctx );
+
+            if ( subSubMenu == SUB_SUB_MENU_MULTIPLAYER_HOST ) {
+                f32 subWinWidth = 300; //winWidth * 3.2f - 10;
+                if( nk_begin( ctx, "SubMutliHost", nk_rect( startX + 5 + winWidth * 2, startY + 30 + 5, subWinWidth, winHeight - 30 - 10 ), NK_WINDOW_BORDER | NK_WINDOW_NO_SCROLLBAR ) ) {
+                    const float ratio[] = { 25, 175, 80 };
+                    nk_layout_row( ctx, NK_STATIC, ( winHeight - 30 ) / 7.58f, 3, ratio );
+                    nk_label( ctx, "Ip", NK_TEXT_LEFT );
+                    nk_label( ctx, "192.192.192.192", NK_TEXT_LEFT );
+                    if( nk_button_label( ctx, "Copy" ) ) {
+                        core->AudioPlay( sndClick );
+                        const char * ipStr = NetworkGetIp();
+                        PlatformCopyTextToClipBoard( ipStr );
+                    }
+                }
+                nk_end( ctx );
+            }
+            if ( subSubMenu == SUB_SUB_MENU_MULTIPLAYER_JOIN ) {
+                f32 subWinWidth = 420; //winWidth * 3.2f - 10;
+                if( nk_begin( ctx, "SubMutliHost", nk_rect( startX + 5 + winWidth * 2, startY + 30 + 5, subWinWidth, winHeight - 30 - 10 ), NK_WINDOW_BORDER | NK_WINDOW_NO_SCROLLBAR ) ) {
+                    const float ratio[] = { 25, 175, 100, 80 };
+                    nk_layout_row( ctx, NK_STATIC, ( winHeight - 30 ) / 7.58f, 4, ratio );
+                    nk_label( ctx, "Ip", NK_TEXT_LEFT );
+                    static LargeString text = {};
+                    nk_edit_string(ctx, NK_EDIT_SIMPLE, text.GetCStr(), text.GetLengthPtr(), 64, nk_filter_default);
+                    if( nk_button_label( ctx, "Paste" ) ) {
+                        text = PlatformCopyTextFromClipBoard();
+                    }
+                    if( nk_button_label( ctx, "Join" ) ) {
+                        NetworkStartClient( text.GetCStr() );
+                    }
+                }
+                nk_end( ctx );
+            }
+        }
+
         if ( subMenu == SUB_MENU_OPTIONS ) {
             if ( nk_begin( ctx, "SubOptions", nk_rect( startX + 5 + winWidth, startY + 30 + 5, winWidth - 10, winHeight - 30 - 10 ), NK_WINDOW_BORDER | NK_WINDOW_NO_SCROLLBAR ) ) {
                 nk_layout_row_dynamic( ctx, ( winHeight - 30 ) / 7.58f, 1 );

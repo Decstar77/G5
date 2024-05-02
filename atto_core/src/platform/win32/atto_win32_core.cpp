@@ -22,10 +22,9 @@ namespace atto {
         window.Initialize( this );
         GLStart();
         NuklearUIInitialize();
-        NetworkStart();
         //VkStart();
         AudioInitialize();
-        taskScheduler.Initialize( 4 );
+        JobInitialize();
 
         LoadAllAssets();
 
@@ -64,7 +63,6 @@ namespace atto {
                 }
             }
 
-
             bool skipFrame = false;
             if( nextGameMode != nullptr ) {
                 currentGameMode->Shutdown( this );
@@ -85,6 +83,7 @@ namespace atto {
             }
 
             AudioUpdate();
+            NetworkUpdate();
 
             window.SwapBuffers();
 
@@ -94,10 +93,9 @@ namespace atto {
             this->deltaTime = (f32)( endTime - startTime );
             startTime = endTime;
         }
-        
-    #if ATTO_EDITOR
-        //EngineImgui::Shutdown();
-    #endif
+
+        JobShutdown();
+        NetworkStop();
     }
 
     f64 WindowsCore::GetTheCurrentTime() const {

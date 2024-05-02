@@ -19,9 +19,9 @@ namespace atto {
         DrawContext * draw = core->RenderGetDrawContext( 0, true );
         draw->DrawTextureBL( background, glm::vec2( 0, 0 ) );
 
-        if( core->NetworkIsConnected() ) {
+        if( NetworkGetStatus() == NetworkStatus::RUNNING_AS_CLIENT ) {
             NetworkMessage msg = {};
-            while( core->NetworkRecieve( msg ) ) {
+            while( NetworkRecieve( msg ) ) {
                 switch( msg.type ) {
                     case NetworkMessageType::NONE:
                         INVALID_CODE_PATH;
@@ -39,11 +39,7 @@ namespace atto {
 
                         core->MoveToGameMode( new GameMode_MultiplayerGame( parms ) );
                     } break;
-                    case NetworkMessageType::ACTION_BUFFER: {
-                        // INVESTIGATE WHY WE GET SOMTHING BEFORE GAME STARTS!
-                    } break;
-                    case NetworkMessageType::STREAM_DATA:
-                    {
+                    case NetworkMessageType::MAP_TURN: {
                         // INVESTIGATE WHY WE GET SOMTHING BEFORE GAME STARTS!
                     } break;
                     default:
@@ -54,8 +50,8 @@ namespace atto {
         }
 
         FontHandle fontHandle = core->ResourceGetFont( "default" );
-        SmallString status = core->NetworkGetStatusText();
-        draw->DrawTextScreen( fontHandle, glm::vec2( 128, 128 ), 32, status.GetCStr() );
+        //SmallString status = core->NetworkGetStatusText();
+        //draw->DrawTextScreen( fontHandle, glm::vec2( 128, 128 ), 32, status.GetCStr() );
 
         SmallString s = StringFormat::Small( "fps=%f", 1.0f / dt );
         draw->DrawTextScreen( fontHandle, glm::vec2( 528, 200 ), 32, s.GetCStr() );

@@ -1,3 +1,4 @@
+#if 0
 #include "atto_server_win32.h"
 #include "../../atto_core/src/shared/atto_defines.h"
 
@@ -66,3 +67,4 @@ namespace atto {
     void PlatformRendererCreateTexture( class TextureResource * textureResource ) {}
     void PlatformRendererCreateAudio( class AudioResource * audioResource ) {}
 }
+#endif

@@ -1,5 +1,5 @@
 #pragma once
-
+#if 0
 #include "../../atto_core/src/shared/atto_defines.h"
 #include "../../atto_core/src/shared/atto_containers.h"
 #include "../../atto_core/src/shared/atto_binary_file.h"
@@ -30,3 +30,4 @@ namespace atto {
     };
 }
 
+#endif

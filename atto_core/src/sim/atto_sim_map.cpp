@@ -22,15 +22,20 @@ namespace atto {
         Action_CommandSpawnEntity( EntityType::UNIT_SCOUT, glm::vec2( 400, 200 ), p2, t2 );
     }
 
-    void SimMap::SimUpdate( f32 dt ) {
-        ZeroStruct( simActionBuffer );
-        streamData.Clear();
+    bool SimMap::SimDoneTicks() {
+        return simTickNumber == simTickStopNumber;
+    }
 
-        simTime += dt;
+    void SimMap::SimNextTick( f32 dt ) {
         simTimeAccum += dt;
         if ( simTimeAccum >= tickTime ) {
             simTimeAccum -= tickTime;
-            streamDataCounter++;
+            if ( simTickNumber == simTickStopNumber ) {
+                ATTOWARN( "Can't tick anymore :( " );
+                return;
+            }
+
+            simTickNumber++;
 
             actionActiveEntities.Clear();
             entityPool.GatherActiveObjs( actionActiveEntities );
@@ -45,16 +50,15 @@ namespace atto {
                 if ( ent->unit.state == UnitState::MOVING ) {
                     glm::vec2 dir = glm::normalize( ent->dest - ent->pos ) * 100.0f;
                     ent->pos += dir * tickTime;
-                    ent->posTimeline.AddFrame( ent->pos );
 
-                    if ( glm::distance( ent->pos, ent->dest ) < 5.0f ){
+                    if ( glm::distance( ent->pos, ent->dest ) < 5.0f ) {
                         ent->unit.state = UnitState::IDLE;
                     }
 
                 } else if ( ent->unit.state == UnitState::ATTACKING ) {
                     SimEntity * targetEnt = entityPool.Get( ent->target );
                     if ( targetEnt != nullptr ) {
-                        if ( glm::distance( ent->pos, targetEnt->pos ) > 25.0f ){
+                        if ( glm::distance( ent->pos, targetEnt->pos ) > 25.0f ) {
                             glm::vec2 dir = glm::normalize( targetEnt->pos - ent->pos ) * 100.0f;
                             ent->pos += dir * tickTime;
                         } else {
@@ -81,23 +85,20 @@ namespace atto {
                     }
                 }
             }
+        }
+    }
 
-            for ( i32 entityIndex = 0; entityIndex < entityCount; entityIndex++ ) {
-                SimEntity * ent = actionActiveEntities[ entityIndex ];
-                if ( ent->lastPos != ent->pos ) {
-                    SimStreamData data = {};
-                    data.handle = ent->handle;
-                    data.pos = ent->pos;
-                    ent->posTimeline.AddFrame( ent->pos );
-                    streamData.Add ( data );
-                }
-            }
+    void SimMap::SimNextTurn( MapTurn * player1Turn, MapTurn * player2Turn, i32 tickCount ) {
+        simTickStopNumber += tickCount;
+        if ( player1Turn != nullptr ) {
+            ApplyActions( &player1Turn->actions );
+        }
+        if ( player2Turn != nullptr ) {
+            ApplyActions( &player2Turn->actions );
         }
     }
 
     void SimMap::ApplyActions( MapActionBuffer * actionBuffer ) {
-        ZeroStruct( simActionBuffer );
-
         // @NOTE: For results from these rpc actions
         actionActiveEntities.Clear();
         entityPool.GatherActiveObjs( actionActiveEntities );
@@ -184,7 +185,6 @@ namespace atto {
             entity->playerNumber = createInfo.playerNumber;
             entity->teamNumber = createInfo.teamNumber;
             entity->pos = createInfo.pos;
-            entity->posTimeline.AddFrame( entity->pos );
             entity->vis = VisMap_OnSpawnEntity( createInfo );
             entity->collider.type = ColliderType::COLLIDER_TYPE_AXIS_BOX;
             entity->collider.box.min = glm::vec2( -6, -6 );

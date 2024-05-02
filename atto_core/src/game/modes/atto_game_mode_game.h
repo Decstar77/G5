@@ -14,14 +14,6 @@ namespace atto {
         i32         otherPlayerNumber;
     };
 
-    class SimCommunicator_SinglePlayer : public SimCommunicator {
-    public:
-        virtual void SendToAllClients( MapActionBuffer * actionBuffer ) override;
-
-    public:
-        VisMap * visMap = nullptr;
-    };
-
     class GameMode_SinglePlayerGame : public GameMode {
     public:
         GameMode_SinglePlayerGame( GameStartParams parms ) : startParms( parms ) {};
@@ -33,7 +25,8 @@ namespace atto {
 
     public:
         GameStartParams                         startParms;
-        SimCommunicator_SinglePlayer            communicator;
+        i32                                     turnNumber = 1;
+        f32                                     turnAccum = 0;
         VisMap                                  visMap;
     };
 
@@ -48,7 +41,9 @@ namespace atto {
 
     public:
         GameStartParams                         startParms;
-        i32                                     visStreamDataCounter = 0;
+        i32                                     turnNumber = 0;
+        MapTurn                                 localTurn = {};
+        FixedQueue<MapTurn, 2>                  peerTurns = {};
         VisMap                                  visMap;
     };
 }

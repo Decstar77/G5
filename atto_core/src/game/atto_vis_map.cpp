@@ -63,10 +63,6 @@ namespace atto {
         static SpriteResource * sprHoverUnit = ResourceGetAndLoadSprite( "res/game/ents/ui_pick_unit_0_16x16.json" );
         static SpriteResource * sprSelectUnit = ResourceGetAndLoadSprite( "res/game/ents/ui_select_unit_0_16x16.json" );
 
-        visTime += dt;
-
-        ZeroStruct( visActionBuffer );
-
         DrawContext * tileDrawContext = core->RenderGetSpriteDrawContext( 0 );
         DrawContext * spriteDrawContext = core->RenderGetDrawContext( 1 );
         DrawContext * debugDrawContext = core->RenderGetDrawContext( 7 );
@@ -117,7 +113,7 @@ namespace atto {
             inputDragEnd = mousePosWorld;
             if ( core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) == true ) {
                 inputMode = InputMode::NONE;
-                visActionBuffer.Request_SelectEntities( playerNumber, inputDragSelection.GetSpan() );
+                actionBuffer.Request_SelectEntities( playerNumber, inputDragSelection.GetSpan() );
             }
         }
 
@@ -139,7 +135,7 @@ namespace atto {
             SimEntity * simEnt = entities[ entityIndex ];
             VisEntity * visEnt = simEnt->vis;
 
-            glm::vec2 pos = simEnt->posTimeline.UpdateAndGet( dt );
+            glm::vec2 pos = simEnt->pos;
             Collider2D wsCollider = simEnt->ColliderWorldSpace( pos );
 
             bool hoveredDrag = false;
@@ -155,44 +151,44 @@ namespace atto {
                 }
             }
 
-            if ( simEnt->type == EntityType::UNIT_SCOUT ) {
-                glm::vec2 dir = glm::vec2( 0, 0 );
-                bool isMoving = simEnt->posTimeline.GetMovingDirection( dir );
-                if ( isMoving == true ) {
-                    dir = glm::normalize( dir ); // @SPEED: Is there a way to rid the normalize ?
-                    const glm::vec2 upDir = glm::vec2( 0, 1 );
-                    const glm::vec2 downDir = glm::vec2( 0, -1 );
-                    constexpr f32 reqAngle = glm::radians( 45.0f );
-                    if ( glm::acos( glm::dot( dir, upDir ) ) < reqAngle ) {
-                        visEnt->facingDir = FacingDirection::UP;
-                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankWalkUp, true );
-                    } else if ( glm::acos( glm::dot( dir, downDir ) ) < reqAngle ) {
-                        visEnt->facingDir = FacingDirection::DOWN;
-                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankWalkDown, true );
-                    } else {
-                        visEnt->facingDir = glm::sign( dir.x ) >= 0 ? FacingDirection::RIGHT : FacingDirection::LEFT;
-                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankWalkSide, true );
-                    }
-                } else if ( simEnt->unit.state == UnitState::ATTACKING ) {
-                    if ( visEnt->facingDir == FacingDirection::LEFT || visEnt->facingDir == FacingDirection::RIGHT ) {
-                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankAttackSide, true );
-                    } else if ( visEnt->facingDir == FacingDirection::UP ) {
-                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankAttackUp, true );
-                    } else {
-                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankAttackDown, true );
-                    }
-                } else {
-                    if ( visEnt->facingDir == FacingDirection::LEFT || visEnt->facingDir == FacingDirection::RIGHT ) {
-                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankIdleSide, true );
-                    } else if ( visEnt->facingDir == FacingDirection::UP ) {
-                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankIdleUp, true );
-                    } else {
-                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankIdleDown, true );
-                    }
-                }
-            } else if ( simEnt->type == EntityType::STRUCTURE_CITY_CENTER ) {
-
-            }
+//            if ( simEnt->type == EntityType::UNIT_SCOUT ) {
+//                glm::vec2 dir = glm::vec2( 0, 0 );
+//                bool isMoving = simEnt->posTimeline.GetMovingDirection( dir );
+//                if ( isMoving == true ) {
+//                    dir = glm::normalize( dir ); // @SPEED: Is there a way to rid the normalize ?
+//                    const glm::vec2 upDir = glm::vec2( 0, 1 );
+//                    const glm::vec2 downDir = glm::vec2( 0, -1 );
+//                    constexpr f32 reqAngle = glm::radians( 45.0f );
+//                    if ( glm::acos( glm::dot( dir, upDir ) ) < reqAngle ) {
+//                        visEnt->facingDir = FacingDirection::UP;
+//                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankWalkUp, true );
+//                    } else if ( glm::acos( glm::dot( dir, downDir ) ) < reqAngle ) {
+//                        visEnt->facingDir = FacingDirection::DOWN;
+//                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankWalkDown, true );
+//                    } else {
+//                        visEnt->facingDir = glm::sign( dir.x ) >= 0 ? FacingDirection::RIGHT : FacingDirection::LEFT;
+//                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankWalkSide, true );
+//                    }
+//                } else if ( simEnt->unit.state == UnitState::ATTACKING ) {
+//                    if ( visEnt->facingDir == FacingDirection::LEFT || visEnt->facingDir == FacingDirection::RIGHT ) {
+//                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankAttackSide, true );
+//                    } else if ( visEnt->facingDir == FacingDirection::UP ) {
+//                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankAttackUp, true );
+//                    } else {
+//                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankAttackDown, true );
+//                    }
+//                } else {
+//                    if ( visEnt->facingDir == FacingDirection::LEFT || visEnt->facingDir == FacingDirection::RIGHT ) {
+//                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankIdleSide, true );
+//                    } else if ( visEnt->facingDir == FacingDirection::UP ) {
+//                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankIdleUp, true );
+//                    } else {
+//                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankIdleDown, true );
+//                    }
+//                }
+//            } else if ( simEnt->type == EntityType::STRUCTURE_CITY_CENTER ) {
+//
+//            }
 
             visEnt->spriteAnimator.Update( core, dt );
             f32 flipFacing = visEnt->facingDir == FacingDirection::LEFT ? -1.0f : 1.0f;
@@ -218,16 +214,16 @@ namespace atto {
 
         if( core->InputMouseButtonJustPressed( MouseButton::MOUSE_BUTTON_2 ) == true ) {
             if ( hoveredEntity == nullptr ) {
-                visActionBuffer.Request_MoveUnit( playerNumber, mousePosWorld );
+                actionBuffer.Request_MoveUnit( playerNumber, mousePosWorld );
             } else if ( hoveredEntity->teamNumber != teamNumber ) {
-                visActionBuffer.Request_AttackUnit( playerNumber, hoveredEntity->handle );
+                actionBuffer.Request_AttackUnit( playerNumber, hoveredEntity->handle );
             }
         }
 
         FontHandle fontHandle = core->ResourceGetFont( "default" );
         SmallString fpsText = StringFormat::Small( "fps=%f", 1.0f / dt );
         debugDrawContext->DrawTextScreen( fontHandle, glm::vec2( 0, 320 ), 20, fpsText.GetCStr() );
-        SmallString pingText = StringFormat::Small( "ping=%d", core->NetworkGetPing() );
+        SmallString pingText = StringFormat::Small( "ping=%d", NetworkGetPing() );
         debugDrawContext->DrawTextScreen( fontHandle, glm::vec2( 0, 340 ), 20, pingText.GetCStr() );
 
         //core->RenderSubmit( tileDrawContext, true );

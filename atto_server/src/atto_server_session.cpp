@@ -1,3 +1,4 @@
+#if 0
 #include "atto_server_session.h"
 
 #include "../../vendor/enet/include/enet.h"
@@ -24,5 +25,5 @@ namespace atto {
         }
     }
 }
-
+#endif
 

@@ -9,7 +9,7 @@
 #include "../shared/atto_clock.h"
 #include "../shared/atto_resources.h"
 #include "../shared/atto_reflection.h"
-#include "../shared/enki_task_scheduler.h"
+#include "../shared/atto_jobs.h"
 
 #include "atto_client.h"
 namespace atto {
@@ -362,18 +362,7 @@ namespace atto {
         virtual bool                        WindowOpenNativeFileDialog( const char * basePath, const char * filter, LargeString & res ) = 0;
         virtual bool                        WindowOpenNativeFolderDialog( const char * basePath, LargeString & res ) = 0;
 
-        void                                NetworkStart();
-        void                                NetworkConnect();
-        bool                                NetworkIsConnected();
-        void                                NetworkDisconnect();
-        SmallString                         NetworkGetStatusText();
-        void                                NetworkSend( const NetworkMessage & msg );
-        bool                                NetworkRecieve( NetworkMessage & msg );
-        u32                                 NetworkGetPing();
-
         virtual void                        Run( int argc, char ** argv ) = 0;
-
-        enki::TaskScheduler                 taskScheduler = {}; // @TODO: Make private
 
         void                                NuklearUIInitialize();
         void                                NuklearUIScroll( f64 xoff, f64 yoff );
@@ -397,7 +386,6 @@ namespace atto {
         glm::vec2                           listenerPos;
 
         FrameInput                          input = {};
-        ClientState                         client = {};
         FixedList<DrawContext, 8>           drawContexts = {};
     };
 

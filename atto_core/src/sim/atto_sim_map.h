@@ -26,12 +26,6 @@ namespace atto {
 
     inline bool IsUnitType( EntityType t ) { return t == EntityType::UNIT_SCOUT; }
 
-    struct SimStreamData {
-        EntityHandle handle;
-        glm::vec2 pos;
-        bool isAttacking;
-    };
-
     struct SimEntity {
         EntityHandle                handle;
         EntityType                  type;
@@ -40,7 +34,6 @@ namespace atto {
         FixedList<PlayerNumber, 4>  selectedBy;
         glm::vec2                   lastPos;
         glm::vec2                   pos;
-        PosTimeline                 posTimeline;
         Collider2D                  collider;
         Unit                        unit;
         glm::vec2                   dest;
@@ -57,22 +50,30 @@ namespace atto {
         TeamNumber teamNumber;
     };
    
+    struct MapTurn {
+        i64 checkSum;
+        i32 turnNumber;
+        MapActionBuffer actions;
+    };
+
     class SimMap {
     public:
         void        SimInitialize();
-        void        SimUpdate( f32 dt );
-        void        ApplyActions( MapActionBuffer * actionBuffer );
+        bool        SimDoneTicks();
+        void        SimNextTick( f32 dt );
+        void        SimNextTurn( MapTurn * player1Turn, MapTurn * player2Turn, i32 tickCount );
 
     public:
-        FixedObjectPool<SimEntity, MAX_ENTITY_COUNT> entityPool = {};
-        MapActionBuffer                              simActionBuffer;
-        i32                                          streamDataCounter = 0;
-        FixedList<SimStreamData, MAX_ENTITY_COUNT>   streamData = {};
+        i32                                             simTickNumber = 0;
+        i32                                             simTickStopNumber = 0;
+        FixedObjectPool<SimEntity, MAX_ENTITY_COUNT>    entityPool = {};
 
     protected:
         virtual VisEntity *     VisMap_OnSpawnEntity( EntitySpawnCreateInfo createInfo ) { return nullptr; }
 
     private:
+        void        ApplyActions( MapActionBuffer * actionBuffer );
+
         void        Action_RequestMove( PlayerNumber playerNumber, glm::vec2 p );
         void        Action_RequestAttack( PlayerNumber playerNumber, EntityHandle handle );
         void        Action_RequestSelectEntities( PlayerNumber playerNumber, Span<EntityHandle> entities );
@@ -81,7 +82,6 @@ namespace atto {
         SimEntity * Action_CommandSpawnEntity( EntityType type, glm::vec2 pos, PlayerNumber playerNumber, TeamNumber teamNumber );
         void        Action_CommandMove( EntityHandle entityHandle, glm::vec2 p1, glm::vec2 p2, f32 t1, f32 t2 );
 
-        f32                                         simTime = 0;
         f32                                         simTimeAccum = 0;
         FixedList<SimEntity *, MAX_ENTITY_COUNT>    actionActiveEntities = {};
     };

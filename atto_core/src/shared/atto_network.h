@@ -7,8 +7,8 @@ namespace atto {
         NONE,
         GAME_START,
 
-        ACTION_BUFFER,
-        STREAM_DATA,
+        MAP_TURN,
+        ECHO,
     };
 
 #define NETWORK_MESSAGE_MAX_BYTES 512

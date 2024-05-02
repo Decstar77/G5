@@ -79,6 +79,75 @@ namespace atto {
         return FileTimeToUInt64(lastWriteTime);
     }
 
+    void PlatformCopyTextToClipBoard( const char * text ) {
+        if( !OpenClipboard( NULL ) ) {
+            LoggerLogOutput( LogLevel::ERR, "OsCopyTextToClipBoard :: Failed to open clipboard. Error: %d", GetLastError() );
+            return;
+        }
+
+        if( !EmptyClipboard() ) {
+            LoggerLogOutput( LogLevel::ERR, "OsCopyTextToClipBoard :: Failed to empty clipboard. Error: %d", GetLastError() );
+            CloseClipboard();
+            return;
+        }
+
+        size_t textLength = strlen( text ) + 1;
+        HGLOBAL hglbCopy = GlobalAlloc( GMEM_MOVEABLE, textLength );
+        if( hglbCopy == NULL ) {
+            LoggerLogOutput( LogLevel::ERR, "OsCopyTextToClipBoard :: Failed to allocate memory for clipboard. Error: %d", GetLastError() );
+            CloseClipboard();
+            return;
+        }
+
+        char * buffer = (char *)GlobalLock( hglbCopy );
+        if( buffer == NULL ) {
+            LoggerLogOutput( LogLevel::ERR, "OsCopyTextToClipBoard :: Failed to lock memory for clipboard. Error: %d", GetLastError() );
+            GlobalFree( hglbCopy );
+            CloseClipboard();
+            return;
+        }
+
+        memcpy( buffer, text, textLength );
+        GlobalUnlock( hglbCopy );
+
+        if( SetClipboardData( CF_TEXT, hglbCopy ) == NULL ) {
+            LoggerLogOutput( LogLevel::ERR, "OsCopyTextToClipBoard :: Failed to set clipboard data. Error: %d", GetLastError() );
+            GlobalFree( hglbCopy );
+            CloseClipboard();
+            return;
+        }
+
+        CloseClipboard();
+    }
+
+    LargeString PlatformCopyTextFromClipBoard() {
+        LargeString result = {};
+        if( !OpenClipboard( NULL ) ) {
+            LoggerLogOutput( LogLevel::ERR, "OsCopyTextFromClipBoard :: Failed to open clipboard. Error: %d", GetLastError() );
+            return result;
+        }
+
+        HANDLE hData = GetClipboardData( CF_TEXT );
+        if( hData == NULL ) {
+            LoggerLogOutput( LogLevel::ERR, "OsCopyTextFromClipBoard :: Failed to get clipboard data. Error: %d", GetLastError() );
+            CloseClipboard();
+            return result;
+        }
+
+        char * buffer = (char *)GlobalLock( hData );
+        if( buffer == NULL ) {
+            LoggerLogOutput( LogLevel::ERR, "OsCopyTextFromClipBoard :: Failed to lock clipboard data. Error: %d", GetLastError() );
+            CloseClipboard();
+            return result;
+        }
+
+        result.Add( buffer );
+        GlobalUnlock( hData );
+        CloseClipboard();
+
+        return result;
+    }
+
     // Function to write the call stack to a file
     //static void WriteMiniDump( EXCEPTION_POINTERS * pExceptionPointers ) {
     //    HANDLE hFile = CreateFile( L"crash_report.txt", GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL );

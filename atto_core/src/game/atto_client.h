@@ -3,33 +3,27 @@
 #include "../shared/atto_containers.h"
 #include "../shared/atto_network.h"
 
-struct ENetHost;
-struct ENetPeer;
-
 namespace atto {
-    enum PlayerConnectState {
-        PLAYER_CONNECTION_STATE_CONNECTING = 0,
-        PLAYER_CONNECTION_STATE_SYNCHRONIZING,
-        PLAYER_CONNECTION_STATE_RUNNING,
-        PLAYER_CONNECTION_STATE_DISCONNECTED,
-        PLAYER_CONNECTION_STATE_DISCONNECTING,
+
+    enum class NetworkStatus {
+        NOT_STARTED = 0,
+        STARTING_NODE,
+        ATTEMPTING_JOIN,
+        WAITING_FOR_ADDRESS,
+        LISTENING_FOR_CONNECTION,
+        RUNNING_AS_HOST,
+        RUNNING_AS_CLIENT,
     };
 
-    inline SmallString PlayerConnectStateToString( PlayerConnectState state ) {
-        switch( state ) {
-            case PLAYER_CONNECTION_STATE_CONNECTING: return SmallString::FromLiteral( "Connecting" );
-            case PLAYER_CONNECTION_STATE_SYNCHRONIZING: return SmallString::FromLiteral( "Synchronizing" );
-            case PLAYER_CONNECTION_STATE_RUNNING: return SmallString::FromLiteral( "Running" );
-            case PLAYER_CONNECTION_STATE_DISCONNECTED: return SmallString::FromLiteral( "Disconnected" );
-            case PLAYER_CONNECTION_STATE_DISCONNECTING: return SmallString::FromLiteral( "Disconnecting" );
-            default: return SmallString::FromLiteral( "Unknown" );
-        }
-    }
-
-    struct  ClientState {
-        ENetPeer *              peer = nullptr;
-        ENetHost *              client = nullptr;
-        bool                    isConnected = false;
-        SmallString             statusText = {};
-    };
+    NetworkStatus                       NetworkCreateAndConnectNode();
+    NetworkStatus                       NetworkUpdate();
+    void                                NetworkStop();
+    void                                NetworkStartHost();
+    void                                NetworkStartClient( const char * ip );
+    NetworkStatus                       NetworkGetStatus();
+    const char *                        NetworkGetStatusText();
+    void                                NetworkSend( const NetworkMessage & msg );
+    bool                                NetworkRecieve( NetworkMessage & msg );
+    const char *                        NetworkGetIp();
+    u32                                 NetworkGetPing();
 }

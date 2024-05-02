@@ -795,8 +795,9 @@ namespace atto {
 
         void                                SetLength( const i32 & l );
         i32                                 GetLength() const;
-        const char * GetCStr() const;
-        char * GetCStr();
+        i32 *                               GetLengthPtr();
+        const char *                        GetCStr() const;
+        char *                              GetCStr();
         void                                CalculateLength();
         void                                Clear();
         FixedStringBase<SizeBytes> &        Add( const char & c );
@@ -865,6 +866,11 @@ namespace atto {
     template<u64 SizeBytes>
     i32 FixedStringBase<SizeBytes>::GetLength() const {
         return length;
+    }
+
+    template<u64 SizeBytes>
+    i32 * FixedStringBase<SizeBytes>::GetLengthPtr() {
+        return &length;
     }
 
     template<u64 SizeBytes>

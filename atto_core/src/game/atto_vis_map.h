@@ -74,7 +74,7 @@ namespace atto {
         virtual VisEntity *                         VisMap_OnSpawnEntity( EntitySpawnCreateInfo createInfo ) override;
 
         Core *                                          core = nullptr;
-        f32                                             visTime = 0;
+        MapActionBuffer                                 actionBuffer = {};
         glm::vec2                                       cameraPos = glm::vec2( 0, 0 );
         PlayerNumber                                    playerNumber = PlayerNumber::Create( -1 );
         TeamNumber                                      teamNumber = TeamNumber::Create(-1);
@@ -82,7 +82,6 @@ namespace atto {
         glm::vec2                                       inputDragStart = {};
         glm::vec2                                       inputDragEnd = {};
         GrowableList<EntityHandle>                      inputDragSelection = {};
-        MapActionBuffer                                 visActionBuffer = {};
         FixedObjectPool<VisEntity, MAX_ENTITY_COUNT>    visEntityPool = {};
         TileMap                                         tileMap = {};
     };
