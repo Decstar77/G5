@@ -13,6 +13,7 @@ namespace atto {
 
     void GameMode_SinglePlayerGame::Initialize( Core * core ) {
         visMap.playerNumber.value = 1;
+        visMap.teamNumber.value = 1;
         visMap.SimInitialize();
         visMap.VisInitialize( core );
 
@@ -103,10 +104,6 @@ namespace atto {
         }
 
         if ( visMap.SimDoneTicks() == true ) {
-            //static f32 timer = (f32)PlatformGetCurrentTime();
-            //ATTOINFO( "DOne %f", ((f32)PlatformGetCurrentTime() - timer) * 1000.0f );
-            //timer = (f32)PlatformGetCurrentTime();
-
             if ( peerTurns.IsEmpty() == false ) {
                 MapTurn peerTurn = peerTurns.Dequeue();
                 Assert( localTurn.turnNumber == peerTurn.turnNumber );

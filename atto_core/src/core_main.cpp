@@ -1,4 +1,26 @@
 
+/*
+    [ ] - Y-sorting
+    [X] - Move to fixed point
+    [X] - Fix circle rendering
+    [ ] - Live resource reloading.
+    [ ] - Store all resources in a single file.
+    [ ] - 3D Audio support.
+
+    [ ] - Basic path finding
+    [ ] - Unit arival circle.
+    [ ] - Player monies
+    [ ] - Fix font rendering, getting font resources
+    [ ] - Move button
+    [ ] - Stop button
+    [ ] - Hold button
+    [ ] - Patrol button
+    [ ] - Attack button
+*/
+
+#if 1
+#endif
+
 #include "platform/win32/atto_win32_core.h"
 
 using namespace atto;
@@ -13,13 +35,11 @@ MEMES:
 */
 
 /*
-* @TODO: Move to fixed point
-* @TODO: Y-sorting
-* @TODO: Fix circle rendering
-* @TODO: Live resource reloading.
-* @TODO: Store all resources in a single file.
-* @TODO: 3D Audio support.
-* @TODO: Move to vulkan rendering
+
+* 
+* @
+* 
+
 */
 
 /*

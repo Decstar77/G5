@@ -231,8 +231,9 @@ namespace atto {
     }
 
     void WindowsCore::Win32SetupCrashReporting() {
+    #if _RELEASE
         static backward::SignalHandling sh;
-        
+    #endif
     }
 
     bool WindowsCore::WindowOpenNativeFileDialog( const char * basePath, const char * filter, LargeString & res ) {

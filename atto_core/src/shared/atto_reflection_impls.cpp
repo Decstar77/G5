@@ -46,5 +46,4 @@ namespace atto {
         REFLECT_STRUCT_MEMBER( createInfo )
         REFLECT_STRUCT_MEMBER( frameActuations )
         REFLECT_STRUCT_END()
-
 }

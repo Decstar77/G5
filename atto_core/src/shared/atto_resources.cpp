@@ -3,9 +3,10 @@
 namespace atto {
 
     struct ResourceRegistry {
-        FixedList<TextureResource, 1024>              textures;
-        FixedList<AudioResource, 1024>              audios;
-        FixedList<SpriteResource, 1024>             sprites;
+        FixedList<TextureResource, 1024>                textures;
+        FixedList<AudioResource, 1024>                  audios;
+        FixedList<AudioGroupResource, 1024>             audioGroups;
+        FixedList<SpriteResource, 1024>                 sprites;
     };
 
     static ResourceRegistry resources = {};
@@ -46,9 +47,6 @@ namespace atto {
         audioResource->id = StringHash::Hash( name );
         audioResource->name = name;
         audioResource->volumeMultiplier = 1.0f;
-        audioResource->maxInstances = 1;
-        audioResource->stealMode = AudioStealMode::NONE;
-        audioResource->minTimeToPassForAnotherSubmission = 0.0f;
         audioResource->createInfo = createInfo;
 
         PlatformRendererCreateAudio( audioResource );
@@ -56,7 +54,39 @@ namespace atto {
         return audioResource;
     }
     
+    AudioResource * ResourceGetAndCreateAudio2D( const char * name ) {
+        AudioResourceCreateInfo createInfo = {};
+        createInfo.is2D = true;
+        return ResourceGetAndCreateAudio( name, createInfo );
+    }
+
     AudioResource * ResourceGetAndLoadAudio( const char * name ) {
+        return nullptr;
+    }
+
+    AudioGroupResource * ResourceGetAndCreateAudioGroup( const char * name, AudioGroupResourceCreateInfo * createInfo ) {
+        const i32 audioResourceGroupCount = resources.audioGroups.GetCount();
+        for( i32 groupIndex = 0; groupIndex < audioResourceGroupCount; groupIndex++ ) {
+            AudioGroupResource & groupResource = resources.audioGroups[ groupIndex ];
+            if( groupResource.name == name ) {
+                return &groupResource;
+            }
+        }
+
+        AudioGroupResource * groupResource = &resources.audioGroups.AddEmpty();
+        groupResource->id = StringHash::Hash( name );
+        groupResource->name = name;
+        groupResource->maxInstances = 1;
+        groupResource->maxInstances = createInfo->maxInstances;
+        groupResource->stealMode = createInfo->stealMode;
+        groupResource->minTimeToPassForAnotherSubmission = createInfo->minTimeToPassForAnotherSubmission;
+        groupResource->sounds = createInfo->sounds;
+
+        return groupResource;
+    }
+
+    AudioGroupResource * ResourceGetAndLoadAudioGroup( const char * name ) {
+        INVALID_CODE_PATH;
         return nullptr;
     }
 

@@ -7,8 +7,9 @@ namespace atto {
     constexpr i32 MAX_ENTITY_COUNT = 2048;
     constexpr i32 tickRate = 30; // 30 times a second
     constexpr f32 tickTime = 1.0f / tickRate;
-    constexpr i32 tickCount = 2;
-
+    constexpr fp  tickTimeFp = Fp( tickTime );
+    constexpr i32 tickCount = 5;
+    constexpr f32 turnIntervalMS = tickTime * ( f32 ) tickCount * 1000.0f;
 
     struct VariableKeyFrame {
         glm::vec2 value;

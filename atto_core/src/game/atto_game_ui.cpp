@@ -103,10 +103,14 @@ namespace atto {
             nk_label( ctx, "The Game Title", NK_TEXT_CENTERED );
         }
         nk_end( ctx );
-        
-        static AudioResource * sndClick = ResourceGetAndCreateAudio( "res/game/gui/main_menu_click.wav",{ true, false, 0, 0 } );
-        sndClick->maxInstances = 10;
-        sndClick->stealMode = AudioStealMode::OLDEST;
+
+        static AudioResource * sndClick = ResourceGetAndCreateAudio( "res/game/gui/main_menu_click.wav",{ true, false, 0, 0 } );        
+        AudioGroupResourceCreateInfo clickGroupCreateInfo = {};
+        clickGroupCreateInfo.maxInstances = 10;
+        clickGroupCreateInfo.stealMode = AudioStealMode::OLDEST;
+        clickGroupCreateInfo.sounds.Add( sndClick );
+        static AudioGroupResource * sndClickGroup = ResourceGetAndCreateAudioGroup( "ui_over_group", &clickGroupCreateInfo );
+
         static i32 currHoveredItem = 0;
         static i32 prevHoveredItem = 0;
         i32 hoverItemCounter = 0;
@@ -130,7 +134,7 @@ namespace atto {
             ++hoverItemCounter;
             if( nk_widget_is_hovered( ctx ) ) { currHoveredItem = hoverItemCounter; }
             if( nk_button_label( ctx, "Single Player" ) ) {
-                core->AudioPlay( sndClick );
+                core->AudioPlay( sndClick, sndClickGroup );
                 GameStartParams startParms = {};
                 startParms.mapName = "";
                 startParms.isMutliplayer = false;
@@ -141,30 +145,30 @@ namespace atto {
             ++hoverItemCounter;
             if( nk_widget_is_hovered( ctx ) ) { currHoveredItem = hoverItemCounter; }
             if( nk_button_label( ctx, "MultiPlayer" ) ) {
-                core->AudioPlay( sndClick );
+                core->AudioPlay( sndClick, sndClickGroup );
                 subMenu = SUB_MENU_MULTIPLAYER;
                 NetworkCreateAndConnectNode();
             }
             ++hoverItemCounter;
             if( nk_widget_is_hovered( ctx ) ) { currHoveredItem = hoverItemCounter; }
             if( nk_button_label( ctx, "Map Editor" ) ) {
-                core->AudioPlay( sndClick );
+                core->AudioPlay( sndClick, sndClickGroup );
             }
             ++hoverItemCounter;
             if( nk_widget_is_hovered( ctx ) ) { currHoveredItem = hoverItemCounter; }
             if( nk_button_label( ctx, "Options" ) ) {
-                core->AudioPlay( sndClick );
+                core->AudioPlay( sndClick, sndClickGroup );
                 subMenu = SUB_MENU_OPTIONS;
             }
             ++hoverItemCounter;
             if( nk_widget_is_hovered( ctx ) ) { currHoveredItem = hoverItemCounter; }
             if( nk_button_label( ctx, "Credits" ) ) {
-                core->AudioPlay( sndClick );
+                core->AudioPlay( sndClick, sndClickGroup );
             }
             ++hoverItemCounter;
             if( nk_widget_is_hovered( ctx ) ) { currHoveredItem = hoverItemCounter; }
             if( nk_button_label( ctx, "Quit" ) ) {
-                core->AudioPlay( sndClick );
+                core->AudioPlay( sndClick, sndClickGroup );
                 core->WindowClose();
             }
         }
@@ -178,14 +182,14 @@ namespace atto {
                 ++hoverItemCounter;
                 if( nk_widget_is_hovered( ctx ) ) { currHoveredItem = hoverItemCounter; }
                 if( nk_button_label( ctx, "Host" ) ) {
-                    core->AudioPlay( sndClick );
+                    core->AudioPlay( sndClick, sndClickGroup );
                     NetworkStartHost();
                     subSubMenu = SUB_SUB_MENU_MULTIPLAYER_HOST;
                 }
                 ++hoverItemCounter;
                 if( nk_widget_is_hovered( ctx ) ) { currHoveredItem = hoverItemCounter; }
                 if( nk_button_label( ctx, "Join" ) ) {
-                    core->AudioPlay( sndClick );
+                    core->AudioPlay( sndClick, sndClickGroup );
                     subSubMenu = SUB_SUB_MENU_MULTIPLAYER_JOIN;
                 }
                 if ( netStat == NetworkStatus::LISTENING_FOR_CONNECTION ) { nk_widget_disable_end( ctx ); }
@@ -208,7 +212,7 @@ namespace atto {
                     nk_label( ctx, "Ip", NK_TEXT_LEFT );
                     nk_label( ctx, "192.192.192.192", NK_TEXT_LEFT );
                     if( nk_button_label( ctx, "Copy" ) ) {
-                        core->AudioPlay( sndClick );
+                        core->AudioPlay( sndClick, sndClickGroup );
                         const char * ipStr = NetworkGetIp();
                         PlatformCopyTextToClipBoard( ipStr );
                     }
@@ -240,12 +244,12 @@ namespace atto {
                 ++hoverItemCounter;
                 if( nk_widget_is_hovered( ctx ) ) { currHoveredItem = hoverItemCounter; }
                 if( nk_button_label( ctx, "Graficss" ) ) {
-                    core->AudioPlay( sndClick );
+                    core->AudioPlay( sndClick, sndClickGroup );
                 }
                 ++hoverItemCounter;
                 if( nk_widget_is_hovered( ctx ) ) { currHoveredItem = hoverItemCounter; }
                 if( nk_button_label( ctx, "Audio" ) ) {
-                    core->AudioPlay( sndClick );
+                    core->AudioPlay( sndClick, sndClickGroup );
                     subSubMenu = SUB_SUB_MENU_OPTIONS_AUDIO;
                 }
             }
@@ -284,9 +288,12 @@ namespace atto {
         if ( currHoveredItem != prevHoveredItem ) {
             prevHoveredItem = currHoveredItem;
             static AudioResource * sndHover = ResourceGetAndCreateAudio( "res/game/gui/main_menu_hover.wav", { true, false, 0, 0 } );
-            sndHover->maxInstances = 10;
-            sndHover->stealMode = AudioStealMode::OLDEST;
-            core->AudioPlay( sndHover );
+            AudioGroupResourceCreateInfo hoverGroupCreateInfo = {};
+            hoverGroupCreateInfo.maxInstances = 10;
+            hoverGroupCreateInfo.stealMode = AudioStealMode::OLDEST;
+            hoverGroupCreateInfo.sounds.Add( sndHover );
+            static AudioGroupResource * sndHoverGroup = ResourceGetAndCreateAudioGroup( "ui_over_group", &hoverGroupCreateInfo );
+            core->AudioPlay( sndHover, sndHoverGroup );
         }
 
         //overview( ctx );

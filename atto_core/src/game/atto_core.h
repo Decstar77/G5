@@ -100,6 +100,7 @@ namespace atto {
         AudioSpeakerHandle handle;
         void *  fmodChannel;
         AudioResource * source;
+        AudioGroupResource * sourceGroup;
         f64 spawnTime;
 
         bool IsPlaying();
@@ -328,12 +329,9 @@ namespace atto {
         f32                                 RenderGetMainSurfaceHeight() const { return mainSurfaceHeight; }
         virtual void                        RenderSubmit( DrawContext * dcxt, bool clearBackBuffers ) = 0;
 
-        virtual void                        AudioPlay( AudioResource * audioResource, glm::vec2 * pos = nullptr ) = 0;
+        virtual void                        AudioPlay( AudioResource * audioResource, AudioGroupResource * audioGroup ) = 0;
+        virtual void                        AudioPlayRandomFromGroup( AudioGroupResource * audioGroup ) = 0;
         virtual void                        AudioSetListener( glm::vec2 pos ) = 0;
-        template<i32 capcity>
-        AudioResource *                     AudioPlayRandom( const FixedList<AudioResource *, capcity> & audioResources, glm::vec2 * pos = nullptr );
-        template<typename... args>
-        AudioResource *                     AudioPlayRandom( glm::vec2 * pos, args... audioResources );
 
         bool                                InputKeyDown( KeyCode keyCode );
         bool                                InputKeyUp( KeyCode keyCode );
@@ -388,21 +386,5 @@ namespace atto {
         FrameInput                          input = {};
         FixedList<DrawContext, 8>           drawContexts = {};
     };
-
-    template<typename... args>
-    AudioResource * Core::AudioPlayRandom( glm::vec2 * pos, args... audioResources ) {
-        AudioResource * audioResourceArray[] = { audioResources... };
-        i32 index = Random::Int( sizeof...( audioResources ) );
-        AudioPlay( audioResourceArray[ index ], pos );
-        return audioResourceArray[ index ];
-    }
-
-    template<i32 capcity>
-    AudioResource * Core::AudioPlayRandom( const FixedList<AudioResource *, capcity> & audioResources, glm::vec2 * pos ) {
-        i32 index = Random::Int( audioResources.GetCount() );
-        AudioPlay( audioResources[ index ], pos );
-        return audioResources[ index ];
-    }
-
 
 }

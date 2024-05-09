@@ -16,6 +16,14 @@ namespace atto {
         return fpm::abs( f );
     }
 
+    fp FpCeil( fp f ) {
+        return fpm::ceil( f );
+    }
+
+    fp FpFloor( fp f ) {
+        return fpm::floor( f );
+    }
+
     fp FpRound( fp f ) {
         return fpm::round( f );
     }
@@ -289,10 +297,10 @@ namespace atto {
             ( p.y >= a.min.y && p.y <= a.max.y );
     }
 
-    void FpColliderSetPos( FpCollider * a, fp2 p ) {
+    void FpColliderTranslate( FpCollider * a, fp2 p ) {
         switch ( a->type ) {
-            case COLLIDER_TYPE_CIRCLE: a->circle.pos = p; return;
-            case COLLIDER_TYPE_AXIS_BOX: a->box = FpAxisBoxCreateFromCenterSize( p, FpAxisBoxGetSize( a->box ) ); return;
+            case COLLIDER_TYPE_CIRCLE: a->circle.pos = a->circle.pos + p; return;
+            case COLLIDER_TYPE_AXIS_BOX: a->box.min = a->box.min + p; a->box.max = a->box.max + p; return;
         }
         INVALID_CODE_PATH;
     }
@@ -356,6 +364,43 @@ namespace atto {
         }
         INVALID_CODE_PATH;
         return false;
+    }
+
+    bool FpColliderCollision( FpCollider a, FpCollider b, FpManifold & m ) {
+        if ( a.type == COLLIDER_TYPE_CIRCLE ) {
+            if ( b.type == COLLIDER_TYPE_CIRCLE ) {
+                return FpCircleCollision( a.circle, b.circle, m );
+            }
+            else if ( b.type == COLLIDER_TYPE_AXIS_BOX ) {
+                INVALID_CODE_PATH;
+            }
+        }
+        else if ( a.type == COLLIDER_TYPE_AXIS_BOX ) {
+            if ( b.type == COLLIDER_TYPE_CIRCLE ) {
+                INVALID_CODE_PATH;
+            }
+            else if ( b.type == COLLIDER_TYPE_AXIS_BOX ) {
+                return FpAxisBoxCollision( a.box, b.box, m );
+            }
+        }
+        INVALID_CODE_PATH;
+        return false;
+    }
+
+    Collider2D FpColliderToCollider2D( FpCollider collider ) {
+        Collider2D res = {};
+        res.type = collider.type;
+        if ( res.type == COLLIDER_TYPE_CIRCLE ) {
+            res.circle.pos = ToVec2( collider.circle.pos );
+            res.circle.rad = ToFloat( collider.circle.rad );
+        } else if ( res.type == COLLIDER_TYPE_AXIS_BOX ) {
+            res.box.min = ToVec2( collider.box.min );
+            res.box.max = ToVec2( collider.box.max );
+        } else {
+            INVALID_CODE_PATH;
+        }
+
+        return res;
     }
 
     bool Circle::Intersects( const Circle & circle ) const {

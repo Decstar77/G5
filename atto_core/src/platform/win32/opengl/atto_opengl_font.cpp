@@ -77,7 +77,7 @@ namespace atto {
         GLShaderProgramSetMat4( "p", cmd.proj );
 
         u32 color = Colors::VecToU32( cmd.color );
-        fonsSetFont( fs, cmd.text.font.idx );
+        fonsSetFont( fs, 2 );
         fonsSetSize( fs, cmd.text.fontSize );
         fonsSetAlign( fs, cmd.text.align );
         fonsSetColor( fs, color );
@@ -103,6 +103,7 @@ namespace atto {
         core->resources.fontContext = fonsCreateInternal( &params );
         arialFontHandle = fonsAddFont( core->resources.fontContext, "default", "res/game/fonts/arial.ttf" );
         kenFontHandle = fonsAddFont( core->resources.fontContext, "ken", "res/game/fonts/kenvector_future.ttf" );
+        bandwidthFontHandle = fonsAddFont( core->resources.fontContext, "bandwidth", "res/game/fonts/bandwidth_8x8_monospaced.ttf" );
 
         const char * vertexShaderSource = R"(
             #version 330 core
@@ -158,8 +159,8 @@ namespace atto {
         glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr );
         glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
         glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
         glGenerateMipmap( GL_TEXTURE_2D );
 
         static GLint swizzleRgbaParams[ 4 ] = { GL_ONE, GL_ONE, GL_ONE, GL_RED };

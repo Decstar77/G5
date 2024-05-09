@@ -25,7 +25,7 @@ solution "Atto"
     
     filter "configurations:Release"
         defines {
-            "NDEBUG"
+            "_RELEASE"
         }
         optimize "Full"
     filter "configurations:Debug*"

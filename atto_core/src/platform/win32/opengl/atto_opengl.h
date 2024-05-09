@@ -151,6 +151,7 @@ namespace atto {
         u32                                 fontTextureHandle = 0;
         i32                                 arialFontHandle = 0;
         i32                                 kenFontHandle = 0;
+        i32                                 bandwidthFontHandle = 0;
 
         FixedList<glm::vec2, 96>            shapeCirleBase = {};
         FixedList<glm::vec2, 96>            shapeCirle = {};

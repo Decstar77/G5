@@ -55,12 +55,25 @@ namespace atto {
     public:
         FMOD::Sound *   sound2D;
         FMOD::Sound *   sound3D;
-        i32             audioSize;
         f32             volumeMultiplier;
-        i32             maxInstances;
-        f64             minTimeToPassForAnotherSubmission;
-        AudioStealMode  stealMode;
         AudioResourceCreateInfo createInfo;
+        REFLECT();
+    };
+    
+    struct AudioGroupResourceCreateInfo {
+        i32                             maxInstances;
+        f64                             minTimeToPassForAnotherSubmission; // @NOTE: In seconds
+        AudioStealMode                  stealMode;
+        FixedList<AudioResource *, 8>   sounds;
+    };
+
+    class AudioGroupResource : public Resource {
+    public:
+        i32                             maxInstances;
+        f64                             minTimeToPassForAnotherSubmission; // @NOTE: In seconds
+        AudioStealMode                  stealMode;
+        FixedList<AudioResource *, 8>   sounds;
+
         REFLECT();
     };
 
@@ -98,7 +111,11 @@ namespace atto {
     TextureResource *                   ResourceGetAndLoadTexture( const char * name );
 
     AudioResource *                     ResourceGetAndCreateAudio( const char * name, AudioResourceCreateInfo createInfo = {} );
+    AudioResource *                     ResourceGetAndCreateAudio2D( const char * name );
     AudioResource *                     ResourceGetAndLoadAudio( const char * name );
+
+    AudioGroupResource *                ResourceGetAndCreateAudioGroup( const char * name, AudioGroupResourceCreateInfo * createInfo );
+    AudioGroupResource *                ResourceGetAndLoadAudioGroup( const char * name );
 
     SpriteResource *                    ResourceGetAndCreateSprite( const char * spriteName, SpriteResourceCreateInfo createInfo = {} );
     SpriteResource *                    ResourceGetAndLoadSprite( const char * spriteName );

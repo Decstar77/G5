@@ -39,11 +39,14 @@ namespace atto {
 
     bool Core::LoadAllAssets() {
         SpriteResourceCreateInfo spriteCreateInfo = {};
-        spriteCreateInfo.frameCount = 4;
-        spriteCreateInfo.frameWidth = 12;
-        spriteCreateInfo.frameHeight = 12;
-        spriteCreateInfo.frameRate = 10;
+        spriteCreateInfo.frameCount = 32 * 4;
+        spriteCreateInfo.frameXCount = 32;
+        spriteCreateInfo.frameYCount = 4;
+        spriteCreateInfo.frameWidth = 8;
+        spriteCreateInfo.frameHeight = 8;
+        spriteCreateInfo.frameRate = 0;
         spriteCreateInfo.bakeInAtlas = true;
+
         //spriteCreateInfo.collider.type = ColliderType::COLLIDER_TYPE_AXIS_BOX;
         //spriteCreateInfo.collider.box.min = glm::vec2( 0, 0 );
         //spriteCreateInfo.collider.box.max = glm::vec2( 12, 12 );
@@ -678,7 +681,7 @@ namespace atto {
             SpriteActuation & frameActuation = sprite->frameActuations[ frameActuationIndex ];
             if( frameActuation.frameIndex == frameIndex ) {
                 if( frameActuation.audioResources.GetCount() > 0 ) {
-                    core->AudioPlayRandom( frameActuation.audioResources );
+                    //core->AudioPlayRandom( frameActuation.audioResources );
                 }
             }
         }

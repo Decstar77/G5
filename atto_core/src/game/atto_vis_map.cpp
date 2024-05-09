@@ -13,9 +13,14 @@ namespace atto {
         tile.spriteYIndex = tileYIndex;
         tile.flags = flags;
 
-        tile.wsCenter = glm::vec2( xIndex * TILE_SIZE + TILE_SIZE * 0.5f, yIndex * TILE_SIZE + TILE_SIZE * 0.5f );
-        tile.wsBounds.min = tile.wsCenter + glm::vec2( -TILE_SIZE / 2.0f, -TILE_SIZE / 2.0f );
-        tile.wsBounds.max = tile.wsCenter + glm::vec2( TILE_SIZE / 2.0f, TILE_SIZE / 2.0f );
+        tile.wsCenterFl = glm::vec2( xIndex * TILE_SIZE + TILE_SIZE * 0.5f, yIndex * TILE_SIZE + TILE_SIZE * 0.5f );
+        tile.wsBoundsFl.min = tile.wsCenterFl + glm::vec2( -TILE_SIZE / 2.0f, -TILE_SIZE / 2.0f );
+        tile.wsBoundsFl.max = tile.wsCenterFl + glm::vec2( TILE_SIZE / 2.0f, TILE_SIZE / 2.0f );
+
+        tile.wsCenterFp = Fp2( xIndex * TILE_SIZE + TILE_SIZE / 2, yIndex * TILE_SIZE + TILE_SIZE / 2 );
+        tile.wsBoundsFp.min = tile.wsCenterFp + Fp2( -TILE_SIZE / 2, -TILE_SIZE / 2 );
+        tile.wsBoundsFp.max = tile.wsCenterFp + Fp2( TILE_SIZE / 2, TILE_SIZE / 2 );
+
         tiles[ tile.flatIndex ] = tile;
     }
 
@@ -37,42 +42,204 @@ namespace atto {
         }
     }
 
+    void TileMap::DebugDraw( DrawContext * drawContext ) {
+        glm::vec2 bl = glm::vec2( 0, 0 );
+        glm::vec2 tr = glm::vec2( TILE_MAX_X_COUNT * TILE_SIZE, TILE_MAX_Y_COUNT * TILE_SIZE );
+
+        for ( i32 x = 0; x < TILE_MAX_X_COUNT; x++ ) {
+            f32 xp = (f32)(x * TILE_SIZE);
+            drawContext->DrawLine( glm::vec2( xp, 0 ), glm::vec2( xp, TILE_MAX_Y_COUNT * TILE_SIZE ), 1 );
+        }
+
+        for ( i32 y = 0; y < TILE_MAX_Y_COUNT; y++ ) {
+            f32 yp = (f32)(y * TILE_SIZE);
+            drawContext->DrawLine( glm::vec2( 0, yp ), glm::vec2( TILE_MAX_X_COUNT * TILE_SIZE, yp ), 1 );
+        }
+    }
+
+    void TileMap::PosToTileIndex( fp2 p, i32 & xi, i32 & yi ) {
+        fp x = p.x / Fp( TILE_SIZE );
+        fp y = p.y / Fp( TILE_SIZE );
+        x = FpRound( x );
+        y = FpRound( y );
+        xi = ToInt( x );
+        yi = ToInt( y );
+    }
+
+    fp2 TileMap::PosToTileBL( fp2 p ) {
+        i32 xi = 0;
+        i32 yi = 0;
+        PosToTileIndex( p, xi, yi );
+        return Fp2( xi * TILE_SIZE, yi * TILE_SIZE );
+    }
+
+    void TileMap::MarkTilesBL( i32 xIndex, i32 yIndex, i32 xCount, i32 yCount, i32 flags ) {
+        Assert( xIndex >= 0 && xIndex < TILE_MAX_X_COUNT );
+        Assert( yIndex >= 0 && yIndex < TILE_MAX_Y_COUNT );
+        Assert( xIndex + xCount >= 0 && xIndex + xCount < TILE_MAX_X_COUNT );
+        Assert( yIndex + yCount >= 0 && yIndex + yCount < TILE_MAX_Y_COUNT );
+
+        for( i32 y = yIndex; y < yIndex + yCount; y++ ) {
+            for( i32 x = xIndex; x < xIndex + xCount; x++ ) {
+                i32 flatIndex = y * TILE_MAX_X_COUNT + x;
+                tiles[ flatIndex ].flags |= flags;
+            }
+        }
+    }
+
+    bool TileMap::ContainsFlag( i32 xIndex, i32 yIndex, i32 xCount, i32 yCount, i32 flag ) {
+        Assert( xIndex >= 0 && xIndex < TILE_MAX_X_COUNT );
+        Assert( yIndex >= 0 && yIndex < TILE_MAX_Y_COUNT );
+        Assert( xIndex + xCount >= 0 && xIndex + xCount < TILE_MAX_X_COUNT );
+        Assert( yIndex + yCount >= 0 && yIndex + yCount < TILE_MAX_Y_COUNT );
+
+        for( i32 y = yIndex; y < yIndex + yCount; y++ ) {
+            for( i32 x = xIndex; x < xIndex + xCount; x++ ) {
+                i32 flatIndex = y * TILE_MAX_X_COUNT + x;
+                if ( EnumContainsFlag( tiles[ flatIndex ].flags, flag ) == true ) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    TileInterval TileMap::IntervalForCollider( FpCollider collider, fp2 pos ) {
+        Assert( collider.type == ColliderType::COLLIDER_TYPE_AXIS_BOX );
+
+        // @NOTE: We have to do this size nonsense because of drawing at centers rather than BL's
+        //      : For instance a 24x24 sprite has 12 halfDim. 12 / 8 = 1.5 so without ceil we loose
+        //      : a full tile.
+        const fp2 halfSize = FpAxisBoxGetSize( collider.box ) / Fp( 2 );
+        const i32 sizeX = ToInt( FpCeil( halfSize.x / Fp( TILE_SIZE ) ) ) * 2;
+        const i32 sizeY = ToInt( FpCeil( halfSize.y / Fp( TILE_SIZE ) ) ) * 2;
+        i32 xi = 0;
+        i32 yi = 0;
+        PosToTileIndex( pos, xi, yi );
+
+        TileInterval result = {};
+        result.xIndex = xi - sizeX / 2;
+        result.yIndex = yi - sizeY / 2;
+        result.xCount = sizeX; 
+        result.yCount = sizeY;
+
+        return result;
+    }
+
+    struct GUIGamePanel {
+        i32                                 activeIndex;
+        SpriteResource *                    texture;
+        glm::vec2                           pos;
+        FixedList< glm::vec2, 9 >           bls;
+        FixedList< SpriteResource *, 9 >    images;
+    };
+
+    static SpriteResource * Gui_BlockSelection = nullptr;
+    static GUIGamePanel *   guiCurrentPanel = nullptr;
+    static GUIGamePanel     guiNothingPanel = {};
+    static GUIGamePanel     guiUnitPanel = {};
+    static GUIGamePanel     guiTownCenterPanel = {};
+
+    static GUIGamePanel GuiCreateBlock( glm::vec2 p ) {
+        GUIGamePanel panel = {};
+        panel.activeIndex = -1;
+        panel.pos = p;
+        panel.texture = ResourceGetAndLoadSprite( "res/game/ents/ui/ui_block.spr.json" );
+        const glm::vec2 baseTopLeft = glm::vec2( 7, 5 );
+        for ( i32 y = 0; y < 3; y++ ) {
+            for ( i32 x = 0; x < 3; x++ ) {
+                i32 flatIndex = y * 3 + x;
+                panel.bls[flatIndex] = p + baseTopLeft + glm::vec2( 11 * x, 11 * y );
+            }
+        }
+
+        return panel;
+    }
+
+  
     void VisMap::VisInitialize( Core * core ) {
         this->core = core;
-
-        SpriteResourceCreateInfo spriteCreateInfo = {};
-        spriteCreateInfo.frameXCount = 8;
-        spriteCreateInfo.frameYCount = 8;
-        spriteCreateInfo.frameCount = spriteCreateInfo.frameXCount * spriteCreateInfo.frameYCount;
-        spriteCreateInfo.frameWidth = 8;
-        spriteCreateInfo.frameHeight = 8;
-
-        SpriteResource * sprTile = ResourceGetAndCreateSprite( "res/game/tilesets/tileset_sand.png", spriteCreateInfo );
-        tileMap.Fill( sprTile, 0, 0, 0 );
-        tileMap.FillBorder( sprTile, 1, 0, 0 );
-        //for( i32 yIndex = 0; yIndex < TILE_MAX_HEIGHT; yIndex++ ) {
-        //    for( i32 xIndex = 0; xIndex < TILE_MAX_WIDTH; xIndex++ ) {
-        //        i32 spriteX = Random::Int(0 ,3);
-        //        i32 spriteY = Random::Int(0 ,3);
-        //        tileMap.PlaceTile( xIndex, yIndex, sprTile, spriteX, spriteY, 0 );
+ 
+        //{
+        //    UIGamePanel panel = UI_CreateBlock( glm::vec2( 276, 1 ) );
+        //    guiLayer->DrawTextureBL( panel.texture->textureResource, panel.pos );
+        //    for ( int i = 0; i < 9; i++ ) {
+        //        guiLayer->DrawRect( panel.bls[i], panel.bls[i] + glm::vec2( 8, 8 ) );
         //    }
         //}
+
+        Gui_BlockSelection = ResourceGetAndLoadSprite( "res/game/ents/ui/ui_pick_block_14x14.spr.json" );
+        guiNothingPanel = GuiCreateBlock( glm::vec2( 276, 1 ) );
+        guiCurrentPanel = &guiNothingPanel;
+
+        guiTownCenterPanel = GuiCreateBlock( glm::vec2( 276, 1 ) );
+        guiTownCenterPanel.images[ 6 ] = ResourceGetAndLoadSprite( "res/game/ents/structures/town_center/town_center_icon.spr.json" );
+        guiTownCenterPanel.images[ 7 ] = ResourceGetAndLoadSprite( "res/game/ents/structures/smol_reactor/smol_reactor_icon.spr.json" );
+        guiTownCenterPanel.images[ 8 ] = ResourceGetAndLoadSprite( "res/game/ents/units/scout/scout_icon.spr.json" );
+
+        guiUnitPanel = GuiCreateBlock( glm::vec2( 276, 1 ) );
+        guiUnitPanel.images[ 6 ] = ResourceGetAndLoadSprite( "res/game/ents/units/icons/action_icon_move.spr.json" );
+        guiUnitPanel.images[ 7 ] = ResourceGetAndLoadSprite( "res/game/ents/units/icons/action_icon_stop.spr.json" );
+        guiUnitPanel.images[ 8 ] = ResourceGetAndLoadSprite( "res/game/ents/units/icons/action_icon_hold.spr.json" );
+        guiUnitPanel.images[ 3 ] = ResourceGetAndLoadSprite( "res/game/ents/units/icons/action_icon_patrol.spr.json" );
+        guiUnitPanel.images[ 4 ] = ResourceGetAndLoadSprite( "res/game/ents/units/icons/action_icon_attack.spr.json" );
     }
 
     void VisMap::VisUpdate( f32 dt ) {
-        static SpriteResource * sprHoverUnit = ResourceGetAndLoadSprite( "res/game/ents/ui_pick_unit_0_16x16.json" );
-        static SpriteResource * sprSelectUnit = ResourceGetAndLoadSprite( "res/game/ents/ui_select_unit_0_16x16.json" );
+        DrawContext * tileLayer = core->RenderGetSpriteDrawContext( 0 );
+        DrawContext * spriteLayer0 = core->RenderGetDrawContext( 1 );
+        DrawContext * spriteLayer1 = core->RenderGetDrawContext( 2 );
+        DrawContext * guiLayer = core->RenderGetDrawContext( 3 );
+        DrawContext * debugLayer = core->RenderGetDrawContext( 7 );
 
-        DrawContext * tileDrawContext = core->RenderGetSpriteDrawContext( 0 );
-        DrawContext * spriteDrawContext = core->RenderGetDrawContext( 1 );
-        DrawContext * debugDrawContext = core->RenderGetDrawContext( 7 );
+        // @NOTE: World Camera Dims
         const glm::vec2 cameraDim = glm::vec2( 640, 360 );
-        tileDrawContext->SetCameraDims( cameraDim.x, cameraDim.y );
-        spriteDrawContext->SetCameraDims( cameraDim.x, cameraDim.y );
-        debugDrawContext->SetCameraDims( cameraDim.x, cameraDim.y );
+        tileLayer->SetCameraDims( cameraDim.x, cameraDim.y );
+        spriteLayer0->SetCameraDims( cameraDim.x, cameraDim.y );
+        spriteLayer1->SetCameraDims( cameraDim.x, cameraDim.y );
+        debugLayer->SetCameraDims( cameraDim.x, cameraDim.y );
 
         const glm::vec2 mousePosPix = core->InputMousePosPixels();
-        const glm::vec2 mousePosWorld = spriteDrawContext->ScreenPosToWorldPos( mousePosPix );
+        const glm::vec2 mousePosWorld = spriteLayer0->ScreenPosToWorldPos( mousePosPix );
+        const fp2 mousePosWorldFp = Fp2( mousePosWorld );
+
+        // @NOTE: Gui Camera Dims
+        guiLayer->SetCameraDims( 320, 180 );
+        bool isMouseOverUI = false;
+        const glm::vec2 mousePosGui = guiLayer->ScreenPosToWorldPos( mousePosPix );
+        guiLayer->DrawTextureBL( ResourceGetAndCreateTexture( "res/game/gui/ui_test_04.png" ), glm::vec2( 0 ) );
+
+     
+        if ( guiCurrentPanel != nullptr ) {
+            OnGUILeftPanelUpdate();
+            guiLayer->DrawTextureBL( guiCurrentPanel->texture->textureResource, guiCurrentPanel->pos );
+            for ( int i = 0; i < 9; i++ ) {
+                SpriteResource * icon = *guiCurrentPanel->images.Get(i);
+                if ( icon != nullptr ) {
+                    guiLayer->DrawTextureBL( icon->textureResource, guiCurrentPanel->bls[i] );
+                    BoxBounds2D bb = {};
+                    bb.min = guiCurrentPanel->bls[i];
+                    bb.max = guiCurrentPanel->bls[i] + glm::vec2( 8, 8 );
+                    if ( bb.Contains( mousePosGui ) == true ) {
+                        guiLayer->DrawTextureBL( Gui_BlockSelection->textureResource, guiCurrentPanel->bls[i] - glm::vec2( 3 ) );
+                        isMouseOverUI = true;
+                        if ( core->InputMouseButtonJustPressed( MouseButton::MOUSE_BUTTON_1 ) == true ) {
+                            OnGUILeftPanelClicked( i );
+                        }
+                    }
+        
+                    if ( guiCurrentPanel->activeIndex == i ) {
+                        guiLayer->DrawTextureBL( Gui_BlockSelection->textureResource, guiCurrentPanel->bls[i] - glm::vec2( 3 ) );
+                    }
+                }
+            }
+        }
+
+        SmallString guiText = StringFormat::Small( "%d", playerMonies[ playerNumber.value - 1 ].power );
+        guiLayer->DrawTextCam( ResourceGetFont( "bandwidth" ), glm::vec2( 40, 56 ), 8, guiText.GetCStr(), TextAlignment_H::FONS_ALIGN_RIGHT );
+        guiText = StringFormat::Small( "%d", playerMonies[ playerNumber.value - 1 ].cash );
+        guiLayer->DrawTextCam( ResourceGetFont( "bandwidth" ), glm::vec2( 40, 43 ), 8, guiText.GetCStr(), TextAlignment_H::FONS_ALIGN_RIGHT );
 
         FixedList<SimEntity *, MAX_ENTITY_COUNT > & entities = *MemoryAllocateTransient< FixedList< SimEntity *, MAX_ENTITY_COUNT > >();
         entityPool.GatherActiveObjs( entities );
@@ -95,11 +262,11 @@ namespace atto {
         const glm::vec2 cameraMax = glm::vec2( TILE_MAX_X_COUNT * TILE_SIZE, TILE_MAX_Y_COUNT * TILE_SIZE ) - cameraDim;
         cameraPos = glm::clamp( cameraPos, cameraMin, cameraMax );
 
-        tileDrawContext->SetCameraPos( cameraPos );
-        spriteDrawContext->SetCameraPos( cameraPos );
-        debugDrawContext->SetCameraPos( cameraPos );
+        tileLayer->SetCameraPos( cameraPos );
+        spriteLayer0->SetCameraPos( cameraPos );
+        spriteLayer1->SetCameraPos( cameraPos );
+        debugLayer->SetCameraPos( cameraPos );
 
-        bool isMouseOverUI = false;
         if ( isMouseOverUI == false && core->InputMouseButtonJustPressed( MOUSE_BUTTON_1 ) == true ) {
             if ( inputMode == InputMode::NONE ) {
                 inputMode = InputMode::DRAGGING;
@@ -109,24 +276,22 @@ namespace atto {
             }
         }
 
-        if ( inputMode == InputMode::DRAGGING ) {
-            inputDragEnd = mousePosWorld;
-            if ( core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) == true ) {
-                inputMode = InputMode::NONE;
-                actionBuffer.Request_SelectEntities( playerNumber, inputDragSelection.GetSpan() );
+        for ( i32 i = 0; i < TILE_MAX_X_COUNT * TILE_MAX_Y_COUNT; i++ ) {
+            Tile * tile = & tileMap.tiles[i];
+            if ( tile->spriteResource != nullptr ) {
+                //tileLayer->DrawSpriteTile( tile->spriteResource, tile->spriteXIndex, tile->spriteYIndex, tile->wsCenterFl );
+            }
+            if ( false && EnumHasFlag( tile->flags, TILE_FLAG_UNWALKABLE ) ) {
+                glm::vec2 wMin = tile->wsBoundsFl.min + glm::vec2( 1 );
+                glm::vec2 wMax = tile->wsBoundsFl.max - glm::vec2( 1 );
+                debugLayer->DrawRect( wMin, wMax, glm::vec4( 0.8f, 0.2f, 0.2f, 0.76f ) );
             }
         }
+        //tileMap.DebugDraw( debugLayer );
 
         BoxBounds2D inputDragSelectionBounds = {};
         inputDragSelectionBounds.min = glm::min( inputDragStart, inputDragEnd );
         inputDragSelectionBounds.max = glm::max( inputDragStart, inputDragEnd );
-
-        for ( i32 i = 0; i < TILE_MAX_X_COUNT * TILE_MAX_Y_COUNT; i++ ) {
-            Tile * tile = & tileMap.tiles[i];
-            if ( tile->spriteResource != nullptr ) {
-                //tileDrawContext->DrawSpriteTile( tile->spriteResource, tile->spriteXIndex, tile->spriteYIndex, tile->wsCenter );
-            }
-        }
 
         SimEntity * hoveredEntity = nullptr;
 
@@ -135,100 +300,158 @@ namespace atto {
             SimEntity * simEnt = entities[ entityIndex ];
             VisEntity * visEnt = simEnt->vis;
 
-            glm::vec2 pos = simEnt->pos;
-            Collider2D wsCollider = simEnt->ColliderWorldSpace( pos );
+            simEnt->posTime += dt;
+            f32 ptime = glm::clamp( simEnt->posTime / tickTime, 0.0f, 1.0f );
+            glm::vec2 pos = glm::mix( ToVec2( simEnt->lastPos ), ToVec2( simEnt->pos ), ptime );
+            Collider2D wsCollider = simEnt->ColliderFlWorldSpace( pos );
 
-            bool hoveredDrag = false;
-           
+            bool isHovered = false;
             if ( inputMode == InputMode::NONE ) {
                 if ( wsCollider.Contains( mousePosWorld ) == true ) {
                     hoveredEntity = simEnt;
+                    isHovered = true;
                 }
             } else if ( inputMode == InputMode::DRAGGING ) {
                 if ( wsCollider.Intersects( inputDragSelectionBounds ) == true ) {
                     inputDragSelection.AddUnique( simEnt->handle );
-                    hoveredDrag = true;
+                    isHovered = true;
                 }
             }
 
-//            if ( simEnt->type == EntityType::UNIT_SCOUT ) {
-//                glm::vec2 dir = glm::vec2( 0, 0 );
-//                bool isMoving = simEnt->posTimeline.GetMovingDirection( dir );
-//                if ( isMoving == true ) {
-//                    dir = glm::normalize( dir ); // @SPEED: Is there a way to rid the normalize ?
-//                    const glm::vec2 upDir = glm::vec2( 0, 1 );
-//                    const glm::vec2 downDir = glm::vec2( 0, -1 );
-//                    constexpr f32 reqAngle = glm::radians( 45.0f );
-//                    if ( glm::acos( glm::dot( dir, upDir ) ) < reqAngle ) {
-//                        visEnt->facingDir = FacingDirection::UP;
-//                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankWalkUp, true );
-//                    } else if ( glm::acos( glm::dot( dir, downDir ) ) < reqAngle ) {
-//                        visEnt->facingDir = FacingDirection::DOWN;
-//                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankWalkDown, true );
-//                    } else {
-//                        visEnt->facingDir = glm::sign( dir.x ) >= 0 ? FacingDirection::RIGHT : FacingDirection::LEFT;
-//                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankWalkSide, true );
-//                    }
-//                } else if ( simEnt->unit.state == UnitState::ATTACKING ) {
-//                    if ( visEnt->facingDir == FacingDirection::LEFT || visEnt->facingDir == FacingDirection::RIGHT ) {
-//                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankAttackSide, true );
-//                    } else if ( visEnt->facingDir == FacingDirection::UP ) {
-//                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankAttackUp, true );
-//                    } else {
-//                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankAttackDown, true );
-//                    }
-//                } else {
-//                    if ( visEnt->facingDir == FacingDirection::LEFT || visEnt->facingDir == FacingDirection::RIGHT ) {
-//                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankIdleSide, true );
-//                    } else if ( visEnt->facingDir == FacingDirection::UP ) {
-//                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankIdleUp, true );
-//                    } else {
-//                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankIdleDown, true );
-//                    }
-//                }
-//            } else if ( simEnt->type == EntityType::STRUCTURE_CITY_CENTER ) {
-//
-//            }
+            if ( simEnt->type == EntityType::UNIT_SCOUT ) {
+                glm::vec2 dir = ToVec2( simEnt->pos ) - ToVec2( simEnt->lastPos );
+                bool isMoving = dir != glm::vec2( 0, 0 );// @TODO: EPSILON!!!
+                if ( isMoving == true ) {
+                    dir = glm::normalize( dir ); // @SPEED: Is there a way to rid the normalize ?
+                    const glm::vec2 upDir = glm::vec2( 0, 1 );
+                    const glm::vec2 downDir = glm::vec2( 0, -1 );
+                    constexpr f32 reqAngle = glm::radians( 45.0f );
+                    if ( glm::acos( glm::dot( dir, upDir ) ) < reqAngle ) {
+                        visEnt->facingDir = FacingDirection::UP;
+                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankWalkUp, true );
+                    } else if ( glm::acos( glm::dot( dir, downDir ) ) < reqAngle ) {
+                        visEnt->facingDir = FacingDirection::DOWN;
+                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankWalkDown, true );
+                    } else {
+                        visEnt->facingDir = glm::sign( dir.x ) >= 0 ? FacingDirection::RIGHT : FacingDirection::LEFT;
+                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankWalkSide, true );
+                    }
+                } else if ( simEnt->unit.state == UnitState::ATTACKING ) {
+                    if ( visEnt->facingDir == FacingDirection::LEFT || visEnt->facingDir == FacingDirection::RIGHT ) {
+                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankAttackSide, true );
+                    } else if ( visEnt->facingDir == FacingDirection::UP ) {
+                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankAttackUp, true );
+                    } else {
+                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankAttackDown, true );
+                    }
+                } else {
+                    if ( visEnt->facingDir == FacingDirection::LEFT || visEnt->facingDir == FacingDirection::RIGHT ) {
+                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankIdleSide, true );
+                    } else if ( visEnt->facingDir == FacingDirection::UP ) {
+                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankIdleUp, true );
+                    } else {
+                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankIdleDown, true );
+                    }
+                }
+            } else if ( simEnt->type == EntityType::STRUCTURE_CITY_CENTER ) {
+
+            }
 
             visEnt->spriteAnimator.Update( core, dt );
             f32 flipFacing = visEnt->facingDir == FacingDirection::LEFT ? -1.0f : 1.0f;
-            //spriteDrawContext->DrawSprite( visEnt->spriteAnimator.sprite, visEnt->spriteAnimator.frameIndex, simEnt->pos, 0, glm::vec2( flipFacing, 1 ), visEnt->spriteAnimator.color );
-            spriteDrawContext->DrawSprite( visEnt->spriteAnimator.sprite, visEnt->spriteAnimator.frameIndex, pos, 0, glm::vec2( flipFacing, 1 ), visEnt->spriteAnimator.color );
+            spriteLayer0->DrawSprite( visEnt->spriteAnimator.sprite, visEnt->spriteAnimator.frameIndex, pos, 0, glm::vec2( flipFacing, 1 ), visEnt->spriteAnimator.color );
 
-            if ( simEnt->selectedBy.Contains( playerNumber ) == true ) {
-                spriteDrawContext->DrawSprite( sprSelectUnit, 0, pos - glm::vec2( 0, 1 ) );
-            } else if ( hoveredDrag == true ) {
-                spriteDrawContext->DrawSprite( sprHoverUnit, 0, pos );
+            if ( isHovered == true || simEnt->selectedBy.Contains( playerNumber ) == true ) {
+                spriteLayer0->DrawSprite( visEnt->spriteBankSelection, 0, pos + visEnt->spriteSelectionOffset );
             }
 
             if ( false ) {
-                spriteDrawContext->DrawRect( wsCollider.box.min, wsCollider.box.max, glm::vec4( 0.6f ) );
+                spriteLayer0->DrawRect( wsCollider.box.min, wsCollider.box.max, glm::vec4( 0.6f ) );
             }
-
-            //spriteDrawContext->DrawCircle( ent->posTimeline.ValueForTime( visTime ), 4 );
         }
 
         if ( inputMode == InputMode::DRAGGING ) {
-            spriteDrawContext->DrawRect( inputDragSelectionBounds.min, inputDragSelectionBounds.max, Colors::BOX_SELECTION_COLOR );
+            inputDragEnd = mousePosWorld;
+            spriteLayer1->DrawRect( inputDragSelectionBounds.min, inputDragSelectionBounds.max, Colors::BOX_SELECTION_COLOR );
+            if ( core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) == true ) {
+                inputMode = InputMode::NONE;
+                actionBuffer.Request_SelectEntities( playerNumber, inputDragSelection.GetSpan() );
+
+                const i32 newSelectionCount = inputDragSelection.GetCount();
+                currentSelection.Clear();
+                guiCurrentPanel = &guiNothingPanel;
+                for ( i32 selectionIndex = 0; selectionIndex < newSelectionCount; selectionIndex++ ) {
+                    EntityHandle handle = inputDragSelection[ selectionIndex ];
+                    currentSelection.Add( handle );
+                    if ( selectionIndex == 0 ) {
+                        SimEntity * activeEnt = entityPool.Get( inputDragSelection[ selectionIndex ] );
+                        if ( activeEnt != nullptr && IsUnitType( activeEnt->type ) ) {
+                            core->AudioPlayRandomFromGroup( activeEnt->vis->sndOnSelect );
+                            guiCurrentPanel = &guiUnitPanel;
+                        } else if ( activeEnt != nullptr && activeEnt->type == EntityType::STRUCTURE_CITY_CENTER ) {
+                            guiCurrentPanel = &guiTownCenterPanel;
+                        }
+                    }
+                }
+            }
+        } else if ( inputMode == InputMode::PLACING_STRUCTURE && isMouseOverUI == false ) {
+            Assert( inputSprite != nullptr );
+            fp2 posFp = tileMap.PosToTileBL( mousePosWorldFp );
+            glm::vec2 pos = ToVec2( posFp );
+            // @TODO: TILE APRIN 6
+            bool canPlace = SimCanPlaceStructure( inputPlacingBuildingType, posFp );
+            glm::vec4 col = canPlace ?  glm::vec4( 1, 1, 1, 0.55f ) : glm::vec4( 2, 0.55f, 0.55f, 0.77f );
+            spriteLayer1->DrawSprite( inputSprite, 3, pos, 0, glm::vec2( 1 ), col );
+            if ( core->InputMouseButtonJustReleased( MOUSE_BUTTON_1 ) == true ) {
+                if ( canPlace == true ) {
+                    // @TODO: Play sound
+                    inputMode = InputMode::NONE;
+                    actionBuffer.Request_PlaceStructure( playerNumber, inputPlacingBuildingType, posFp );
+                    inputPlacingBuildingType = EntityType::INVALID;
+                } else {
+                    // @TODO: Play sound
+                }
+            } else if ( core->InputMouseButtonJustReleased( MOUSE_BUTTON_2 ) == true ) {
+                inputMode = InputMode::NONE;
+                inputPlacingBuildingType = EntityType::INVALID;
+            }
         }
 
         if( core->InputMouseButtonJustPressed( MouseButton::MOUSE_BUTTON_2 ) == true ) {
             if ( hoveredEntity == nullptr ) {
-                actionBuffer.Request_MoveUnit( playerNumber, mousePosWorld );
+                const i32 selectionCount = currentSelection.GetCount();
+                if ( selectionCount > 0 ) {
+                    SimEntity * activeEnt = entityPool.Get( currentSelection[ 0 ] );
+                    if ( activeEnt != nullptr && IsUnitType( activeEnt->type ) ) {
+                        core->AudioPlayRandomFromGroup( activeEnt->vis->sndOnMove );
+                    }
+                }
+
+                actionBuffer.Request_MoveUnit( playerNumber, mousePosWorldFp );
             } else if ( hoveredEntity->teamNumber != teamNumber ) {
+                const i32 selectionCount = currentSelection.GetCount();
+                if ( selectionCount > 0 ) {
+                    SimEntity * activeEnt = entityPool.Get( currentSelection[ 0 ] );
+                    if ( activeEnt != nullptr && IsUnitType( activeEnt->type ) ) {
+                        core->AudioPlayRandomFromGroup( activeEnt->vis->sndOnAttack );
+                    }
+                }
+
                 actionBuffer.Request_AttackUnit( playerNumber, hoveredEntity->handle );
             }
         }
 
         FontHandle fontHandle = core->ResourceGetFont( "default" );
         SmallString fpsText = StringFormat::Small( "fps=%f", 1.0f / dt );
-        debugDrawContext->DrawTextScreen( fontHandle, glm::vec2( 0, 320 ), 20, fpsText.GetCStr() );
+        debugLayer->DrawTextScreen( fontHandle, glm::vec2( 0, core->RenderGetMainSurfaceHeight() - 20 ), 20, fpsText.GetCStr() );
         SmallString pingText = StringFormat::Small( "ping=%d", NetworkGetPing() );
-        debugDrawContext->DrawTextScreen( fontHandle, glm::vec2( 0, 340 ), 20, pingText.GetCStr() );
+        debugLayer->DrawTextScreen( fontHandle, glm::vec2( 0, core->RenderGetMainSurfaceHeight() - 40 ), 20, pingText.GetCStr() );
 
-        //core->RenderSubmit( tileDrawContext, true );
-        core->RenderSubmit( spriteDrawContext, true );
-        core->RenderSubmit( debugDrawContext, false );
+        //core->RenderSubmit( tileLayer, true );
+        core->RenderSubmit( spriteLayer0, true );
+        core->RenderSubmit( spriteLayer1, false );
+        core->RenderSubmit( guiLayer, false );
+        core->RenderSubmit( debugLayer, false );
     }
 
     VisEntity * VisMap::VisMap_OnSpawnEntity( EntitySpawnCreateInfo createInfo ) {
@@ -238,7 +461,7 @@ namespace atto {
         if ( visEntity != nullptr ) {
             ZeroStructPtr( visEntity );
             visEntity->handle = handle;
-            visEntity->facingDir = FacingDirection::LEFT;
+            visEntity->facingDir = FacingDirection::RIGHT;
 
             if ( createInfo.type == EntityType::UNIT_SCOUT ) {
                 if ( createInfo.playerNumber.value == 1 ) {
@@ -259,23 +482,82 @@ namespace atto {
                     visEntity->spriteBankWalkDown = ResourceGetAndLoadSprite( "res/game/ents/units/scout/red/scout_walk_down.spr.json" );
                     visEntity->spriteBankWalkUp = ResourceGetAndLoadSprite( "res/game/ents/units/scout/red/scout_walk_up.spr.json" );
                 }
+                visEntity->spriteBankSelection = ResourceGetAndLoadSprite( "res/game/ents/ui/ui_select_unit_16x16.spr.json" );
+                visEntity->spriteSelectionOffset = glm::vec2( 0, -1 );
                 visEntity->spriteAnimator.SetSpriteIfDifferent( visEntity->spriteBankIdleSide, true );
+
+                static bool doOnce = false;
+                static AudioGroupResource * sndMoveGroup = nullptr;
+                static AudioGroupResource * sndSelectGroup = nullptr;
+                static AudioGroupResource * sndAttackGroup = nullptr;
+
+                if ( doOnce == false ) {
+                    doOnce = true;
+                    AudioGroupResourceCreateInfo group = {};
+                    group.maxInstances = 2;
+                    group.stealMode = AudioStealMode::OLDEST;
+                    group.minTimeToPassForAnotherSubmission = 0.5f;
+                    sndMoveGroup = ResourceGetAndCreateAudioGroup( "scout_move", &group );
+                    sndMoveGroup->sounds.SetCount( 4 );
+                    sndMoveGroup->sounds[ 0 ] = ResourceGetAndCreateAudio2D( "res/game/ents/units/scout/sounds/scout_move_1.wav" );
+                    sndMoveGroup->sounds[ 1 ] = ResourceGetAndCreateAudio2D( "res/game/ents/units/scout/sounds/scout_move_2.wav" );
+                    sndMoveGroup->sounds[ 2 ] = ResourceGetAndCreateAudio2D( "res/game/ents/units/scout/sounds/scout_move_3.wav" );
+                    sndMoveGroup->sounds[ 3 ] = ResourceGetAndCreateAudio2D( "res/game/ents/units/scout/sounds/scout_move_4.wav" );
+
+                    sndSelectGroup = ResourceGetAndCreateAudioGroup( "scout_select", &group );
+                    sndSelectGroup->sounds.SetCount( 4 );
+                    sndSelectGroup->sounds[ 0 ] = ResourceGetAndCreateAudio2D( "res/game/ents/units/scout/sounds/scout_sir_1.wav" );
+                    sndSelectGroup->sounds[ 1 ] = ResourceGetAndCreateAudio2D( "res/game/ents/units/scout/sounds/scout_sir_2.wav" );
+                    sndSelectGroup->sounds[ 2 ] = ResourceGetAndCreateAudio2D( "res/game/ents/units/scout/sounds/scout_sir_3.wav" );
+                    sndSelectGroup->sounds[ 3 ] = ResourceGetAndCreateAudio2D( "res/game/ents/units/scout/sounds/scout_sir_4.wav" );
+
+                    sndAttackGroup = ResourceGetAndCreateAudioGroup( "scout_attack", &group );
+                    sndAttackGroup->sounds.SetCount( 3 );
+                    sndAttackGroup->sounds[ 0 ] = ResourceGetAndCreateAudio2D( "res/game/ents/units/scout/sounds/scout_enemies_1.wav" );
+                    sndAttackGroup->sounds[ 1 ] = ResourceGetAndCreateAudio2D( "res/game/ents/units/scout/sounds/scout_enemies_2.wav" );
+                    sndAttackGroup->sounds[ 2 ] = ResourceGetAndCreateAudio2D( "res/game/ents/units/scout/sounds/scout_enemies_3.wav" );
+                }
+
+                visEntity->sndOnMove = sndMoveGroup;
+                visEntity->sndOnSelect = sndSelectGroup;
+                visEntity->sndOnAttack = sndAttackGroup;
+
             } else if ( createInfo.type == EntityType::STRUCTURE_CITY_CENTER ) {
-                SpriteResourceCreateInfo createInfo = {};
-                createInfo.frameCount = 4;
-                createInfo.frameXCount = 4;
-                createInfo.frameYCount = 1;
-                createInfo.frameWidth = 24;
-                createInfo.frameHeight = 24;
-                createInfo.frameRate = 0;
-                createInfo.bakeInAtlas = true;
-                SpriteResource * spr = ResourceGetAndCreateSprite( "res/game/ents/structures/sprites/structure_town_center.png", createInfo );
-                visEntity->spriteAnimator.SetSpriteIfDifferent( spr, false );
+                visEntity->spriteBankIdleSide = ResourceGetAndLoadSprite( "res/game/ents/structures/town_center/blue/town_center.spr.json" );
+                visEntity->spriteBankSelection = ResourceGetAndLoadSprite( "res/game/ents/ui/ui_select_unit_32x32.spr.json" );
+                visEntity->spriteAnimator.SetSpriteIfDifferent( visEntity->spriteBankIdleSide, false );
+                visEntity->spriteAnimator.frameIndex = 3;
+            } else if ( createInfo.type == EntityType::STRUCTURE_SMOL_REACTOR ) {
+                visEntity->spriteBankIdleSide = ResourceGetAndLoadSprite( "res/game/ents/structures/smol_reactor/blue/smol_reactor.spr.json" );
+                visEntity->spriteBankSelection = ResourceGetAndLoadSprite( "res/game/ents/ui/ui_select_unit_24x24.spr.json" );
+                visEntity->spriteAnimator.SetSpriteIfDifferent( visEntity->spriteBankIdleSide, false );
                 visEntity->spriteAnimator.frameIndex = 3;
             }
         }
 
         return visEntity;
+    }
+
+    void VisMap::OnGUILeftPanelUpdate() {
+        if ( inputMode != InputMode::PLACING_STRUCTURE ) {
+            guiTownCenterPanel.activeIndex = - 1;
+        }
+    }
+
+    void VisMap::OnGUILeftPanelClicked( i32 idx ) {
+        if ( guiCurrentPanel == &guiTownCenterPanel ) {
+            if ( idx == 7 ) {
+                guiTownCenterPanel.activeIndex = idx;
+                inputSprite = ResourceGetAndLoadSprite( "res/game/ents/structures/smol_reactor/blue/smol_reactor.spr.json" );
+                inputMode = InputMode::PLACING_STRUCTURE;
+                inputPlacingBuildingType = EntityType::STRUCTURE_SMOL_REACTOR;
+            } else if ( idx == 6 ) {
+                guiTownCenterPanel.activeIndex = idx;
+                inputSprite = ResourceGetAndLoadSprite( "res/game/ents/structures/town_center/blue/town_center.spr.json" );
+                inputMode = InputMode::PLACING_STRUCTURE;
+                inputPlacingBuildingType = EntityType::STRUCTURE_CITY_CENTER;
+            }
+        }
     }
 }
 

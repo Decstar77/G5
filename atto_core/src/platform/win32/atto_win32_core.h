@@ -15,8 +15,6 @@ namespace atto {
 
 namespace atto {
     struct ResourceRegistry {
-        FixedList<AudioResource, 1024>          audios;
-        FixedList<SpriteResource, 1024>             sprites;
         FontContext                                 fontContext;
     };
 
@@ -29,7 +27,8 @@ namespace atto {
         virtual FontHandle              ResourceGetFont( const char * name ) override;
         virtual float                   FontGetTextBounds( FontHandle font, f32 fontSize, const char * text, glm::vec2 pos, BoxBounds2D & bounds, TextAlignment_H hA, TextAlignment_V vA ) override;
 
-        virtual void                    AudioPlay( AudioResource * audioResource, glm::vec2 * pos ) override;
+        virtual void                    AudioPlay( AudioResource * audioResource, AudioGroupResource * audioGroup ) override;
+        virtual void                    AudioPlayRandomFromGroup( AudioGroupResource * audioGroup ) override;
         virtual void                    AudioSetListener( glm::vec2 pos ) override;
 
         virtual void                    RenderSubmit( DrawContext * dcxt, bool clearBackBuffers ) override;

@@ -93,6 +93,8 @@ namespace atto {
     fp2         ToFP2( const glm::vec2 & v );
 
     fp          FpAbs( fp f );
+    fp          FpCeil( fp f );
+    fp          FpFloor( fp f );
     fp          FpRound( fp f );
     fp          FpSin( fp f );
     fp          FpCos( fp f );
@@ -153,8 +155,8 @@ namespace atto {
     FpCircle        FpCircleCreate( fp2 pos, fp rad );
     bool            FpCircleIntersects( FpCircle a, FpCircle b );
     fp              FpColliderSurfaceDistance( FpCircle a, FpCircle b );
-    bool            FpCircleCollision( FpCircle a, FpCircle b, FpManifold & manifold );
     bool            FpCircleContains( FpCircle a, fp2 point );
+    bool            FpCircleCollision( FpCircle a, FpCircle b, FpManifold & manifold );
 
     FpAxisBox       FpAxisBoxCreateFromMinMax( fp2 min, fp2 max );
     FpAxisBox       FpAxisBoxCreateFromCenterSize( fp2 center, fp2 size );
@@ -168,8 +170,8 @@ namespace atto {
     bool            FpAxisBoxIntersects( FpAxisBox a, FpAxisBox b );
     bool            FpAxisBoxIntersects( FpAxisBox b, FpCircle c );
     fp2             FpClosestPointBox( FpAxisBox b, fp2 p );
-    bool            FpAxisBoxCollision( FpAxisBox a, FpAxisBox b, FpManifold & manifold );
     bool            FpAxisBoxContains( FpAxisBox a , fp2 p );
+    bool            FpAxisBoxCollision( FpAxisBox a, FpAxisBox b, FpManifold & manifold );
 
     struct FpCollider {
         ColliderType type;
@@ -179,11 +181,12 @@ namespace atto {
         };
     };
 
-    void            FpColliderSetPos( FpCollider * a, fp2 p );
+    void            FpColliderTranslate( FpCollider * a, fp2 p );
     fp              FpColliderSurfaceDistance( FpCollider a, FpCollider b );
     bool            FpColliderIntersects( FpCollider a, FpCircle b );
     bool            FpColliderIntersects( FpCollider a, FpAxisBox b );
     bool            FpColliderIntersects( FpCollider a, FpCollider b );
+    bool            FpColliderCollision( FpCollider a, FpCollider b, FpManifold & m );
 
     struct RNG {
         i32 index;
@@ -271,7 +274,6 @@ namespace atto {
         void                    CreateFromCenterSize( glm::vec3 center, glm::vec3  size );
     };
 
-
     struct Collider2D {
         ColliderType type;
         union {
@@ -286,6 +288,8 @@ namespace atto {
         bool                    Collision( const Collider2D & other, Manifold2D & manifold ) const;
         bool                    Collision( const BoxBounds2D & box, Manifold2D & manifold ) const;
     };
+
+    Collider2D FpColliderToCollider2D( FpCollider collider );
 
     struct Manifold {
         f32 penetration;

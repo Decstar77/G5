@@ -59,11 +59,6 @@ namespace atto {
     }
     
     void PlatformRendererCreateAudio( class AudioResource * audioResource ) {
-        audioResource->volumeMultiplier = 1.0f;
-        audioResource->maxInstances = 1;
-        audioResource->stealMode = AudioStealMode::NONE;
-        audioResource->minTimeToPassForAnotherSubmission = 0.0f;
-
         if( Core::theCore->theGameSettings.noAudio == false ) {
             if( audioResource->createInfo.is2D == true ) {
                 //FMOD_RESULT result = fmodSystem->createSound( name, FMOD_DEFAULT | FMOD_NONBLOCKING, 0, &audioResource.sound2D );
@@ -95,104 +90,74 @@ namespace atto {
         return FMOD_OK;
     }
 
-    void WindowsCore::AudioPlay( AudioResource * audio, glm::vec2 * pos ) {
+    void WindowsCore::AudioPlay( AudioResource * audio, AudioGroupResource * group ) {
         if ( theGameSettings.noAudio == true ) {
             return;
         }
 
-        if( pos == nullptr ) {
-            if( audio->sound2D != nullptr ) {
-                const f64 currentTime = GetTheCurrentTime();
+        FMOD::Channel * channel = nullptr;
+        FMOD_RESULT result = fmodSystem->playSound( audio->sound2D, fmodMasterGroup, true, &channel );
+        ERRCHECK( result );
 
-                i32 playingCount = 0;
-                AudioSpeaker * oldest = nullptr;
-                AudioSpeaker * newest = nullptr;
-                const i32 activeCount = fmodActives.GetCount();
-                for ( i32 speakerIndex = 0; speakerIndex < activeCount; speakerIndex++ ) {
-                    AudioSpeaker * speaker = fmodActives[speakerIndex];
-                    if ( speaker->source == audio ) {
-                        if ( oldest == nullptr || speaker->spawnTime < oldest->spawnTime ) {
-                            oldest = speaker;
-                        }
-                        if ( newest == nullptr || speaker->spawnTime > newest->spawnTime ) {
-                            newest = speaker;
-                        }
-                        playingCount++;
-                    }
+        channel->setVolume( audio->volumeMultiplier * 0.3f ); // @HACK:
+        channel->setCallback( ChannelCallback );
+
+        AudioSpeakerHandle handle = {};
+        AudioSpeaker * speaker = fmodSpeakers.Add( handle );
+        if ( speaker != nullptr ) {
+            speaker->handle = handle;
+            speaker->source = audio;
+            speaker->fmodChannel = channel;
+            speaker->spawnTime = PlatformGetCurrentTime();
+            speaker->sourceGroup = group;
+        }
+
+        fmodActives.Add( speaker );
+
+        channel->setUserData( speaker );
+        channel->setPaused( false );
+    }
+  
+    void WindowsCore::AudioPlayRandomFromGroup( AudioGroupResource * audioGroup ) {
+        const f64 currentTime = GetTheCurrentTime();
+
+        i32 playingCount = 0;
+        AudioSpeaker * oldest = nullptr;
+        AudioSpeaker * newest = nullptr;
+        const i32 activeCount = fmodActives.GetCount();
+        for ( i32 speakerIndex = 0; speakerIndex < activeCount; speakerIndex++ ) {
+            AudioSpeaker * speaker = fmodActives[ speakerIndex ];
+            if ( speaker->sourceGroup == audioGroup ) {
+                if ( oldest == nullptr || speaker->spawnTime < oldest->spawnTime ) {
+                    oldest = speaker;
                 }
-
-                if ( newest != nullptr ) {
-                    if ( currentTime - newest->spawnTime < audio->minTimeToPassForAnotherSubmission ) {
-                        return;
-                    }
+                if ( newest == nullptr || speaker->spawnTime > newest->spawnTime ) {
+                    newest = speaker;
                 }
-
-                if ( audio->maxInstances > 0 ) {
-                    if ( playingCount >= audio->maxInstances ) {
-                        Assert( oldest != nullptr );
-
-                        if ( audio->stealMode == AudioStealMode::NONE ) {
-                            return;
-                        } else if ( audio->stealMode == AudioStealMode::OLDEST ) {
-                            oldest->Stop();
-                        }
-                    }
-                }
-
-                FMOD::Channel * channel = nullptr;
-                FMOD_RESULT result = fmodSystem->playSound( audio->sound2D, fmodMasterGroup, true, &channel );
-                ERRCHECK( result );
-
-                //channel->setVolume( 0.15f );
-                //f32 m = 1.0f;
-                f32 m = 0.3f;
-                channel->setVolume( audio->volumeMultiplier * m );
-                channel->setCallback( ChannelCallback );
-
-                if ( audio->name.Contains( "vespene" ) ) { // @HACK:
-                    channel->setVolume( 2.0f );
-                } else if ( audio->name.Contains("march") ) {
-                    channel->setVolume( 0.5f );
-                }
-                
-                AudioSpeakerHandle handle = {};
-                AudioSpeaker * speaker = fmodSpeakers.Add( handle );
-                if ( speaker != nullptr ) {
-                    speaker->handle = handle;
-                    speaker->source = audio;
-                    speaker->fmodChannel = channel;
-                    speaker->spawnTime = currentTime;
-                }
-
-                fmodActives.Add( speaker );
-
-                channel->setUserData( speaker );
-                channel->setPaused( false );
-            }
-            else {
-                ATTOERROR("WindowsCore::AudioPlay :: Tried to play sound but was null %s", audio->name.GetCStr() );
+                playingCount++;
             }
         }
-        else {
-            if( audio->sound3D != nullptr ) {
-                FMOD::Channel * channel = nullptr;
-                FMOD_RESULT result = fmodSystem->playSound( audio->sound3D, fmodMasterGroup, true, &channel );
-                ERRCHECK( result );
-                FMOD_VECTOR v = {};
-                v.x = pos->x;
-                v.y = pos->y;
-                v.z = 0.0f;
-                channel->set3DAttributes( &v, nullptr );
-                channel->setVolume( 0.3f );
-                channel->setPaused( false );
 
-                //f32 dist = glm::distance( *pos, listenerPos );
-                //LogOutput( LogLevel::INFO, "Dist = %f", dist );
-            }
-            else {
-                ATTOERROR( "WindowsCore::AudioPlay :: Tried to play sound but was null %s", audio->name.GetCStr() );
+        if ( newest != nullptr ) {
+            if ( currentTime - newest->spawnTime < audioGroup->minTimeToPassForAnotherSubmission ) {
+                return;
             }
         }
+
+        if ( audioGroup->maxInstances > 0 ) {
+            if ( playingCount >= audioGroup->maxInstances ) {
+                Assert( oldest != nullptr );
+
+                if ( audioGroup->stealMode == AudioStealMode::NONE ) {
+                    return;
+                } else if ( audioGroup->stealMode == AudioStealMode::OLDEST ) {
+                    oldest->Stop();
+                }
+            }
+        }
+
+        i32 index = Random::Int( audioGroup->sounds.GetCount() );
+        AudioPlay( audioGroup->sounds[ index ], audioGroup );
     }
 
     void WindowsCore::AudioSetListener( glm::vec2 pos ) {
