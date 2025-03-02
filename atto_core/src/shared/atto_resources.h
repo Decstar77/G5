@@ -49,7 +49,27 @@ namespace atto {
     enum class AudioStealMode {
         NONE = 0,
         OLDEST = 1,
+        COUNT,
     };
+
+    inline static const char * AudioStealModeStrings[] = {
+        "NONE",
+        "OLDEST",
+    };
+
+    static_assert( ArrayCount( AudioStealModeStrings ) == (i32)AudioStealMode::COUNT, "AudioStealModeStrings count mismatch" );
+
+    template<typename _type_>
+    inline _type_ EnumStringToType( const char * strings[], const char * value ) {
+        for( i32 i = 0; i < (i32)_type_::COUNT; i++ ) {
+            if( strcmp( strings[ i ], value ) == 0 ) {
+                return (_type_)i;
+            }
+        }
+        INVALID_CODE_PATH;
+        return (_type_)( -1 );
+    }
+
 
     class AudioResource : public Resource {
     public:
@@ -79,7 +99,7 @@ namespace atto {
 
     struct SpriteActuation {
         i32                              frameIndex;
-        FixedList< AudioResource *, 4 >  audioResources;
+        AudioGroupResource *             audioGroup;
 
         REFLECT();
     };
@@ -117,6 +137,8 @@ namespace atto {
     AudioGroupResource *                ResourceGetAndCreateAudioGroup( const char * name, AudioGroupResourceCreateInfo * createInfo );
     AudioGroupResource *                ResourceGetAndLoadAudioGroup( const char * name );
 
+    void                                ResourceReplaceSpriteLoadPath( const char * match, const char * fill );
+
     SpriteResource *                    ResourceGetAndCreateSprite( const char * spriteName, SpriteResourceCreateInfo createInfo = {} );
     SpriteResource *                    ResourceGetAndLoadSprite( const char * spriteName );
     void                                ResourceGetAndLoadSpriteCollection( Span<LargeString> spriteFiles );
@@ -151,5 +173,6 @@ namespace atto {
 
         return false;
     }
+
 }
 

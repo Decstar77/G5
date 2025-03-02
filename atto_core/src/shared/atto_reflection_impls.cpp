@@ -1,4 +1,5 @@
 #include "../game/atto_core.h"
+#include "../sim/atto_sim_map.h"
 
 namespace atto {
     REFLECT_STRUCT_BEGIN( GameSettings )
@@ -17,18 +18,16 @@ namespace atto {
         REFLECT_STRUCT_END()
 
         REFLECT_STRUCT_BEGIN( TextureResource )
-        REFLECT_STRUCT_MEMBER( id )
         REFLECT_STRUCT_MEMBER( name )
         REFLECT_STRUCT_END()
 
         REFLECT_STRUCT_BEGIN( AudioResource )
-        REFLECT_STRUCT_MEMBER( id )
         REFLECT_STRUCT_MEMBER( name )
         REFLECT_STRUCT_END()
 
         REFLECT_STRUCT_BEGIN( SpriteActuation )
         REFLECT_STRUCT_MEMBER( frameIndex )
-        REFLECT_STRUCT_MEMBER( audioResources )
+        REFLECT_STRUCT_MEMBER( audioGroup )
         REFLECT_STRUCT_END()
 
         REFLECT_STRUCT_BEGIN( SpriteResourceCreateInfo )
@@ -46,4 +45,45 @@ namespace atto {
         REFLECT_STRUCT_MEMBER( createInfo )
         REFLECT_STRUCT_MEMBER( frameActuations )
         REFLECT_STRUCT_END()
+
+        REFLECT_STRUCT_BEGIN( AudioGroupResource )
+        REFLECT_STRUCT_MEMBER( maxInstances )
+        REFLECT_STRUCT_MEMBER( minTimeToPassForAnotherSubmission )
+        REFLECT_STRUCT_MEMBER( stealMode )
+        REFLECT_STRUCT_MEMBER( sounds )
+        REFLECT_STRUCT_END()
+
+        REFLECT_STRUCT_BEGIN( PlayerMonies )
+        REFLECT_STRUCT_MEMBER( power )
+        REFLECT_STRUCT_MEMBER( cash )
+        REFLECT_STRUCT_END()
+
+        REFLECT_STRUCT_BEGIN( Structure )
+        REFLECT_STRUCT_MEMBER( buildCost )
+        REFLECT_STRUCT_MEMBER( buildTimeSeconds )
+        REFLECT_STRUCT_END()
+
+        REFLECT_STRUCT_BEGIN( SimEntity )
+        REFLECT_STRUCT_MEMBER( type )
+        REFLECT_STRUCT_MEMBER( movable )
+        REFLECT_STRUCT_MEMBER( collider )
+        REFLECT_STRUCT_MEMBER( structure )
+        REFLECT_STRUCT_MEMBER( spriteSelectionOffset )
+        REFLECT_STRUCT_MEMBER( sndOnSelect )
+        REFLECT_STRUCT_MEMBER( sndOnMove )
+        REFLECT_STRUCT_MEMBER( sndOnAttack )
+        REFLECT_STRUCT_MEMBER( sndOnShoot )
+        REFLECT_STRUCT_MEMBER( sprIdleSide )
+        REFLECT_STRUCT_MEMBER( sprIdleDown )
+        REFLECT_STRUCT_MEMBER( sprIdleUp )
+        REFLECT_STRUCT_MEMBER( sprWalkSide )
+        REFLECT_STRUCT_MEMBER( sprWalkDown )
+        REFLECT_STRUCT_MEMBER( sprWalkUp )
+        REFLECT_STRUCT_MEMBER( sprAttackSide )
+        REFLECT_STRUCT_MEMBER( sprAttackDown )
+        REFLECT_STRUCT_MEMBER( sprAttackUp )
+        REFLECT_STRUCT_MEMBER( sprDeath )
+        REFLECT_STRUCT_MEMBER( sprSelection )
+        REFLECT_STRUCT_END()
+
 }

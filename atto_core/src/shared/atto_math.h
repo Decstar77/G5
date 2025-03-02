@@ -71,10 +71,12 @@ namespace atto {
 
     inline constexpr fp Fp( f32 f ) { return fp( f ); }
     inline constexpr fp Fp( i32 f ) { return fp( f ); }
+    inline constexpr fp Fp( f64 f ) { return fp( f ); }
     inline constexpr fp ToFP( f32 f ) { return fp( f ); }
     inline constexpr fp ToFP( i32 f ) { return fp( f ); }
     inline constexpr i32 ToInt( fp f ) { return static_cast<i32>( f ); }
     inline constexpr f32 ToFloat( fp f ) { return static_cast<f32>( f ); }
+    inline constexpr f64 ToDouble( fp f ) { return static_cast<f64>( f ); }
 
     constexpr i32 FP_EPI_MAX = ToInt( FP_MAX );
     constexpr float FP_EPI_FLOAT = ToFloat( FP_EPI );
@@ -86,8 +88,8 @@ namespace atto {
 
     inline constexpr fp2 Fp2( f32 x, f32 y ) { return { Fp( x ), Fp( y ) }; }
     inline constexpr fp2 Fp2( i32 x, i32 y ) { return { Fp( x ), Fp( y ) }; }
+    inline constexpr fp2 Fp2( f64 x, f64 y ) { return { Fp( x ), Fp( y ) }; }
     inline constexpr fp2 Fp2( glm::vec2 v ) { return { Fp( v.x ), Fp( v.y ) }; }
-
 
     glm::vec2   ToVec2( const fp2 & v );
     fp2         ToFP2( const glm::vec2 & v );

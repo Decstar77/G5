@@ -127,21 +127,7 @@ namespace atto {
         return result;
     }
 
-    struct GUIGamePanel {
-        i32                                 activeIndex;
-        SpriteResource *                    texture;
-        glm::vec2                           pos;
-        FixedList< glm::vec2, 9 >           bls;
-        FixedList< SpriteResource *, 9 >    images;
-    };
-
-    static SpriteResource * Gui_BlockSelection = nullptr;
-    static GUIGamePanel *   guiCurrentPanel = nullptr;
-    static GUIGamePanel     guiNothingPanel = {};
-    static GUIGamePanel     guiUnitPanel = {};
-    static GUIGamePanel     guiTownCenterPanel = {};
-
-    static GUIGamePanel GuiCreateBlock( glm::vec2 p ) {
+    static GUIGamePanel GuiCreatePanel( glm::vec2 p ) {
         GUIGamePanel panel = {};
         panel.activeIndex = -1;
         panel.pos = p;
@@ -150,14 +136,22 @@ namespace atto {
         for ( i32 y = 0; y < 3; y++ ) {
             for ( i32 x = 0; x < 3; x++ ) {
                 i32 flatIndex = y * 3 + x;
-                panel.bls[flatIndex] = p + baseTopLeft + glm::vec2( 11 * x, 11 * y );
+                panel.imageBls[ flatIndex ] = p + baseTopLeft + glm::vec2( 11 * x, 11 * y );
+                panel.imageColors[ flatIndex ] = glm::vec4( 1, 1, 1, 1 );
             }
         }
 
         return panel;
     }
 
-  
+    static GUIGamePanelSmol GuiCreatePanelSmol( glm::vec2 p ) {
+        GUIGamePanelSmol panel = {};
+        panel.pos = p;
+        panel.texture = ResourceGetAndLoadSprite( "res/game/ents/ui/ui_block_smol.spr.json" );
+        panel.leftBl = p + glm::vec2( 4, 2 );
+        return panel;
+    }
+
     void VisMap::VisInitialize( Core * core ) {
         this->core = core;
  
@@ -170,15 +164,19 @@ namespace atto {
         //}
 
         Gui_BlockSelection = ResourceGetAndLoadSprite( "res/game/ents/ui/ui_pick_block_14x14.spr.json" );
-        guiNothingPanel = GuiCreateBlock( glm::vec2( 276, 1 ) );
+        guiNothingPanel = GuiCreatePanel( glm::vec2( 276, 1 ) );
         guiCurrentPanel = &guiNothingPanel;
 
-        guiTownCenterPanel = GuiCreateBlock( glm::vec2( 276, 1 ) );
+        guiTownCenterPanel = GuiCreatePanel( glm::vec2( 276, 1 ) );
         guiTownCenterPanel.images[ 6 ] = ResourceGetAndLoadSprite( "res/game/ents/structures/town_center/town_center_icon.spr.json" );
         guiTownCenterPanel.images[ 7 ] = ResourceGetAndLoadSprite( "res/game/ents/structures/smol_reactor/smol_reactor_icon.spr.json" );
         guiTownCenterPanel.images[ 8 ] = ResourceGetAndLoadSprite( "res/game/ents/units/scout/scout_icon.spr.json" );
+        guiTownCenterUnlocksPanel = GuiCreatePanel( glm::vec2( 276, 42 ) );
+        guiTownCenterUnlocksPanel.texture =  ResourceGetAndLoadSprite( "res/game/ents/ui/ui_block_unlock.spr.json" );
+        guiTownCenterUnlocksPanel.images[ 6 ] =  ResourceGetAndLoadSprite( "res/game/ents/structures/town_center/town_center_icon.spr.json" );
+        guiTownCenterUnlocksPanel.imageColors[ 6 ] = glm::vec4( 1, 1, 1, 0.5f );
 
-        guiUnitPanel = GuiCreateBlock( glm::vec2( 276, 1 ) );
+        guiUnitPanel = GuiCreatePanel( glm::vec2( 276, 1 ) );
         guiUnitPanel.images[ 6 ] = ResourceGetAndLoadSprite( "res/game/ents/units/icons/action_icon_move.spr.json" );
         guiUnitPanel.images[ 7 ] = ResourceGetAndLoadSprite( "res/game/ents/units/icons/action_icon_stop.spr.json" );
         guiUnitPanel.images[ 8 ] = ResourceGetAndLoadSprite( "res/game/ents/units/icons/action_icon_hold.spr.json" );
@@ -210,34 +208,13 @@ namespace atto {
         const glm::vec2 mousePosGui = guiLayer->ScreenPosToWorldPos( mousePosPix );
         guiLayer->DrawTextureBL( ResourceGetAndCreateTexture( "res/game/gui/ui_test_04.png" ), glm::vec2( 0 ) );
 
-     
         if ( guiCurrentPanel != nullptr ) {
             OnGUILeftPanelUpdate();
-            guiLayer->DrawTextureBL( guiCurrentPanel->texture->textureResource, guiCurrentPanel->pos );
-            for ( int i = 0; i < 9; i++ ) {
-                SpriteResource * icon = *guiCurrentPanel->images.Get(i);
-                if ( icon != nullptr ) {
-                    guiLayer->DrawTextureBL( icon->textureResource, guiCurrentPanel->bls[i] );
-                    BoxBounds2D bb = {};
-                    bb.min = guiCurrentPanel->bls[i];
-                    bb.max = guiCurrentPanel->bls[i] + glm::vec2( 8, 8 );
-                    if ( bb.Contains( mousePosGui ) == true ) {
-                        guiLayer->DrawTextureBL( Gui_BlockSelection->textureResource, guiCurrentPanel->bls[i] - glm::vec2( 3 ) );
-                        isMouseOverUI = true;
-                        if ( core->InputMouseButtonJustPressed( MouseButton::MOUSE_BUTTON_1 ) == true ) {
-                            OnGUILeftPanelClicked( i );
-                        }
-                    }
-        
-                    if ( guiCurrentPanel->activeIndex == i ) {
-                        guiLayer->DrawTextureBL( Gui_BlockSelection->textureResource, guiCurrentPanel->bls[i] - glm::vec2( 3 ) );
-                    }
-                }
-            }
+            isMouseOverUI = OnGuiPanelDraw( guiCurrentPanel, guiLayer, mousePosGui );
         }
 
         SmallString guiText = StringFormat::Small( "%d", playerMonies[ playerNumber.value - 1 ].power );
-        guiLayer->DrawTextCam( ResourceGetFont( "bandwidth" ), glm::vec2( 40, 56 ), 8, guiText.GetCStr(), TextAlignment_H::FONS_ALIGN_RIGHT );
+        guiLayer->DrawTextCam( ResourceGetFont( "bandwidth" ), glm::vec2( 40, 57 ), 8, guiText.GetCStr(), TextAlignment_H::FONS_ALIGN_RIGHT );
         guiText = StringFormat::Small( "%d", playerMonies[ playerNumber.value - 1 ].cash );
         guiLayer->DrawTextCam( ResourceGetFont( "bandwidth" ), glm::vec2( 40, 43 ), 8, guiText.GetCStr(), TextAlignment_H::FONS_ALIGN_RIGHT );
 
@@ -297,29 +274,28 @@ namespace atto {
 
         const i32 entityCount = entities.GetCount();
         for( i32 entityIndex = 0; entityIndex < entityCount; entityIndex++ ) {
-            SimEntity * simEnt = entities[ entityIndex ];
-            VisEntity * visEnt = simEnt->vis;
+            SimEntity * ent = entities[ entityIndex ];
 
-            simEnt->posTime += dt;
-            f32 ptime = glm::clamp( simEnt->posTime / tickTime, 0.0f, 1.0f );
-            glm::vec2 pos = glm::mix( ToVec2( simEnt->lastPos ), ToVec2( simEnt->pos ), ptime );
-            Collider2D wsCollider = simEnt->ColliderFlWorldSpace( pos );
+            ent->posTime += dt;
+            f32 ptime = glm::clamp( ent->posTime / tickTime, 0.0f, 1.0f );
+            glm::vec2 pos = glm::mix( ToVec2( ent->lastPos ), ToVec2( ent->pos ), ptime );
+            Collider2D wsCollider = ent->ColliderFlWorldSpace( pos );
 
             bool isHovered = false;
             if ( inputMode == InputMode::NONE ) {
                 if ( wsCollider.Contains( mousePosWorld ) == true ) {
-                    hoveredEntity = simEnt;
+                    hoveredEntity = ent;
                     isHovered = true;
                 }
             } else if ( inputMode == InputMode::DRAGGING ) {
                 if ( wsCollider.Intersects( inputDragSelectionBounds ) == true ) {
-                    inputDragSelection.AddUnique( simEnt->handle );
+                    inputDragSelection.AddUnique( ent->handle );
                     isHovered = true;
                 }
             }
 
-            if ( simEnt->type == EntityType::UNIT_SCOUT ) {
-                glm::vec2 dir = ToVec2( simEnt->pos ) - ToVec2( simEnt->lastPos );
+            if ( ent->type == EntityType::UNIT_SCOUT ) {
+                glm::vec2 dir = ToVec2( ent->pos ) - ToVec2( ent->lastPos );
                 bool isMoving = dir != glm::vec2( 0, 0 );// @TODO: EPSILON!!!
                 if ( isMoving == true ) {
                     dir = glm::normalize( dir ); // @SPEED: Is there a way to rid the normalize ?
@@ -327,42 +303,42 @@ namespace atto {
                     const glm::vec2 downDir = glm::vec2( 0, -1 );
                     constexpr f32 reqAngle = glm::radians( 45.0f );
                     if ( glm::acos( glm::dot( dir, upDir ) ) < reqAngle ) {
-                        visEnt->facingDir = FacingDirection::UP;
-                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankWalkUp, true );
+                        ent->visFacingDir = FacingDirection::UP;
+                        ent->spriteAnimator.SetSpriteIfDifferent( ent->sprWalkUp, true );
                     } else if ( glm::acos( glm::dot( dir, downDir ) ) < reqAngle ) {
-                        visEnt->facingDir = FacingDirection::DOWN;
-                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankWalkDown, true );
+                        ent->visFacingDir = FacingDirection::DOWN;
+                        ent->spriteAnimator.SetSpriteIfDifferent( ent->sprWalkDown, true );
                     } else {
-                        visEnt->facingDir = glm::sign( dir.x ) >= 0 ? FacingDirection::RIGHT : FacingDirection::LEFT;
-                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankWalkSide, true );
+                        ent->visFacingDir = glm::sign( dir.x ) >= 0 ? FacingDirection::RIGHT : FacingDirection::LEFT;
+                        ent->spriteAnimator.SetSpriteIfDifferent( ent->sprWalkSide, true );
                     }
-                } else if ( simEnt->unit.state == UnitState::ATTACKING ) {
-                    if ( visEnt->facingDir == FacingDirection::LEFT || visEnt->facingDir == FacingDirection::RIGHT ) {
-                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankAttackSide, true );
-                    } else if ( visEnt->facingDir == FacingDirection::UP ) {
-                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankAttackUp, true );
-                    } else {
-                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankAttackDown, true );
-                    }
+                } else if ( ent->unit.state == UnitState::ATTACKING ) {
+                    //if ( ent->visFacingDir == FacingDirection::LEFT || ent->visFacingDir == FacingDirection::RIGHT ) {
+                    //    ent->spriteAnimator.SetSpriteIfDifferent( ent->sprAttackSide, false );
+                    //} else if ( ent->visFacingDir == FacingDirection::UP ) {
+                    //    ent->spriteAnimator.SetSpriteIfDifferent( ent->sprAttackUp, false );
+                    //} else {
+                    //    ent->spriteAnimator.SetSpriteIfDifferent( ent->sprAttackDown, false );
+                    //}
                 } else {
-                    if ( visEnt->facingDir == FacingDirection::LEFT || visEnt->facingDir == FacingDirection::RIGHT ) {
-                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankIdleSide, true );
-                    } else if ( visEnt->facingDir == FacingDirection::UP ) {
-                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankIdleUp, true );
+                    if ( ent->visFacingDir == FacingDirection::LEFT || ent->visFacingDir == FacingDirection::RIGHT ) {
+                        ent->spriteAnimator.SetSpriteIfDifferent( ent->sprIdleSide, true );
+                    } else if ( ent->visFacingDir == FacingDirection::UP ) {
+                        ent->spriteAnimator.SetSpriteIfDifferent( ent->sprIdleUp, true );
                     } else {
-                        visEnt->spriteAnimator.SetSpriteIfDifferent( visEnt->spriteBankIdleDown, true );
+                        ent->spriteAnimator.SetSpriteIfDifferent( ent->sprIdleDown, true );
                     }
                 }
-            } else if ( simEnt->type == EntityType::STRUCTURE_CITY_CENTER ) {
+            } else if ( ent->type == EntityType::STRUCTURE_CITY_CENTER ) {
 
             }
 
-            visEnt->spriteAnimator.Update( core, dt );
-            f32 flipFacing = visEnt->facingDir == FacingDirection::LEFT ? -1.0f : 1.0f;
-            spriteLayer0->DrawSprite( visEnt->spriteAnimator.sprite, visEnt->spriteAnimator.frameIndex, pos, 0, glm::vec2( flipFacing, 1 ), visEnt->spriteAnimator.color );
+            ent->spriteAnimator.Update( core, dt );
+            f32 flipFacing = ent->visFacingDir == FacingDirection::LEFT ? -1.0f : 1.0f;
+            spriteLayer0->DrawSprite( ent->spriteAnimator.sprite, ent->spriteAnimator.frameIndex, pos, 0, glm::vec2( flipFacing, 1 ), ent->spriteAnimator.color );
 
-            if ( isHovered == true || simEnt->selectedBy.Contains( playerNumber ) == true ) {
-                spriteLayer0->DrawSprite( visEnt->spriteBankSelection, 0, pos + visEnt->spriteSelectionOffset );
+            if ( isHovered == true || ent->selectedBy.Contains( playerNumber ) == true ) {
+                spriteLayer0->DrawSprite( ent->sprSelection, 0, pos + ent->spriteSelectionOffset );
             }
 
             if ( false ) {
@@ -386,7 +362,7 @@ namespace atto {
                     if ( selectionIndex == 0 ) {
                         SimEntity * activeEnt = entityPool.Get( inputDragSelection[ selectionIndex ] );
                         if ( activeEnt != nullptr && IsUnitType( activeEnt->type ) ) {
-                            core->AudioPlayRandomFromGroup( activeEnt->vis->sndOnSelect );
+                            core->AudioPlayRandomFromGroup( activeEnt->sndOnSelect );
                             guiCurrentPanel = &guiUnitPanel;
                         } else if ( activeEnt != nullptr && activeEnt->type == EntityType::STRUCTURE_CITY_CENTER ) {
                             guiCurrentPanel = &guiTownCenterPanel;
@@ -423,7 +399,7 @@ namespace atto {
                 if ( selectionCount > 0 ) {
                     SimEntity * activeEnt = entityPool.Get( currentSelection[ 0 ] );
                     if ( activeEnt != nullptr && IsUnitType( activeEnt->type ) ) {
-                        core->AudioPlayRandomFromGroup( activeEnt->vis->sndOnMove );
+                        core->AudioPlayRandomFromGroup( activeEnt->sndOnMove );
                     }
                 }
 
@@ -433,7 +409,7 @@ namespace atto {
                 if ( selectionCount > 0 ) {
                     SimEntity * activeEnt = entityPool.Get( currentSelection[ 0 ] );
                     if ( activeEnt != nullptr && IsUnitType( activeEnt->type ) ) {
-                        core->AudioPlayRandomFromGroup( activeEnt->vis->sndOnAttack );
+                        core->AudioPlayRandomFromGroup( activeEnt->sndOnAttack );
                     }
                 }
 
@@ -454,88 +430,118 @@ namespace atto {
         core->RenderSubmit( debugLayer, false );
     }
 
-    VisEntity * VisMap::VisMap_OnSpawnEntity( EntitySpawnCreateInfo createInfo ) {
-        VisEntityHandle handle = {};
-        VisEntity * visEntity = visEntityPool.Add( handle );
-        AssertMsg( visEntity != nullptr, "Spawn Vis Entity is nullptr" );
-        if ( visEntity != nullptr ) {
-            ZeroStructPtr( visEntity );
-            visEntity->handle = handle;
-            visEntity->facingDir = FacingDirection::RIGHT;
+    void VisMap::VisMap_OnSpawnEntity( SimEntity * visEntity, EntitySpawnCreateInfo createInfo ) {
+        visEntity->visFacingDir = FacingDirection::RIGHT;
+        if ( createInfo.type == EntityType::UNIT_SCOUT ) {
+            //if ( createInfo.playerNumber.value == 1 ) {
+            //    visEntity->sprIdleSide = ResourceGetAndLoadSprite( "res/game/ents/units/scout/blue/scout_idle_side.spr.json" );
+            //    visEntity->sprIdleDown = ResourceGetAndLoadSprite( "res/game/ents/units/scout/blue/scout_idle_down.spr.json" );
+            //    visEntity->sprIdleUp = ResourceGetAndLoadSprite( "res/game/ents/units/scout/blue/scout_idle_up.spr.json" );
+            //    visEntity->sprWalkSide = ResourceGetAndLoadSprite( "res/game/ents/units/scout/blue/scout_walk_side.spr.json" );
+            //    visEntity->sprWalkDown = ResourceGetAndLoadSprite( "res/game/ents/units/scout/blue/scout_walk_down.spr.json" );
+            //    visEntity->sprWalkUp = ResourceGetAndLoadSprite( "res/game/ents/units/scout/blue/scout_walk_up.spr.json" );
+            //    visEntity->sprAttackSide = ResourceGetAndLoadSprite( "res/game/ents/units/scout/blue/scout_attack_side.spr.json" );
+            //    visEntity->sprAttackDown = ResourceGetAndLoadSprite( "res/game/ents/units/scout/blue/scout_attack_down.spr.json" );
+            //    visEntity->sprAttackUp = ResourceGetAndLoadSprite( "res/game/ents/units/scout/blue/scout_attack_up.spr.json" );
+            //} else if ( createInfo.playerNumber.value == 2 ) {
+            //    visEntity->sprIdleSide = ResourceGetAndLoadSprite( "res/game/ents/units/scout/red/scout_idle_side.spr.json" );
+            //    visEntity->sprIdleDown = ResourceGetAndLoadSprite( "res/game/ents/units/scout/red/scout_idle_down.spr.json" );
+            //    visEntity->sprIdleUp = ResourceGetAndLoadSprite( "res/game/ents/units/scout/red/scout_idle_up.spr.json" );
+            //    visEntity->sprWalkSide = ResourceGetAndLoadSprite( "res/game/ents/units/scout/red/scout_walk_side.spr.json" );
+            //    visEntity->sprWalkDown = ResourceGetAndLoadSprite( "res/game/ents/units/scout/red/scout_walk_down.spr.json" );
+            //    visEntity->sprWalkUp = ResourceGetAndLoadSprite( "res/game/ents/units/scout/red/scout_walk_up.spr.json" );
+            //}
+            //visEntity->sprSelection = ResourceGetAndLoadSprite( "res/game/ents/ui/ui_select_unit_16x16.spr.json" );
+            //visEntity->spriteSelectionOffset = glm::vec2( 0, -1 );
+            visEntity->spriteAnimator.SetSpriteIfDifferent( visEntity->sprIdleSide, true );
+            //
+            //static bool doOnce = false;
+            //static AudioGroupResource * sndMoveGroup = nullptr;
+            //static AudioGroupResource * sndSelectGroup = nullptr;
+            //static AudioGroupResource * sndAttackGroup = nullptr;
+            //
+            //if ( doOnce == false ) {
+            //    doOnce = true;
+            //    AudioGroupResourceCreateInfo group = {};
+            //    group.maxInstances = 2;
+            //    group.stealMode = AudioStealMode::OLDEST;
+            //    group.minTimeToPassForAnotherSubmission = 0.5f;
+            //    sndMoveGroup = ResourceGetAndCreateAudioGroup( "res/game/ents/units/scout/scout_move.snd.json", &group );
+            //    sndMoveGroup->sounds.SetCount( 4 );
+            //    sndMoveGroup->sounds[ 0 ] = ResourceGetAndCreateAudio2D( "res/game/ents/units/scout/sounds/scout_move_1.wav" );
+            //    sndMoveGroup->sounds[ 1 ] = ResourceGetAndCreateAudio2D( "res/game/ents/units/scout/sounds/scout_move_2.wav" );
+            //    sndMoveGroup->sounds[ 2 ] = ResourceGetAndCreateAudio2D( "res/game/ents/units/scout/sounds/scout_move_3.wav" );
+            //    sndMoveGroup->sounds[ 3 ] = ResourceGetAndCreateAudio2D( "res/game/ents/units/scout/sounds/scout_move_4.wav" );
+            //
+            //    sndSelectGroup = ResourceGetAndCreateAudioGroup( "res/game/ents/units/scout/scout_select.snd.json", &group );
+            //    sndSelectGroup->sounds.SetCount( 4 );
+            //    sndSelectGroup->sounds[ 0 ] = ResourceGetAndCreateAudio2D( "res/game/ents/units/scout/sounds/scout_sir_1.wav" );
+            //    sndSelectGroup->sounds[ 1 ] = ResourceGetAndCreateAudio2D( "res/game/ents/units/scout/sounds/scout_sir_2.wav" );
+            //    sndSelectGroup->sounds[ 2 ] = ResourceGetAndCreateAudio2D( "res/game/ents/units/scout/sounds/scout_sir_3.wav" );
+            //    sndSelectGroup->sounds[ 3 ] = ResourceGetAndCreateAudio2D( "res/game/ents/units/scout/sounds/scout_sir_4.wav" );
+            //
+            //    sndAttackGroup = ResourceGetAndCreateAudioGroup( "res/game/ents/units/scout/scout_attack.snd.json", &group );
+            //    sndAttackGroup->sounds.SetCount( 3 );
+            //    sndAttackGroup->sounds[ 0 ] = ResourceGetAndCreateAudio2D( "res/game/ents/units/scout/sounds/scout_enemies_1.wav" );
+            //    sndAttackGroup->sounds[ 1 ] = ResourceGetAndCreateAudio2D( "res/game/ents/units/scout/sounds/scout_enemies_2.wav" );
+            //    sndAttackGroup->sounds[ 2 ] = ResourceGetAndCreateAudio2D( "res/game/ents/units/scout/sounds/scout_enemies_3.wav" );
+            //
+            //    //ResourceWriteTextRefl( sndMoveGroup, "res/game/ents/units/scout/scout_move.snd.json" );
+            //    //ResourceWriteTextRefl( sndSelectGroup, "res/game/ents/units/scout/scout_select.snd.json" );
+            //    //ResourceWriteTextRefl( sndAttackGroup, "res/game/ents/units/scout/scout_attack.snd.json" );
+            //}
 
-            if ( createInfo.type == EntityType::UNIT_SCOUT ) {
-                if ( createInfo.playerNumber.value == 1 ) {
-                    visEntity->spriteBankIdleSide = ResourceGetAndLoadSprite( "res/game/ents/units/scout/blue/scout_idle_side.spr.json" );
-                    visEntity->spriteBankIdleDown = ResourceGetAndLoadSprite( "res/game/ents/units/scout/blue/scout_idle_down.spr.json" );
-                    visEntity->spriteBankIdleUp = ResourceGetAndLoadSprite( "res/game/ents/units/scout/blue/scout_idle_up.spr.json" );
-                    visEntity->spriteBankWalkSide = ResourceGetAndLoadSprite( "res/game/ents/units/scout/blue/scout_walk_side.spr.json" );
-                    visEntity->spriteBankWalkDown = ResourceGetAndLoadSprite( "res/game/ents/units/scout/blue/scout_walk_down.spr.json" );
-                    visEntity->spriteBankWalkUp = ResourceGetAndLoadSprite( "res/game/ents/units/scout/blue/scout_walk_up.spr.json" );
-                    visEntity->spriteBankAttackSide = ResourceGetAndLoadSprite( "res/game/ents/units/scout/blue/scout_attack_side.spr.json" );
-                    visEntity->spriteBankAttackDown = ResourceGetAndLoadSprite( "res/game/ents/units/scout/blue/scout_attack_down.spr.json" );
-                    visEntity->spriteBankAttackUp = ResourceGetAndLoadSprite( "res/game/ents/units/scout/blue/scout_attack_up.spr.json" );
-                } else if ( createInfo.playerNumber.value == 2 ) {
-                    visEntity->spriteBankIdleSide = ResourceGetAndLoadSprite( "res/game/ents/units/scout/red/scout_idle_side.spr.json" );
-                    visEntity->spriteBankIdleDown = ResourceGetAndLoadSprite( "res/game/ents/units/scout/red/scout_idle_down.spr.json" );
-                    visEntity->spriteBankIdleUp = ResourceGetAndLoadSprite( "res/game/ents/units/scout/red/scout_idle_up.spr.json" );
-                    visEntity->spriteBankWalkSide = ResourceGetAndLoadSprite( "res/game/ents/units/scout/red/scout_walk_side.spr.json" );
-                    visEntity->spriteBankWalkDown = ResourceGetAndLoadSprite( "res/game/ents/units/scout/red/scout_walk_down.spr.json" );
-                    visEntity->spriteBankWalkUp = ResourceGetAndLoadSprite( "res/game/ents/units/scout/red/scout_walk_up.spr.json" );
+            //visEntity->sndOnMove = sndMoveGroup;
+            //visEntity->sndOnSelect = sndSelectGroup;
+            //visEntity->sndOnAttack = sndAttackGroup;
+
+            //ResourceWriteTextRefl( visEntity, "res/game/ents/units/scout/scout_attack.ent.json" );
+        }
+        else if( createInfo.type == EntityType::STRUCTURE_CITY_CENTER ) {
+            visEntity->spriteAnimator.SetSpriteIfDifferent( visEntity->sprIdleSide, false );
+            visEntity->spriteAnimator.frameIndex = 3;
+        }
+        else if( createInfo.type == EntityType::STRUCTURE_SMOL_REACTOR ) {
+            visEntity->spriteAnimator.SetSpriteIfDifferent( visEntity->sprIdleSide, false );
+            visEntity->spriteAnimator.frameIndex = 3;
+        }
+    }
+
+    bool VisMap::OnGuiPanelDrawSmol( GUIGamePanelSmol * panel, DrawContext * guiLayer, glm::vec2 mousePosGui ) {
+        bool isMouseOverUI = false;
+        guiLayer->DrawTextureBL( panel->texture->textureResource, panel->pos );
+        if (panel->leftImage != nullptr ) {
+            guiLayer->DrawTextureBL( panel->leftImage->textureResource, panel->leftBl );
+        }
+        return isMouseOverUI;
+    }
+
+    bool VisMap::OnGuiPanelDraw( GUIGamePanel * panel, DrawContext * guiLayer, glm::vec2 mousePosGui ) {
+        bool isMouseOverUI = false;
+        guiLayer->DrawTextureBL( panel->texture->textureResource, panel->pos );
+        for ( int i = 0; i < 9; i++ ) {
+            SpriteResource * icon = *panel->images.Get(i);
+            if ( icon != nullptr ) {
+                glm::vec4 col = panel->imageColors[ i ];
+                guiLayer->DrawTextureBL( icon->textureResource, panel->imageBls[i], glm::vec2( 1 ), col );
+                BoxBounds2D bb = {};
+                bb.min = panel->imageBls[ i ];
+                bb.max = panel->imageBls[ i ] + glm::vec2( 8, 8 );
+                if ( bb.Contains( mousePosGui ) == true ) {
+                    guiLayer->DrawTextureBL( Gui_BlockSelection->textureResource, panel->imageBls[i] - glm::vec2( 3 ) );
+                    isMouseOverUI = true;
+                    OnGUIPanelHoverd( guiLayer, i );
+                    if ( core->InputMouseButtonJustPressed( MouseButton::MOUSE_BUTTON_1 ) == true ) {
+                        OnGUIPanelClicked( guiLayer, i );
+                    }
                 }
-                visEntity->spriteBankSelection = ResourceGetAndLoadSprite( "res/game/ents/ui/ui_select_unit_16x16.spr.json" );
-                visEntity->spriteSelectionOffset = glm::vec2( 0, -1 );
-                visEntity->spriteAnimator.SetSpriteIfDifferent( visEntity->spriteBankIdleSide, true );
 
-                static bool doOnce = false;
-                static AudioGroupResource * sndMoveGroup = nullptr;
-                static AudioGroupResource * sndSelectGroup = nullptr;
-                static AudioGroupResource * sndAttackGroup = nullptr;
-
-                if ( doOnce == false ) {
-                    doOnce = true;
-                    AudioGroupResourceCreateInfo group = {};
-                    group.maxInstances = 2;
-                    group.stealMode = AudioStealMode::OLDEST;
-                    group.minTimeToPassForAnotherSubmission = 0.5f;
-                    sndMoveGroup = ResourceGetAndCreateAudioGroup( "scout_move", &group );
-                    sndMoveGroup->sounds.SetCount( 4 );
-                    sndMoveGroup->sounds[ 0 ] = ResourceGetAndCreateAudio2D( "res/game/ents/units/scout/sounds/scout_move_1.wav" );
-                    sndMoveGroup->sounds[ 1 ] = ResourceGetAndCreateAudio2D( "res/game/ents/units/scout/sounds/scout_move_2.wav" );
-                    sndMoveGroup->sounds[ 2 ] = ResourceGetAndCreateAudio2D( "res/game/ents/units/scout/sounds/scout_move_3.wav" );
-                    sndMoveGroup->sounds[ 3 ] = ResourceGetAndCreateAudio2D( "res/game/ents/units/scout/sounds/scout_move_4.wav" );
-
-                    sndSelectGroup = ResourceGetAndCreateAudioGroup( "scout_select", &group );
-                    sndSelectGroup->sounds.SetCount( 4 );
-                    sndSelectGroup->sounds[ 0 ] = ResourceGetAndCreateAudio2D( "res/game/ents/units/scout/sounds/scout_sir_1.wav" );
-                    sndSelectGroup->sounds[ 1 ] = ResourceGetAndCreateAudio2D( "res/game/ents/units/scout/sounds/scout_sir_2.wav" );
-                    sndSelectGroup->sounds[ 2 ] = ResourceGetAndCreateAudio2D( "res/game/ents/units/scout/sounds/scout_sir_3.wav" );
-                    sndSelectGroup->sounds[ 3 ] = ResourceGetAndCreateAudio2D( "res/game/ents/units/scout/sounds/scout_sir_4.wav" );
-
-                    sndAttackGroup = ResourceGetAndCreateAudioGroup( "scout_attack", &group );
-                    sndAttackGroup->sounds.SetCount( 3 );
-                    sndAttackGroup->sounds[ 0 ] = ResourceGetAndCreateAudio2D( "res/game/ents/units/scout/sounds/scout_enemies_1.wav" );
-                    sndAttackGroup->sounds[ 1 ] = ResourceGetAndCreateAudio2D( "res/game/ents/units/scout/sounds/scout_enemies_2.wav" );
-                    sndAttackGroup->sounds[ 2 ] = ResourceGetAndCreateAudio2D( "res/game/ents/units/scout/sounds/scout_enemies_3.wav" );
+                if ( panel->activeIndex == i ) {
+                    guiLayer->DrawTextureBL( Gui_BlockSelection->textureResource, panel->imageBls[i] - glm::vec2( 3 ) );
                 }
-
-                visEntity->sndOnMove = sndMoveGroup;
-                visEntity->sndOnSelect = sndSelectGroup;
-                visEntity->sndOnAttack = sndAttackGroup;
-
-            } else if ( createInfo.type == EntityType::STRUCTURE_CITY_CENTER ) {
-                visEntity->spriteBankIdleSide = ResourceGetAndLoadSprite( "res/game/ents/structures/town_center/blue/town_center.spr.json" );
-                visEntity->spriteBankSelection = ResourceGetAndLoadSprite( "res/game/ents/ui/ui_select_unit_32x32.spr.json" );
-                visEntity->spriteAnimator.SetSpriteIfDifferent( visEntity->spriteBankIdleSide, false );
-                visEntity->spriteAnimator.frameIndex = 3;
-            } else if ( createInfo.type == EntityType::STRUCTURE_SMOL_REACTOR ) {
-                visEntity->spriteBankIdleSide = ResourceGetAndLoadSprite( "res/game/ents/structures/smol_reactor/blue/smol_reactor.spr.json" );
-                visEntity->spriteBankSelection = ResourceGetAndLoadSprite( "res/game/ents/ui/ui_select_unit_24x24.spr.json" );
-                visEntity->spriteAnimator.SetSpriteIfDifferent( visEntity->spriteBankIdleSide, false );
-                visEntity->spriteAnimator.frameIndex = 3;
             }
         }
-
-        return visEntity;
+        return isMouseOverUI;
     }
 
     void VisMap::OnGUILeftPanelUpdate() {
@@ -544,7 +550,21 @@ namespace atto {
         }
     }
 
-    void VisMap::OnGUILeftPanelClicked( i32 idx ) {
+    void VisMap::OnGUIPanelHoverd( DrawContext * guiLayer, i32 idx ) {
+        if ( guiCurrentPanel == &guiTownCenterPanel ) {
+            if ( idx == 7 ) {
+                
+            } else if ( idx == 6 ) {
+                //OnGuiDrawPanel( &guiTownCenterUnlocksPanel, guiLayer, glm::vec2( -1, -1 ) );
+                GUIGamePanelSmol smol =  GuiCreatePanelSmol( glm::vec2( 276, 42 ) );
+                smol.leftImage = ResourceGetAndLoadSprite( "res/game/ents/ui/ui_icon_power.spr.json" );
+                //smol.leftImage = ResourceGetAndLoadSprite( "res/game/ents/ui/ui_icon_money.spr.json" );
+                OnGuiPanelDrawSmol( &smol, guiLayer, glm::vec2( -1, -1 ) );
+            }
+        }
+    }
+
+    void VisMap::OnGUIPanelClicked( DrawContext * guiLayer, i32 idx ) {
         if ( guiCurrentPanel == &guiTownCenterPanel ) {
             if ( idx == 7 ) {
                 guiTownCenterPanel.activeIndex = idx;

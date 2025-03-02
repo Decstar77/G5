@@ -36,27 +36,6 @@ namespace atto {
         REFLECT();
     };
 
-    class SpriteAnimator {
-    public:
-        SpriteResource *    sprite;
-        bool                animate;
-        i32                 frameIndex;
-        f32                 frameTimer;
-        f32                 frameDuration;
-        i32                 loopCount;
-        i32                 frameDelaySkip;
-        bool                loops;
-        glm::vec4           color;
-
-    public:
-        void                SetFrameRate( f32 fps );
-        bool                SetSpriteIfDifferent( SpriteResource * sprite, bool loops );
-        void                Update( Core * core, f32 dt );
-        void                TestFrameActuations( Core * core );
-
-        REFLECT();
-    };
-
     class GeometryFuncs {
     public:
         static void SortPointsIntoClockWiseOrder( glm::vec2 * points, i32 numPoints );

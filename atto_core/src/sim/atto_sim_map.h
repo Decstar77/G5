@@ -1,12 +1,20 @@
 #pragma once
 
-#include "atto_sim_var.h"
 #include "atto_sim_actions.h"
 
 namespace atto {
     struct SimEntity;
     struct VisEntity;
+
     class SpriteResource;
+    class AudioGroupResource;
+
+    constexpr i32 MAX_ENTITY_COUNT = 2048;
+    constexpr i32 tickRate = 30; // 30 times a second
+    constexpr f32 tickTime = 1.0f / tickRate;
+    constexpr fp  tickTimeFp = Fp( tickTime );
+    constexpr i32 tickCount = 5;
+    constexpr f32 turnIntervalMS = tickTime * ( f32 ) tickCount * 1000.0f;
 
     constexpr i32 TILE_MAX_X_COUNT = 96;
     constexpr i32 TILE_MAX_Y_COUNT = 64;
@@ -61,25 +69,68 @@ namespace atto {
         ATTACKING = 2
     };
 
-    struct Unit {
-        UnitState   state;
-        fp          speed;
-        fp          range;
-    };
-
     struct PlayerMonies {
         i32 power;
         i32 cash;
+        REFLECT();
+    };
+
+    struct Unit {
+        UnitState   state;
+        fp          moveSpeed;
+        fp          firingRange;
+        fp          firingRate;
+        fp          firingTimer;
+        i32         damage;
+        i32         currentHealth;
+        i32         maxHealth;
+    };
+
+    struct Structure {
+        PlayerMonies    buildCost;
+        fp              buildTimeSeconds;
+        REFLECT();
+    };
+
+    enum class FacingDirection {
+        RIGHT = 0,
+        LEFT,
+        UP,
+        DOWN
     };
 
     inline bool IsUnitType( EntityType t ) { return t == EntityType::UNIT_SCOUT; }
     inline bool IsStructureType( EntityType t ) { return t == EntityType::STRUCTURE_CITY_CENTER || t == EntityType::STRUCTURE_SMOL_REACTOR; }
+
+    class SpriteAnimator {
+    public:
+        SpriteResource *    sprite;
+        bool                animate;
+        i32                 frameIndex;
+        f32                 frameTimer;
+        f32                 frameDuration;
+        i32                 loopCount;
+        i32                 frameDelaySkip;
+        bool                loops;
+        bool                oneShot;
+        SpriteResource *    oneShotSpriteTransition;
+        glm::vec4           color;
+
+    public:
+        void                SetFrameRate( f32 fps );
+        void                SetSprite( SpriteResource * sprite, bool loops );
+        bool                SetSpriteIfDifferent( SpriteResource * sprite, bool loops );
+        void                SetSpriteOneShot( SpriteResource * sprite, SpriteResource * transition );
+        void                Update( class Core * core, f32 dt );
+        void                TestFrameActuations( class Core * core );
+    };
 
     struct SimEntity {
         EntityHandle                handle;
         EntityType                  type;
         PlayerNumber                playerNumber;
         TeamNumber                  teamNumber;
+        TeamColour                  teamColor;
         FixedList<PlayerNumber, 4>  selectedBy;
 
         fp2                         pos;
@@ -89,19 +140,34 @@ namespace atto {
         bool                        movable;
         FpCollider                  collider;
         Unit                        unit;
+        Structure                   structure;
         fp2                         dest;
         EntityHandle                target;
-        VisEntity *                 vis;
+
+        // VISUAL STUFF
+        SpriteAnimator                  spriteAnimator;
+        FacingDirection                 visFacingDir;
+        glm::vec2                       spriteSelectionOffset;
+        AudioGroupResource *            sndOnSelect;
+        AudioGroupResource *            sndOnMove;
+        AudioGroupResource *            sndOnAttack;
+        AudioGroupResource *            sndOnShoot;
+        SpriteResource *                sprIdleSide;
+        SpriteResource *                sprIdleDown;
+        SpriteResource *                sprIdleUp;
+        SpriteResource *                sprWalkSide;
+        SpriteResource *                sprWalkDown;
+        SpriteResource *                sprWalkUp;
+        SpriteResource *                sprAttackSide;
+        SpriteResource *                sprAttackDown;
+        SpriteResource *                sprAttackUp;
+        SpriteResource *                sprDeath;
+        SpriteResource *                sprSelection;
 
         inline FpCollider   ColliderFpWorldSpace( fp2 p ) const { FpCollider c = collider; FpColliderTranslate( &c, p ); return c; }
         inline Collider2D   ColliderFlWorldSpace( glm::vec2 p ) const { Collider2D c = FpColliderToCollider2D( collider ); c.Translate( p ); return c; }
-    };
 
-    struct EntityFile {
-        EntityType type;
-        bool                        movable;
-        FpCollider                  collider;
-        Unit                        unit;
+        REFLECT();
     };
     
     struct EntitySpawnCreateInfo {
@@ -124,7 +190,12 @@ namespace atto {
         void        SimNextTick( f32 dt );
         void        SimNextTurn( MapTurn * player1Turn, MapTurn * player2Turn, i32 tickCount );
 
+        //void        SimPay( PlayerNumber playerNumber, PlayerMonies cost );
+        bool        SimCanAfford( PlayerNumber playerNumber, PlayerMonies cost );
+        bool        SimCanAffordStructure( PlayerNumber playerNumber, EntityType type );
         bool        SimCanPlaceStructure( EntityType type, fp2 pos );
+
+        const SimEntity * ResourceEntityReflForType( EntityType type );
 
     public:
         i32                                             simTickNumber = 0;
@@ -133,8 +204,10 @@ namespace atto {
         FixedObjectPool<SimEntity, MAX_ENTITY_COUNT>    entityPool = {};
         TileMap                                         tileMap = {};
 
+        FixedList<SimEntity, ( i32 )EntityType::COUNT>  EntityRefls = {};
+
     protected:
-        virtual VisEntity *     VisMap_OnSpawnEntity( EntitySpawnCreateInfo createInfo ) { return nullptr; }
+        virtual void  VisMap_OnSpawnEntity( SimEntity * entity, EntitySpawnCreateInfo createInfo ) {}
 
     private:
         void        ApplyActions( MapActionBuffer * actionBuffer );

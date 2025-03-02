@@ -18,16 +18,16 @@ namespace atto {
     nlohmann::json JSON_Write( u64 v );
     nlohmann::json JSON_Write( f32 v );
     nlohmann::json JSON_Write( f64 v );
-
     nlohmann::json JSON_Write( const SmallString & v );
     nlohmann::json JSON_Write( const LargeString & v );
-
     nlohmann::json JSON_Write( glm::vec2 v );
     nlohmann::json JSON_Write( glm::vec3 v );
     nlohmann::json JSON_Write( glm::vec4 v );
     nlohmann::json JSON_Write( glm::mat2 v );
     nlohmann::json JSON_Write( glm::mat3 v );
     nlohmann::json JSON_Write( glm::mat4 v );
+    nlohmann::json JSON_Write( fp v );
+    nlohmann::json JSON_Write( fp2 v );
 
     void            JSON_Read( const nlohmann::json & j, u8 & o );
     void            JSON_Read( const nlohmann::json & j, bool & o );
@@ -45,6 +45,8 @@ namespace atto {
     void            JSON_Read( const nlohmann::json & j, glm::mat2 & o );
     void            JSON_Read( const nlohmann::json & j, glm::mat3 & o );
     void            JSON_Read( const nlohmann::json & j, glm::mat4 & o );
+    void            JSON_Read( const nlohmann::json & j, fp & v );
+    void            JSON_Read( const nlohmann::json & j, fp2 & v );
 
     struct TypeDescriptor {
         i32         size;

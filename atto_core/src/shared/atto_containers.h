@@ -810,6 +810,7 @@ namespace atto {
         FixedStringBase<SizeBytes>          SubStr( i32 fromIndex ) const;
         FixedStringBase<SizeBytes>          SubStr( i32 startIndex, i32 endIndex ) const;
         void                                Replace( const char & c, const char & replaceWith );
+        void                                Replace( const char * match, const char * replaceWith );
         void                                RemoveCharacter( const i32 & removeIndex );
         void                                RemoveWhiteSpace();
         void                                RemovePathPrefix( const char * prefix );
@@ -1023,13 +1024,34 @@ namespace atto {
         return result;
     }
 
-
     template<u64 SizeBytes>
     void FixedStringBase<SizeBytes>::Replace( const char & c, const char & replaceWith ) {
         const i32 l = length;
         for( i32 i = 0; i < l; i++ ) {
             if( data[ i ] == c ) {
                 data[ i ] = replaceWith;
+            }
+        }
+    }
+
+    template<u64 SizeBytes>
+    void FixedStringBase<SizeBytes>::Replace( const char * match, const char * replaceWith ) {
+        const i32 l = length;
+        const i32 matchLength = static_cast<i32>( StringHash::ConstStrLen( match ) );
+        const i32 replaceWithLength = static_cast<i32>( StringHash::ConstStrLen( replaceWith ) );
+
+        for( i32 i = 0; i < l; i++ ) {
+            i32 j = 0;
+            for( ; j < matchLength; j++ ) {
+                if( data[ i + j ] != match[ j ] ) {
+                    break;
+                }
+            }
+
+            if( j == matchLength ) {
+                for( i32 k = 0; k < replaceWithLength; k++ ) {
+                    data[ i + k ] = replaceWith[ k ];
+                }
             }
         }
     }

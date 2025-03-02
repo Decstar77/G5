@@ -6,44 +6,27 @@
 #include "atto_core.h"
 
 namespace atto {
-    enum class FacingDirection {
-        RIGHT = 0,
-        LEFT,
-        UP,
-        DOWN
-    };
-
+ 
     enum class InputMode {
         NONE, 
         DRAGGING,
         PLACING_STRUCTURE,
     };
 
-    typedef ObjectHandle<VisEntity> VisEntityHandle;
-    struct VisEntity {
-        VisEntityHandle                 handle;
-        SpriteAnimator                  spriteAnimator;
-        FacingDirection                 facingDir;
-        glm::vec2                       spriteSelectionOffset;
-        AudioGroupResource *            sndOnSelect;
-        AudioGroupResource *            sndOnMove;
-        AudioGroupResource *            sndOnAttack;
-        union {
-            struct {
-                SpriteResource *        spriteBankIdleSide;
-                SpriteResource *        spriteBankIdleDown;
-                SpriteResource *        spriteBankIdleUp;
-                SpriteResource *        spriteBankWalkSide;
-                SpriteResource *        spriteBankWalkDown;
-                SpriteResource *        spriteBankWalkUp;
-                SpriteResource *        spriteBankAttackSide;
-                SpriteResource *        spriteBankAttackDown;
-                SpriteResource *        spriteBankAttackUp;
-                SpriteResource *        spriteBankDeath;
-                SpriteResource *        spriteBankSelection;
-            };
-            SpriteResource*             spriteBank[16];
-        };
+    struct GUIGamePanel {
+        i32                                 activeIndex;
+        SpriteResource *                    texture;
+        glm::vec2                           pos;
+        FixedList< glm::vec2, 9 >           imageBls;
+        FixedList< glm::vec4, 9 >           imageColors;
+        FixedList< SpriteResource *, 9 >    images;
+    };
+
+    struct GUIGamePanelSmol {
+        SpriteResource *                    texture;
+        glm::vec2                           pos;
+        SpriteResource *                    leftImage;
+        glm::vec2                           leftBl;
     };
 
     class VisMap : public SimMap {
@@ -51,10 +34,12 @@ namespace atto {
         void                                        VisInitialize( Core * core );
         void                                        VisUpdate( f32 dt );
 
-        virtual VisEntity *                         VisMap_OnSpawnEntity( EntitySpawnCreateInfo createInfo ) override;
-
+        virtual void                                VisMap_OnSpawnEntity( SimEntity * entity, EntitySpawnCreateInfo createInfo ) override;
+        bool                                        OnGuiPanelDraw( GUIGamePanel * panel, DrawContext * guiLayer, glm::vec2 mousePosGui );
+        bool                                        OnGuiPanelDrawSmol( GUIGamePanelSmol * panel, DrawContext * guiLayer, glm::vec2 mousePosGui );
         void                                        OnGUILeftPanelUpdate();
-        void                                        OnGUILeftPanelClicked( i32 idx );
+        void                                        OnGUIPanelHoverd( DrawContext * guiLayer, i32 idx );
+        void                                        OnGUIPanelClicked( DrawContext * guiLayer, i32 idx );
 
         Core *                                          core = nullptr;
         MapActionBuffer                                 actionBuffer = {};
@@ -68,7 +53,12 @@ namespace atto {
         GrowableList<EntityHandle>                      inputDragSelection = {};
         EntityType                                      inputPlacingBuildingType = {};
         SpriteResource *                                inputSprite = nullptr;
-        FixedObjectPool<VisEntity, MAX_ENTITY_COUNT>    visEntityPool = {};
+        SpriteResource *                                Gui_BlockSelection = nullptr;
+        GUIGamePanel *                                  guiCurrentPanel = nullptr;
+        GUIGamePanel                                    guiNothingPanel = {};
+        GUIGamePanel                                    guiUnitPanel = {};
+        GUIGamePanel                                    guiTownCenterPanel = {};
+        GUIGamePanel                                    guiTownCenterUnlocksPanel = {};
     };
 }
 

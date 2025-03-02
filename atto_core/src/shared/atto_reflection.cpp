@@ -89,6 +89,20 @@ namespace atto {
         return j;
     }
 
+    nlohmann::json JSON_Write( fp v ) {
+        f64 vv = ToDouble( v );
+        return JSON_Write( vv );
+    }
+
+    nlohmann::json JSON_Write( fp2 v ) {
+        f64 x = ToDouble( v.x );
+        f64 y = ToDouble( v.y );
+        nlohmann::json j = {};
+        j[ "x" ] = x;
+        j[ "y" ] = y;
+        return j;
+    }
+
     void JSON_Read( const nlohmann::json & j, u8 & o ) {
         o = j.get<u8>();
     }
@@ -169,6 +183,16 @@ namespace atto {
         JSON_Read( j.at( "col3" ), col3 );
         JSON_Read( j.at( "col4" ), col4 );
         o = glm::mat4( col1, col2, col3, col4 );
+    }
+
+    void JSON_Read( const nlohmann::json & j, fp & v ) {
+        f64 vv = 0.0f;
+        JSON_Read( j, vv );
+        v = Fp( vv );
+    }
+
+    void JSON_Read( const nlohmann::json & j, fp2 & v ) {
+        v = Fp2( j.at( "x" ).get<f64>(), j.at( "y" ).get<f64>() );
     }
 
     struct TypeDescriptor_I32 : TypeDescriptor {
@@ -367,12 +391,15 @@ namespace atto {
         }
 
         virtual nlohmann::json JSON_Write( const void * obj ) override {
-            INVALID_CODE_PATH;
-            return nlohmann::json();
+            fp f = *(fp *)( obj );
+            return atto::JSON_Write( f );
         }
 
         virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
-            INVALID_CODE_PATH;
+            fp * f = (fp *)( obj );
+            fp r = {};
+            atto::JSON_Read( j, r );
+            *f = r;
         }
 
         virtual LargeString ToString( const void * obj ) override {
@@ -397,12 +424,15 @@ namespace atto {
         }
 
         virtual nlohmann::json JSON_Write( const void * obj ) override {
-            INVALID_CODE_PATH;
-            return nlohmann::json();
+            fp2 f = *(fp2 *)( obj );
+            return atto::JSON_Write( f );
         }
 
         virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
-            INVALID_CODE_PATH;
+            fp2 * f = (fp2 *)( obj );
+            fp2 r = {};
+            atto::JSON_Read( j, r );
+            *f = r;
         }
 
         virtual LargeString ToString( const void * obj ) override {
@@ -668,6 +698,10 @@ namespace atto {
 
 namespace atto {
 
+    /*
+    * ====================== COLLIDER 3d
+    */
+
     struct TypeDescriptor_Collider : TypeDescriptor {
         TypeDescriptor_Collider() {
             name = "Collider";
@@ -770,6 +804,10 @@ namespace atto {
         return &typeDesc;
     }
 
+    /*
+    * ====================== COLLIDER 2D
+    */
+
     struct TypeDescriptor_Collider2D : TypeDescriptor {
         TypeDescriptor_Collider2D() {
             name = "Collider2D";
@@ -848,6 +886,90 @@ namespace atto {
         static TypeDescriptor_Collider2D typeDesc;
         return &typeDesc;
     }
+
+
+    /*
+    * ====================== FP COLLIDER 2D
+    */
+
+    struct TypeDescriptor_FpCollider : TypeDescriptor {
+        TypeDescriptor_FpCollider() {
+            name = "FpCollider";
+            size = sizeof( FpCollider );
+        }
+
+        nlohmann::json JSON_Write( const void * obj ) override {
+            FpCollider * collider = (FpCollider *)obj;
+            nlohmann::json j;
+            j[ "type" ] = (i32)collider->type;
+            switch( collider->type ) {
+                case COLLIDER_TYPE_NONE: {} break;
+                case COLLIDER_TYPE_CIRCLE:
+                {
+                    j[ "c" ] = atto::JSON_Write( collider->circle.pos );
+                    j[ "r" ] = atto::JSON_Write( collider->circle.rad );
+                } break;
+                case COLLIDER_TYPE_SPHERE: { INVALID_CODE_PATH; } break;
+                case COLLIDER_TYPE_AXIS_BOX:
+                {
+                    j[ "min" ] = atto::JSON_Write( collider->box.min );
+                    j[ "max" ] = atto::JSON_Write( collider->box.max );
+                } break;
+                case COLLIDER_TYPE_PLANE: { INVALID_CODE_PATH; } break;
+                case COLLIDER_TYPE_TRIANGLE: { INVALID_CODE_PATH; } break;
+                default: { INVALID_CODE_PATH; } break;
+            }
+
+            return j;
+        }
+
+        void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+            FpCollider * collider = (FpCollider *)obj;
+            collider->type = j[ "type" ];
+            switch( collider->type ) {
+                case COLLIDER_TYPE_NONE:
+                {
+
+                } break;
+                case COLLIDER_TYPE_CIRCLE:
+                {
+                    atto::JSON_Read( j[ "c" ], collider->circle.pos );
+                    atto::JSON_Read( j[ "r" ], collider->circle.rad );
+                } break;
+                case COLLIDER_TYPE_SPHERE:
+                {
+                    INVALID_CODE_PATH;
+                } break;
+                case COLLIDER_TYPE_AXIS_BOX:
+                {
+                    atto::JSON_Read( j[ "min" ], collider->box.min );
+                    atto::JSON_Read( j[ "max" ], collider->box.max );
+                } break;
+                case COLLIDER_TYPE_PLANE:
+                {
+                    INVALID_CODE_PATH;
+                } break;
+                case COLLIDER_TYPE_TRIANGLE:
+                {
+                    INVALID_CODE_PATH;
+                } break;
+                default:
+                {
+                    INVALID_CODE_PATH;
+                } break;
+            }
+        }
+
+        virtual LargeString ToString( const void * obj ) override {
+            throw std::logic_error( "The method or operation is not implemented." );
+        }
+    };
+
+    template<>
+    TypeDescriptor * GetPrimitiveDescriptor<FpCollider>() {
+        static TypeDescriptor_FpCollider typeDesc;
+        return &typeDesc;
+    }
 }
 
 /*
@@ -906,6 +1028,10 @@ namespace atto {
         }
 
         virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+            LargeString resPath = {};
+            atto::JSON_Read( j, resPath );
+            AudioResource ** audioResource = (AudioResource **)obj;
+            *audioResource = ResourceGetAndLoadAudio( resPath.GetCStr() );
         }
 
         virtual LargeString ToString( const void * obj ) override {
@@ -920,6 +1046,77 @@ namespace atto {
     }
 
     /*
+    * ====================== AUDIO STEAL MODE
+    */
+    struct TypeDescriptor_AudioStealMode : TypeDescriptor {
+        TypeDescriptor_AudioStealMode() {
+            name = "AudioStealMode";
+            size = sizeof( AudioStealMode );
+        }
+
+        virtual nlohmann::json JSON_Write( const void * obj ) override {
+            AudioStealMode a = *(AudioStealMode *)obj;
+            SmallString name = SmallString::FromLiteral( AudioStealModeStrings[ ( i32 )( a ) ] );
+            return atto::JSON_Write( name );
+        }
+
+        virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+            SmallString strValue = {};
+            atto::JSON_Read( j, strValue );
+            AudioStealMode * res = (AudioStealMode *)obj;
+            *res = EnumStringToType<AudioStealMode>( AudioStealModeStrings, strValue.GetCStr() );
+        }
+
+        virtual LargeString ToString( const void * obj ) override {
+            throw std::logic_error( "The method or operation is not implemented." );
+        }
+    };
+
+    template <>
+    TypeDescriptor * GetPrimitiveDescriptor<AudioStealMode>() {
+        static TypeDescriptor_AudioStealMode typeDesc;
+        return &typeDesc;
+    }
+
+    /*
+    * ====================== AUDIO GROUP
+    */
+    struct TypeDescriptor_AudioGroup : TypeDescriptor {
+        TypeDescriptor_AudioGroup() {
+            name = "AudioGroupResource";
+            size = sizeof( AudioGroupResource * );
+        }
+
+        virtual nlohmann::json JSON_Write( const void * obj ) override {
+            AudioGroupResource * audioGroupResource = *(AudioGroupResource **)obj;
+            if( audioGroupResource != nullptr ) {
+                return atto::JSON_Write( audioGroupResource->name );
+            }
+            return nlohmann::json();
+        }
+
+        virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+            if( j.is_null() == true ) {
+                return;
+            }
+            LargeString resPath = {};
+            atto::JSON_Read( j, resPath );
+            AudioGroupResource ** audioGroupResource = (AudioGroupResource **)obj;
+            *audioGroupResource = ResourceGetAndLoadAudioGroup( resPath.GetCStr() );
+        }
+
+        virtual LargeString ToString( const void * obj ) override {
+            throw std::logic_error( "The method or operation is not implemented." );
+        }
+    };
+
+    template <>
+    TypeDescriptor * GetPrimitiveDescriptor< AudioGroupResource * >() {
+        static TypeDescriptor_AudioGroup typeDesc;
+        return &typeDesc;
+    }
+
+    /*
     * ====================== SPRITE PTR
     */
     struct TypeDescriptor_SpritePtr : TypeDescriptor {
@@ -930,11 +1127,20 @@ namespace atto {
 
         virtual nlohmann::json JSON_Write( const void * obj ) override {
             SpriteResource * spriteResource = *(SpriteResource **)obj;
-            return atto::JSON_Write( spriteResource->name );
+            if( spriteResource != nullptr ) {
+                return atto::JSON_Write( spriteResource->name );
+            }
+            return nlohmann::json();
         }
 
         virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
-            INVALID_CODE_PATH
+            if( j.is_null() == true ) {
+                return;
+            }
+            LargeString resPath = {};
+            atto::JSON_Read( j, resPath );
+            SpriteResource ** spriteResource = (SpriteResource **)obj;
+            *spriteResource = ResourceGetAndLoadSprite( resPath.GetCStr() );
         }
 
         virtual void Binary_Read( void * obj, BinaryBlob & f ) override {
@@ -953,6 +1159,39 @@ namespace atto {
     template <>
     TypeDescriptor * GetPrimitiveDescriptor<SpriteResource *>() {
         static TypeDescriptor_SpritePtr typeDesc;
+        return &typeDesc;
+    }
+
+    /*
+    * ====================== ENTITY TYPE
+    */
+    struct TypeDescriptor_EntityType : TypeDescriptor {
+        TypeDescriptor_EntityType() {
+            name = "EntityType";
+            size = sizeof( EntityType );
+        }
+
+        virtual nlohmann::json JSON_Write( const void * obj ) override {
+            EntityType a = *(EntityType *)obj;
+            SmallString name = SmallString::FromLiteral( EntityTypeStrings[ ( i32 )( a ) ] );
+            return atto::JSON_Write( name );
+        }
+
+        virtual void JSON_Read( const nlohmann::json & j, const void * obj ) override {
+            SmallString strValue = {};
+            atto::JSON_Read( j, strValue );
+            EntityType * res = (EntityType *)obj;
+            *res = EnumStringToType<EntityType>( EntityTypeStrings, strValue.GetCStr() );
+        }
+
+        virtual LargeString ToString( const void * obj ) override {
+            throw std::logic_error( "The method or operation is not implemented." );
+        }
+    };
+
+    template <>
+    TypeDescriptor * GetPrimitiveDescriptor<EntityType>() {
+        static TypeDescriptor_EntityType typeDesc;
         return &typeDesc;
     }
 }

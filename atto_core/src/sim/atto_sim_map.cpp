@@ -12,6 +12,11 @@ namespace atto {
             GlobalRpcTable[ (i32)MapAction::REQUEST_PLACE_STRUCTURE ] = new RpcMemberFunction( this, &SimMap::Action_RequestPlaceStructure );
         }
 
+        {   
+            ResourceReadTextRefl( EntityRefls.Get( ( i32 )EntityType::STRUCTURE_CITY_CENTER ), "res/game/ents/structures/town_center/town_center.ent.json" );
+            ResourceReadTextRefl( EntityRefls.Get( ( i32 )EntityType::STRUCTURE_SMOL_REACTOR ), "res/game/ents/structures/smol_reactor/smol_reactor.ent.json" );
+        }
+
         SpriteResourceCreateInfo spriteCreateInfo = {};
         spriteCreateInfo.frameXCount = 8;
         spriteCreateInfo.frameYCount = 8;
@@ -44,12 +49,12 @@ namespace atto {
 
         Action_CommandSpawnEntity( EntityType::UNIT_SCOUT, Fp2( 240, 200 ), p1, t1 );
         Action_CommandSpawnEntity( EntityType::UNIT_SCOUT, Fp2( 240, 240 ), p1, t1 );
-        //Action_CommandSpawnEntity( EntityType::UNIT_SCOUT, Fp2( 240, 260 ), p1, t1 );
-        //Action_CommandSpawnEntity( EntityType::UNIT_SCOUT, Fp2( 240, 280 ), p1, t1 );
-        //Action_CommandSpawnEntity( EntityType::UNIT_SCOUT, Fp2( 240, 300 ), p1, t1 );
-        //Action_CommandSpawnEntity( EntityType::UNIT_SCOUT, Fp2( 240, 320 ), p1, t1 );
-        //Action_CommandSpawnEntity( EntityType::UNIT_SCOUT, Fp2( 240, 340 ), p1, t1 );
-        //Action_CommandSpawnEntity( EntityType::UNIT_SCOUT, Fp2( 240, 360 ), p1, t1 );
+        Action_CommandSpawnEntity( EntityType::UNIT_SCOUT, Fp2( 240, 260 ), p1, t1 );
+        Action_CommandSpawnEntity( EntityType::UNIT_SCOUT, Fp2( 240, 280 ), p1, t1 );
+        Action_CommandSpawnEntity( EntityType::UNIT_SCOUT, Fp2( 240, 300 ), p1, t1 );
+        Action_CommandSpawnEntity( EntityType::UNIT_SCOUT, Fp2( 240, 320 ), p1, t1 );
+        Action_CommandSpawnEntity( EntityType::UNIT_SCOUT, Fp2( 240, 340 ), p1, t1 );
+        Action_CommandSpawnEntity( EntityType::UNIT_SCOUT, Fp2( 240, 360 ), p1, t1 );
         Action_CommandSpawnEntity( EntityType::STRUCTURE_CITY_CENTER, tileMap.PosToTileBL( Fp2( 200, 200 ) ) , p1, t1 );
         Action_CommandSpawnEntity( EntityType::UNIT_SCOUT, Fp2( 400, 200 ), p2, t2 );
     }
@@ -80,21 +85,37 @@ namespace atto {
 
                 FpCollider entCollider = ent->ColliderFpWorldSpace( ent->pos );
 
-                if ( ent->unit.state == UnitState::MOVING ) {
-                    fp2 dir = FpNormalize( ent->dest - ent->pos ) * ent->unit.speed;
-                    ent->pos = ent->pos + dir * tickTimeFp;
+                if ( IsUnitType( ent->type ) == true ) {
+                    ent->unit.firingTimer = FpClamp( ent->unit.firingTimer + tickTimeFp, Fp( 0 ), ent->unit.firingRate );
 
-                    if ( FpDistance( ent->pos, ent->dest ) < Fp( 5 ) ) {
-                        ent->unit.state = UnitState::IDLE;
-                    }
-                } else if ( ent->unit.state == UnitState::ATTACKING ) {
-                    SimEntity * targetEnt = entityPool.Get( ent->target );
-                    if ( targetEnt != nullptr ) {
-                        if ( FpDistance( ent->pos, targetEnt->pos ) > ent->unit.range ) {
-                            fp2 dir = FpNormalize( targetEnt->pos - ent->pos ) * ent->unit.speed;
-                            ent->pos = ent->pos + dir * tickTimeFp;
-                        } else {
+                    if ( ent->unit.state == UnitState::MOVING ) {
+                        fp2 dir = FpNormalize( ent->dest - ent->pos ) * ent->unit.moveSpeed;
+                        ent->pos = ent->pos + dir * tickTimeFp;
 
+                        if ( FpDistance( ent->pos, ent->dest ) < Fp( 5 ) ) {
+                            ent->unit.state = UnitState::IDLE;
+                        }
+                    } else if ( ent->unit.state == UnitState::ATTACKING ) {
+                        SimEntity * targetEnt = entityPool.Get( ent->target );
+                        if ( targetEnt != nullptr ) {
+                            if ( FpDistance( ent->pos, targetEnt->pos ) > ent->unit.firingRange ) {
+                                fp2 dir = FpNormalize( targetEnt->pos - ent->pos ) * ent->unit.moveSpeed;
+                                ent->pos = ent->pos + dir * tickTimeFp;
+                            } else {
+                                if ( ent->unit.firingTimer >= ent->unit.firingRate ) {
+                                    
+                                    targetEnt->unit.currentHealth -= ent->unit.damage;
+                                    ent->unit.firingTimer = Fp( 0 );
+
+                                    if ( ent->visFacingDir == FacingDirection::LEFT || ent->visFacingDir == FacingDirection::RIGHT ) {
+                                        ent->spriteAnimator.SetSpriteOneShot( ent->sprAttackSide, ent->sprIdleSide );
+                                    } else if ( ent->visFacingDir == FacingDirection::UP ) {
+                                        ent->spriteAnimator.SetSpriteOneShot( ent->sprAttackUp, ent->sprIdleUp );
+                                    } else if ( ent->visFacingDir == FacingDirection::DOWN ){
+                                        ent->spriteAnimator.SetSpriteOneShot( ent->sprAttackDown, ent->sprIdleDown );
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -136,22 +157,28 @@ namespace atto {
         }
     }
 
+    bool SimMap::SimCanAfford( PlayerNumber playerNumber, PlayerMonies cost ) {
+        PlayerMonies monies = playerMonies[playerNumber.value - 1];
+        return monies.power >= cost.power && monies.cash >= cost.cash;
+    }
+    
+    bool SimMap::SimCanAffordStructure( PlayerNumber playerNumber, EntityType type ) {
+        const SimEntity * entRefl = ResourceEntityReflForType( type );
+        return SimCanAfford( playerNumber, entRefl->structure.buildCost );
+    }
+
+    const SimEntity * SimMap::ResourceEntityReflForType( EntityType type ) {
+        return EntityRefls.Get( ( i32 )type );
+    }
+
     bool SimMap::SimCanPlaceStructure( EntityType type, fp2 pos ) {
         utilActiveEntities.Clear();
         entityPool.GatherActiveObjs( utilActiveEntities );
 
         Assert( type == EntityType::STRUCTURE_CITY_CENTER || type == EntityType::STRUCTURE_SMOL_REACTOR );
 
-        FpCollider collider = {};
-        collider.type = ColliderType::COLLIDER_TYPE_AXIS_BOX;
-        if ( type == EntityType::STRUCTURE_CITY_CENTER ) {
-            collider.box.min = Fp2( -12, -12 );
-            collider.box.max = Fp2( 12, 12 );
-        } else if ( type == EntityType::STRUCTURE_SMOL_REACTOR ) {
-            collider.box.min = Fp2( -8, -8 );
-            collider.box.max = Fp2( 8, 8 );
-        }
-
+        const SimEntity * entRefl = ResourceEntityReflForType( type );
+        FpCollider collider = entRefl->collider;
         TileInterval inv = tileMap.IntervalForCollider( collider, pos );
         bool unwalkable = tileMap.ContainsFlag( inv.xIndex, inv.yIndex, inv.xCount, inv.yCount, TILE_FLAG_UNWALKABLE );
         if ( unwalkable == true ) {
@@ -159,14 +186,6 @@ namespace atto {
         } else {
             return true;
         }
-
-        //i32 entityCount = utilActiveEntities.GetCount();
-        //for ( i32 entityIndex = 0; entityIndex < entityCount; entityIndex++ ) {
-        //    SimEntity * ent = utilActiveEntities[ entityIndex ];
-        //    if ( IsStructureType( ent->type ) == true ) {
-        //        //ent->collider
-        //    }
-        //}
     }
 
     void SimMap::ApplyActions( MapActionBuffer * actionBuffer ) {
@@ -261,33 +280,36 @@ namespace atto {
             entity->type = createInfo.type;
             entity->playerNumber = createInfo.playerNumber;
             entity->teamNumber = createInfo.teamNumber;
+            entity->teamColor = createInfo.teamNumber.value == 1 ? TeamColour::BLUE : TeamColour::RED;
             entity->pos = createInfo.pos;
             entity->lastPos = entity->pos;
-            entity->vis = VisMap_OnSpawnEntity( createInfo );
+
             entity->movable = false;
 
             if ( entity->type == EntityType::UNIT_SCOUT ) {
                 entity->movable = true;
-                entity->collider.type = ColliderType::COLLIDER_TYPE_AXIS_BOX;
-                entity->collider.box.min = Fp2( -6, -6 );
-                entity->collider.box.max = Fp2( 6, 6 );
-                entity->unit.range = Fp( 25 );
-                entity->unit.speed = Fp( 100 );
+                entity->unit.moveSpeed = Fp( 100 );
+                entity->unit.firingRange = Fp( 25 );
+                entity->unit.firingRate = Fp( 1 );
+                entity->unit.damage = 1;
+                entity->unit.maxHealth = 5;
+                entity->unit.currentHealth = entity->unit.maxHealth;
+                if ( entity->teamColor == TeamColour::RED ) {
+                    ResourceReplaceSpriteLoadPath( "/blue/", "/red/" );
+                }
+                ResourceReadTextRefl( entity, "res/game/ents/units/scout/scout.ent.json" );
+                ResourceReplaceSpriteLoadPath( "", "" );
             } else if ( entity->type == EntityType::STRUCTURE_CITY_CENTER ) {
-                entity->collider.type = ColliderType::COLLIDER_TYPE_AXIS_BOX;
-                entity->collider.box.min = Fp2( -12, -12 );
-                entity->collider.box.max = Fp2( 12, 12 );
-
+                ResourceReadTextRefl( entity, "res/game/ents/structures/town_center/town_center.ent.json" );
                 TileInterval interval = tileMap.IntervalForCollider( entity->collider, entity->pos );
                 tileMap.MarkTilesBL( interval.xIndex, interval.yIndex, interval.xCount, interval.yCount, TILE_FLAG_UNWALKABLE );
             } else if ( entity->type == EntityType::STRUCTURE_SMOL_REACTOR ) {
-                entity->collider.type = ColliderType::COLLIDER_TYPE_AXIS_BOX;
-                entity->collider.box.min = Fp2( -8, -8 );
-                entity->collider.box.max = Fp2( 8, 8 );
-
+                ResourceReadTextRefl( entity, "res/game/ents/structures/smol_reactor/smol_reactor.ent.json" );
                 TileInterval interval = tileMap.IntervalForCollider( entity->collider, entity->pos );
                 tileMap.MarkTilesBL( interval.xIndex, interval.yIndex, interval.xCount, interval.yCount, TILE_FLAG_UNWALKABLE );
             }
+
+            VisMap_OnSpawnEntity( entity, createInfo );
         }
 
         return entity;

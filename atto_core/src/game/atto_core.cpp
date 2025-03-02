@@ -1,5 +1,6 @@
 
 #include "atto_core.h"
+#include "../sim/atto_sim_map.h"
 
 namespace atto {
     GameSettings GameSettings::CreateSensibleDefaults() {
@@ -251,7 +252,7 @@ namespace atto {
         drawList.Add( cmd );
     }
 
-    void DrawContext::DrawTextureBL( TextureResource * texture, glm::vec2 bl, glm::vec2 size /*= glm::vec2( 1 )*/, glm::vec4 colour /*= glm::vec4( 1 ) */ ) {
+    void DrawContext::DrawTextureBL( TextureResource * texture, glm::vec2 bl, glm::vec2 size, glm::vec4 colour ) {
         Assert( spriteOnly == false );
 
         DrawCommand cmd = {};
@@ -270,7 +271,7 @@ namespace atto {
     }
 
 
-    void DrawContext::DrawTextureTL( TextureResource * texture, glm::vec2 tl, glm::vec2 size /*= glm::vec2( 1 )*/, glm::vec4 colour /*= glm::vec4( 1 ) */ ) {
+    void DrawContext::DrawTextureTL( TextureResource * texture, glm::vec2 tl, glm::vec2 size, glm::vec4 colour ) {
         Assert( spriteOnly == false );
 
         DrawCommand cmd = {};
@@ -621,6 +622,19 @@ namespace atto {
         frameDuration = 1.0f / fps;
     }
 
+    void SpriteAnimator::SetSprite( SpriteResource * sprite, bool loops ) {
+        this->sprite = sprite;
+        SetFrameRate( (f32)sprite->createInfo.frameRate );
+        animate = true;
+        frameIndex = 0;
+        frameTimer = 0;
+        loopCount = 0;
+        oneShot = false;
+        oneShotSpriteTransition = nullptr;
+        this->loops = loops;
+        color = glm::vec4( 1 );
+    }
+
     bool SpriteAnimator::SetSpriteIfDifferent( SpriteResource * sprite, bool loops ) {
         if( this->sprite != sprite ) {
             this->sprite = sprite;
@@ -628,17 +642,16 @@ namespace atto {
                 return true;
             }
 
-            SetFrameRate( (f32)sprite->createInfo.frameRate );
-            animate = true;
-            frameIndex = 0;
-            frameTimer = 0;
-            loopCount = 0;
-            this->loops = loops;
-            color = glm::vec4( 1 );
-
+            SetSprite( sprite, loops );
             return true;
         }
         return false;
+    }
+
+    void SpriteAnimator::SetSpriteOneShot( SpriteResource * sprite, SpriteResource * transition ) {
+        SetSprite( sprite, false );
+        oneShot = true;
+        oneShotSpriteTransition = transition;
     }
 
     void SpriteAnimator::Update( Core * core, f32 dt ) {
@@ -672,6 +685,10 @@ namespace atto {
                     frameDelaySkip--;
                 }
             }
+
+            if ( oneShot == true && loopCount == 1 ) {
+                SetSprite( oneShotSpriteTransition, true );
+            }
         }
     }
 
@@ -680,8 +697,9 @@ namespace atto {
         for( i32 frameActuationIndex = 0; frameActuationIndex < frameActuationCount; frameActuationIndex++ ) {
             SpriteActuation & frameActuation = sprite->frameActuations[ frameActuationIndex ];
             if( frameActuation.frameIndex == frameIndex ) {
-                if( frameActuation.audioResources.GetCount() > 0 ) {
-                    //core->AudioPlayRandom( frameActuation.audioResources );
+                Assert( frameActuation.audioGroup != nullptr );
+                if( frameActuation.audioGroup != nullptr ) {
+                    core->AudioPlayRandomFromGroup( frameActuation.audioGroup );
                 }
             }
         }

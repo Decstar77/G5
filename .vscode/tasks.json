@@ -1,0 +1,31 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build with Visual Studio 2022",
+            "type": "shell",
+            "command": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Msbuild\\Current\\Bin\\MSBuild.exe",
+            "args": [
+                "C:\\Projects\\2024\\Atto - G5\\Atto - G5.sln",
+                "/m",
+                "/p:Configuration=Debug"
+            ],
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Run with Visual Studio 2022",
+            "type": "shell",
+            "command": "C:\\Projects\\2024\\Atto - G5\\bin\\x86_64\\atto_core.exe",
+            "args": [],
+            "problemMatcher": [],
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            }
+        }
+    ]
+}

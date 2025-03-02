@@ -18,6 +18,22 @@ namespace atto {
 
         STRUCTURE_CITY_CENTER,
         STRUCTURE_SMOL_REACTOR,
+
+        COUNT
+    };
+
+    inline static const char * EntityTypeStrings[] = {
+        "INVALID",
+        "UNIT_SCOUT",
+        "STRUCTURE_CITY_CENTER",
+        "STRUCTURE_SMOL_REACTOR"
+    };
+
+    static_assert( ArrayCount( EntityTypeStrings ) == (i32)EntityType::COUNT, "EntityTypeStrings count mismatch" );
+
+    enum class TeamColour {
+        BLUE,
+        RED,
     };
 
     enum class MapAction : i32 {

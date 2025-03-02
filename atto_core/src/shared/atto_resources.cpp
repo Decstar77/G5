@@ -10,8 +10,20 @@ namespace atto {
     };
 
     static ResourceRegistry resources = {};
+    static LargeString texturePathMatch = {};
+    static LargeString texturePathFill = {};
+    // This function is for the replacing the "/blue/" part of paths. For instance to "/red/". This way we can store only json file
+    void ResourceReplaceSpriteLoadPath( const char * match, const char * fill ) {
+        texturePathMatch = LargeString::FromLiteral( match );
+        texturePathFill = LargeString::FromLiteral( fill );
+    }
 
-    TextureResource * ResourceGetAndCreateTexture( const char * name, TextureResourceCreateInfo createInfo ) {
+    TextureResource * ResourceGetAndCreateTexture( const char * rawName, TextureResourceCreateInfo createInfo ) {
+        LargeString name = LargeString::FromLiteral( rawName );
+        if ( texturePathFill.GetLength() > 0 ) {
+            name.Replace( texturePathMatch.GetCStr(), texturePathFill.GetCStr() );
+        }
+
         const i32 textureResourceCount = resources.textures.GetCount();
         for( i32 textureResourceIndex = 0; textureResourceIndex < textureResourceCount; textureResourceIndex++ ) {
             TextureResource & textureResource = resources.textures[ textureResourceIndex ];
@@ -23,7 +35,7 @@ namespace atto {
         TextureResource * texture = &resources.textures.AddEmpty();
         texture->createInfo = createInfo;
         texture->name = name;
-        texture->id = StringHash::Hash( name );
+        texture->id = StringHash::Hash( name.GetCStr() );
 
         PlatformRendererCreateTexture( texture );
 
@@ -61,7 +73,23 @@ namespace atto {
     }
 
     AudioResource * ResourceGetAndLoadAudio( const char * name ) {
-        return nullptr;
+        const i32 audioResourceCount = resources.audios.GetCount();
+        for( i32 audioIndex = 0; audioIndex < audioResourceCount; audioIndex++ ) {
+            AudioResource & audioResource = resources.audios[ audioIndex ];
+            if( audioResource.name == name ) {
+                return &audioResource;
+            }
+        }
+
+        AudioResource * audioResource = &resources.audios.AddEmpty();
+        audioResource->id = StringHash::Hash( name );
+        audioResource->name = name;
+        audioResource->volumeMultiplier = 1.0f;
+        audioResource->createInfo.is2D = true;
+
+        PlatformRendererCreateAudio( audioResource );
+
+        return audioResource;
     }
 
     AudioGroupResource * ResourceGetAndCreateAudioGroup( const char * name, AudioGroupResourceCreateInfo * createInfo ) {
@@ -86,8 +114,21 @@ namespace atto {
     }
 
     AudioGroupResource * ResourceGetAndLoadAudioGroup( const char * name ) {
-        INVALID_CODE_PATH;
-        return nullptr;
+        const i32 audioResourceGroupCount = resources.audioGroups.GetCount();
+        for( i32 groupIndex = 0; groupIndex < audioResourceGroupCount; groupIndex++ ) {
+            AudioGroupResource & groupResource = resources.audioGroups[ groupIndex ];
+            if( groupResource.name == name ) {
+                return &groupResource;
+            }
+        }
+
+        AudioGroupResource * groupResource = &resources.audioGroups.AddEmpty();
+        groupResource->id = StringHash::Hash( name );
+        groupResource->name = name;
+
+        ResourceReadTextRefl( groupResource, name );
+
+        return groupResource;
     }
 
     SpriteResource * ResourceGetAndCreateSprite( const char * spriteName, SpriteResourceCreateInfo createInfo ) {
@@ -111,20 +152,25 @@ namespace atto {
 
         return resources.sprites.Add_MemCpyPtr( spriteResource );
     }
-    
-    SpriteResource * ResourceGetAndLoadSprite( const char * spriteName ) {
+
+    SpriteResource * ResourceGetAndLoadSprite( const char * rawName ) {
+        LargeString name = LargeString::FromLiteral( rawName );
+        if ( texturePathFill.GetLength() > 0 ) {
+            name.Replace( texturePathMatch.GetCStr(), texturePathFill.GetCStr() );
+        }
+
         const i32 spriteResourceCount = resources.sprites.GetCount();
         for( i32 spriteIndex = 0; spriteIndex < spriteResourceCount; spriteIndex++ ) {
             SpriteResource & sprite = resources.sprites[ spriteIndex ];
-            if( sprite.name == spriteName ) {
+            if( sprite.name == name ) {
                 return &sprite;
             }
         }
 
         SpriteResource * spriteResource = &resources.sprites.AddEmpty();
-        spriteResource->id = StringHash::Hash( spriteName );
-        spriteResource->name = spriteName;
-        ResourceReadTextRefl( spriteResource, spriteName );
+        spriteResource->id = StringHash::Hash( name.GetCStr() );
+        spriteResource->name = name;
+        ResourceReadTextRefl( spriteResource, rawName );
 
         return spriteResource;
     }

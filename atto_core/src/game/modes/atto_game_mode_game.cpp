@@ -110,7 +110,6 @@ namespace atto {
                 Assert( localTurn.checkSum == peerTurn.checkSum );
                 visMap.SimNextTurn( &localTurn, &peerTurn, tickCount );
                 turnNumber++;
-                //ATTOINFO( "Turn %d", turnNumber );
 
                 ZeroStruct( peerTurn );
                 ZeroStruct( localTurn );
@@ -119,7 +118,6 @@ namespace atto {
                 localTurn.actions = visMap.actionBuffer;
                 ZeroStruct( visMap.actionBuffer );
 
-                //ATTOINFO( "Snd %d", localTurn.turnNumber );
                 ZeroStruct( msg );
                 msg.type = NetworkMessageType::MAP_TURN;
                 NetworkMessagePush( msg, localTurn );
